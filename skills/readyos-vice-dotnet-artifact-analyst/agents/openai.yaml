@@ -1,0 +1,7 @@
+interface:
+  display_name: "ReadyOS VICE Dotnet Artifact Analyst"
+  short_description: "Analyze ViceTasks .NET artifact runs and crash paths"
+  default_prompt: "Use $readyos-vice-dotnet-artifact-analyst to run or analyze ReadyOS .NET VICE task artifacts and summarize manifest/stage/debug evidence."
+
+policy:
+  allow_implicit_invocation: true

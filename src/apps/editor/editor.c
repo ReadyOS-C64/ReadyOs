@@ -1,0 +1,1103 @@
+/*
+ * editor.c - Ready OS Text Editor
+ * Simple text editor with clipboard support
+ *
+ * For Commodore 64, compiled with CC65
+ */
+
+#include "../../lib/tui.h"
+#include <c64.h>
+#include <cbm.h>
+#include <conio.h>
+#include <string.h>
+
+#include "../../lib/clipboard.h"
+#include "../../lib/reu_mgr.h"
+#include "../../lib/resume_state.h"
+
+/*---------------------------------------------------------------------------
+ * Constants
+ *---------------------------------------------------------------------------*/
+
+/* Layout */
+#define HEADER_Y     0
+#define EDIT_START_Y 2
+#define EDIT_HEIGHT  20
+#define STATUS_Y     23
+#define HELP_Y       24
+
+/* Buffer sizes */
+#define MAX_LINES    100
+#define MAX_LINE_LEN 80
+#define LINE_DISPLAY 38
+
+/* Function keys for editor commands */
+#define KEY_COPY  TUI_KEY_F1   /* F1 = Copy */
+#define KEY_PASTE TUI_KEY_F3   /* F3 = Paste */
+#define KEY_SAVE   TUI_KEY_F5   /* F5 = Save */
+#define KEY_SAVEAS TUI_KEY_F6   /* Shift+F5 = Save As */
+#define KEY_OPEN   TUI_KEY_F7   /* F7 = Open */
+
+/* File I/O */
+#define MAX_DIR_ENTRIES 20
+#define DIR_NAME_LEN    17    /* 16 char C64 filename + null */
+#define IO_BUF_SIZE     64
+#define LFN_DIR         1
+#define LFN_FILE        2
+#define LFN_CMD         15
+#define CR              0x0D
+
+#define SHIM_CURRENT_BANK (*(volatile unsigned char*)0xC834)
+
+/*---------------------------------------------------------------------------
+ * Static variables
+ *---------------------------------------------------------------------------*/
+
+/* Text buffer - array of line pointers */
+static char text_buffer[MAX_LINES][MAX_LINE_LEN];
+static unsigned char line_count;
+
+/* Cursor position */
+static unsigned char cursor_x;
+static unsigned char cursor_y;
+
+/* Scroll position */
+static unsigned char scroll_y;
+
+/* Editor state */
+static unsigned char running;
+static unsigned char modified;
+static char filename[16];
+
+/* Selection for copy/paste */
+static unsigned char sel_start_y;
+static unsigned char sel_end_y;
+static unsigned char has_selection;
+
+/* File browser data */
+static char dir_names[MAX_DIR_ENTRIES][DIR_NAME_LEN];
+static char dir_types[MAX_DIR_ENTRIES][4];     /* "PRG", "SEQ", etc. */
+static char dir_display[MAX_DIR_ENTRIES][21];  /* "FILENAME      PRG" for menu */
+static const char *dir_ptrs[MAX_DIR_ENTRIES];
+static unsigned char dir_count;
+static char save_buf[17];
+static unsigned char resume_ready;
+
+static ResumeWriteSegment editor_resume_write_segments[] = {
+    { text_buffer, sizeof(text_buffer) },
+    { &line_count, sizeof(line_count) },
+    { &cursor_x, sizeof(cursor_x) },
+    { &cursor_y, sizeof(cursor_y) },
+    { &scroll_y, sizeof(scroll_y) },
+    { &modified, sizeof(modified) },
+    { filename, sizeof(filename) },
+    { &sel_start_y, sizeof(sel_start_y) },
+    { &sel_end_y, sizeof(sel_end_y) },
+    { &has_selection, sizeof(has_selection) },
+};
+
+static ResumeReadSegment editor_resume_read_segments[] = {
+    { text_buffer, sizeof(text_buffer) },
+    { &line_count, sizeof(line_count) },
+    { &cursor_x, sizeof(cursor_x) },
+    { &cursor_y, sizeof(cursor_y) },
+    { &scroll_y, sizeof(scroll_y) },
+    { &modified, sizeof(modified) },
+    { filename, sizeof(filename) },
+    { &sel_start_y, sizeof(sel_start_y) },
+    { &sel_end_y, sizeof(sel_end_y) },
+    { &has_selection, sizeof(has_selection) },
+};
+
+#define EDITOR_RESUME_SEG_COUNT \
+    ((unsigned char)(sizeof(editor_resume_read_segments) / sizeof(editor_resume_read_segments[0])))
+
+/*---------------------------------------------------------------------------
+ * Forward declarations
+ *---------------------------------------------------------------------------*/
+static void editor_init(void);
+static void editor_draw(void);
+static void editor_loop(void);
+static void draw_header_static(void);
+static void draw_header_dynamic(void);
+static void draw_text(void);
+static void draw_status(void);
+static void draw_cursor(void);
+static void undraw_cursor(void);
+static void draw_line(unsigned char line_idx);
+static void draw_lines_from(unsigned char start_line);
+static void handle_char(unsigned char ch);
+static void handle_return(void);
+static void handle_delete(void);
+static void handle_cursor(unsigned char key);
+static void copy_to_clipboard(void);
+static void paste_from_clipboard(void);
+static void new_file(void);
+static void read_directory(void);
+static unsigned char show_open_dialog(void);
+static unsigned char file_load(const char *name);
+static unsigned char file_save(const char *name);
+static unsigned char show_save_dialog(void);
+static unsigned char show_confirm(const char *msg);
+static void show_message(const char *msg, unsigned char color);
+static void resume_save_state(void);
+static unsigned char resume_restore_state(void);
+
+/*---------------------------------------------------------------------------
+ * Initialization
+ *---------------------------------------------------------------------------*/
+
+static void editor_init(void) {
+    /* Initialize TUI and REU manager */
+    tui_init();
+    reu_mgr_init();
+
+    /* Initialize text buffer */
+    new_file();
+
+    /* Default filename */
+    strcpy(filename, "UNTITLED");
+
+    running = 1;
+}
+
+static void resume_save_state(void) {
+    if (!resume_ready) {
+        return;
+    }
+    (void)resume_save_segments(editor_resume_write_segments, EDITOR_RESUME_SEG_COUNT);
+}
+
+static unsigned char resume_restore_state(void) {
+    unsigned int payload_len = 0;
+    unsigned char i;
+    unsigned char line_len;
+
+    if (!resume_ready) {
+        return 0;
+    }
+    if (!resume_load_segments(editor_resume_read_segments, EDITOR_RESUME_SEG_COUNT, &payload_len)) {
+        return 0;
+    }
+
+    if (line_count == 0 || line_count > MAX_LINES) {
+        return 0;
+    }
+    filename[sizeof(filename) - 1] = 0;
+    for (i = 0; i < line_count; ++i) {
+        text_buffer[i][MAX_LINE_LEN - 1] = 0;
+    }
+
+    if (cursor_y >= line_count) {
+        cursor_y = (unsigned char)(line_count - 1);
+    }
+    if (scroll_y >= line_count) {
+        scroll_y = (unsigned char)(line_count - 1);
+    }
+    if (scroll_y > cursor_y) {
+        scroll_y = cursor_y;
+    }
+    if (cursor_x >= MAX_LINE_LEN - 1) {
+        cursor_x = (MAX_LINE_LEN - 2);
+    }
+    line_len = (unsigned char)strlen(text_buffer[cursor_y]);
+    if (cursor_x > line_len) {
+        cursor_x = line_len;
+    }
+
+    if (sel_start_y >= line_count) {
+        sel_start_y = 0;
+    }
+    if (sel_end_y >= line_count) {
+        sel_end_y = 0;
+    }
+    has_selection = has_selection ? 1 : 0;
+    modified = modified ? 1 : 0;
+    running = 1;
+    return 1;
+}
+
+static void new_file(void) {
+    unsigned char i;
+
+    /* Clear all lines */
+    for (i = 0; i < MAX_LINES; ++i) {
+        text_buffer[i][0] = 0;
+    }
+
+    line_count = 1;
+    cursor_x = 0;
+    cursor_y = 0;
+    scroll_y = 0;
+    modified = 0;
+    has_selection = 0;
+}
+
+/*---------------------------------------------------------------------------
+ * Drawing
+ *---------------------------------------------------------------------------*/
+
+static void draw_header_static(void) {
+    TuiRect header;
+
+    header.x = 0;
+    header.y = HEADER_Y;
+    header.w = 40;
+    header.h = 2;
+
+    tui_window(&header, TUI_COLOR_LIGHTBLUE);
+
+    /* Static labels */
+    tui_puts(1, HEADER_Y, "EDITOR:", TUI_COLOR_WHITE);
+    tui_puts(9, HEADER_Y, filename, TUI_COLOR_YELLOW);
+    tui_puts(28, HEADER_Y, "L:", TUI_COLOR_WHITE);
+    tui_puts(33, HEADER_Y, "/", TUI_COLOR_WHITE);
+}
+
+static void draw_header_dynamic(void) {
+    /* Overwrite just the line numbers */
+    tui_puts_n(30, HEADER_Y, "", 3, TUI_COLOR_CYAN);
+    tui_print_uint(30, HEADER_Y, cursor_y + 1, TUI_COLOR_CYAN);
+    tui_puts_n(34, HEADER_Y, "", 4, TUI_COLOR_CYAN);
+    tui_print_uint(34, HEADER_Y, line_count, TUI_COLOR_CYAN);
+}
+
+static void draw_line(unsigned char line_idx) {
+    unsigned char screen_y;
+    if (line_idx < scroll_y || line_idx >= scroll_y + EDIT_HEIGHT) return;
+    screen_y = EDIT_START_Y + (line_idx - scroll_y);
+
+    if (line_idx < line_count) {
+        tui_print_uint(0, screen_y, line_idx + 1, TUI_COLOR_GRAY2);
+        tui_puts(2, screen_y, ":", TUI_COLOR_GRAY2);
+        tui_puts_n(4, screen_y, text_buffer[line_idx], LINE_DISPLAY, TUI_COLOR_WHITE);
+    } else {
+        tui_clear_line(screen_y, 0, 40, TUI_COLOR_WHITE);
+    }
+}
+
+static void draw_lines_from(unsigned char start_line) {
+    unsigned char idx;
+    for (idx = start_line; idx < scroll_y + EDIT_HEIGHT; ++idx) {
+        draw_line(idx);
+    }
+}
+
+static void draw_text(void) {
+    unsigned char line_idx;
+
+    /* Draw all visible lines (overwrite in-place, no clear needed) */
+    for (line_idx = scroll_y; line_idx < scroll_y + EDIT_HEIGHT; ++line_idx) {
+        draw_line(line_idx);
+    }
+}
+
+static void draw_status(void) {
+    /* Overwrite status line in-place, no blanking */
+    if (modified) {
+        tui_puts_n(1, STATUS_Y, "*MODIFIED*", 12, TUI_COLOR_LIGHTRED);
+    } else {
+        tui_puts_n(1, STATUS_Y, "", 12, TUI_COLOR_WHITE);
+    }
+
+    tui_puts(14, STATUS_Y, "COL:", TUI_COLOR_GRAY3);
+    tui_puts_n(18, STATUS_Y, "", 4, TUI_COLOR_GRAY3);
+    tui_print_uint(18, STATUS_Y, cursor_x + 1, TUI_COLOR_GRAY3);
+}
+
+static void draw_help(void) {
+    tui_puts(0, HELP_Y, "F1:CPY F3:PST F5:SAV F6:AS F7:OPN",
+             TUI_COLOR_GRAY3);
+}
+
+static void undraw_cursor(void) {
+    unsigned char screen_x, screen_y;
+    unsigned int offset;
+    screen_x = 4 + cursor_x;
+    screen_y = EDIT_START_Y + (cursor_y - scroll_y);
+    if (screen_x >= 40) screen_x = 39;
+    if (screen_y < EDIT_START_Y || screen_y >= EDIT_START_Y + EDIT_HEIGHT) return;
+    offset = (unsigned int)screen_y * 40 + screen_x;
+    TUI_SCREEN[offset] &= 0x7F;  /* Clear reverse bit */
+}
+
+static void draw_cursor(void) {
+    unsigned char screen_x, screen_y;
+    unsigned int offset;
+
+    /* Calculate screen position */
+    screen_x = 4 + cursor_x;
+    screen_y = EDIT_START_Y + (cursor_y - scroll_y);
+
+    if (screen_x >= 40) screen_x = 39;
+    if (screen_y >= EDIT_START_Y + EDIT_HEIGHT) return;
+
+    /* Draw cursor as reverse block */
+    offset = (unsigned int)screen_y * 40 + screen_x;
+    TUI_SCREEN[offset] |= 0x80;  /* Reverse bit */
+}
+
+static void editor_draw(void) {
+    tui_clear(TUI_COLOR_BLUE);
+    draw_header_static();
+    draw_header_dynamic();
+    draw_text();
+    draw_status();
+    draw_help();
+    draw_cursor();
+}
+
+/* Refresh only dynamic parts without full screen clear */
+static void editor_refresh(void) {
+    draw_header_dynamic();
+    draw_status();
+    draw_cursor();
+}
+
+/*---------------------------------------------------------------------------
+ * Text Editing
+ *---------------------------------------------------------------------------*/
+
+static void handle_char(unsigned char ch) {
+    unsigned char len;
+    unsigned char i;
+
+    len = strlen(text_buffer[cursor_y]);
+
+    /* Check if line has room */
+    if (len >= MAX_LINE_LEN - 1) {
+        return;
+    }
+
+    /* Insert character at cursor position */
+    /* Shift characters right */
+    for (i = len + 1; i > cursor_x; --i) {
+        text_buffer[cursor_y][i] = text_buffer[cursor_y][i - 1];
+    }
+
+    /* Insert new character */
+    text_buffer[cursor_y][cursor_x] = ch;
+    ++cursor_x;
+    modified = 1;
+}
+
+static void handle_return(void) {
+    unsigned char i;
+    unsigned char rest_len;
+
+    /* Check if we have room for more lines */
+    if (line_count >= MAX_LINES) {
+        return;
+    }
+
+    /* Shift all lines below down */
+    for (i = line_count; i > cursor_y + 1; --i) {
+        strcpy(text_buffer[i], text_buffer[i - 1]);
+    }
+
+    /* Calculate length of text after cursor */
+    rest_len = strlen(text_buffer[cursor_y]) - cursor_x;
+
+    /* Copy rest of current line to new line */
+    if (rest_len > 0) {
+        strcpy(text_buffer[cursor_y + 1], &text_buffer[cursor_y][cursor_x]);
+    } else {
+        text_buffer[cursor_y + 1][0] = 0;
+    }
+
+    /* Terminate current line at cursor */
+    text_buffer[cursor_y][cursor_x] = 0;
+
+    /* Move cursor to start of new line */
+    ++cursor_y;
+    ++line_count;
+    cursor_x = 0;
+    modified = 1;
+
+    /* Scroll if needed */
+    if (cursor_y >= scroll_y + EDIT_HEIGHT) {
+        ++scroll_y;
+    }
+}
+
+static void handle_delete(void) {
+    unsigned char len;
+    unsigned char prev_len;
+    unsigned char i;
+
+    if (cursor_x > 0) {
+        /* Delete character before cursor */
+        len = strlen(text_buffer[cursor_y]);
+
+        /* Shift characters left */
+        for (i = cursor_x - 1; i < len; ++i) {
+            text_buffer[cursor_y][i] = text_buffer[cursor_y][i + 1];
+        }
+
+        --cursor_x;
+        modified = 1;
+    } else if (cursor_y > 0) {
+        /* Join with previous line */
+        prev_len = strlen(text_buffer[cursor_y - 1]);
+
+        /* Check if there's room */
+        if (prev_len + strlen(text_buffer[cursor_y]) < MAX_LINE_LEN) {
+            /* Append current line to previous */
+            strcat(text_buffer[cursor_y - 1], text_buffer[cursor_y]);
+
+            /* Shift all lines below up */
+            for (i = cursor_y; i < line_count - 1; ++i) {
+                strcpy(text_buffer[i], text_buffer[i + 1]);
+            }
+
+            /* Clear last line */
+            text_buffer[line_count - 1][0] = 0;
+
+            --line_count;
+            --cursor_y;
+            cursor_x = prev_len;
+            modified = 1;
+
+            /* Scroll if needed */
+            if (cursor_y < scroll_y) {
+                scroll_y = cursor_y;
+            }
+        }
+    }
+}
+
+static void handle_cursor(unsigned char key) {
+    unsigned char len;
+
+    switch (key) {
+        case TUI_KEY_UP:
+            if (cursor_y > 0) {
+                --cursor_y;
+                /* Adjust cursor_x if new line is shorter */
+                len = strlen(text_buffer[cursor_y]);
+                if (cursor_x > len) {
+                    cursor_x = len;
+                }
+                /* Scroll if needed */
+                if (cursor_y < scroll_y) {
+                    scroll_y = cursor_y;
+                }
+            }
+            break;
+
+        case TUI_KEY_DOWN:
+            if (cursor_y < line_count - 1) {
+                ++cursor_y;
+                len = strlen(text_buffer[cursor_y]);
+                if (cursor_x > len) {
+                    cursor_x = len;
+                }
+                if (cursor_y >= scroll_y + EDIT_HEIGHT) {
+                    ++scroll_y;
+                }
+            }
+            break;
+
+        case TUI_KEY_LEFT:
+            if (cursor_x > 0) {
+                --cursor_x;
+            } else if (cursor_y > 0) {
+                /* Wrap to end of previous line */
+                --cursor_y;
+                cursor_x = strlen(text_buffer[cursor_y]);
+                if (cursor_y < scroll_y) {
+                    scroll_y = cursor_y;
+                }
+            }
+            break;
+
+        case TUI_KEY_RIGHT:
+            len = strlen(text_buffer[cursor_y]);
+            if (cursor_x < len) {
+                ++cursor_x;
+            } else if (cursor_y < line_count - 1) {
+                /* Wrap to start of next line */
+                ++cursor_y;
+                cursor_x = 0;
+                if (cursor_y >= scroll_y + EDIT_HEIGHT) {
+                    ++scroll_y;
+                }
+            }
+            break;
+
+        case TUI_KEY_HOME:
+            cursor_x = 0;
+            break;
+    }
+}
+
+/*---------------------------------------------------------------------------
+ * Clipboard Operations
+ *---------------------------------------------------------------------------*/
+
+static void copy_to_clipboard(void) {
+    unsigned char len;
+
+    len = strlen(text_buffer[cursor_y]);
+    if (len > 0) {
+        clip_copy(CLIP_TYPE_TEXT, text_buffer[cursor_y], len);
+    }
+}
+
+static void paste_from_clipboard(void) {
+    static char paste_buf[MAX_LINE_LEN];
+    unsigned int len;
+    unsigned char i;
+
+    if (clip_item_count() == 0) return;
+    len = clip_paste(0, paste_buf, MAX_LINE_LEN - 1);
+    if (len > 0) {
+        paste_buf[len] = 0;
+
+        /* Insert pasted text at cursor */
+        for (i = 0; i < len; ++i) {
+            handle_char(paste_buf[i]);
+        }
+    }
+}
+
+/*---------------------------------------------------------------------------
+ * File I/O
+ *---------------------------------------------------------------------------*/
+
+static void build_dir_display(unsigned char idx) {
+    unsigned char i, len;
+
+    /* Copy filename */
+    strcpy(dir_display[idx], dir_names[idx]);
+    len = strlen(dir_display[idx]);
+
+    /* Pad with spaces to column 17 */
+    for (i = len; i < 17; ++i) {
+        dir_display[idx][i] = ' ';
+    }
+
+    /* Append file type */
+    dir_display[idx][17] = dir_types[idx][0];
+    dir_display[idx][18] = dir_types[idx][1];
+    dir_display[idx][19] = dir_types[idx][2];
+    dir_display[idx][20] = 0;
+}
+
+static void read_directory(void) {
+    unsigned char buf[2];
+    unsigned char ch;
+    unsigned char in_quotes;
+    unsigned char name_pos;
+    unsigned char type_pos;
+    unsigned char first_line;
+    unsigned char past_space;
+    int n;
+
+    dir_count = 0;
+
+    if (cbm_open(LFN_DIR, 8, 0, "$") != 0) {
+        return;
+    }
+
+    /* Skip 2-byte load address */
+    cbm_read(LFN_DIR, buf, 2);
+
+    first_line = 1;
+
+    while (dir_count < MAX_DIR_ENTRIES) {
+        /* Read 2-byte link pointer */
+        n = cbm_read(LFN_DIR, buf, 2);
+        if (n < 2 || (buf[0] == 0 && buf[1] == 0)) break;
+
+        /* Read 2-byte block count (skip) */
+        cbm_read(LFN_DIR, buf, 2);
+
+        /* Read line content until 0x00 */
+        in_quotes = 0;
+        name_pos = 0;
+
+        while (1) {
+            n = cbm_read(LFN_DIR, &ch, 1);
+            if (n < 1 || ch == 0) break;
+
+            if (ch == 0x22) { /* Quote character */
+                if (in_quotes) {
+                    /* Closing quote - end of filename */
+                    break;
+                }
+                in_quotes = 1;
+                continue;
+            }
+
+            if (in_quotes && !first_line) {
+                if (name_pos < DIR_NAME_LEN - 1) {
+                    dir_names[dir_count][name_pos] = ch;
+                    ++name_pos;
+                }
+            }
+        }
+
+        /* Read file type after closing quote (skip spaces, then 3-letter type) */
+        type_pos = 0;
+        past_space = 0;
+        dir_types[dir_count][0] = 0;
+
+        if (ch != 0) {
+            while (1) {
+                n = cbm_read(LFN_DIR, &ch, 1);
+                if (n < 1 || ch == 0) break;
+
+                if (!past_space) {
+                    /* Skip leading spaces after quote */
+                    if (ch != ' ' && ch != 0xA0) {
+                        past_space = 1;
+                        if (type_pos < 3) {
+                            dir_types[dir_count][type_pos] = ch;
+                            ++type_pos;
+                        }
+                    }
+                } else {
+                    /* Read type characters */
+                    if (type_pos < 3 && ch != ' ' && ch != 0xA0) {
+                        dir_types[dir_count][type_pos] = ch;
+                        ++type_pos;
+                    }
+                }
+            }
+        }
+        dir_types[dir_count][type_pos] = 0;
+
+        if (first_line) {
+            first_line = 0;
+            continue;
+        }
+
+        if (name_pos > 0) {
+            dir_names[dir_count][name_pos] = 0;
+            build_dir_display(dir_count);
+            dir_ptrs[dir_count] = dir_display[dir_count];
+            ++dir_count;
+        }
+    }
+
+    cbm_close(LFN_DIR);
+}
+
+static unsigned char show_open_dialog(void) {
+    TuiRect win;
+    TuiMenu menu;
+    unsigned char key;
+    unsigned char result;
+
+    tui_clear(TUI_COLOR_BLUE);
+
+    win.x = 0;
+    win.y = 0;
+    win.w = 40;
+    win.h = 24;
+    tui_window_title(&win, "OPEN FILE", TUI_COLOR_LIGHTBLUE, TUI_COLOR_YELLOW);
+
+    /* Show loading message while reading directory */
+    tui_puts(10, 11, "READING DISK...", TUI_COLOR_YELLOW);
+
+    read_directory();
+
+    /* Clear loading message area */
+    tui_clear_line(11, 1, 38, TUI_COLOR_WHITE);
+
+    if (dir_count == 0) {
+        tui_puts(6, 10, "NO FILES FOUND ON DISK", TUI_COLOR_LIGHTRED);
+        tui_puts(6, 14, "PRESS ANY KEY", TUI_COLOR_GRAY3);
+        tui_getkey();
+        return 255;
+    }
+
+    /* Show file count */
+    tui_print_uint(1, 22, dir_count, TUI_COLOR_GRAY3);
+    tui_puts(4, 22, "FILE(S) ON DISK", TUI_COLOR_GRAY3);
+
+    /* Help line */
+    tui_puts(1, 24, "UP/DN:SELECT RET:OPEN STOP:CANCEL", TUI_COLOR_GRAY3);
+
+    /* Set up menu */
+    tui_menu_init(&menu, 1, 2, 38, 18, dir_ptrs, dir_count);
+    menu.item_color = TUI_COLOR_WHITE;
+    menu.sel_color = TUI_COLOR_CYAN;
+    tui_menu_draw(&menu);
+
+    while (1) {
+        key = tui_getkey();
+
+        if (key == TUI_KEY_RETURN) {
+            return menu.selected;
+        }
+
+        if (key == TUI_KEY_RUNSTOP || key == TUI_KEY_LARROW) {
+            return 255;
+        }
+
+        result = tui_menu_input(&menu, key);
+        /* tui_menu_input returns 255 for no action, or index if enter was pressed internally */
+        if (result != 255) {
+            return result;
+        }
+
+        /* Redraw menu after navigation */
+        tui_menu_draw(&menu);
+    }
+}
+
+static unsigned char file_load(const char *name) {
+    static char open_str[24];
+    static char io_buf[IO_BUF_SIZE];
+    unsigned char line;
+    unsigned char col;
+    int n;
+    unsigned char i;
+
+    /* Build open string: "name,s,r" */
+    strcpy(open_str, name);
+    strcat(open_str, ",s,r");
+
+    if (cbm_open(LFN_FILE, 8, 2, open_str) != 0) {
+        return 1;
+    }
+
+    new_file();
+    line = 0;
+    col = 0;
+
+    while (1) {
+        n = cbm_read(LFN_FILE, io_buf, IO_BUF_SIZE);
+        if (n <= 0) break;
+
+        for (i = 0; i < (unsigned char)n; ++i) {
+            if (io_buf[i] == CR) {
+                /* End current line */
+                text_buffer[line][col] = 0;
+                ++line;
+                col = 0;
+                if (line >= MAX_LINES) goto done;
+            } else {
+                if (col < MAX_LINE_LEN - 1) {
+                    text_buffer[line][col] = io_buf[i];
+                    ++col;
+                }
+            }
+        }
+    }
+
+done:
+    /* Terminate the last line if it didn't end with CR */
+    text_buffer[line][col] = 0;
+
+    cbm_close(LFN_FILE);
+
+    line_count = line + 1;
+    if (line_count > MAX_LINES) line_count = MAX_LINES;
+
+    strncpy(filename, name, 15);
+    filename[15] = 0;
+    modified = 0;
+    cursor_x = 0;
+    cursor_y = 0;
+    scroll_y = 0;
+
+    return 0;
+}
+
+static unsigned char file_save(const char *name) {
+    static char cmd_str[24];
+    static char open_str[24];
+    unsigned char cr_byte;
+    unsigned char i;
+    unsigned char len;
+
+    cr_byte = CR;
+
+    /* Scratch existing file first */
+    strcpy(cmd_str, "s:");
+    strcat(cmd_str, name);
+    cbm_open(LFN_CMD, 8, 15, cmd_str);
+    cbm_close(LFN_CMD);
+
+    /* Open for write */
+    strcpy(open_str, name);
+    strcat(open_str, ",s,w");
+
+    if (cbm_open(LFN_FILE, 8, 2, open_str) != 0) {
+        return 1;
+    }
+
+    for (i = 0; i < line_count; ++i) {
+        len = strlen(text_buffer[i]);
+        if (len > 0) {
+            cbm_write(LFN_FILE, text_buffer[i], len);
+        }
+        /* Write CR after each line (except maybe last empty) */
+        if (i < line_count - 1 || len > 0) {
+            cbm_write(LFN_FILE, &cr_byte, 1);
+        }
+    }
+
+    cbm_close(LFN_FILE);
+
+    strncpy(filename, name, 15);
+    filename[15] = 0;
+    modified = 0;
+
+    return 0;
+}
+
+static void show_message(const char *msg, unsigned char color) {
+    TuiRect win;
+    unsigned char len;
+
+    len = strlen(msg);
+
+    win.x = 8;
+    win.y = 10;
+    win.w = 24;
+    win.h = 5;
+    tui_window(&win, TUI_COLOR_LIGHTBLUE);
+
+    tui_puts(20 - len / 2, 11, msg, color);
+    tui_puts(10, 13, "PRESS ANY KEY", TUI_COLOR_GRAY3);
+
+    tui_getkey();
+}
+
+static unsigned char show_confirm(const char *msg) {
+    TuiRect win;
+    unsigned char key;
+
+    win.x = 8;
+    win.y = 9;
+    win.w = 24;
+    win.h = 6;
+    tui_window_title(&win, "CONFIRM", TUI_COLOR_LIGHTBLUE, TUI_COLOR_YELLOW);
+
+    tui_puts(10, 12, msg, TUI_COLOR_WHITE);
+    tui_puts(10, 13, "Y:YES    N:NO", TUI_COLOR_GRAY3);
+
+    while (1) {
+        key = tui_getkey();
+        if (key == 'y' || key == 'Y') return 1;
+        if (key == 'n' || key == 'N' || key == TUI_KEY_RUNSTOP) return 0;
+    }
+}
+
+static unsigned char show_save_dialog(void) {
+    TuiRect win;
+    TuiInput input;
+    unsigned char key;
+
+    tui_clear(TUI_COLOR_BLUE);
+
+    win.x = 5;
+    win.y = 7;
+    win.w = 30;
+    win.h = 8;
+    tui_window_title(&win, "SAVE FILE", TUI_COLOR_LIGHTBLUE, TUI_COLOR_YELLOW);
+
+    tui_puts(7, 10, "FILENAME:", TUI_COLOR_WHITE);
+
+    /* Init first (this clears the buffer) */
+    tui_input_init(&input, 7, 11, 20, 16, save_buf, TUI_COLOR_CYAN);
+
+    /* THEN pre-fill with current filename (after init cleared it) */
+    if (strcmp(filename, "UNTITLED") != 0) {
+        strcpy(save_buf, filename);
+        input.cursor = strlen(save_buf);
+    }
+
+    tui_input_draw(&input);
+
+    tui_puts(7, 13, "RET:SAVE  STOP:CANCEL", TUI_COLOR_GRAY3);
+
+    while (1) {
+        key = tui_getkey();
+
+        if (key == TUI_KEY_RUNSTOP || key == TUI_KEY_LARROW) {
+            return 0;
+        }
+
+        if (tui_input_key(&input, key)) {
+            /* RETURN was pressed */
+            if (save_buf[0] == 0) {
+                continue;  /* Empty name, ignore */
+            }
+
+            /* Show saving status on a clean save dialog */
+            tui_puts(7, 12, "SAVING...", TUI_COLOR_YELLOW);
+            if (file_save(save_buf) != 0) {
+                show_message("SAVE ERROR!", TUI_COLOR_LIGHTRED);
+                return 0;
+            }
+            return 1;
+        }
+
+        /* Redraw input field after every keypress */
+        tui_input_draw(&input);
+    }
+}
+
+/*---------------------------------------------------------------------------
+ * Main Loop
+ *---------------------------------------------------------------------------*/
+
+static void editor_loop(void) {
+    unsigned char key;
+    unsigned char old_scroll;
+
+    editor_draw();
+
+    while (running) {
+        key = tui_getkey();
+
+        /* Check for CTRL+B (back to launcher) - CTRL+B produces key code 2 */
+        if (key == 2) {
+            resume_save_state();
+            tui_return_to_launcher();
+            /* Never returns */
+        }
+
+        /* Handle control keys */
+        switch (key) {
+            case TUI_KEY_RUNSTOP:
+                running = 0;
+                break;
+
+            case TUI_KEY_NEXT_APP:
+                {
+                    unsigned char current = *((unsigned char*)0xC834);
+                    unsigned char next = tui_get_next_app(current);
+                    if (next != 0) {
+                        resume_save_state();
+                        tui_switch_to_app(next);
+                    }
+                }
+                break;
+
+            case TUI_KEY_PREV_APP:
+                {
+                    unsigned char current = *((unsigned char*)0xC834);
+                    unsigned char prev = tui_get_prev_app(current);
+                    if (prev != 0) {
+                        resume_save_state();
+                        tui_switch_to_app(prev);
+                    }
+                }
+                break;
+
+            case KEY_COPY:
+                copy_to_clipboard();
+                break;
+
+            case KEY_PASTE:
+                undraw_cursor();
+                paste_from_clipboard();
+                draw_text();
+                editor_refresh();
+                break;
+
+            case KEY_SAVE:
+                if (strcmp(filename, "UNTITLED") == 0) {
+                    show_save_dialog();
+                } else {
+                    tui_puts(1, STATUS_Y, "SAVING...", TUI_COLOR_YELLOW);
+                    if (file_save(filename) != 0) {
+                        show_message("SAVE ERROR!", TUI_COLOR_LIGHTRED);
+                    }
+                }
+                editor_draw();
+                break;
+
+            case KEY_SAVEAS:
+                show_save_dialog();
+                editor_draw();
+                break;
+
+            case KEY_OPEN:
+                {
+                    unsigned char result = show_open_dialog();
+                    if (result != 255 && result < dir_count) {
+                        if (modified) {
+                            if (!show_confirm("DISCARD CHANGES?")) {
+                                editor_draw();
+                                break;
+                            }
+                        }
+                        tui_clear(TUI_COLOR_BLUE);
+                        tui_puts(14, 12, "LOADING...", TUI_COLOR_YELLOW);
+                        if (file_load(dir_names[result]) != 0) {
+                            show_message("LOAD ERROR!", TUI_COLOR_LIGHTRED);
+                        }
+                    }
+                }
+                editor_draw();
+                break;
+
+            case TUI_KEY_UP:
+            case TUI_KEY_DOWN:
+            case TUI_KEY_LEFT:
+            case TUI_KEY_RIGHT:
+            case TUI_KEY_HOME:
+                undraw_cursor();
+                old_scroll = scroll_y;
+                handle_cursor(key);
+                if (scroll_y != old_scroll) {
+                    draw_text();
+                }
+                editor_refresh();
+                break;
+
+            case TUI_KEY_RETURN:
+                undraw_cursor();
+                handle_return();
+                draw_lines_from(cursor_y - 1);
+                editor_refresh();
+                break;
+
+            case TUI_KEY_DEL:
+                undraw_cursor();
+                handle_delete();
+                draw_lines_from(cursor_y);
+                editor_refresh();
+                break;
+
+            default:
+                /* Regular character input */
+                if (key >= 32 && key < 128) {
+                    undraw_cursor();
+                    handle_char(key);
+                    draw_line(cursor_y);
+                    editor_refresh();
+                }
+                break;
+        }
+    }
+
+    /* Reset to BASIC (no shim available for proper return) */
+    __asm__("jmp $FCE2");  /* KERNAL cold start */
+}
+
+/*---------------------------------------------------------------------------
+ * Main
+ *---------------------------------------------------------------------------*/
+
+int main(void) {
+    unsigned char bank;
+
+    editor_init();
+    resume_ready = 0;
+    bank = SHIM_CURRENT_BANK;
+    if (bank >= 1 && bank <= 15) {
+        resume_init_for_app(bank, bank, RESUME_SCHEMA_V1);
+        resume_ready = 1;
+    }
+    (void)resume_restore_state();
+    editor_loop();
+    return 0;
+}

@@ -1,0 +1,22 @@
+#ifndef RS_OVERLAY_H
+#define RS_OVERLAY_H
+
+typedef void (*RSOverlayProgressFn)(unsigned char stage, void* user);
+
+#define RS_OVERLAY_PHASE_NONE   0u
+#define RS_OVERLAY_PHASE_PARSE  1u
+#define RS_OVERLAY_PHASE_EXEC   2u
+#define RS_OVERLAY_PHASE_SCRIPT 3u
+
+int rs_overlay_boot(void);
+int rs_overlay_boot_with_progress(RSOverlayProgressFn progress, void* user);
+int rs_overlay_prepare_parse(void);
+int rs_overlay_prepare_exec(void);
+int rs_overlay_prepare_script(void);
+int rs_overlay_active(void);
+int rs_overlay_is_phase_ready(unsigned char phase);
+int rs_overlay_cached_in_reu(void);
+unsigned char rs_overlay_last_rc(void);
+void rs_overlay_debug_mark(unsigned char code);
+
+#endif

@@ -1,0 +1,7 @@
+interface:
+  display_name: "ReadyOS Stability Analyst"
+  short_description: "Diagnose C64 memory/REU/overlay stability drift"
+  default_prompt: "Use $readyos-stability-analyst to analyze ReadyOS memory-map, REU, and overlay stability from current artifacts."
+
+policy:
+  allow_implicit_invocation: true

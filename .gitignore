@@ -1,0 +1,26 @@
+.DS_Store
+
+# Local editor / tooling state
+.vscode/
+.venv/
+.repoql/
+.claude/settings.local.json
+__pycache__/
+*.pyc
+
+# Private notes, reports, and transcripts
+CLAUDEWORKING/
+privatedocs/
+
+# Build intermediates
+obj/
+*.o
+*.map
+src/apps/readyshellpoc/*.i
+
+# Emulator / automation outputs
+logs/
+*.log
+*.out
+*.vsf
+*.pid
