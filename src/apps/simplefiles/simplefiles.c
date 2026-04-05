@@ -67,17 +67,16 @@ typedef struct {
 } FilePane;
 
 typedef struct {
-    unsigned char pane_drive[PANE_COUNT];
-    unsigned char pane_selected[PANE_COUNT];
-    unsigned char pane_scroll[PANE_COUNT];
+    FilePane pane_state[PANE_COUNT];
     unsigned char active_pane;
     unsigned char mode;
     unsigned char viewer_drive;
-    unsigned char viewer_type;
-    unsigned char reserved;
-    unsigned char discovered_mask;
+    unsigned char status_color;
+    unsigned int viewer_len;
     unsigned int viewer_offset;
-    char viewer_name[FILE_BROWSER_NAME_LEN];
+    FileBrowserEntry viewer_entry;
+    unsigned char viewer_buf[VIEW_PAGE_BYTES];
+    char status_msg[40];
 } SimpleFilesResumeV1;
 
 static FilePane panes[PANE_COUNT];
@@ -181,6 +180,7 @@ static void leave_viewer(void);
 static void show_help_popup(void);
 static void resume_save_state(void);
 static unsigned char restore_resume_state(void);
+static void cold_start_browser(void);
 
 static void set_status(const char *msg, unsigned char color) {
     strncpy(status_msg, msg, sizeof(status_msg) - 1u);
@@ -1070,7 +1070,6 @@ static unsigned char browser_duplicate_via_stage(FilePane *src_pane,
                                   msg_out,
                                   msg_cap);
     reload_matching_drives(src_pane->drive, dst_name);
-    reload_matching_drives(stage_drive, temp_name);
     if (rc != FILE_BROWSER_RC_OK) {
         (void)file_browser_scratch(stage_drive, temp_name, code_out, msg_out, msg_cap);
         reload_matching_drives(stage_drive, 0);
@@ -1365,8 +1364,8 @@ static void browser_copy_entry(unsigned char prompt_name,
     }
 
     if (copy_rc == FILE_BROWSER_RC_OK) {
-        reload_matching_drives(dst_drive, dst_name);
         if (src_pane->drive != dst_drive) {
+            reload_matching_drives(dst_drive, dst_name);
             reload_matching_drives(src_pane->drive, entry->name);
         }
         if (!browser_verify_copy_result(entry, dst_drive, dst_name)) {
@@ -1538,18 +1537,18 @@ static void resume_save_state(void) {
     }
 
     for (pane_index = 0; pane_index < PANE_COUNT; ++pane_index) {
-        resume_blob.pane_drive[pane_index] = panes[pane_index].drive;
-        resume_blob.pane_selected[pane_index] = panes[pane_index].selected;
-        resume_blob.pane_scroll[pane_index] = panes[pane_index].scroll;
+        resume_blob.pane_state[pane_index] = panes[pane_index];
     }
     resume_blob.active_pane = active_pane;
     resume_blob.mode = app_mode;
     resume_blob.viewer_drive = viewer_drive;
-    resume_blob.viewer_type = viewer_entry.type;
-    resume_blob.discovered_mask = discovered_mask;
+    resume_blob.status_color = status_color;
+    resume_blob.viewer_len = viewer_len;
     resume_blob.viewer_offset = viewer_offset;
-    strncpy(resume_blob.viewer_name, viewer_entry.name, FILE_BROWSER_NAME_LEN - 1u);
-    resume_blob.viewer_name[FILE_BROWSER_NAME_LEN - 1u] = 0;
+    resume_blob.viewer_entry = viewer_entry;
+    memcpy(resume_blob.viewer_buf, viewer_buf, sizeof(viewer_buf));
+    strncpy(resume_blob.status_msg, status_msg, sizeof(resume_blob.status_msg) - 1u);
+    resume_blob.status_msg[sizeof(resume_blob.status_msg) - 1u] = 0;
 
     (void)resume_save(&resume_blob, sizeof(resume_blob));
 }
@@ -1557,10 +1556,6 @@ static void resume_save_state(void) {
 static unsigned char restore_resume_state(void) {
     unsigned int payload_len;
     unsigned char pane_index;
-    unsigned char selected_index;
-    unsigned char left_drive;
-    unsigned char right_drive;
-    unsigned char fallback_drive;
     if (!resume_ready) {
         return 0;
     }
@@ -1571,55 +1566,35 @@ static unsigned char restore_resume_state(void) {
         return 0;
     }
 
-    probe_drives();
     active_pane = (resume_blob.active_pane < PANE_COUNT) ? resume_blob.active_pane : PANE_LEFT;
-    fallback_drive = storage_device_get_default();
-    left_drive = normalize_drive_8_9(resume_blob.pane_drive[PANE_LEFT]);
-    right_drive = normalize_drive_8_9(resume_blob.pane_drive[PANE_RIGHT]);
+    discovered_mask = SIMPLEFILES_DRIVE_MASK;
+    status_color = resume_blob.status_color;
+    strncpy(status_msg, resume_blob.status_msg, sizeof(status_msg) - 1u);
+    status_msg[sizeof(status_msg) - 1u] = 0;
 
-    if (left_drive == right_drive) {
-        if (active_pane == PANE_LEFT) {
-            right_drive = storage_device_toggle_8_9(left_drive);
-        } else {
-            left_drive = storage_device_toggle_8_9(right_drive);
-        }
-    }
-
-    panes[PANE_LEFT].drive = left_drive;
-    panes[PANE_RIGHT].drive = right_drive;
-    browser_normalize_visible_drives();
     for (pane_index = 0; pane_index < PANE_COUNT; ++pane_index) {
-        panes[pane_index].selected = resume_blob.pane_selected[pane_index];
-        panes[pane_index].scroll = resume_blob.pane_scroll[pane_index];
-        pane_load(pane_index, 0);
+        panes[pane_index] = resume_blob.pane_state[pane_index];
+        panes[pane_index].drive = normalize_drive_8_9(panes[pane_index].drive);
+        panes[pane_index].available = 1u;
         pane_clamp(&panes[pane_index]);
     }
 
-    app_mode = MODE_BROWSER;
-    viewer_entry.name[0] = 0;
-    viewer_entry.type = resume_blob.viewer_type;
+    app_mode = (resume_blob.mode == MODE_VIEWER) ? MODE_VIEWER : MODE_BROWSER;
+    viewer_entry = resume_blob.viewer_entry;
     viewer_drive = normalize_drive_8_9(resume_blob.viewer_drive);
+    viewer_len = resume_blob.viewer_len;
     viewer_offset = resume_blob.viewer_offset;
-
-    if (resume_blob.mode == MODE_VIEWER && resume_blob.viewer_name[0] != 0 &&
-        resume_blob.viewer_type == CBM_T_SEQ) {
-        for (pane_index = 0; pane_index < PANE_COUNT; ++pane_index) {
-            if (panes[pane_index].drive != viewer_drive) {
-                continue;
-            }
-            selected_index = pane_find_name(&panes[pane_index], resume_blob.viewer_name);
-            if (selected_index != 255u) {
-                viewer_entry = panes[pane_index].entries[selected_index];
-                app_mode = MODE_VIEWER;
-                if (!viewer_load_page()) {
-                    app_mode = MODE_BROWSER;
-                }
-                break;
-            }
-        }
-    }
+    memcpy(viewer_buf, resume_blob.viewer_buf, sizeof(viewer_buf));
 
     return 1;
+}
+
+static void cold_start_browser(void) {
+    probe_drives();
+    seed_default_drives();
+    browser_normalize_visible_drives();
+    pane_load(PANE_LEFT, 0);
+    pane_load(PANE_RIGHT, 0);
 }
 
 static void init_state(void) {
@@ -1645,12 +1620,6 @@ static void init_state(void) {
         panes[pane_index].scroll = 0;
         panes[pane_index].free_blocks = 0;
     }
-
-    probe_drives();
-    seed_default_drives();
-    browser_normalize_visible_drives();
-    pane_load(PANE_LEFT, 0);
-    pane_load(PANE_RIGHT, 0);
 }
 
 static void handle_browser_key(unsigned char key) {
@@ -1756,7 +1725,9 @@ int main(void) {
         resume_init_for_app(bank, bank, RESUME_SCHEMA_V1);
         resume_ready = 1;
     }
-    (void)restore_resume_state();
+    if (!restore_resume_state()) {
+        cold_start_browser();
+    }
 
     if (app_mode == MODE_VIEWER) {
         draw_viewer();
