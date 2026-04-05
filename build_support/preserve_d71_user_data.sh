@@ -39,6 +39,7 @@ MANAGED_PRGS=(
 
 MANAGED_SEQS=(
   "apps.cfg"
+  "editor help"
 )
 
 is_managed_prg() {

@@ -1,0 +1,26 @@
+readyos editor help
+
+features
+f1 copies the selection or current line
+f3 pastes text from the clipboard
+f5 saves the current file
+ctrl+a saves with a new name
+f6 toggles selection mode
+f7 opens a seq or prg text file
+f8 opens the editor help popup
+ctrl+n pages down
+ctrl+p pages up
+ctrl+e jumps to the end of the line
+ctrl+f finds text
+ctrl+g finds the next match
+f2 and f4 switch apps
+ctrl+b returns to the launcher
+selection uses arrows and home to mark text
+selection is limited to the visible page
+selection copy keeps line breaks on paste
+
+limits
+the editor keeps up to 100 lines
+each line can hold up to 79 chars
+longer loaded lines are cut off
+text after line 100 is not loaded

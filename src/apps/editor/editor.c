@@ -25,18 +25,32 @@
 #define EDIT_HEIGHT  20
 #define STATUS_Y     23
 #define HELP_Y       24
+#define TEXT_X       5
+#define LINE_NUM_X   3
 
 /* Buffer sizes */
 #define MAX_LINES    100
 #define MAX_LINE_LEN 80
-#define LINE_DISPLAY 38
+#define LINE_DISPLAY (40 - TEXT_X)
+#define FIND_LEN     20
+#define CLIP_TEXT_BUF_SIZE ((EDIT_HEIGHT * MAX_LINE_LEN) + EDIT_HEIGHT)
 
 /* Function keys for editor commands */
 #define KEY_COPY  TUI_KEY_F1   /* F1 = Copy */
 #define KEY_PASTE TUI_KEY_F3   /* F3 = Paste */
 #define KEY_SAVE   TUI_KEY_F5   /* F5 = Save */
-#define KEY_SAVEAS TUI_KEY_F6   /* Shift+F5 = Save As */
+#define KEY_SELECT TUI_KEY_F6   /* Shift+F5 = Selection mode */
 #define KEY_OPEN   TUI_KEY_F7   /* F7 = Open */
+#define KEY_HELP   TUI_KEY_F8   /* Shift+F7 = Help */
+
+/* Control-key shortcuts (cgetc() returns ASCII control codes) */
+#define KEY_CTRL_A 1
+#define KEY_CTRL_B 2
+#define KEY_CTRL_E 5
+#define KEY_CTRL_F 6
+#define KEY_CTRL_G 7
+#define KEY_CTRL_N 14
+#define KEY_CTRL_P 16
 
 /* File I/O */
 #define MAX_DIR_ENTRIES 20
@@ -70,9 +84,10 @@ static unsigned char modified;
 static char filename[16];
 
 /* Selection for copy/paste */
-static unsigned char sel_start_y;
-static unsigned char sel_end_y;
+static unsigned char sel_anchor_x;
+static unsigned char sel_anchor_y;
 static unsigned char has_selection;
+static char clip_text_buf[CLIP_TEXT_BUF_SIZE + 1];
 
 /* File browser data */
 static char dir_names[MAX_DIR_ENTRIES][DIR_NAME_LEN];
@@ -81,6 +96,7 @@ static char dir_display[MAX_DIR_ENTRIES][21];  /* "FILENAME      PRG" for menu *
 static const char *dir_ptrs[MAX_DIR_ENTRIES];
 static unsigned char dir_count;
 static char save_buf[17];
+static char find_buf[FIND_LEN + 1];
 static unsigned char resume_ready;
 
 static ResumeWriteSegment editor_resume_write_segments[] = {
@@ -91,8 +107,9 @@ static ResumeWriteSegment editor_resume_write_segments[] = {
     { &scroll_y, sizeof(scroll_y) },
     { &modified, sizeof(modified) },
     { filename, sizeof(filename) },
-    { &sel_start_y, sizeof(sel_start_y) },
-    { &sel_end_y, sizeof(sel_end_y) },
+    { find_buf, sizeof(find_buf) },
+    { &sel_anchor_x, sizeof(sel_anchor_x) },
+    { &sel_anchor_y, sizeof(sel_anchor_y) },
     { &has_selection, sizeof(has_selection) },
 };
 
@@ -104,8 +121,9 @@ static ResumeReadSegment editor_resume_read_segments[] = {
     { &scroll_y, sizeof(scroll_y) },
     { &modified, sizeof(modified) },
     { filename, sizeof(filename) },
-    { &sel_start_y, sizeof(sel_start_y) },
-    { &sel_end_y, sizeof(sel_end_y) },
+    { find_buf, sizeof(find_buf) },
+    { &sel_anchor_x, sizeof(sel_anchor_x) },
+    { &sel_anchor_y, sizeof(sel_anchor_y) },
     { &has_selection, sizeof(has_selection) },
 };
 
@@ -126,12 +144,26 @@ static void draw_cursor(void);
 static void undraw_cursor(void);
 static void draw_line(unsigned char line_idx);
 static void draw_lines_from(unsigned char start_line);
+static void clamp_view_state(void);
+static unsigned char max_scroll_y(void);
+static unsigned char line_length(unsigned char line_idx);
+static void clear_selection(void);
+static void begin_selection(void);
+static unsigned char selection_has_text(void);
+static void selection_bounds(unsigned char *start_y, unsigned char *start_x,
+                             unsigned char *end_y, unsigned char *end_x);
+static unsigned char selection_covers(unsigned char line_idx, unsigned char col);
+static void move_page_down(void);
+static void move_page_up(void);
 static void handle_char(unsigned char ch);
 static void handle_return(void);
-static void handle_delete(void);
+static unsigned char handle_delete(void);
 static void handle_cursor(unsigned char key);
+static void handle_cursor_selection(unsigned char key);
 static void copy_to_clipboard(void);
 static void paste_from_clipboard(void);
+static unsigned char show_find_dialog(void);
+static unsigned char find_next_match(void);
 static void new_file(void);
 static void read_directory(void);
 static unsigned char show_open_dialog(void);
@@ -140,6 +172,7 @@ static unsigned char file_save(const char *name);
 static unsigned char show_save_dialog(void);
 static unsigned char show_confirm(const char *msg);
 static void show_message(const char *msg, unsigned char color);
+static void show_help_popup(void);
 static void resume_save_state(void);
 static unsigned char resume_restore_state(void);
 
@@ -154,6 +187,7 @@ static void editor_init(void) {
 
     /* Initialize text buffer */
     new_file();
+    find_buf[0] = 0;
 
     /* Default filename */
     strcpy(filename, "UNTITLED");
@@ -171,7 +205,6 @@ static void resume_save_state(void) {
 static unsigned char resume_restore_state(void) {
     unsigned int payload_len = 0;
     unsigned char i;
-    unsigned char line_len;
 
     if (!resume_ready) {
         return 0;
@@ -188,33 +221,54 @@ static unsigned char resume_restore_state(void) {
         text_buffer[i][MAX_LINE_LEN - 1] = 0;
     }
 
+    has_selection = 0;
+    sel_anchor_x = cursor_x;
+    sel_anchor_y = cursor_y;
+    modified = modified ? 1 : 0;
+    clamp_view_state();
+    running = 1;
+    return 1;
+}
+
+static unsigned char line_length(unsigned char line_idx) {
+    return (unsigned char)strlen(text_buffer[line_idx]);
+}
+
+static unsigned char max_scroll_y(void) {
+    if (line_count > EDIT_HEIGHT) {
+        return (unsigned char)(line_count - EDIT_HEIGHT);
+    }
+    return 0;
+}
+
+static void clamp_view_state(void) {
+    unsigned char max_scroll;
+
+    if (line_count == 0) {
+        line_count = 1;
+    }
     if (cursor_y >= line_count) {
         cursor_y = (unsigned char)(line_count - 1);
-    }
-    if (scroll_y >= line_count) {
-        scroll_y = (unsigned char)(line_count - 1);
-    }
-    if (scroll_y > cursor_y) {
-        scroll_y = cursor_y;
     }
     if (cursor_x >= MAX_LINE_LEN - 1) {
         cursor_x = (MAX_LINE_LEN - 2);
     }
-    line_len = (unsigned char)strlen(text_buffer[cursor_y]);
-    if (cursor_x > line_len) {
-        cursor_x = line_len;
+    if (cursor_x > line_length(cursor_y)) {
+        cursor_x = line_length(cursor_y);
     }
 
-    if (sel_start_y >= line_count) {
-        sel_start_y = 0;
+    max_scroll = max_scroll_y();
+    if (scroll_y > max_scroll) {
+        scroll_y = max_scroll;
     }
-    if (sel_end_y >= line_count) {
-        sel_end_y = 0;
+    if (cursor_y < scroll_y) {
+        scroll_y = cursor_y;
+    } else if (cursor_y >= scroll_y + EDIT_HEIGHT) {
+        scroll_y = (unsigned char)(cursor_y - EDIT_HEIGHT + 1);
+        if (scroll_y > max_scroll) {
+            scroll_y = max_scroll;
+        }
     }
-    has_selection = has_selection ? 1 : 0;
-    modified = modified ? 1 : 0;
-    running = 1;
-    return 1;
 }
 
 static void new_file(void) {
@@ -231,6 +285,77 @@ static void new_file(void) {
     scroll_y = 0;
     modified = 0;
     has_selection = 0;
+    sel_anchor_x = 0;
+    sel_anchor_y = 0;
+}
+
+static void clear_selection(void) {
+    has_selection = 0;
+    sel_anchor_x = cursor_x;
+    sel_anchor_y = cursor_y;
+}
+
+static void begin_selection(void) {
+    sel_anchor_x = cursor_x;
+    sel_anchor_y = cursor_y;
+    has_selection = 1;
+}
+
+static unsigned char selection_has_text(void) {
+    if (!has_selection) {
+        return 0;
+    }
+    if (sel_anchor_y != cursor_y) {
+        return 1;
+    }
+    return (unsigned char)(sel_anchor_x != cursor_x);
+}
+
+static void selection_bounds(unsigned char *start_y, unsigned char *start_x,
+                             unsigned char *end_y, unsigned char *end_x) {
+    if (sel_anchor_y < cursor_y ||
+        (sel_anchor_y == cursor_y && sel_anchor_x <= cursor_x)) {
+        *start_y = sel_anchor_y;
+        *start_x = sel_anchor_x;
+        *end_y = cursor_y;
+        *end_x = cursor_x;
+    } else {
+        *start_y = cursor_y;
+        *start_x = cursor_x;
+        *end_y = sel_anchor_y;
+        *end_x = sel_anchor_x;
+    }
+}
+
+static unsigned char selection_covers(unsigned char line_idx, unsigned char col) {
+    unsigned char start_y;
+    unsigned char start_x;
+    unsigned char end_y;
+    unsigned char end_x;
+
+    if (!selection_has_text()) {
+        return 0;
+    }
+
+    selection_bounds(&start_y, &start_x, &end_y, &end_x);
+
+    if (line_idx < start_y || line_idx > end_y) {
+        return 0;
+    }
+
+    if (start_y == end_y) {
+        return (unsigned char)(col >= start_x && col < end_x);
+    }
+
+    if (line_idx == start_y) {
+        return (unsigned char)(col >= start_x);
+    }
+
+    if (line_idx == end_y) {
+        return (unsigned char)(col < end_x);
+    }
+
+    return 1;
 }
 
 /*---------------------------------------------------------------------------
@@ -264,13 +389,42 @@ static void draw_header_dynamic(void) {
 
 static void draw_line(unsigned char line_idx) {
     unsigned char screen_y;
+    unsigned int line_no;
+    unsigned char line_x;
+    unsigned char len;
+    unsigned char col;
+    unsigned int text_offset;
+    unsigned char ch;
+
     if (line_idx < scroll_y || line_idx >= scroll_y + EDIT_HEIGHT) return;
     screen_y = EDIT_START_Y + (line_idx - scroll_y);
+    tui_puts_n(0, screen_y, "", TEXT_X, TUI_COLOR_GRAY2);
 
     if (line_idx < line_count) {
-        tui_print_uint(0, screen_y, line_idx + 1, TUI_COLOR_GRAY2);
-        tui_puts(2, screen_y, ":", TUI_COLOR_GRAY2);
-        tui_puts_n(4, screen_y, text_buffer[line_idx], LINE_DISPLAY, TUI_COLOR_WHITE);
+        tui_clear_line(screen_y, TEXT_X, LINE_DISPLAY, TUI_COLOR_WHITE);
+        line_no = (unsigned int)line_idx + 1;
+        if (line_no >= 100) {
+            line_x = 0;
+        } else if (line_no >= 10) {
+            line_x = 1;
+        } else {
+            line_x = 2;
+        }
+        tui_print_uint(line_x, screen_y, line_no, TUI_COLOR_GRAY2);
+        tui_putc(LINE_NUM_X, screen_y, tui_ascii_to_screen(':'), TUI_COLOR_GRAY2);
+        len = line_length(line_idx);
+        if (len > LINE_DISPLAY) {
+            len = LINE_DISPLAY;
+        }
+        text_offset = (unsigned int)screen_y * 40 + TEXT_X;
+        for (col = 0; col < len; ++col) {
+            ch = tui_ascii_to_screen((unsigned char)text_buffer[line_idx][col]);
+            if (selection_covers(line_idx, col)) {
+                ch |= 0x80;
+            }
+            TUI_SCREEN[text_offset + col] = ch;
+            TUI_COLOR_RAM[text_offset + col] = TUI_COLOR_WHITE;
+        }
     } else {
         tui_clear_line(screen_y, 0, 40, TUI_COLOR_WHITE);
     }
@@ -293,11 +447,12 @@ static void draw_text(void) {
 }
 
 static void draw_status(void) {
-    /* Overwrite status line in-place, no blanking */
+    tui_puts_n(1, STATUS_Y, "", 19, TUI_COLOR_WHITE);
     if (modified) {
         tui_puts_n(1, STATUS_Y, "*MODIFIED*", 12, TUI_COLOR_LIGHTRED);
-    } else {
-        tui_puts_n(1, STATUS_Y, "", 12, TUI_COLOR_WHITE);
+    }
+    if (has_selection) {
+        tui_puts(24, STATUS_Y, "SELECT", TUI_COLOR_CYAN);
     }
 
     tui_puts(14, STATUS_Y, "COL:", TUI_COLOR_GRAY3);
@@ -306,19 +461,22 @@ static void draw_status(void) {
 }
 
 static void draw_help(void) {
-    tui_puts(0, HELP_Y, "F1:CPY F3:PST F5:SAV F6:AS F7:OPN",
+    tui_puts(0, HELP_Y, "F1:CPY F3:PST F5:SAV F6:SEL F7:OPN F8:H",
              TUI_COLOR_GRAY3);
 }
 
 static void undraw_cursor(void) {
     unsigned char screen_x, screen_y;
     unsigned int offset;
-    screen_x = 4 + cursor_x;
+    screen_x = TEXT_X + cursor_x;
     screen_y = EDIT_START_Y + (cursor_y - scroll_y);
     if (screen_x >= 40) screen_x = 39;
     if (screen_y < EDIT_START_Y || screen_y >= EDIT_START_Y + EDIT_HEIGHT) return;
     offset = (unsigned int)screen_y * 40 + screen_x;
-    TUI_SCREEN[offset] &= 0x7F;  /* Clear reverse bit */
+    TUI_SCREEN[offset] &= 0x7F;  /* Clear cursor reverse bit */
+    if (selection_covers(cursor_y, cursor_x)) {
+        TUI_SCREEN[offset] |= 0x80;
+    }
 }
 
 static void draw_cursor(void) {
@@ -326,7 +484,7 @@ static void draw_cursor(void) {
     unsigned int offset;
 
     /* Calculate screen position */
-    screen_x = 4 + cursor_x;
+    screen_x = TEXT_X + cursor_x;
     screen_y = EDIT_START_Y + (cursor_y - scroll_y);
 
     if (screen_x >= 40) screen_x = 39;
@@ -352,6 +510,135 @@ static void editor_refresh(void) {
     draw_header_dynamic();
     draw_status();
     draw_cursor();
+}
+
+static void move_page_down(void) {
+    unsigned char jump;
+    unsigned char max_scroll;
+
+    if (line_count <= 1) {
+        return;
+    }
+
+    jump = EDIT_HEIGHT - 1;
+    max_scroll = max_scroll_y();
+
+    if (cursor_y + jump >= line_count) {
+        cursor_y = (unsigned char)(line_count - 1);
+    } else {
+        cursor_y = (unsigned char)(cursor_y + jump);
+    }
+
+    if (scroll_y + jump >= max_scroll) {
+        scroll_y = max_scroll;
+    } else {
+        scroll_y = (unsigned char)(scroll_y + jump);
+    }
+
+    clamp_view_state();
+}
+
+static void move_page_up(void) {
+    unsigned char jump;
+
+    jump = EDIT_HEIGHT - 1;
+
+    if (cursor_y > jump) {
+        cursor_y = (unsigned char)(cursor_y - jump);
+    } else {
+        cursor_y = 0;
+    }
+
+    if (scroll_y > jump) {
+        scroll_y = (unsigned char)(scroll_y - jump);
+    } else {
+        scroll_y = 0;
+    }
+
+    clamp_view_state();
+}
+
+static unsigned char to_lower(unsigned char ch) {
+    if (ch >= 'A' && ch <= 'Z') {
+        return (unsigned char)(ch + 32);
+    }
+    return ch;
+}
+
+static unsigned char find_in_line_from(unsigned char line_idx,
+                                       unsigned char start_col,
+                                       const char *needle) {
+    unsigned char text_len;
+    unsigned char needle_len;
+    unsigned char col;
+    unsigned char ni;
+
+    text_len = line_length(line_idx);
+    needle_len = (unsigned char)strlen(needle);
+
+    if (needle_len == 0 || start_col > text_len || needle_len > text_len) {
+        return 255;
+    }
+
+    for (col = start_col; col + needle_len <= text_len; ++col) {
+        for (ni = 0; ni < needle_len; ++ni) {
+            if (to_lower((unsigned char)text_buffer[line_idx][col + ni]) !=
+                to_lower((unsigned char)needle[ni])) {
+                break;
+            }
+        }
+        if (ni == needle_len) {
+            return col;
+        }
+    }
+
+    return 255;
+}
+
+static unsigned char find_next_match(void) {
+    unsigned char line_idx;
+    unsigned char start_col;
+    unsigned char match_col;
+
+    if (find_buf[0] == 0) {
+        return 0;
+    }
+
+    line_idx = cursor_y;
+    start_col = (unsigned char)(cursor_x + 1);
+    if (start_col > line_length(cursor_y)) {
+        start_col = line_length(cursor_y);
+    }
+
+    while (line_idx < line_count) {
+        match_col = find_in_line_from(line_idx, start_col, find_buf);
+        if (match_col != 255) {
+            cursor_y = line_idx;
+            cursor_x = match_col;
+            clamp_view_state();
+            return 1;
+        }
+        ++line_idx;
+        start_col = 0;
+    }
+
+    line_idx = 0;
+    while (line_idx <= cursor_y && line_idx < line_count) {
+        match_col = find_in_line_from(line_idx, 0, find_buf);
+        if (match_col != 255) {
+            if (line_idx == cursor_y && match_col <= cursor_x) {
+                ++line_idx;
+                continue;
+            }
+            cursor_y = line_idx;
+            cursor_x = match_col;
+            clamp_view_state();
+            return 1;
+        }
+        ++line_idx;
+    }
+
+    return 0;
 }
 
 /*---------------------------------------------------------------------------
@@ -413,14 +700,10 @@ static void handle_return(void) {
     ++line_count;
     cursor_x = 0;
     modified = 1;
-
-    /* Scroll if needed */
-    if (cursor_y >= scroll_y + EDIT_HEIGHT) {
-        ++scroll_y;
-    }
+    clamp_view_state();
 }
 
-static void handle_delete(void) {
+static unsigned char handle_delete(void) {
     unsigned char len;
     unsigned char prev_len;
     unsigned char i;
@@ -436,6 +719,7 @@ static void handle_delete(void) {
 
         --cursor_x;
         modified = 1;
+        return 0;
     } else if (cursor_y > 0) {
         /* Join with previous line */
         prev_len = strlen(text_buffer[cursor_y - 1]);
@@ -457,13 +741,12 @@ static void handle_delete(void) {
             --cursor_y;
             cursor_x = prev_len;
             modified = 1;
-
-            /* Scroll if needed */
-            if (cursor_y < scroll_y) {
-                scroll_y = cursor_y;
-            }
+            clamp_view_state();
+            return 1;
         }
     }
+
+    return 0;
 }
 
 static void handle_cursor(unsigned char key) {
@@ -474,27 +757,22 @@ static void handle_cursor(unsigned char key) {
             if (cursor_y > 0) {
                 --cursor_y;
                 /* Adjust cursor_x if new line is shorter */
-                len = strlen(text_buffer[cursor_y]);
+                len = line_length(cursor_y);
                 if (cursor_x > len) {
                     cursor_x = len;
                 }
-                /* Scroll if needed */
-                if (cursor_y < scroll_y) {
-                    scroll_y = cursor_y;
-                }
+                clamp_view_state();
             }
             break;
 
         case TUI_KEY_DOWN:
             if (cursor_y < line_count - 1) {
                 ++cursor_y;
-                len = strlen(text_buffer[cursor_y]);
+                len = line_length(cursor_y);
                 if (cursor_x > len) {
                     cursor_x = len;
                 }
-                if (cursor_y >= scroll_y + EDIT_HEIGHT) {
-                    ++scroll_y;
-                }
+                clamp_view_state();
             }
             break;
 
@@ -504,24 +782,77 @@ static void handle_cursor(unsigned char key) {
             } else if (cursor_y > 0) {
                 /* Wrap to end of previous line */
                 --cursor_y;
-                cursor_x = strlen(text_buffer[cursor_y]);
-                if (cursor_y < scroll_y) {
-                    scroll_y = cursor_y;
-                }
+                cursor_x = line_length(cursor_y);
+                clamp_view_state();
             }
             break;
 
         case TUI_KEY_RIGHT:
-            len = strlen(text_buffer[cursor_y]);
+            len = line_length(cursor_y);
             if (cursor_x < len) {
                 ++cursor_x;
             } else if (cursor_y < line_count - 1) {
                 /* Wrap to start of next line */
                 ++cursor_y;
                 cursor_x = 0;
-                if (cursor_y >= scroll_y + EDIT_HEIGHT) {
-                    ++scroll_y;
+                clamp_view_state();
+            }
+            break;
+
+        case TUI_KEY_HOME:
+            cursor_x = 0;
+            break;
+    }
+}
+
+static void handle_cursor_selection(unsigned char key) {
+    unsigned char len;
+    unsigned char min_y;
+    unsigned char max_y;
+
+    min_y = scroll_y;
+    max_y = (unsigned char)(scroll_y + EDIT_HEIGHT - 1);
+    if (max_y >= line_count) {
+        max_y = (unsigned char)(line_count - 1);
+    }
+
+    switch (key) {
+        case TUI_KEY_UP:
+            if (cursor_y > min_y) {
+                --cursor_y;
+                len = line_length(cursor_y);
+                if (cursor_x > len) {
+                    cursor_x = len;
                 }
+            }
+            break;
+
+        case TUI_KEY_DOWN:
+            if (cursor_y < max_y) {
+                ++cursor_y;
+                len = line_length(cursor_y);
+                if (cursor_x > len) {
+                    cursor_x = len;
+                }
+            }
+            break;
+
+        case TUI_KEY_LEFT:
+            if (cursor_x > 0) {
+                --cursor_x;
+            } else if (cursor_y > min_y) {
+                --cursor_y;
+                cursor_x = line_length(cursor_y);
+            }
+            break;
+
+        case TUI_KEY_RIGHT:
+            len = line_length(cursor_y);
+            if (cursor_x < len) {
+                ++cursor_x;
+            } else if (cursor_y < max_y) {
+                ++cursor_y;
+                cursor_x = 0;
             }
             break;
 
@@ -537,26 +868,76 @@ static void handle_cursor(unsigned char key) {
 
 static void copy_to_clipboard(void) {
     unsigned char len;
+    unsigned int out_len;
+    unsigned char start_y;
+    unsigned char start_x;
+    unsigned char end_y;
+    unsigned char end_x;
+    unsigned char line_idx;
+    unsigned char from_col;
+    unsigned char to_col;
+    unsigned char col;
 
-    len = strlen(text_buffer[cursor_y]);
+    if (selection_has_text()) {
+        out_len = 0;
+        selection_bounds(&start_y, &start_x, &end_y, &end_x);
+
+        for (line_idx = start_y; line_idx <= end_y; ++line_idx) {
+            from_col = 0;
+            to_col = line_length(line_idx);
+
+            if (line_idx == start_y) {
+                from_col = start_x;
+            }
+            if (line_idx == end_y) {
+                to_col = end_x;
+            }
+
+            for (col = from_col; col < to_col && out_len < CLIP_TEXT_BUF_SIZE; ++col) {
+                clip_text_buf[out_len] = text_buffer[line_idx][col];
+                ++out_len;
+            }
+
+            if (line_idx != end_y && out_len < CLIP_TEXT_BUF_SIZE) {
+                clip_text_buf[out_len] = CR;
+                ++out_len;
+            }
+        }
+
+        if (out_len > 0) {
+            clip_copy(CLIP_TYPE_TEXT, clip_text_buf, out_len);
+        }
+        clear_selection();
+        return;
+    }
+
+    len = line_length(cursor_y);
     if (len > 0) {
         clip_copy(CLIP_TYPE_TEXT, text_buffer[cursor_y], len);
     }
 }
 
 static void paste_from_clipboard(void) {
-    static char paste_buf[MAX_LINE_LEN];
     unsigned int len;
-    unsigned char i;
+    unsigned int i;
 
     if (clip_item_count() == 0) return;
-    len = clip_paste(0, paste_buf, MAX_LINE_LEN - 1);
+    len = clip_paste(0, clip_text_buf, CLIP_TEXT_BUF_SIZE);
     if (len > 0) {
-        paste_buf[len] = 0;
+        clip_text_buf[len] = 0;
+        clear_selection();
 
         /* Insert pasted text at cursor */
         for (i = 0; i < len; ++i) {
-            handle_char(paste_buf[i]);
+            if ((unsigned char)clip_text_buf[i] == CR) {
+                if (line_count >= MAX_LINES) {
+                    break;
+                }
+                handle_return();
+            } else if ((unsigned char)clip_text_buf[i] >= 32 &&
+                       (unsigned char)clip_text_buf[i] < 128) {
+                handle_char((unsigned char)clip_text_buf[i]);
+            }
         }
     }
 }
@@ -753,6 +1134,7 @@ static unsigned char file_load(const char *name) {
     static char io_buf[IO_BUF_SIZE];
     unsigned char line;
     unsigned char col;
+    unsigned char truncated;
     int n;
     unsigned char i;
 
@@ -767,6 +1149,7 @@ static unsigned char file_load(const char *name) {
     new_file();
     line = 0;
     col = 0;
+    truncated = 0;
 
     while (1) {
         n = cbm_read(LFN_FILE, io_buf, IO_BUF_SIZE);
@@ -778,7 +1161,10 @@ static unsigned char file_load(const char *name) {
                 text_buffer[line][col] = 0;
                 ++line;
                 col = 0;
-                if (line >= MAX_LINES) goto done;
+                if (line >= MAX_LINES) {
+                    truncated = 1;
+                    goto done;
+                }
             } else {
                 if (col < MAX_LINE_LEN - 1) {
                     text_buffer[line][col] = io_buf[i];
@@ -790,11 +1176,13 @@ static unsigned char file_load(const char *name) {
 
 done:
     /* Terminate the last line if it didn't end with CR */
-    text_buffer[line][col] = 0;
+    if (!truncated) {
+        text_buffer[line][col] = 0;
+    }
 
     cbm_close(LFN_FILE);
 
-    line_count = line + 1;
+    line_count = truncated ? MAX_LINES : (unsigned char)(line + 1);
     if (line_count > MAX_LINES) line_count = MAX_LINES;
 
     strncpy(filename, name, 15);
@@ -943,6 +1331,83 @@ static unsigned char show_save_dialog(void) {
     }
 }
 
+static unsigned char show_find_dialog(void) {
+    TuiRect win;
+    TuiInput input;
+    unsigned char key;
+    static char prior_find[FIND_LEN + 1];
+
+    tui_clear(TUI_COLOR_BLUE);
+
+    win.x = 5;
+    win.y = 7;
+    win.w = 30;
+    win.h = 8;
+    tui_window_title(&win, "FIND TEXT", TUI_COLOR_LIGHTBLUE, TUI_COLOR_YELLOW);
+
+    tui_puts(7, 10, "SEARCH:", TUI_COLOR_WHITE);
+    strncpy(prior_find, find_buf, FIND_LEN);
+    prior_find[FIND_LEN] = 0;
+    tui_input_init(&input, 7, 11, 20, FIND_LEN, find_buf, TUI_COLOR_CYAN);
+    if (prior_find[0] != 0) {
+        strcpy(find_buf, prior_find);
+        input.cursor = (unsigned char)strlen(find_buf);
+    }
+
+    tui_input_draw(&input);
+    tui_puts(7, 13, "RET:FIND  STOP:CANCEL", TUI_COLOR_GRAY3);
+
+    while (1) {
+        key = tui_getkey();
+
+        if (key == TUI_KEY_RUNSTOP || key == TUI_KEY_LARROW) {
+            return 0;
+        }
+
+        if (tui_input_key(&input, key)) {
+            if (find_buf[0] == 0) {
+                continue;
+            }
+            return 1;
+        }
+
+        tui_input_draw(&input);
+    }
+}
+
+static void show_help_popup(void) {
+    TuiRect win;
+    unsigned char key;
+
+    win.x = 1;
+    win.y = 4;
+    win.w = 38;
+    win.h = 16;
+    tui_window_title(&win, "EDITOR HELP", TUI_COLOR_LIGHTBLUE, TUI_COLOR_YELLOW);
+
+    tui_puts(3, 6, "READYOS EDITOR", TUI_COLOR_WHITE);
+    tui_puts(3, 7, "RET:NEW LINE DEL:BACKSP", TUI_COLOR_GRAY3);
+    tui_puts(3, 8, "HOME:START CTRL+E:LINE END", TUI_COLOR_GRAY3);
+    tui_puts(3, 9, "UP/DN/LT/RT:MOVE", TUI_COLOR_GRAY3);
+    tui_puts(3, 10, "CTRL+N:PG DN CTRL+P:PG UP", TUI_COLOR_GRAY3);
+    tui_puts(3, 11, "CTRL+F:FIND CTRL+G:FIND NEXT", TUI_COLOR_GRAY3);
+    tui_puts(3, 12, "F1:COPY/LINE  F3:PASTE", TUI_COLOR_GRAY3);
+    tui_puts(3, 13, "F5:SAVE   CTRL+A:SAVE AS", TUI_COLOR_GRAY3);
+    tui_puts(3, 14, "F6:SELECT F7:OPEN F8:HELP", TUI_COLOR_GRAY3);
+    tui_puts(3, 15, "SELECT:ARROWS/HOME MARK", TUI_COLOR_GRAY3);
+    tui_puts(3, 16, "SELECT:F1 COPY  F6 CANCEL", TUI_COLOR_GRAY3);
+    tui_puts(3, 17, "F2/F4:APPS CTRL+B:LAUNCHER", TUI_COLOR_GRAY3);
+    tui_puts(3, 18, "RET/F8/STOP:CLOSE", TUI_COLOR_CYAN);
+
+    while (1) {
+        key = tui_getkey();
+        if (key == KEY_HELP || key == TUI_KEY_RETURN ||
+            key == TUI_KEY_RUNSTOP || key == TUI_KEY_LARROW) {
+            return;
+        }
+    }
+}
+
 /*---------------------------------------------------------------------------
  * Main Loop
  *---------------------------------------------------------------------------*/
@@ -950,6 +1415,7 @@ static unsigned char show_save_dialog(void) {
 static void editor_loop(void) {
     unsigned char key;
     unsigned char old_scroll;
+    unsigned char joined_line;
 
     editor_draw();
 
@@ -957,10 +1423,75 @@ static void editor_loop(void) {
         key = tui_getkey();
 
         /* Check for CTRL+B (back to launcher) - CTRL+B produces key code 2 */
-        if (key == 2) {
+        if (key == KEY_CTRL_B) {
+            clear_selection();
             resume_save_state();
             tui_return_to_launcher();
             /* Never returns */
+        }
+
+        if (has_selection) {
+            switch (key) {
+                case TUI_KEY_RUNSTOP:
+                    running = 0;
+                    break;
+
+                case TUI_KEY_NEXT_APP:
+                    {
+                        unsigned char current = SHIM_CURRENT_BANK;
+                        unsigned char next = tui_get_next_app(current);
+                        if (next != 0) {
+                            clear_selection();
+                            resume_save_state();
+                            tui_switch_to_app(next);
+                        }
+                    }
+                    break;
+
+                case TUI_KEY_PREV_APP:
+                    {
+                        unsigned char current = SHIM_CURRENT_BANK;
+                        unsigned char prev = tui_get_prev_app(current);
+                        if (prev != 0) {
+                            clear_selection();
+                            resume_save_state();
+                            tui_switch_to_app(prev);
+                        }
+                    }
+                    break;
+
+                case KEY_COPY:
+                    copy_to_clipboard();
+                    clear_selection();
+                    draw_text();
+                    editor_refresh();
+                    break;
+
+                case KEY_SELECT:
+                    clear_selection();
+                    draw_text();
+                    editor_refresh();
+                    break;
+
+                case KEY_HELP:
+                    show_help_popup();
+                    editor_draw();
+                    break;
+
+                case TUI_KEY_UP:
+                case TUI_KEY_DOWN:
+                case TUI_KEY_LEFT:
+                case TUI_KEY_RIGHT:
+                case TUI_KEY_HOME:
+                    handle_cursor_selection(key);
+                    draw_text();
+                    editor_refresh();
+                    break;
+
+                default:
+                    break;
+            }
+            continue;
         }
 
         /* Handle control keys */
@@ -971,9 +1502,10 @@ static void editor_loop(void) {
 
             case TUI_KEY_NEXT_APP:
                 {
-                    unsigned char current = *((unsigned char*)0xC834);
+                    unsigned char current = SHIM_CURRENT_BANK;
                     unsigned char next = tui_get_next_app(current);
                     if (next != 0) {
+                        clear_selection();
                         resume_save_state();
                         tui_switch_to_app(next);
                     }
@@ -982,9 +1514,10 @@ static void editor_loop(void) {
 
             case TUI_KEY_PREV_APP:
                 {
-                    unsigned char current = *((unsigned char*)0xC834);
+                    unsigned char current = SHIM_CURRENT_BANK;
                     unsigned char prev = tui_get_prev_app(current);
                     if (prev != 0) {
+                        clear_selection();
                         resume_save_state();
                         tui_switch_to_app(prev);
                     }
@@ -993,6 +1526,7 @@ static void editor_loop(void) {
 
             case KEY_COPY:
                 copy_to_clipboard();
+                editor_refresh();
                 break;
 
             case KEY_PASTE:
@@ -1014,9 +1548,14 @@ static void editor_loop(void) {
                 editor_draw();
                 break;
 
-            case KEY_SAVEAS:
+            case KEY_CTRL_A:
                 show_save_dialog();
                 editor_draw();
+                break;
+
+            case KEY_SELECT:
+                begin_selection();
+                editor_refresh();
                 break;
 
             case KEY_OPEN:
@@ -1039,6 +1578,69 @@ static void editor_loop(void) {
                 editor_draw();
                 break;
 
+            case KEY_HELP:
+                show_help_popup();
+                editor_draw();
+                break;
+
+            case KEY_CTRL_N:
+                undraw_cursor();
+                old_scroll = scroll_y;
+                move_page_down();
+                if (scroll_y != old_scroll) {
+                    draw_text();
+                }
+                editor_refresh();
+                break;
+
+            case KEY_CTRL_P:
+                undraw_cursor();
+                old_scroll = scroll_y;
+                move_page_up();
+                if (scroll_y != old_scroll) {
+                    draw_text();
+                }
+                editor_refresh();
+                break;
+
+            case KEY_CTRL_E:
+                undraw_cursor();
+                cursor_x = line_length(cursor_y);
+                editor_refresh();
+                break;
+
+            case KEY_CTRL_F:
+                if (show_find_dialog()) {
+                    if (!find_next_match()) {
+                        show_message("NOT FOUND", TUI_COLOR_LIGHTRED);
+                    }
+                }
+                editor_draw();
+                break;
+
+            case KEY_CTRL_G:
+                if (find_buf[0] == 0) {
+                    if (show_find_dialog()) {
+                        if (!find_next_match()) {
+                            show_message("NOT FOUND", TUI_COLOR_LIGHTRED);
+                        }
+                    }
+                    editor_draw();
+                    break;
+                }
+                undraw_cursor();
+                old_scroll = scroll_y;
+                if (find_next_match()) {
+                    if (scroll_y != old_scroll) {
+                        draw_text();
+                    }
+                    editor_refresh();
+                } else {
+                    show_message("NOT FOUND", TUI_COLOR_LIGHTRED);
+                    editor_draw();
+                }
+                break;
+
             case TUI_KEY_UP:
             case TUI_KEY_DOWN:
             case TUI_KEY_LEFT:
@@ -1055,15 +1657,27 @@ static void editor_loop(void) {
 
             case TUI_KEY_RETURN:
                 undraw_cursor();
+                old_scroll = scroll_y;
                 handle_return();
-                draw_lines_from(cursor_y - 1);
+                if (scroll_y != old_scroll) {
+                    draw_text();
+                } else {
+                    draw_lines_from((cursor_y > 0) ? (unsigned char)(cursor_y - 1) : 0);
+                }
                 editor_refresh();
                 break;
 
             case TUI_KEY_DEL:
                 undraw_cursor();
-                handle_delete();
-                draw_lines_from(cursor_y);
+                old_scroll = scroll_y;
+                joined_line = handle_delete();
+                if (scroll_y != old_scroll) {
+                    draw_text();
+                } else if (joined_line) {
+                    draw_lines_from(cursor_y);
+                } else {
+                    draw_line(cursor_y);
+                }
                 editor_refresh();
                 break;
 

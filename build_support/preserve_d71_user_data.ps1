@@ -41,7 +41,8 @@ $managedPrgs = @(
 )
 
 $managedSeqs = @(
-    'apps.cfg'
+    'apps.cfg',
+    'editor help'
 )
 
 function Test-ManagedBuildFile {

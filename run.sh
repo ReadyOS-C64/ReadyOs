@@ -161,6 +161,7 @@ BUILD_MANAGED_PRGS=(
 
 BUILD_MANAGED_SEQS=(
     "apps.cfg"
+    "editor help"
 )
 
 update_dynamic_version() {

@@ -30,6 +30,7 @@ CFLAGS = -t c64 -I$(LIB_DIR)
 
 # Flags for apps (load at $1000 using custom config)
 APP_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app.cfg
+EDITOR_CFLAGS = $(APP_CFLAGS) -Os
 TASKLIST_CFLAGS = $(APP_CFLAGS) -Os
 LAUNCHER_CFG_VERBOSE ?= 0
 LAUNCHER_CFLAGS = $(APP_CFLAGS) -DLAUNCHER_CFG_VERBOSE=$(LAUNCHER_CFG_VERBOSE)
@@ -72,6 +73,8 @@ DISK2 = readyos_2.d71
 DISK = $(DISK1)
 CATALOG_SRC = cfg/apps_catalog.txt
 CATALOG_SEQ = $(OBJ_DIR)/apps_cfg_petscii.seq
+EDITOR_HELP_SRC = cfg/editor_help.txt
+EDITOR_HELP_SEQ = $(OBJ_DIR)/editor_help.seq
 REL_SEED_D71 ?=
 REL_SEED_D71_CANDIDATES := readyos0-1-5.d71 ../readyos0-1-5.d71 ../../readyos0-1-5.d71
 ifeq ($(strip $(REL_SEED_D71)),)
@@ -216,6 +219,10 @@ $(SHOWCFG): $(BOOT_DIR)/showcfg.bas
 $(CATALOG_SEQ): $(CATALOG_SRC) $(BUILD_SUPPORT_DIR)/build_apps_catalog_petscii.py
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/build_apps_catalog_petscii.py --input $(CATALOG_SRC) --output $@
 
+# Build plain-text lowercase PETASCII SEQ payloads
+$(EDITOR_HELP_SEQ): $(EDITOR_HELP_SRC) $(BUILD_SUPPORT_DIR)/build_petscii_lower_seq.py
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/build_petscii_lower_seq.py --input $(EDITOR_HELP_SRC) --output $@
+
 # Test REU program (standalone)
 $(TEST_REU): $(SRC_DIR)/test_reu.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -226,7 +233,7 @@ $(LAUNCHER): $(APPS_DIR)/launcher/launcher.c $(LIB_LAUNCHER) $(VERSION_HEADER)
 
 # Editor app (loads at $1000)
 $(EDITOR): $(APPS_DIR)/editor/editor.c $(LIB_EDITOR)
-	$(CC) $(APP_CFLAGS) -m $(OBJ_DIR)/editor.map -o $@ $^
+	$(CC) $(EDITOR_CFLAGS) -m $(OBJ_DIR)/editor.map -o $@ $^
 
 # Calculator Plus app (loads at $1000)
 $(CALCPLUS): $(APPS_DIR)/calcplus/calcplus.c $(APPS_DIR)/calcplus/rom_float.s $(LIB_CALCPLUS)
@@ -323,10 +330,10 @@ $(XRELCHK): $(APPS_DIR)/xrelchk/xrelchk.c
 
 # Create disk 1 (drive 8): boot chain + launcher + utilities + cal26 + dizzy + readyshell + catalog
 ifeq ($(READYOS_USE_PWSH),1)
-$(DISK1): FORCE $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(LAUNCHER) $(CAL26) $(DIZZY) $(READYSHELL) $(READYSHELL_OVL1_DISK) $(READYSHELL_OVL2_DISK) $(READYSHELL_OVL3_DISK) $(CATALOG_SEQ)
+$(DISK1): FORCE $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(LAUNCHER) $(CAL26) $(DIZZY) $(READYSHELL) $(READYSHELL_OVL1_DISK) $(READYSHELL_OVL2_DISK) $(READYSHELL_OVL3_DISK) $(CATALOG_SEQ) $(EDITOR_HELP_SEQ)
 	$(PWSH) -NoLogo -NoProfile -File $(BUILD_SUPPORT_DIR)/rebuild_disk.ps1 -Mode disk1 -DiskPath $@ -BuildSupportDir $(BUILD_SUPPORT_DIR) -RelSeedD71 "$(REL_SEED_D71)"
 else
-$(DISK1): FORCE $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(LAUNCHER) $(CAL26) $(DIZZY) $(READYSHELL) $(READYSHELL_OVL1_DISK) $(READYSHELL_OVL2_DISK) $(READYSHELL_OVL3_DISK) $(CATALOG_SEQ)
+$(DISK1): FORCE $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(LAUNCHER) $(CAL26) $(DIZZY) $(READYSHELL) $(READYSHELL_OVL1_DISK) $(READYSHELL_OVL2_DISK) $(READYSHELL_OVL3_DISK) $(CATALOG_SEQ) $(EDITOR_HELP_SEQ)
 	@set -e; \
 	PRESERVE_DIR=$$(mktemp -d /tmp/readyos_preserve.XXXXXX); \
 	if [ -f $@ ]; then \
@@ -344,7 +351,8 @@ $(DISK1): FORCE $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(LAUNCHER) $(CAL26) $(D
 		-write $(READYSHELL_OVL1_DISK) rsovl1 \
 		-write $(READYSHELL_OVL2_DISK) rsovl2 \
 		-write $(READYSHELL_OVL3_DISK) rsovl3 \
-		-write $(CATALOG_SEQ) "apps.cfg,s"; \
+		-write $(CATALOG_SEQ) "apps.cfg,s" \
+		-write $(EDITOR_HELP_SEQ) "editor help,s"; \
 	echo ""; \
 	echo "Seeding CAL26 REL files:"; \
 	python3 $(BUILD_SUPPORT_DIR)/seed_cal26_rel.py --disk $@; \
@@ -400,6 +408,7 @@ clean:
 	rm -f $(OBJ_DIR)/*.map
 	rm -rf $(READYSHELL_OBJ_DIR)
 	rm -f $(CATALOG_SEQ)
+	rm -f $(EDITOR_HELP_SEQ)
 	rm -f *.prg
 	rm -f $(READYSHELL_OVL1_PRG) $(READYSHELL_OVL2_PRG) $(READYSHELL_OVL3_PRG) \
 		$(READYSHELL_OVL4_PRG) $(READYSHELL_OVL5_PRG) $(READYSHELL_OVL6_PRG) \
@@ -411,6 +420,7 @@ clean:
 # Verify all generated binaries and memory layout constraints
 verify: all
 	python3 verify.py
+	python3 $(BUILD_SUPPORT_DIR)/editor_host_smoke.py
 	python3 $(BUILD_SUPPORT_DIR)/tasklist_host_smoke.py
 	python3 $(BUILD_SUPPORT_DIR)/verify_resume_contract.py
 	python3 $(BUILD_SUPPORT_DIR)/verify_memory_map.py
@@ -418,6 +428,7 @@ verify: all
 # Full rebuild + deep verification
 fullcheck: clean all
 	python3 verify.py
+	python3 $(BUILD_SUPPORT_DIR)/editor_host_smoke.py
 	python3 $(BUILD_SUPPORT_DIR)/tasklist_host_smoke.py
 	python3 $(BUILD_SUPPORT_DIR)/verify_resume_contract.py
 	python3 $(BUILD_SUPPORT_DIR)/verify_memory_map.py
@@ -436,6 +447,9 @@ readyshell-parse-smoke-host:
 		$(READYSHELL_CORE_DIR)/rs_errors.c \
 		-o /tmp/readyshell_parse_smoke
 	/tmp/readyshell_parse_smoke
+
+editor-smoke-host:
+	python3 $(BUILD_SUPPORT_DIR)/editor_host_smoke.py
 
 tasklist-smoke-host:
 	python3 $(BUILD_SUPPORT_DIR)/tasklist_host_smoke.py
@@ -459,6 +473,7 @@ help:
 	@echo "                (includes hard memory-map gate)"
 	@echo "  verify-resume - Run warm-resume contract verification"
 	@echo "  fullcheck   - Clean rebuild and deep binary verification"
+	@echo "  editor-smoke-host - Run Editor host-side smoke checks"
 	@echo "  tasklist-smoke-host - Run Tasklist host-side smoke checks"
 	@echo "  seed-cal26  - Seed CAL26 REL files on readyos.d71 with sample events"
 	@echo "  launcher-verbose - Rebuild launcher with verbose config diagnostics"
@@ -481,7 +496,7 @@ help:
 	@echo "  dizzy.prg    - Kanban task board app (loads at \$$1000)"
 	@echo "  readme.prg   - Project README app (loads at \$$1000)"
 	@echo "  readyshell.prg - ReadyShell app (loads at \$$1000, overlays rsovl1/2/3 on disk 1)"
-	@echo "  readyos.d71   - Disk 1 (boot/launcher/showcfg/cal26/dizzy/readyshell/rsovl1-3/apps.cfg)"
+	@echo "  readyos.d71   - Disk 1 (boot/launcher/showcfg/cal26/dizzy/readyshell/rsovl1-3/apps.cfg/editor help)"
 	@echo "  readyos_2.d71 - Disk 2 (editor/calcplus/hexview/clipmgr/reuviewer/tasklist/2048/readme)"
 
 FORCE:
@@ -498,4 +513,4 @@ probe-rel:
 launcher-verbose:
 	$(MAKE) LAUNCHER_CFG_VERBOSE=1 $(LAUNCHER)
 
-.PHONY: all clean verify verify-resume fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readyshell-parse-smoke-host tasklist-smoke-host FORCE
+.PHONY: all clean verify verify-resume fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readyshell-parse-smoke-host editor-smoke-host tasklist-smoke-host FORCE
