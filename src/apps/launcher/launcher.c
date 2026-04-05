@@ -165,7 +165,7 @@ static unsigned char app_count;
 typedef struct {
     unsigned char app_count;
     unsigned char selected;
-    unsigned char reserved0;
+    unsigned char scroll_offset;
     unsigned char reserved1;
     unsigned char app_banks[MAX_APPS];
     unsigned char app_drives[MAX_APPS];
@@ -198,6 +198,7 @@ static void draw_drive_prefixed_name(unsigned char x,
                                      unsigned char index,
                                      unsigned char name_color,
                                      unsigned char name_maxlen);
+static void launcher_sync_visible_window(void);
 static unsigned char validate_slot_contract(unsigned char *detail_a,
                                             unsigned char *detail_b,
                                             unsigned char *detail_c);
@@ -484,14 +485,14 @@ static void catalog_rebind_views(void) {
     }
 }
 
-static void launcher_resume_save(unsigned char selected) {
+static void launcher_resume_save(unsigned char selected, unsigned char scroll_offset) {
     if (!resume_ready) {
         return;
     }
 
     launcher_resume_blob.app_count = app_count;
     launcher_resume_blob.selected = selected;
-    launcher_resume_blob.reserved0 = 0;
+    launcher_resume_blob.scroll_offset = scroll_offset;
     launcher_resume_blob.reserved1 = 0;
     memcpy(launcher_resume_blob.app_banks, app_banks, sizeof(app_banks));
     memcpy(launcher_resume_blob.app_drives, app_drives, sizeof(app_drives));
@@ -501,7 +502,8 @@ static void launcher_resume_save(unsigned char selected) {
     (void)resume_save(&launcher_resume_blob, sizeof(launcher_resume_blob));
 }
 
-static unsigned char launcher_resume_restore(unsigned char *out_selected) {
+static unsigned char launcher_resume_restore(unsigned char *out_selected,
+                                             unsigned char *out_scroll_offset) {
     unsigned int payload_len = 0;
     unsigned char detail_a;
     unsigned char detail_b;
@@ -540,6 +542,9 @@ static unsigned char launcher_resume_restore(unsigned char *out_selected) {
 
     if (out_selected != 0 && launcher_resume_blob.selected < app_count) {
         *out_selected = launcher_resume_blob.selected;
+    }
+    if (out_scroll_offset != 0) {
+        *out_scroll_offset = launcher_resume_blob.scroll_offset;
     }
     return 1;
 }
@@ -1194,7 +1199,7 @@ static void launch_from_reu(unsigned char index) {
     tui_clear(TUI_COLOR_BLUE);
     tui_puts(8, 12, "LAUNCHING FROM REU...", TUI_COLOR_CYAN);
 
-    launcher_resume_save(index);
+    launcher_resume_save(index, menu.scroll_offset);
 
     /* Save current launcher state to REU bank 0 first */
     save_launcher_to_reu();
@@ -1229,7 +1234,7 @@ static void launch_from_disk(unsigned char index) {
     set_shim_name(filename);
     set_shim_drive(app_drives[index]);
 
-    launcher_resume_save(index);
+    launcher_resume_save(index, menu.scroll_offset);
 
     /* Save launcher to REU first so we can return to it */
     save_launcher_to_reu();
@@ -1294,24 +1299,6 @@ static void draw_help(void) {
     tui_puts(1, HELP_Y + 1, "F2:NEXT APP  F4:PREV  STOP:QUIT", TUI_COLOR_GRAY3);
 }
 
-static void draw_reu_indicators(void) {
-    unsigned char row;
-    unsigned char item_idx;
-    unsigned char y;
-
-    for (row = 0; row < menu.h; ++row) {
-        item_idx = menu.scroll_offset + row;
-        if (item_idx >= app_count) {
-            continue;
-        }
-        if (apps_loaded[item_idx] && app_banks[item_idx] != 0) {
-            y = menu.y + row;
-            /* Draw * indicator at end of menu item line */
-            tui_putc(38, y, REU_INDICATOR, TUI_COLOR_LIGHTGREEN);
-        }
-    }
-}
-
 static void draw_drive_field(unsigned int screen_offset, unsigned char drive) {
     unsigned char tens = 32;
     unsigned char ones;
@@ -1356,17 +1343,25 @@ static void draw_drive_prefixed_name(unsigned char x,
 }
 
 static void draw_menu_item(unsigned char idx) {
+    unsigned char row;
     unsigned char y;
     unsigned char color;
     unsigned char prefix;
     unsigned int screen_offset;
     const char *str;
     unsigned char pos;
-    unsigned char maxlen;
+    unsigned char name_len;
     unsigned int text_offset;
+    unsigned int reu_offset;
 
-    if (idx >= menu.count) return;
-    y = menu.y + idx - menu.scroll_offset;
+    if (idx < menu.scroll_offset || idx >= menu.count) {
+        return;
+    }
+    row = (unsigned char)(idx - menu.scroll_offset);
+    if (row >= menu.h) {
+        return;
+    }
+    y = (unsigned char)(menu.y + row);
 
     if (idx == menu.selected) {
         color = menu.sel_color;
@@ -1393,16 +1388,26 @@ static void draw_menu_item(unsigned char idx) {
     TUI_COLOR_RAM[screen_offset + 4] = color;
 
     str = menu.items[idx];
-    maxlen = menu.w - 5;
+    name_len = 30;
     text_offset = screen_offset + 5;
-
-    for (pos = 0; str[pos] != 0 && pos < maxlen; ++pos) {
+    for (pos = 0; str[pos] != 0 && pos < name_len; ++pos) {
         TUI_SCREEN[text_offset + pos] = tui_ascii_to_screen(str[pos]);
         TUI_COLOR_RAM[text_offset + pos] = color;
     }
-    for (; pos < maxlen; ++pos) {
+    for (; pos < name_len; ++pos) {
         TUI_SCREEN[text_offset + pos] = 32;
         TUI_COLOR_RAM[text_offset + pos] = color;
+    }
+
+    reu_offset = screen_offset + menu.w - 1;
+    TUI_SCREEN[reu_offset - 1] = 32;
+    TUI_COLOR_RAM[reu_offset - 1] = color;
+    if (idx > 0 && idx < app_count && apps_loaded[idx] && app_banks[idx] != 0) {
+        TUI_SCREEN[reu_offset] = REU_INDICATOR;
+        TUI_COLOR_RAM[reu_offset] = TUI_COLOR_LIGHTGREEN;
+    } else {
+        TUI_SCREEN[reu_offset] = 32;
+        TUI_COLOR_RAM[reu_offset] = color;
     }
 }
 
@@ -1457,12 +1462,39 @@ static void draw_app_desc(void) {
     }
 }
 
+static void launcher_sync_visible_window(void) {
+    unsigned char max_scroll = 0;
+
+    if (menu.count == 0) {
+        menu.selected = 0;
+        menu.scroll_offset = 0;
+        return;
+    }
+
+    if (menu.selected >= menu.count) {
+        menu.selected = (unsigned char)(menu.count - 1);
+    }
+
+    if (menu.count > menu.h) {
+        max_scroll = (unsigned char)(menu.count - menu.h);
+    }
+    if (menu.scroll_offset > max_scroll) {
+        menu.scroll_offset = max_scroll;
+    }
+
+    if (menu.selected < menu.scroll_offset) {
+        menu.scroll_offset = menu.selected;
+    } else if (menu.selected >= (unsigned char)(menu.scroll_offset + menu.h)) {
+        menu.scroll_offset = (unsigned char)(menu.selected - menu.h + 1);
+    }
+}
+
 static void launcher_draw(void) {
+    launcher_sync_visible_window();
     tui_clear(TUI_COLOR_BLUE);
     draw_header();
     tui_puts(2, APPS_START_Y - 1, "APPLICATIONS:", TUI_COLOR_WHITE);
     draw_menu();
-    draw_reu_indicators();
     draw_app_desc();
     draw_status();
     draw_help();
@@ -1475,6 +1507,7 @@ static void launcher_draw(void) {
 static void launcher_init(void) {
     unsigned char i;
     unsigned char saved_selected = 0;
+    unsigned char saved_scroll_offset = 0;
     unsigned char restored = 0;
     unsigned char err;
     unsigned char detail_a;
@@ -1487,7 +1520,7 @@ static void launcher_init(void) {
 
     resume_init_for_app(REU_BANK_LAUNCHER, REU_BANK_LAUNCHER, RESUME_SCHEMA_V1);
     resume_ready = 1;
-    restored = launcher_resume_restore(&saved_selected);
+    restored = launcher_resume_restore(&saved_selected, &saved_scroll_offset);
 
     if (!restored) {
         catalog_init_defaults();
@@ -1508,7 +1541,7 @@ static void launcher_init(void) {
         }
         slot_contract_ok = 1;
 
-        launcher_resume_save(0);
+        launcher_resume_save(0, 0);
     }
 
     /* Initialize menu */
@@ -1519,6 +1552,8 @@ static void launcher_init(void) {
     if (saved_selected < app_count) {
         menu.selected = saved_selected;
     }
+    menu.scroll_offset = saved_scroll_offset;
+    launcher_sync_visible_window();
 
     /* ALWAYS sync apps_loaded from shim's reu_bitmap - this is the
      * authoritative source for what's actually in REU. Don't rely on
@@ -1537,6 +1572,7 @@ static void launcher_loop(void) {
     unsigned char key;
     unsigned char result;
     unsigned char old_selected;
+    unsigned char old_scroll_offset;
 
     /* apps_loaded[] is already synced from reu_bitmap in launcher_init() */
     if (!running) {
@@ -1549,7 +1585,9 @@ static void launcher_loop(void) {
         key = tui_getkey();
 
         old_selected = menu.selected;
+        old_scroll_offset = menu.scroll_offset;
         result = tui_menu_input(&menu, key);
+        launcher_sync_visible_window();
 
         if (result != 255) {
             launch_app(result);
@@ -1575,9 +1613,12 @@ static void launcher_loop(void) {
             default:
                 /* Only update if selection changed */
                 if (old_selected != menu.selected) {
-                    draw_menu_item(old_selected);
-                    draw_menu_item(menu.selected);
-                    draw_reu_indicators();
+                    if (old_scroll_offset != menu.scroll_offset) {
+                        draw_menu();
+                    } else {
+                        draw_menu_item(old_selected);
+                        draw_menu_item(menu.selected);
+                    }
                     draw_app_desc();
                 }
                 break;
