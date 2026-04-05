@@ -24,3 +24,4 @@ logs/
 *.out
 *.vsf
 *.pid
+artifacts/dev_harness/

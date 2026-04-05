@@ -61,8 +61,9 @@ VERSION_ASM_INC = $(GEN_DIR)/msg_version.inc
 README_DATA_C = $(GEN_DIR)/readme_pages.c
 README_DATA_H = $(GEN_DIR)/readme_pages.h
 XRELCHK = xrelchk.prg
-XFILECHK_BOOT = xfilechk_boot.prg
-XFILECHK = xfilechk.prg
+HARNESS_OUT_DIR = artifacts/dev_harness/xfilechk
+XFILECHK_BOOT = $(HARNESS_OUT_DIR)/xfilechk_boot.prg
+XFILECHK = $(HARNESS_OUT_DIR)/xfilechk.prg
 XRELCHK_CASE ?= 0
 XRELCHK_STOP_AFTER ?= 0
 XFILECHK_CASE ?= 0
@@ -76,8 +77,8 @@ XREL_POS_POS_MODE ?= 0
 XREL_POS_CR_MODE ?= 1
 DISK1 = readyos.d71
 DISK2 = readyos_2.d71
-XFILECHK_DISK1 = xfilechk.d71
-XFILECHK_DISK2 = xfilechk_2.d71
+XFILECHK_DISK1 = $(HARNESS_OUT_DIR)/xfilechk.d71
+XFILECHK_DISK2 = $(HARNESS_OUT_DIR)/xfilechk_2.d71
 DISK = $(DISK1)
 CATALOG_SRC = cfg/apps_catalog.txt
 CATALOG_SEQ = $(OBJ_DIR)/apps_cfg_petscii.seq
@@ -229,6 +230,7 @@ $(SETD71): $(BOOT_DIR)/setd71.bas
 
 # C64 BASIC harness boot for standalone IEC file checks
 $(XFILECHK_BOOT): $(BOOT_DIR)/xfilechk_boot.bas
+	@mkdir -p "$(dir $@)"
 	$(PETCAT) -w2 -o $@ $<
 
 # C64 BASIC apps.cfg inspector (read-only diagnostics)
@@ -364,17 +366,20 @@ $(XRELCHK): $(APPS_DIR)/xrelchk/xrelchk.c
 
 # Standalone IEC file-operation harness ($0801)
 $(XFILECHK): $(APPS_DIR)/xfilechk/xfilechk.c
+	@mkdir -p "$(dir $@)"
 	$(CC) $(CFLAGS) \
 		-D XFILECHK_CASE=$(XFILECHK_CASE) \
 		-m $(OBJ_DIR)/xfilechk.map -o $@ $<
 
 $(XFILECHK_DISK1): FORCE $(XFILECHK_BOOT) $(XFILECHK) $(XFILECHK_SRC8_SEQ)
+	@mkdir -p "$(dir $@)"
 	$(C1541) -format "xfilechk8,ro" d71 $@ \
 		-write $(XFILECHK_BOOT) xfilechkboot \
 		-write $(XFILECHK) xfilechk \
 		-write $(XFILECHK_SRC8_SEQ) "src8,s"
 
 $(XFILECHK_DISK2): FORCE $(XFILECHK_TESTA_SEQ)
+	@mkdir -p "$(dir $@)"
 	$(C1541) -format "xfilechk9,ro" d71 $@ \
 		-write $(XFILECHK_TESTA_SEQ) "testa,s"
 
@@ -552,11 +557,11 @@ help:
 	@echo "  dizzy.prg    - Kanban task board app (loads at \$$1000)"
 	@echo "  readme.prg   - Project README app (loads at \$$1000)"
 	@echo "  readyshell.prg - ReadyShell app (loads at \$$1000, overlays rsovl1/2/3 on disk 1)"
-	@echo "  xfilechk.prg - Standalone IEC file-operation harness (loads at \$$0801)"
+	@echo "  $(XFILECHK) - Standalone IEC file-operation harness (loads at \$$0801)"
 	@echo "  readyos.d71   - Disk 1 (boot/launcher/showcfg/cal26/dizzy/readyshell/rsovl1-3/apps.cfg/editor help)"
 	@echo "  readyos_2.d71 - Disk 2 (editor/calcplus/hexview/clipmgr/reuviewer/tasklist/simplefiles/simplecells/2048/readme)"
-	@echo "  xfilechk.d71  - Standalone harness drive 8 disk (boot+harness+src fixture)"
-	@echo "  xfilechk_2.d71- Standalone harness drive 9 disk (test fixture)"
+	@echo "  $(XFILECHK_DISK1) - Standalone harness drive 8 disk (boot+harness+src fixture)"
+	@echo "  $(XFILECHK_DISK2) - Standalone harness drive 9 disk (test fixture)"
 
 FORCE:
 

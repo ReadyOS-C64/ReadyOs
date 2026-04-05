@@ -4,7 +4,29 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
+configure_vice_env() {
+  if [ -z "${GSETTINGS_SCHEMA_DIR:-}" ] && [ -f "/opt/homebrew/share/glib-2.0/schemas/gschemas.compiled" ]; then
+    export GSETTINGS_SCHEMA_DIR="/opt/homebrew/share/glib-2.0/schemas"
+  fi
+
+  if [ -d "/opt/homebrew/share" ]; then
+    if [ -n "${XDG_DATA_DIRS:-}" ]; then
+      case ":$XDG_DATA_DIRS:" in
+        *":/opt/homebrew/share:"*) ;;
+        *) export XDG_DATA_DIRS="/opt/homebrew/share:$XDG_DATA_DIRS" ;;
+      esac
+    else
+      export XDG_DATA_DIRS="/opt/homebrew/share"
+    fi
+  fi
+}
+
+configure_vice_env
+
 LOG_DIR="$ROOT_DIR/logs"
+HARNESS_DIR_REL="artifacts/dev_harness/xfilechk"
+HARNESS_DIR="$ROOT_DIR/$HARNESS_DIR_REL"
+HARNESS_BOOT_REL="$HARNESS_DIR_REL/xfilechk_boot.prg"
 mkdir -p "$LOG_DIR"
 
 CASE_ID=0
@@ -40,7 +62,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "[probe] Building xfilechk artifacts (case=$CASE_ID)..."
-make -B xfilechk.prg xfilechk.d71 xfilechk_2.d71 XFILECHK_CASE="$CASE_ID" >/dev/null
+make -B \
+  "$HARNESS_DIR_REL/xfilechk.prg" \
+  "$HARNESS_DIR_REL/xfilechk.d71" \
+  "$HARNESS_DIR_REL/xfilechk_2.d71" \
+  XFILECHK_CASE="$CASE_ID" >/dev/null
 
 TS="$(date +%Y%m%d_%H%M%S)"
 CASE_DISK_8="/tmp/xfilechk_c${CASE_ID}_${TS}_8.d71"
@@ -52,14 +78,14 @@ DBG_ERR="$LOG_DIR/xfilechk_c${CASE_ID}_${TS}.dbgread.err.log"
 LIST8="$LOG_DIR/xfilechk_c${CASE_ID}_${TS}.d8.list.txt"
 LIST9="$LOG_DIR/xfilechk_c${CASE_ID}_${TS}.d9.list.txt"
 
-cp -f xfilechk.d71 "$CASE_DISK_8"
-cp -f xfilechk_2.d71 "$CASE_DISK_9"
+cp -f "$HARNESS_DIR/xfilechk.d71" "$CASE_DISK_8"
+cp -f "$HARNESS_DIR/xfilechk_2.d71" "$CASE_DISK_9"
 
 echo "[probe] Running headless xfilechk case=$CASE_ID"
 set +e
 if [[ "$TRUE_DRIVE" = "1" ]]; then
   if [[ "$WARP" = "1" ]]; then
-    x64sc \
+    script -q /dev/null x64sc \
       -console \
       -warp \
       -sounddev dummy \
@@ -76,10 +102,10 @@ if [[ "$TRUE_DRIVE" = "1" ]]; then
       -9 "$CASE_DISK_9" \
       -limitcycles "$LIMIT_CYCLES" \
       -autostartprgmode 1 \
-      xfilechk.prg \
+      "$HARNESS_BOOT_REL" \
       >"$STDOUT_LOG" 2>"$STDERR_LOG"
   else
-    x64sc \
+    script -q /dev/null x64sc \
       -console \
       -sounddev dummy \
       -speed "$VICE_SPEED" \
@@ -95,12 +121,12 @@ if [[ "$TRUE_DRIVE" = "1" ]]; then
       -9 "$CASE_DISK_9" \
       -limitcycles "$LIMIT_CYCLES" \
       -autostartprgmode 1 \
-      xfilechk.prg \
+      "$HARNESS_BOOT_REL" \
       >"$STDOUT_LOG" 2>"$STDERR_LOG"
   fi
 else
   if [[ "$WARP" = "1" ]]; then
-    x64sc \
+    script -q /dev/null x64sc \
       -console \
       -warp \
       -sounddev dummy \
@@ -115,10 +141,10 @@ else
       -9 "$CASE_DISK_9" \
       -limitcycles "$LIMIT_CYCLES" \
       -autostartprgmode 1 \
-      xfilechk.prg \
+      "$HARNESS_BOOT_REL" \
       >"$STDOUT_LOG" 2>"$STDERR_LOG"
   else
-    x64sc \
+    script -q /dev/null x64sc \
       -console \
       -sounddev dummy \
       -speed "$VICE_SPEED" \
@@ -132,7 +158,7 @@ else
       -9 "$CASE_DISK_9" \
       -limitcycles "$LIMIT_CYCLES" \
       -autostartprgmode 1 \
-      xfilechk.prg \
+      "$HARNESS_BOOT_REL" \
       >"$STDOUT_LOG" 2>"$STDERR_LOG"
   fi
 fi
