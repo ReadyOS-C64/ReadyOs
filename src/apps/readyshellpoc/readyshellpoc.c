@@ -46,6 +46,10 @@
 /* Shim ABI */
 #define SHIM_CURRENT_BANK (*(unsigned char*)0xC834)
 
+#define READYSHELL_RESUME_SCHEMA 2u
+#define READYSHELL_RESUME_FLAG_OVL_CACHED 0x01u
+#define READYSHELL_RESUME_FLAG_OVL3_PRESENT 0x02u
+
 /* PETSCII box chars (screen codes) */
 #define BOX_TL 0x70
 #define BOX_TR 0x6E
@@ -93,8 +97,9 @@ typedef struct {
 static char g_line[LOGICAL_MAX] = {1};
 typedef struct {
     char last_line[LOGICAL_MAX];
-} ReadyShellResumeV1;
-static ReadyShellResumeV1 resume_blob = {{1}};
+    unsigned char flags;
+} ReadyShellResumeV2;
+static ReadyShellResumeV2 resume_blob = {{1}, 0u};
 
 static void clear_line(unsigned char y, unsigned char color);
 static void draw_text_n(unsigned char x, unsigned char y, const char *s, unsigned char n, unsigned char color);
@@ -453,6 +458,13 @@ static void resume_save_state(void) {
         return;
     }
     memcpy(resume_blob.last_line, g_line, sizeof(g_line));
+    resume_blob.flags = 0u;
+    if (rs_overlay_active()) {
+        resume_blob.flags |= READYSHELL_RESUME_FLAG_OVL_CACHED;
+        if (rs_overlay_has_script()) {
+            resume_blob.flags |= READYSHELL_RESUME_FLAG_OVL3_PRESENT;
+        }
+    }
     (void)resume_save(&resume_blob, sizeof(resume_blob));
 }
 
@@ -753,20 +765,23 @@ static int c64_drive_info(void *user, unsigned char drive, RSValue *out_obj) {
 
 int main(void) {
     unsigned char bank;
+    unsigned char resume_flags;
     unsigned int payload_len = 0;
 
     shell_init_runtime_regions();
 
     g_line[0] = 0;
     resume_ready = 0;
+    resume_flags = 0u;
     bank = SHIM_CURRENT_BANK;
     if (bank >= 1 && bank <= 15) {
-        resume_init_for_app(bank, bank, RESUME_SCHEMA_V1);
+        resume_init_for_app(bank, bank, READYSHELL_RESUME_SCHEMA);
         resume_ready = 1;
         if (resume_try_load(&resume_blob, sizeof(resume_blob), &payload_len) &&
             payload_len == sizeof(resume_blob)) {
             memcpy(g_line, resume_blob.last_line, sizeof(g_line));
             g_line[LOGICAL_MAX - 1] = 0;
+            resume_flags = resume_blob.flags;
         } else {
             g_line[0] = 0;
         }
@@ -787,7 +802,10 @@ int main(void) {
     shell_write_line("Type HELP for usage.");
     rs_overlay_debug_mark('M');
 
-    if (rs_overlay_boot_with_progress(shell_overlay_progress, 0) == 0) {
+    if ((resume_flags & READYSHELL_RESUME_FLAG_OVL_CACHED) != 0u &&
+        rs_overlay_resume_warm((unsigned char)((resume_flags & READYSHELL_RESUME_FLAG_OVL3_PRESENT) != 0u)) == 0) {
+        rs_overlay_debug_mark('J');
+    } else if (rs_overlay_boot_with_progress(shell_overlay_progress, 0) == 0) {
         rs_overlay_debug_mark('K');
         shell_newline();
     } else {
