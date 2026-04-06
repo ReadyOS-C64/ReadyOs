@@ -6,6 +6,7 @@
  */
 
 #include <c64.h>
+#include <cbm.h>
 #include <conio.h>
 #include <string.h>
 
@@ -296,6 +297,7 @@ unsigned char switcher_show(void) {
 
     /* Initialize */
     selected = 0;
+    (void)kbrepeat(KBREPEAT_NONE);
 
     /* Build list of apps */
     build_app_list();

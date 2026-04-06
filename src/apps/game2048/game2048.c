@@ -613,6 +613,14 @@ static void game_draw_initial(void) {
     draw_status();
 }
 
+static void update_keyrepeat_mode(void) {
+    if (!paused && !game_over) {
+        (void)tui_keyrepeat_set(TUI_KEYREPEAT_CURSOR);
+    } else {
+        tui_keyrepeat_default();
+    }
+}
+
 static void game_loop(void) {
     unsigned char key;
     signed char dir;
@@ -635,12 +643,14 @@ static void game_loop(void) {
         if (paused) {
             if (key == ' ') {
                 paused = 0;
+                update_keyrepeat_mode();
                 restore_pause_background();
                 draw_status();
             } else if (key == 'r' || key == 'R') {
                 paused = 0;
                 restore_pause_background();
                 reset_game();
+                update_keyrepeat_mode();
                 draw_changed_tiles();
                 draw_status();
             }
@@ -649,6 +659,7 @@ static void game_loop(void) {
 
         if (key == ' ') {
             paused = 1;
+            update_keyrepeat_mode();
             draw_status();
             draw_pause_overlay();
             continue;
@@ -656,6 +667,7 @@ static void game_loop(void) {
 
         if (game_over && (key == 'r' || key == 'R')) {
             reset_game();
+            update_keyrepeat_mode();
             draw_changed_tiles();
             draw_status();
             continue;
@@ -668,6 +680,7 @@ static void game_loop(void) {
         dir = key_to_direction(key);
         if (dir >= 0) {
             if (apply_move((unsigned char)dir)) {
+                update_keyrepeat_mode();
                 draw_changed_tiles();
                 draw_status();
             }
@@ -691,6 +704,7 @@ int main(void) {
         resume_ready = 1;
     }
     (void)resume_restore_state();
+    update_keyrepeat_mode();
 
     game_draw_initial();
     game_loop();

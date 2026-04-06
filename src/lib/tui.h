@@ -8,6 +8,8 @@
 #ifndef TUI_H
 #define TUI_H
 
+#include <cbm.h>
+
 /* Screen dimensions */
 #define TUI_SCREEN_WIDTH  40
 #define TUI_SCREEN_HEIGHT 25
@@ -82,6 +84,11 @@
 #define TUI_MOD_SHIFT  0x01
 #define TUI_MOD_CBM    0x02   /* Commodore key */
 #define TUI_MOD_CTRL   0x04
+
+/* Keyboard auto-repeat policy */
+#define TUI_KEYREPEAT_CURSOR KBREPEAT_CURSOR
+#define TUI_KEYREPEAT_NONE   KBREPEAT_NONE
+#define TUI_KEYREPEAT_ALL    KBREPEAT_ALL
 
 /* Rectangle structure */
 typedef struct {
@@ -254,6 +261,9 @@ unsigned char tui_getkey(void);
 
 /* Check if key is available */
 unsigned char tui_kbhit(void);
+
+#define tui_keyrepeat_set(mode) kbrepeat(mode)
+#define tui_keyrepeat_default() ((void)kbrepeat(TUI_KEYREPEAT_NONE))
 
 /* Get current modifier key state */
 unsigned char tui_get_modifiers(void);

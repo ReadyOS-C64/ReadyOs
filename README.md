@@ -167,6 +167,30 @@ The broader library set follows the same small-module pattern:
 Some older aggregate files still exist in `src/lib`, but current builds are
 composed primarily from these smaller modules.
 
+### Keyboard Repeat Policy
+
+ReadyOS defaults to `KBREPEAT_NONE` during normal TUI/app operation.
+
+- This keeps warp/turbo execution from turning a held key into repeated spaces,
+  repeated letters, or multi-step menu jumps.
+- `tui_init()` restores that default for standard apps that link `tui_core`.
+- Direct `cgetc()` paths that bypass `tui_core` must set the same policy
+  manually.
+
+Apps that genuinely benefit from held keys can opt in temporarily:
+
+- Use `tui_keyrepeat_set(TUI_KEYREPEAT_CURSOR)` when only held cursor movement
+  should repeat.
+- Use `tui_keyrepeat_set(TUI_KEYREPEAT_ALL)` only for continuous-control loops
+  that really want full typematic behavior.
+- Call `tui_keyrepeat_default()` before entering menus, dialogs, prompts, or
+  text-entry flows.
+
+Current example:
+
+- `game2048` enables cursor-only repeat during active play, then restores the
+  ReadyOS default for pause and non-gameplay states.
+
 ### ReadyShell Overlays
 
 ReadyShell is a POC shell app that uses overlays loaded below `__HIMEM__`.

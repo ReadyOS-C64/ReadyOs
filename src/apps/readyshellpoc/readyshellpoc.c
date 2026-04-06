@@ -560,6 +560,7 @@ static int shell_read_physical_line(char *out, unsigned char maxlen) {
     pos = 0;
     insert_mode = 1;
     out[0] = 0;
+    (void)kbrepeat(KBREPEAT_NONE);
     /* Ensure keyboard is the active input stream before we block in cgetc(). */
     cbm_k_clrch();
     shell_draw_prompt(out, len, pos);
@@ -758,6 +759,7 @@ int main(void) {
     unsigned int payload_len = 0;
 
     shell_init_runtime_regions();
+    (void)kbrepeat(KBREPEAT_NONE);
 
     g_line[0] = 0;
     resume_ready = 0;

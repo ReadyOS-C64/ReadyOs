@@ -109,6 +109,7 @@ int rs_getline_40(char* out, unsigned max40) {
   cursor_pos = 0;
   insert_mode = 1;
   out[0] = '\0';
+  (void)kbrepeat(KBREPEAT_NONE);
 
   for (;;) {
     ch = (unsigned char)cgetc();

@@ -42,6 +42,8 @@ Line editing behavior:
 - Delete/backspace
 - In-line insert/overwrite editing
 - Blinking cursor cell
+- Held-key repeat is forced off for prompt editing so warp/turbo modes do not
+  multiply spaces, letters, or cursor movement
 
 Input line limits:
 

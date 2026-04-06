@@ -14,6 +14,7 @@ void tui_init(void) {
     VIC.bordercolor = TUI_THEME_BG;
     VIC.bgcolor0 = TUI_THEME_BG;
     textcolor(TUI_THEME_FG);
+    (void)kbrepeat(TUI_KEYREPEAT_NONE);
     clrscr();
 }
 
