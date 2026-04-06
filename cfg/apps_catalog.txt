@@ -1,7 +1,7 @@
-# drive:prg_name:display_name
+# drive:prg_name:display_name[:slot]
 # next non-empty/comment line is the longer description
 
-9:editor:editor
+9:editor:editor:1
 text editor with clipboard
 
 9:calcplus:calc plus

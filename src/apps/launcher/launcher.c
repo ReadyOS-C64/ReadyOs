@@ -59,6 +59,9 @@
 #define APPS_HEIGHT  12
 #define STATUS_Y     18
 #define HELP_Y       22
+#define APP_MENU_WIDTH 37
+#define APP_NAME_WIDTH 22
+#define APP_BIND_LABEL_LEN 8
 
 /* REU indicator character */
 #define REU_INDICATOR 0x2A  /* '*' in PETSCII screen code */
@@ -86,6 +89,7 @@
 #define CFG_ERR_EMPTY        8
 #define CFG_ERR_COUNT        9
 #define CFG_ERR_PRG_EXT     10
+#define CFG_ERR_HOTKEY      11
 
 #define CFG_ERR_PHASE_PARSE    1
 #define CFG_ERR_PHASE_VALIDATE 2
@@ -129,6 +133,10 @@
 #define CFG_MSG_FILENAME_EMPTY "EMPTY APP FILENAME SLOT"
 #define CFG_MSG_APP_DRIVE_RANGE "APP DRIVE OUT OF RANGE"
 #define CFG_MSG_DUP_BANK "DUPLICATE REU BANK"
+#define CFG_MSG_HOTKEY_EMPTY "HOTKEY SLOT IS EMPTY"
+#define CFG_MSG_HOTKEY_NUMERIC "HOTKEY SLOT MUST BE NUMERIC"
+#define CFG_MSG_HOTKEY_RANGE "HOTKEY SLOT MUST BE 1..9"
+#define CFG_MSG_HOTKEY_EXTRA "TOO MANY ':' FIELDS"
 #else
 #define CFG_TITLE_TEXT "CFG ERROR"
 #define CFG_FAIL_TEXT "CATALOG VALIDATION FAIL"
@@ -141,6 +149,7 @@
 
 /* REU bank assignments */
 #define REU_BANK_LAUNCHER  0   /* Bank 0 reserved for launcher self-save by shim */
+#define LAUNCHER_RESUME_SCHEMA 2
 
 /* App save size - must include code + data + BSS */
 #define APP_SAVE_SIZE 0xB600  /* $1000-$C5FF (46KB) */
@@ -157,6 +166,7 @@ static const char *app_descs[MAX_APPS];
 static const char *app_files[MAX_APPS];
 static unsigned char app_banks[MAX_APPS];
 static unsigned char app_drives[MAX_APPS];
+static unsigned char app_default_slots[MAX_APPS];
 static char app_name_buf[MAX_APPS][MAX_NAME_LEN + 1];
 static char app_desc_buf[MAX_APPS][MAX_DESC_LEN + 1];
 static char app_file_buf[MAX_APPS][MAX_FILE_LEN + 1];
@@ -169,6 +179,7 @@ typedef struct {
     unsigned char reserved1;
     unsigned char app_banks[MAX_APPS];
     unsigned char app_drives[MAX_APPS];
+    unsigned char app_default_slots[MAX_APPS];
     char app_name_buf[MAX_APPS][MAX_NAME_LEN + 1];
     char app_desc_buf[MAX_APPS][MAX_DESC_LEN + 1];
     char app_file_buf[MAX_APPS][MAX_FILE_LEN + 1];
@@ -202,6 +213,19 @@ static void launcher_sync_visible_window(void);
 static unsigned char validate_slot_contract(unsigned char *detail_a,
                                             unsigned char *detail_b,
                                             unsigned char *detail_c);
+
+/* Launcher does not use F2/F4 global app cycling, but tui_hotkeys.c expects
+ * these entry points when linked. Keep tiny local stubs instead of pulling in
+ * the full nav micromodule. */
+unsigned char tui_get_next_app(unsigned char current_bank) {
+    (void)current_bank;
+    return 0;
+}
+
+unsigned char tui_get_prev_app(unsigned char current_bank) {
+    (void)current_bank;
+    return 0;
+}
 
 /*---------------------------------------------------------------------------
  * Shim bitmap helpers ($C836-$C837)
@@ -463,6 +487,7 @@ static void catalog_init_defaults(void) {
         app_sizes[i] = 0;
         app_banks[i] = 0;
         app_drives[i] = DEFAULT_DRIVE;
+        app_default_slots[i] = 0;
         app_name_buf[i][0] = 0;
         app_desc_buf[i][0] = 0;
         app_file_buf[i][0] = 0;
@@ -496,6 +521,8 @@ static void launcher_resume_save(unsigned char selected, unsigned char scroll_of
     launcher_resume_blob.reserved1 = 0;
     memcpy(launcher_resume_blob.app_banks, app_banks, sizeof(app_banks));
     memcpy(launcher_resume_blob.app_drives, app_drives, sizeof(app_drives));
+    memcpy(launcher_resume_blob.app_default_slots, app_default_slots,
+           sizeof(app_default_slots));
     memcpy(launcher_resume_blob.app_name_buf, app_name_buf, sizeof(app_name_buf));
     memcpy(launcher_resume_blob.app_desc_buf, app_desc_buf, sizeof(app_desc_buf));
     memcpy(launcher_resume_blob.app_file_buf, app_file_buf, sizeof(app_file_buf));
@@ -524,6 +551,8 @@ static unsigned char launcher_resume_restore(unsigned char *out_selected,
     app_count = launcher_resume_blob.app_count;
     memcpy(app_banks, launcher_resume_blob.app_banks, sizeof(app_banks));
     memcpy(app_drives, launcher_resume_blob.app_drives, sizeof(app_drives));
+    memcpy(app_default_slots, launcher_resume_blob.app_default_slots,
+           sizeof(app_default_slots));
     memcpy(app_name_buf, launcher_resume_blob.app_name_buf, sizeof(app_name_buf));
     memcpy(app_desc_buf, launcher_resume_blob.app_desc_buf, sizeof(app_desc_buf));
     memcpy(app_file_buf, launcher_resume_blob.app_file_buf, sizeof(app_file_buf));
@@ -553,12 +582,15 @@ static unsigned char parse_catalog_entry_line(char *line,
                                               unsigned char *out_drive,
                                               char *out_prg,
                                               char *out_label,
+                                              unsigned char *out_default_slot,
                                               unsigned char *out_detail) {
     char *first_colon;
     char *second_colon;
+    char *third_colon;
     char *field_drive;
     char *field_prg;
     char *field_label;
+    char *field_slot = 0;
     unsigned char i;
     unsigned int drive_val = 0;
 
@@ -576,6 +608,16 @@ static unsigned char parse_catalog_entry_line(char *line,
     }
     *second_colon = 0;
 
+    third_colon = strchr(second_colon + 1, ':');
+    if (third_colon != 0) {
+        *third_colon = 0;
+        field_slot = third_colon + 1;
+        if (strchr(field_slot, ':') != 0) {
+            set_cfg_reason(CFG_MSG_HOTKEY_EXTRA);
+            return CFG_ERR_HOTKEY;
+        }
+    }
+
     field_drive = line;
     field_prg = first_colon + 1;
     field_label = second_colon + 1;
@@ -583,6 +625,9 @@ static unsigned char parse_catalog_entry_line(char *line,
     trim_in_place(field_drive);
     trim_in_place(field_prg);
     trim_in_place(field_label);
+    if (field_slot != 0) {
+        trim_in_place(field_slot);
+    }
 
     if (field_drive[0] == 0) {
         set_cfg_reason(CFG_MSG_DRIVE_EMPTY);
@@ -620,6 +665,30 @@ static unsigned char parse_catalog_entry_line(char *line,
     }
     strncpy(out_label, field_label, MAX_NAME_LEN);
     out_label[MAX_NAME_LEN] = 0;
+    *out_default_slot = 0;
+
+    if (field_slot != 0) {
+        if (field_slot[0] == 0) {
+            set_cfg_reason(CFG_MSG_HOTKEY_EMPTY);
+            return CFG_ERR_HOTKEY;
+        }
+        if (field_slot[1] != 0) {
+            *out_detail = (unsigned char)field_slot[1];
+            set_cfg_reason(CFG_MSG_HOTKEY_NUMERIC);
+            return CFG_ERR_HOTKEY;
+        }
+        if (field_slot[0] < '0' || field_slot[0] > '9') {
+            *out_detail = (unsigned char)field_slot[0];
+            set_cfg_reason(CFG_MSG_HOTKEY_NUMERIC);
+            return CFG_ERR_HOTKEY;
+        }
+        if (field_slot[0] == '0') {
+            *out_detail = 0;
+            set_cfg_reason(CFG_MSG_HOTKEY_RANGE);
+            return CFG_ERR_HOTKEY;
+        }
+        *out_default_slot = (unsigned char)(field_slot[0] - '0');
+    }
 
     return 0;
 }
@@ -627,7 +696,8 @@ static unsigned char parse_catalog_entry_line(char *line,
 static unsigned char add_catalog_entry(unsigned char drive,
                                        const char *prg,
                                        const char *label,
-                                       const char *desc) {
+                                       const char *desc,
+                                       unsigned char default_slot) {
     unsigned char idx;
 
     if (app_count >= MAX_APPS) {
@@ -638,6 +708,7 @@ static unsigned char add_catalog_entry(unsigned char drive,
     idx = app_count;
     app_banks[idx] = idx;
     app_drives[idx] = drive;
+    app_default_slots[idx] = default_slot;
 
     strncpy(app_file_buf[idx], prg, MAX_FILE_LEN);
     app_file_buf[idx][MAX_FILE_LEN] = 0;
@@ -660,6 +731,7 @@ static unsigned char load_catalog_from_disk(unsigned char *detail_a,
     char prg[MAX_FILE_LEN + 1];
     char label[MAX_NAME_LEN + 1];
     unsigned char drive;
+    unsigned char default_slot;
     unsigned char entry_index = 1;
     unsigned char err;
     unsigned char parse_detail;
@@ -684,7 +756,9 @@ static unsigned char load_catalog_from_disk(unsigned char *detail_a,
         copy_text_cap(cfg_err_line, (unsigned char)sizeof(cfg_err_line), line);
 #endif
         parse_detail = 0;
-        err = parse_catalog_entry_line(line, &drive, prg, label, &parse_detail);
+        default_slot = 0;
+        err = parse_catalog_entry_line(line, &drive, prg, label, &default_slot,
+                                       &parse_detail);
         if (err != 0) {
             cbm_close(APP_CFG_LFN);
             *detail_a = err;
@@ -711,7 +785,7 @@ static unsigned char load_catalog_from_disk(unsigned char *detail_a,
             return CFG_ERR_MISSING_DESC;
         }
 
-        err = add_catalog_entry(drive, prg, label, desc);
+        err = add_catalog_entry(drive, prg, label, desc, default_slot);
         if (err != 0) {
             cbm_close(APP_CFG_LFN);
             *detail_a = entry_index;
@@ -783,6 +857,13 @@ static unsigned char validate_slot_contract(unsigned char *detail_a,
             set_cfg_reason(CFG_MSG_APP_DRIVE_RANGE);
             return CFG_ERR_DRIVE;
         }
+        if (app_default_slots[i] > TUI_HOTKEY_SLOT_COUNT) {
+            *detail_a = i;
+            *detail_b = app_default_slots[i];
+            *detail_c = 0;
+            set_cfg_reason(CFG_MSG_HOTKEY_RANGE);
+            return CFG_ERR_HOTKEY;
+        }
         for (j = (unsigned char)(i + 1); j < app_count; ++j) {
             if (app_banks[j] == bank_i) {
                 *detail_a = i;
@@ -821,6 +902,7 @@ static void show_slot_contract_error(unsigned char err,
     else if (err == CFG_ERR_EMPTY) fallback_reason = CFG_REASON_EMPTY;
     else if (err == CFG_ERR_COUNT) fallback_reason = CFG_REASON_COUNT;
     else if (err == CFG_ERR_PRG_EXT) fallback_reason = CFG_REASON_PRG_EXT;
+    else if (err == CFG_ERR_HOTKEY) fallback_reason = "HOTKEY SLOT ERROR";
 #endif
 
     tui_clear(TUI_COLOR_BLUE);
@@ -1342,6 +1424,55 @@ static void draw_drive_prefixed_name(unsigned char x,
     tui_puts_n((unsigned char)(x + 4), y, app_names[index], name_maxlen, name_color);
 }
 
+static void clear_menu_span(unsigned int start, unsigned char len, unsigned char color) {
+    unsigned char pos;
+
+    for (pos = 0; pos < len; ++pos) {
+        TUI_SCREEN[start + pos] = 32;
+        TUI_COLOR_RAM[start + pos] = color;
+    }
+}
+
+static unsigned char launcher_hotkey_slot_for_bank(unsigned char bank) {
+    unsigned char slot;
+
+    if (bank == 0) {
+        return 0;
+    }
+
+    for (slot = 1; slot <= TUI_HOTKEY_SLOT_COUNT; ++slot) {
+        if (TUI_HOTKEY_BINDINGS[(unsigned char)(slot - 1)] == bank) {
+            return slot;
+        }
+    }
+
+    return 0;
+}
+
+static void draw_binding_tag(unsigned int start, unsigned char slot, unsigned char color) {
+    if (slot < 1 || slot > TUI_HOTKEY_SLOT_COUNT) {
+        clear_menu_span(start, APP_BIND_LABEL_LEN, color);
+        return;
+    }
+
+    TUI_SCREEN[start + 0] = tui_ascii_to_screen('(');
+    TUI_SCREEN[start + 1] = tui_ascii_to_screen('C');
+    TUI_SCREEN[start + 2] = tui_ascii_to_screen('T');
+    TUI_SCREEN[start + 3] = tui_ascii_to_screen('R');
+    TUI_SCREEN[start + 4] = tui_ascii_to_screen('L');
+    TUI_SCREEN[start + 5] = tui_ascii_to_screen('+');
+    TUI_SCREEN[start + 6] = tui_ascii_to_screen((unsigned char)('0' + slot));
+    TUI_SCREEN[start + 7] = tui_ascii_to_screen(')');
+    TUI_COLOR_RAM[start + 0] = color;
+    TUI_COLOR_RAM[start + 1] = color;
+    TUI_COLOR_RAM[start + 2] = color;
+    TUI_COLOR_RAM[start + 3] = color;
+    TUI_COLOR_RAM[start + 4] = color;
+    TUI_COLOR_RAM[start + 5] = color;
+    TUI_COLOR_RAM[start + 6] = color;
+    TUI_COLOR_RAM[start + 7] = color;
+}
+
 static void draw_menu_item(unsigned char idx) {
     unsigned char row;
     unsigned char y;
@@ -1351,7 +1482,9 @@ static void draw_menu_item(unsigned char idx) {
     const char *str;
     unsigned char pos;
     unsigned char name_len;
+    unsigned char slot;
     unsigned int text_offset;
+    unsigned int binding_offset;
     unsigned int reu_offset;
 
     if (idx < menu.scroll_offset || idx >= menu.count) {
@@ -1388,7 +1521,7 @@ static void draw_menu_item(unsigned char idx) {
     TUI_COLOR_RAM[screen_offset + 4] = color;
 
     str = menu.items[idx];
-    name_len = 30;
+    name_len = APP_NAME_WIDTH;
     text_offset = screen_offset + 5;
     for (pos = 0; str[pos] != 0 && pos < name_len; ++pos) {
         TUI_SCREEN[text_offset + pos] = tui_ascii_to_screen(str[pos]);
@@ -1400,6 +1533,12 @@ static void draw_menu_item(unsigned char idx) {
     }
 
     reu_offset = screen_offset + menu.w - 1;
+    binding_offset = reu_offset - (APP_BIND_LABEL_LEN + 1);
+    slot = 0;
+    if (idx > 0 && idx < app_count && app_banks[idx] != 0) {
+        slot = launcher_hotkey_slot_for_bank(app_banks[idx]);
+    }
+    draw_binding_tag(binding_offset, slot, color);
     TUI_SCREEN[reu_offset - 1] = 32;
     TUI_COLOR_RAM[reu_offset - 1] = color;
     if (idx > 0 && idx < app_count && apps_loaded[idx] && app_banks[idx] != 0) {
@@ -1489,6 +1628,33 @@ static void launcher_sync_visible_window(void) {
     }
 }
 
+static void launcher_seed_default_hotkeys(void) {
+    unsigned char i;
+    unsigned char slot;
+
+    for (i = 1; i < app_count; ++i) {
+        slot = app_default_slots[i];
+        if (slot == 0) {
+            continue;
+        }
+        if (TUI_HOTKEY_BINDINGS[(unsigned char)(slot - 1)] == 0) {
+            TUI_HOTKEY_BINDINGS[(unsigned char)(slot - 1)] = app_banks[i];
+        }
+    }
+}
+
+static unsigned char launcher_index_for_bank(unsigned char bank) {
+    unsigned char i;
+
+    for (i = 1; i < app_count; ++i) {
+        if (app_banks[i] == bank) {
+            return i;
+        }
+    }
+
+    return 0;
+}
+
 static void launcher_draw(void) {
     launcher_sync_visible_window();
     tui_clear(TUI_COLOR_BLUE);
@@ -1518,7 +1684,8 @@ static void launcher_init(void) {
     catalog_rebind_views();
     resume_ready = 0;
 
-    resume_init_for_app(REU_BANK_LAUNCHER, REU_BANK_LAUNCHER, RESUME_SCHEMA_V1);
+    resume_init_for_app(REU_BANK_LAUNCHER, REU_BANK_LAUNCHER,
+                        LAUNCHER_RESUME_SCHEMA);
     resume_ready = 1;
     restored = launcher_resume_restore(&saved_selected, &saved_scroll_offset);
 
@@ -1545,7 +1712,7 @@ static void launcher_init(void) {
     }
 
     /* Initialize menu */
-    tui_menu_init(&menu, 2, APPS_START_Y, 36, APPS_HEIGHT, app_names, app_count);
+    tui_menu_init(&menu, 2, APPS_START_Y, APP_MENU_WIDTH, APPS_HEIGHT, app_names, app_count);
     menu.item_color = TUI_COLOR_WHITE;
     menu.sel_color = TUI_COLOR_CYAN;
 
@@ -1564,6 +1731,7 @@ static void launcher_init(void) {
     }
     set_shim_drive(8);
     sync_from_reu_bitmap();
+    launcher_seed_default_hotkeys();
 
     running = 1;
 }
@@ -1571,6 +1739,7 @@ static void launcher_init(void) {
 static void launcher_loop(void) {
     unsigned char key;
     unsigned char result;
+    unsigned char bank;
     unsigned char old_selected;
     unsigned char old_scroll_offset;
 
@@ -1583,6 +1752,18 @@ static void launcher_loop(void) {
 
     while (running) {
         key = tui_getkey();
+
+        if (key != 2 && key != TUI_KEY_NEXT_APP && key != TUI_KEY_PREV_APP) {
+            bank = tui_handle_global_hotkey(key, REU_BANK_LAUNCHER, 0);
+            if (bank >= 1 && bank < MAX_APPS) {
+                result = launcher_index_for_bank(bank);
+                if (result != 0) {
+                    launch_app(result);
+                    launcher_draw();
+                    continue;
+                }
+            }
+        }
 
         old_selected = menu.selected;
         old_scroll_offset = menu.scroll_offset;

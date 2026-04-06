@@ -85,6 +85,13 @@
 #define TUI_MOD_CBM    0x02   /* Commodore key */
 #define TUI_MOD_CTRL   0x04
 
+/* Shared global app hotkey slots in system RAM ($C7E0-$C7E8) */
+#define TUI_HOTKEY_SLOT_COUNT 9
+#define TUI_HOTKEY_NONE       0
+#define TUI_HOTKEY_BIND_ONLY  0xFE
+#define TUI_HOTKEY_LAUNCHER   0xFF
+#define TUI_HOTKEY_BINDINGS   ((unsigned char*)0xC7E0)
+
 /* Keyboard auto-repeat policy */
 #define TUI_KEYREPEAT_CURSOR KBREPEAT_CURSOR
 #define TUI_KEYREPEAT_NONE   KBREPEAT_NONE
@@ -285,6 +292,17 @@ void tui_switch_to_app(unsigned char bank);
  */
 unsigned char tui_get_next_app(unsigned char current_bank);
 unsigned char tui_get_prev_app(unsigned char current_bank);
+
+/* Resolve launcher/app-switch/bind hotkeys.
+ * Returns:
+ *   0               = not handled
+ *   1..15           = switch to bound/next/prev app bank
+ *   TUI_HOTKEY_BIND_ONLY = binding updated, no navigation
+ *   TUI_HOTKEY_LAUNCHER  = return to launcher
+ */
+unsigned char tui_handle_global_hotkey(unsigned char key,
+                                       unsigned char current_bank,
+                                       unsigned char allow_bind);
 
 /*---------------------------------------------------------------------------
  * Utility Functions

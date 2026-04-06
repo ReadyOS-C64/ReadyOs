@@ -330,6 +330,7 @@ static void show_help_screen(void) {
 
 static void hexview_loop(void) {
     unsigned char key;
+    unsigned char nav_action;
 
     draw_hex_static();
     draw_hex_data();
@@ -337,29 +338,17 @@ static void hexview_loop(void) {
     while (running) {
         /* Get input */
         key = tui_getkey();
-
-        /* Check for CTRL+B (back to launcher) */
-        if (key == 2) {
+        nav_action = tui_handle_global_hotkey(key, SHIM_CURRENT_BANK, 1);
+        if (nav_action == TUI_HOTKEY_LAUNCHER) {
             resume_save_state();
             tui_return_to_launcher();
         }
-
-        /* Check for app switching keys */
-        if (key == TUI_KEY_NEXT_APP) {
-            unsigned char current = *((unsigned char*)0xC834);
-            unsigned char next = tui_get_next_app(current);
-            if (next != 0) {
-                resume_save_state();
-                tui_switch_to_app(next);
-            }
+        if (nav_action >= 1 && nav_action <= 15) {
+            resume_save_state();
+            tui_switch_to_app(nav_action);
         }
-        if (key == TUI_KEY_PREV_APP) {
-            unsigned char current = *((unsigned char*)0xC834);
-            unsigned char prev = tui_get_prev_app(current);
-            if (prev != 0) {
-                resume_save_state();
-                tui_switch_to_app(prev);
-            }
+        if (nav_action == TUI_HOTKEY_BIND_ONLY) {
+            continue;
         }
 
         handle_hex_key(key);

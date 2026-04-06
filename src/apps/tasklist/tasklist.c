@@ -2003,35 +2003,23 @@ static void tasklist_init(void) {
 static void tasklist_loop(void) {
     unsigned char key;
     unsigned char old_scroll;
+    unsigned char nav_action;
 
     tasklist_draw();
 
     while (running) {
         key = tui_getkey();
-
-        /* CTRL+B = return to launcher (key code 2) */
-        if (key == 2) {
+        nav_action = tui_handle_global_hotkey(key, SHIM_CURRENT_BANK, 1);
+        if (nav_action == TUI_HOTKEY_LAUNCHER) {
             resume_save_state();
             tui_return_to_launcher();
         }
-
-        /* App switching */
-        if (key == TUI_KEY_NEXT_APP) {
-            unsigned char current = SHIM_CURRENT_BANK;
-            unsigned char next = tui_get_next_app(current);
-            if (next != 0) {
-                resume_save_state();
-                tui_switch_to_app(next);
-            }
+        if (nav_action >= 1 && nav_action <= 15) {
+            resume_save_state();
+            tui_switch_to_app(nav_action);
             continue;
         }
-        if (key == TUI_KEY_PREV_APP) {
-            unsigned char current = SHIM_CURRENT_BANK;
-            unsigned char prev = tui_get_prev_app(current);
-            if (prev != 0) {
-                resume_save_state();
-                tui_switch_to_app(prev);
-            }
+        if (nav_action == TUI_HOTKEY_BIND_ONLY) {
             continue;
         }
 

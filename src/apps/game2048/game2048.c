@@ -584,20 +584,24 @@ static unsigned char resume_restore_state(void) {
     return 1;
 }
 
-static void handle_app_switch(unsigned char key) {
-    if (key == TUI_KEY_NEXT_APP) {
-        unsigned char next = tui_get_next_app(SHIM_CURRENT_BANK);
-        if (next != 0) {
-            resume_save_state();
-            tui_switch_to_app(next);
-        }
-    } else if (key == TUI_KEY_PREV_APP) {
-        unsigned char prev = tui_get_prev_app(SHIM_CURRENT_BANK);
-        if (prev != 0) {
-            resume_save_state();
-            tui_switch_to_app(prev);
-        }
+static unsigned char handle_app_switch(unsigned char key) {
+    unsigned char nav_action;
+
+    nav_action = tui_handle_global_hotkey(key, SHIM_CURRENT_BANK, 1);
+    if (nav_action == TUI_HOTKEY_LAUNCHER) {
+        resume_save_state();
+        tui_return_to_launcher();
+        return 1;
     }
+    if (nav_action >= 1 && nav_action <= 15) {
+        resume_save_state();
+        tui_switch_to_app(nav_action);
+        return 1;
+    }
+    if (nav_action == TUI_HOTKEY_BIND_ONLY) {
+        return 1;
+    }
+    return 0;
 }
 
 /*---------------------------------------------------------------------------
@@ -627,13 +631,9 @@ static void game_loop(void) {
 
     while (running) {
         key = tui_getkey();
-
-        if (key == 2) {
-            resume_save_state();
-            tui_return_to_launcher();
+        if (handle_app_switch(key)) {
+            continue;
         }
-
-        handle_app_switch(key);
 
         if (key == TUI_KEY_RUNSTOP) {
             running = 0;

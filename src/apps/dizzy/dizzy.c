@@ -1986,32 +1986,22 @@ static void action_search(void) {
 }
 
 static unsigned char handle_global_switch(unsigned char key) {
-    unsigned char current;
-    unsigned char next;
+    unsigned char nav_action;
 
-    if (key == 2) {
+    nav_action = tui_handle_global_hotkey(key, SHIM_CURRENT_BANK, 1);
+    if (nav_action == TUI_HOTKEY_LAUNCHER) {
         resume_save_state();
         tui_return_to_launcher();
         return 1;
     }
 
-    if (key == TUI_KEY_NEXT_APP) {
-        current = SHIM_CURRENT_BANK;
-        next = tui_get_next_app(current);
-        if (next != 0) {
-            resume_save_state();
-            tui_switch_to_app(next);
-        }
+    if (nav_action >= 1 && nav_action <= 15) {
+        resume_save_state();
+        tui_switch_to_app(nav_action);
         return 1;
     }
 
-    if (key == TUI_KEY_PREV_APP) {
-        current = SHIM_CURRENT_BANK;
-        next = tui_get_prev_app(current);
-        if (next != 0) {
-            resume_save_state();
-            tui_switch_to_app(next);
-        }
+    if (nav_action == TUI_HOTKEY_BIND_ONLY) {
         return 1;
     }
 

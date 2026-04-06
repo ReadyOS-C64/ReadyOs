@@ -316,16 +316,24 @@ static void reuviewer_draw(void) {
 
 static void reuviewer_loop(void) {
     unsigned char key;
+    unsigned char nav_action;
 
     reuviewer_draw();
 
     while (running) {
         key = tui_getkey();
-
-        /* Check for CTRL+B */
-        if (key == 2) {
+        nav_action = tui_handle_global_hotkey(key, *SHIM_CURRENT_BANK, 1);
+        if (nav_action == TUI_HOTKEY_LAUNCHER) {
             resume_save_state();
             tui_return_to_launcher();
+        }
+        if (nav_action >= 1 && nav_action <= 15) {
+            resume_save_state();
+            tui_switch_to_app(nav_action);
+            continue;
+        }
+        if (nav_action == TUI_HOTKEY_BIND_ONLY) {
+            continue;
         }
 
         switch (key) {
@@ -358,28 +366,6 @@ static void reuviewer_loop(void) {
                     ++cursor_x;
                     draw_grid();
                     draw_detail();
-                }
-                break;
-
-            case TUI_KEY_NEXT_APP:
-                {
-                    unsigned char current = *((unsigned char*)0xC834);
-                    unsigned char next = tui_get_next_app(current);
-                    if (next != 0) {
-                        resume_save_state();
-                        tui_switch_to_app(next);
-                    }
-                }
-                break;
-
-            case TUI_KEY_PREV_APP:
-                {
-                    unsigned char current = *((unsigned char*)0xC834);
-                    unsigned char prev = tui_get_prev_app(current);
-                    if (prev != 0) {
-                        resume_save_state();
-                        tui_switch_to_app(prev);
-                    }
                 }
                 break;
 

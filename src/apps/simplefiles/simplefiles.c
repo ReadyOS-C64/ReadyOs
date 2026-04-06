@@ -1803,8 +1803,7 @@ static void handle_viewer_key(unsigned char key) {
 int main(void) {
     unsigned char bank;
     unsigned char key;
-    unsigned char next;
-    unsigned char prev;
+    unsigned char nav_action;
 
     init_state();
     resume_ready = 0;
@@ -1825,25 +1824,17 @@ int main(void) {
 
     while (running) {
         key = tui_getkey();
-
-        if (key == KEY_CTRL_B) {
+        nav_action = tui_handle_global_hotkey(key, SHIM_CURRENT_BANK, 1);
+        if (nav_action == TUI_HOTKEY_LAUNCHER) {
             resume_save_state();
             tui_return_to_launcher();
         }
-        if (key == TUI_KEY_NEXT_APP) {
-            next = tui_get_next_app(SHIM_CURRENT_BANK);
-            if (next != 0u) {
-                resume_save_state();
-                tui_switch_to_app(next);
-            }
+        if (nav_action >= 1u && nav_action <= 15u) {
+            resume_save_state();
+            tui_switch_to_app(nav_action);
             continue;
         }
-        if (key == TUI_KEY_PREV_APP) {
-            prev = tui_get_prev_app(SHIM_CURRENT_BANK);
-            if (prev != 0u) {
-                resume_save_state();
-                tui_switch_to_app(prev);
-            }
+        if (nav_action == TUI_HOTKEY_BIND_ONLY) {
             continue;
         }
 

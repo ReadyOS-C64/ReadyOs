@@ -2072,33 +2072,21 @@ static void jump_to_day_view(unsigned int doy) {
  *---------------------------------------------------------------------------*/
 
 static void handle_global_keys(unsigned char key, unsigned char *handled) {
-    unsigned char current;
-    unsigned char next;
+    unsigned char nav_action;
 
     *handled = 1;
 
-    if (key == 2) {
+    nav_action = tui_handle_global_hotkey(key, SHIM_CURRENT_BANK, 1);
+    if (nav_action == TUI_HOTKEY_LAUNCHER) {
         cal26_return_to_launcher();
         return;
     }
-
-    if (key == TUI_KEY_NEXT_APP) {
-        current = SHIM_CURRENT_BANK;
-        next = tui_get_next_app(current);
-        if (next != 0) {
-            resume_save_state();
-            tui_switch_to_app(next);
-        }
+    if (nav_action >= 1 && nav_action <= 15) {
+        resume_save_state();
+        tui_switch_to_app(nav_action);
         return;
     }
-
-    if (key == TUI_KEY_PREV_APP) {
-        current = SHIM_CURRENT_BANK;
-        next = tui_get_prev_app(current);
-        if (next != 0) {
-            resume_save_state();
-            tui_switch_to_app(next);
-        }
+    if (nav_action == TUI_HOTKEY_BIND_ONLY) {
         return;
     }
 
@@ -2617,22 +2605,15 @@ int main(void) {
         redraw();
         while (1) {
             unsigned char key = tui_getkey();
-            if (key == 2 || key == TUI_KEY_LARROW) {
+            unsigned char nav_action = tui_handle_global_hotkey(key, SHIM_CURRENT_BANK, 1);
+
+            if (key == TUI_KEY_LARROW || nav_action == TUI_HOTKEY_LAUNCHER) {
                 cal26_return_to_launcher();
-            } else if (key == TUI_KEY_NEXT_APP) {
-                unsigned char current = SHIM_CURRENT_BANK;
-                unsigned char next = tui_get_next_app(current);
-                if (next != 0) {
-                    resume_save_state();
-                    tui_switch_to_app(next);
-                }
-            } else if (key == TUI_KEY_PREV_APP) {
-                unsigned char current = SHIM_CURRENT_BANK;
-                unsigned char prev = tui_get_prev_app(current);
-                if (prev != 0) {
-                    resume_save_state();
-                    tui_switch_to_app(prev);
-                }
+            } else if (nav_action >= 1 && nav_action <= 15) {
+                resume_save_state();
+                tui_switch_to_app(nav_action);
+            } else if (nav_action == TUI_HOTKEY_BIND_ONLY) {
+                /* consumed */
             } else if (key == TUI_KEY_RUNSTOP) {
                 __asm__("jmp $FCE2");
             }

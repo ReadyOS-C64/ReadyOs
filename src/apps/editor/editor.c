@@ -1552,6 +1552,28 @@ static void show_help_popup(void) {
  * Main Loop
  *---------------------------------------------------------------------------*/
 
+static unsigned char handle_editor_nav(unsigned char key) {
+    unsigned char nav_action;
+
+    nav_action = tui_handle_global_hotkey(key, SHIM_CURRENT_BANK, 1);
+    if (nav_action == TUI_HOTKEY_LAUNCHER) {
+        clear_selection();
+        resume_save_state();
+        tui_return_to_launcher();
+        return 1;
+    }
+    if (nav_action >= 1 && nav_action <= 15) {
+        clear_selection();
+        resume_save_state();
+        tui_switch_to_app(nav_action);
+        return 1;
+    }
+    if (nav_action == TUI_HOTKEY_BIND_ONLY) {
+        return 1;
+    }
+    return 0;
+}
+
 static void editor_loop(void) {
     unsigned char key;
     unsigned char old_scroll;
@@ -1565,43 +1587,14 @@ static void editor_loop(void) {
 
     while (running) {
         key = tui_getkey();
-
-        /* Check for CTRL+B (back to launcher) - CTRL+B produces key code 2 */
-        if (key == KEY_CTRL_B) {
-            clear_selection();
-            resume_save_state();
-            tui_return_to_launcher();
-            /* Never returns */
+        if (handle_editor_nav(key)) {
+            continue;
         }
 
         if (has_selection) {
             switch (key) {
                 case TUI_KEY_RUNSTOP:
                     running = 0;
-                    break;
-
-                case TUI_KEY_NEXT_APP:
-                    {
-                        unsigned char current = SHIM_CURRENT_BANK;
-                        unsigned char next = tui_get_next_app(current);
-                        if (next != 0) {
-                            clear_selection();
-                            resume_save_state();
-                            tui_switch_to_app(next);
-                        }
-                    }
-                    break;
-
-                case TUI_KEY_PREV_APP:
-                    {
-                        unsigned char current = SHIM_CURRENT_BANK;
-                        unsigned char prev = tui_get_prev_app(current);
-                        if (prev != 0) {
-                            clear_selection();
-                            resume_save_state();
-                            tui_switch_to_app(prev);
-                        }
-                    }
                     break;
 
                 case KEY_COPY:
@@ -1647,30 +1640,6 @@ static void editor_loop(void) {
         switch (key) {
             case TUI_KEY_RUNSTOP:
                 running = 0;
-                break;
-
-            case TUI_KEY_NEXT_APP:
-                {
-                    unsigned char current = SHIM_CURRENT_BANK;
-                    unsigned char next = tui_get_next_app(current);
-                    if (next != 0) {
-                        clear_selection();
-                        resume_save_state();
-                        tui_switch_to_app(next);
-                    }
-                }
-                break;
-
-            case TUI_KEY_PREV_APP:
-                {
-                    unsigned char current = SHIM_CURRENT_BANK;
-                    unsigned char prev = tui_get_prev_app(current);
-                    if (prev != 0) {
-                        clear_selection();
-                        resume_save_state();
-                        tui_switch_to_app(prev);
-                    }
-                }
                 break;
 
             case KEY_COPY:
