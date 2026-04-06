@@ -16,6 +16,7 @@
  *  11 = probe missing drive via CMD then recover
  *  12 = probe missing drive via DIR open then recover
  *  13 = probe missing drive via full DIR scan then recover
+ *  14 = report 16-bit blocks-free totals after forcing 1571 mode
  */
 
 #include <cbm.h>
@@ -161,7 +162,7 @@ static unsigned char skip_directory_line(void) {
 
 static unsigned char read_directory_first_entry(unsigned char device,
                                                 HarnessEntry *out_entry,
-                                                unsigned char *out_blocks_free) {
+                                                unsigned int *out_blocks_free) {
     unsigned char ptr[2];
     unsigned char num[2];
     unsigned char ch;
@@ -198,7 +199,7 @@ static unsigned char read_directory_first_entry(unsigned char device,
         }
         if (ptr[0] == 0u && ptr[1] == 0u) {
             if (out_blocks_free != 0) {
-                *out_blocks_free = num[0];
+                *out_blocks_free = (unsigned int)(num[0] | ((unsigned int)num[1] << 8u));
             }
             (void)skip_directory_line();
             cbm_close(LFN_DIR);
@@ -263,6 +264,82 @@ static unsigned char read_directory_first_entry(unsigned char device,
         }
 
         first_line = 0u;
+    }
+}
+
+static unsigned char read_directory_blocks_free(unsigned char device,
+                                                unsigned int *out_blocks_free) {
+    unsigned char ptr[2];
+    unsigned char num[2];
+    unsigned char ch;
+    unsigned char text_pos;
+    unsigned char found_blocks_free;
+    int n;
+    char line_text[16];
+
+    if (out_blocks_free != 0) {
+        *out_blocks_free = 0u;
+    }
+    found_blocks_free = 0u;
+    if (open_directory_raw(device) != RC_OK) {
+        return RC_IO;
+    }
+
+    n = cbm_read(LFN_DIR, ptr, 2u);
+    if (n < 2) {
+        cbm_close(LFN_DIR);
+        cleanup_io();
+        return RC_IO;
+    }
+
+    while (1) {
+        n = cbm_read(LFN_DIR, ptr, 2u);
+        if (n < 2) {
+            cbm_close(LFN_DIR);
+            cleanup_io();
+            return RC_IO;
+        }
+        n = cbm_read(LFN_DIR, num, 2u);
+        if (n < 2) {
+            cbm_close(LFN_DIR);
+            cleanup_io();
+            return RC_IO;
+        }
+        if (ptr[0] == 0u && ptr[1] == 0u) {
+            if (out_blocks_free != 0 && !found_blocks_free) {
+                *out_blocks_free = (unsigned int)(num[0] | ((unsigned int)num[1] << 8u));
+            }
+            (void)skip_directory_line();
+            cbm_close(LFN_DIR);
+            cleanup_io();
+            return RC_OK;
+        }
+
+        text_pos = 0u;
+        line_text[0] = 0;
+        while (1) {
+            n = cbm_read(LFN_DIR, &ch, 1u);
+            if (n < 1 || ch == 0u) {
+                break;
+            }
+            if (ch != ' ' && ch != 0xA0u && text_pos + 1u < sizeof(line_text)) {
+                line_text[text_pos++] = (char)dir_upchar(ch);
+                line_text[text_pos] = 0;
+            }
+        }
+
+        if (out_blocks_free != 0 &&
+            strstr(line_text, "BLOCKS") != 0 &&
+            strstr(line_text, "FREE") != 0) {
+            *out_blocks_free = (unsigned int)(num[0] | ((unsigned int)num[1] << 8u));
+            found_blocks_free = 1u;
+        }
+
+        if (n < 1) {
+            cbm_close(LFN_DIR);
+            cleanup_io();
+            return RC_IO;
+        }
     }
 }
 
@@ -1166,6 +1243,32 @@ static unsigned char run_selected_case(void) {
                 return 1u;
             }
             return 0u;
+        case 14: {
+            unsigned int free8;
+            unsigned int free9;
+
+            dbg_push_stage('F');
+            print_line("");
+            print_line("CASE FREE");
+            if (read_directory_blocks_free(DRIVE8, &free8) != RC_OK) {
+                dbg_set_fail(STEP_PROBE, 6u);
+                return 1u;
+            }
+            dbg[0x25] = (unsigned char)(free8 & 0xFFu);
+            dbg[0x26] = (unsigned char)(free8 >> 8u);
+            cprintf("FREE D8 %u\r\n", free8);
+            checkpoint_dump('a');
+
+            if (read_directory_blocks_free(DRIVE9, &free9) != RC_OK) {
+                dbg_set_fail(STEP_PROBE, 7u);
+                return 1u;
+            }
+            dbg[0x27] = (unsigned char)(free9 & 0xFFu);
+            dbg[0x28] = (unsigned char)(free9 >> 8u);
+            cprintf("FREE D9 %u\r\n", free9);
+            checkpoint_dump('b');
+            return 0u;
+        }
         default:
             break;
     }

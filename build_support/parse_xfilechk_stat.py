@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 
 STEP_NAMES = {
@@ -32,9 +33,21 @@ def u16(lo: int, hi: int) -> int:
     return lo | (hi << 8)
 
 
+def bam_free_blocks(path: str) -> int:
+    raw = Path(path).read_bytes()
+    if len(raw) != 349696:
+        raise ValueError(f"unexpected D71 size for {path}: {len(raw)}")
+
+    side1 = sum(raw[0x16504 + (track - 1) * 4] for track in range(1, 36))
+    side2 = sum(raw[0x16504 + 0xDD + (track - 36)] for track in range(36, 71))
+    return side1 + side2
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dbg-bin", required=True)
+    ap.add_argument("--disk8")
+    ap.add_argument("--disk9")
     args = ap.parse_args()
 
     with open(args.dbg_bin, "rb") as f:
@@ -71,6 +84,8 @@ def main() -> int:
     probe_open = raw[0x21]
     probe_first = raw[0x22]
     probe_recovery = raw[0x23]
+    free8 = u16(raw[0x25], raw[0x26])
+    free9 = u16(raw[0x27], raw[0x28])
     stages = bytes(b for b in raw[0x30:0x30 + raw[0x3F]] if b).decode("latin1", "replace")
     status_msg = bytes(b for b in raw[0x40:0x54] if b).decode("latin1", "replace")
 
@@ -99,6 +114,20 @@ def main() -> int:
         f"src: type={src_type} size={src_size} len={src_len} "
         f"dst: type={dst_type} size={dst_size} len={dst_len}"
     )
+    if case_id == 14:
+        print(f"free_blocks: d8={free8} d9={free9}")
+        if args.disk8:
+            exp8 = bam_free_blocks(args.disk8)
+            print(f"free_blocks_bam: d8={exp8}")
+            if free8 != exp8:
+                print("RESULT: FAIL (drive8 free blocks mismatch)")
+                return 1
+        if args.disk9:
+            exp9 = bam_free_blocks(args.disk9)
+            print(f"free_blocks_bam: d9={exp9}")
+            if free9 != exp9:
+                print("RESULT: FAIL (drive9 free blocks mismatch)")
+                return 1
     print(f"stages={stages or '-'} status_msg={status_msg or '-'} dump_open={dump_open} dump_write={dump_write}")
 
     if marker != 0x58 or version != 0x01:

@@ -232,6 +232,7 @@ static void format_drive_mask(char *out) {
 static void format_block_value(unsigned int value, char *out) {
     char digits[6];
     unsigned char pos;
+    unsigned char digit_index;
     unsigned char width;
 
     width = 4;
@@ -255,8 +256,9 @@ static void format_block_value(unsigned int value, char *out) {
         value /= 10u;
     } while (value != 0u && pos < sizeof(digits));
 
-    while (pos != 0u && width != 0u) {
-        out[--width] = digits[--pos];
+    digit_index = 0u;
+    while (digit_index < pos && width != 0u) {
+        out[--width] = digits[digit_index++];
     }
 }
 
@@ -456,6 +458,7 @@ static void format_size_field(const FileBrowserEntry *entry,
                               unsigned char width) {
     char digits[6];
     unsigned char pos;
+    unsigned char digit_index;
     unsigned int value;
 
     for (pos = 0; pos < width; ++pos) {
@@ -490,8 +493,9 @@ static void format_size_field(const FileBrowserEntry *entry,
         value /= 10u;
     } while (value != 0u && pos < sizeof(digits));
 
-    while (pos != 0u && width != 0u) {
-        out[--width] = digits[--pos];
+    digit_index = 0u;
+    while (digit_index < pos && width != 0u) {
+        out[--width] = digits[digit_index++];
     }
 }
 

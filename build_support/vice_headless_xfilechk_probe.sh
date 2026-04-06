@@ -191,4 +191,7 @@ if [[ "$DBG_RC" -ne 0 || ! -f "$DBG_BIN" ]]; then
   exit 2
 fi
 
-python3 build_support/parse_xfilechk_stat.py --dbg-bin "$DBG_BIN"
+python3 build_support/parse_xfilechk_stat.py \
+  --dbg-bin "$DBG_BIN" \
+  --disk8 "$CASE_DISK_8" \
+  --disk9 "$CASE_DISK_9"

@@ -167,12 +167,30 @@ static unsigned char file_browser_skip_dir_line(void) {
     return FILE_BROWSER_RC_OK;
 }
 
+static void file_browser_maybe_set_1571_mode(unsigned char device) {
+    unsigned char code;
+    char msg[4];
+
+    if (device != 8u && device != 9u) {
+        return;
+    }
+
+    /* D71 free-space totals require the drive to stay in 1571 mode. */
+    file_browser_cleanup_io();
+    if (cbm_open(FILE_BROWSER_LFN_CMD, device, 15, "u0>m1") == 0) {
+        (void)file_browser_read_status_open(&code, msg, sizeof(msg));
+        cbm_close(FILE_BROWSER_LFN_CMD);
+    }
+    file_browser_cleanup_io();
+}
+
 static unsigned char file_browser_scan_directory(unsigned char device) {
     unsigned char ptr[2];
     unsigned char num[2];
     unsigned char ch;
     int n;
 
+    file_browser_maybe_set_1571_mode(device);
     file_browser_cleanup_io();
     if (cbm_open(FILE_BROWSER_LFN_DIR, device, 0, "$") != 0) {
         file_browser_cleanup_io();
@@ -332,6 +350,7 @@ unsigned char file_browser_read_directory(unsigned char device,
     unsigned char type_pos;
     unsigned char past_space;
     unsigned char text_pos;
+    unsigned char found_blocks_free;
     char type_text[4];
     char line_text[16];
     unsigned int blocks;
@@ -347,7 +366,9 @@ unsigned char file_browser_read_directory(unsigned char device,
     if (out_title != 0) {
         out_title[0] = 0;
     }
+    found_blocks_free = 0u;
 
+    file_browser_maybe_set_1571_mode(device);
     file_browser_cleanup_io();
     if (cbm_open(FILE_BROWSER_LFN_DIR, device, 0, "$") != 0) {
         file_browser_cleanup_io();
@@ -370,7 +391,7 @@ unsigned char file_browser_read_directory(unsigned char device,
         blocks = (unsigned int)(num[0] | ((unsigned int)num[1] << 8u));
 
         if (ptr[0] == 0u && ptr[1] == 0u) {
-            if (out_blocks_free != 0) {
+            if (out_blocks_free != 0 && !found_blocks_free) {
                 *out_blocks_free = blocks;
             }
             (void)file_browser_skip_dir_line();
@@ -448,6 +469,7 @@ unsigned char file_browser_read_directory(unsigned char device,
         } else if (name_pos == 0u) {
             if (out_blocks_free != 0 && file_browser_is_blocks_free_line(line_text)) {
                 *out_blocks_free = blocks;
+                found_blocks_free = 1u;
             }
         } else if (name_pos > 0u && count < max_entries && entries != 0) {
             entries[count].name[name_pos] = 0;
