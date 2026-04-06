@@ -1207,7 +1207,6 @@ int rs_vm_exec_source(RSVM* vm, const char* source, RSError* err) {
 #if RS_C64_OVERLAY_RUNTIME
   rs_overlay_debug_mark('e');
   if (rs_overlay_prepare_exec() != 0) {
-    /* rs_program_free() is linked from parse overlay (OVERLAY1). */
     if (rs_overlay_prepare_parse() == 0) {
       vm_program_free_guarded(&program);
     }
@@ -1229,7 +1228,6 @@ int rs_vm_exec_source(RSVM* vm, const char* source, RSError* err) {
   rs_overlay_debug_mark('h');
 
 #if RS_C64_OVERLAY_RUNTIME
-  /* rs_program_free() is linked from the parse unit (OVERLAY1). */
   rs_overlay_debug_mark('i');
   if (rs_overlay_prepare_parse() != 0) {
     vm_err(err, "overlay parse restore");
@@ -1241,7 +1239,6 @@ int rs_vm_exec_source(RSVM* vm, const char* source, RSError* err) {
     return -1;
   }
 #endif
-
   vm_program_free_guarded(&program);
   rs_overlay_debug_mark('k');
   return rc;

@@ -1,4 +1,5 @@
 #include "rs_parse.h"
+#include "rs_token.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +13,7 @@ const unsigned char rs_parse_entry_cookie[4] = {0xA5u, 0x5Au, 0xC3u, 0x3Cu};
 #endif
 
 typedef struct RSParser {
+  const char* source;
   const RSToken* tokens;
   unsigned short count;
   unsigned short pos;
@@ -25,19 +27,122 @@ typedef struct RSParser {
 static RSToken g_c64_parse_tokens[32];
 #endif
 
-static char* rs_dup(const char* s) {
-  size_t n;
+static char* rs_dup_slice_upper(const char* src, unsigned short start, unsigned short len) {
   char* p;
-  if (!s) {
-    s = "";
+  unsigned short i;
+
+  if (!src) {
+    return 0;
   }
-  n = strlen(s);
-  p = (char*)malloc(n + 1u);
+  p = (char*)malloc((size_t)len + 1u);
   if (!p) {
     return 0;
   }
-  memcpy(p, s, n + 1u);
+  for (i = 0; i < len; ++i) {
+    p[i] = (char)rs_ci_char((unsigned char)src[start + i]);
+  }
+  p[len] = '\0';
   return p;
+}
+
+static char* rs_dup_string_token(const char* src, const RSToken* tok) {
+  char* p;
+  unsigned short i;
+  unsigned short src_pos;
+  unsigned short dst_pos;
+
+  if (!src || !tok) {
+    return 0;
+  }
+
+  p = (char*)malloc((size_t)tok->value + 1u);
+  if (!p) {
+    return 0;
+  }
+
+  src_pos = (unsigned short)(tok->offset + 1u);
+  dst_pos = 0u;
+  for (i = 0u; i < tok->value; ++i) {
+    if (src[src_pos + i] == '\\' && i + 1u < tok->value) {
+      ++i;
+    }
+    p[dst_pos++] = src[src_pos + i];
+  }
+  p[dst_pos] = '\0';
+  return p;
+}
+
+static void rs_loc_from_offset(const char* src,
+                               unsigned short offset,
+                               unsigned short* out_line,
+                               unsigned short* out_col) {
+  unsigned short i;
+  unsigned short line;
+  unsigned short col;
+
+  line = 1u;
+  col = 1u;
+  if (!src) {
+    if (out_line) *out_line = line;
+    if (out_col) *out_col = col;
+    return;
+  }
+
+  for (i = 0u; i < offset && src[i] != '\0'; ++i) {
+    if (src[i] == '\n') {
+      ++line;
+      col = 1u;
+    } else if (src[i] == '\r') {
+      if (src[i + 1u] == '\n') {
+        ++i;
+      }
+      ++line;
+      col = 1u;
+    } else {
+      ++col;
+    }
+  }
+
+  if (out_line) *out_line = line;
+  if (out_col) *out_col = col;
+}
+
+static void rs_parse_err_tok(RSParser* p, const char* msg, const RSToken* tok) {
+  unsigned short line;
+  unsigned short col;
+
+  line = 1u;
+  col = 1u;
+  if (p && tok) {
+    rs_loc_from_offset(p->source, tok->offset, &line, &col);
+  }
+  rs_error_set(p->err,
+               RS_ERR_PARSE,
+               msg,
+               tok ? tok->offset : 0,
+               line,
+               col);
+}
+
+static char* rs_dup_tok_upper(const RSParser* p, const RSToken* tok) {
+  if (!p || !tok) {
+    return 0;
+  }
+  return rs_dup_slice_upper(p->source, tok->offset, tok->value);
+}
+
+static char* rs_dup_tok_string(const RSParser* p, const RSToken* tok) {
+  if (!p || !tok) {
+    return 0;
+  }
+  return rs_dup_string_token(p->source, tok);
+}
+
+static unsigned short rs_tok_number(const RSToken* tok) {
+  if (!tok) {
+    return 0u;
+  }
+  return tok->value;
 }
 
 static const RSToken* rs_cur(RSParser* p) {
@@ -52,15 +157,6 @@ static const RSToken* rs_prev(RSParser* p) {
     return &p->tokens[0];
   }
   return &p->tokens[p->pos - 1u];
-}
-
-static void rs_parse_err_tok(RSParser* p, const char* msg, const RSToken* tok) {
-  rs_error_set(p->err,
-               RS_ERR_PARSE,
-               msg,
-               tok ? tok->offset : 0,
-               tok ? tok->line : 1,
-               tok ? tok->column : 1);
 }
 
 static int rs_match(RSParser* p, RSTokenType type) {
@@ -134,6 +230,7 @@ static int rs_expr_list_add(RSExpr*** arr, unsigned short* count, RSExpr* expr) 
 
 void rs_expr_free(RSExpr* expr) {
   unsigned short i;
+
   if (!expr) {
     return;
   }
@@ -165,6 +262,7 @@ void rs_expr_free(RSExpr* expr) {
 
 void rs_stage_free(RSStage* stage) {
   unsigned short i;
+
   if (!stage) {
     return;
   }
@@ -184,6 +282,7 @@ void rs_stage_free(RSStage* stage) {
 
 void rs_pipeline_free(RSPipeline* pipeline) {
   unsigned short i;
+
   if (!pipeline) {
     return;
   }
@@ -215,6 +314,7 @@ void rs_stmt_free(RSStmt* stmt) {
 
 void rs_program_free(RSProgram* program) {
   unsigned short i;
+
   if (!program) {
     return;
   }
@@ -278,7 +378,7 @@ static int rs_parse_primary(RSParser* p, RSExpr** out_expr) {
       rs_parse_err_tok(p, "out of memory", tok);
       return -1;
     }
-    e->as.number = tok->number;
+    e->as.number = rs_tok_number(tok);
     p->pos++;
     *out_expr = e;
     return 0;
@@ -290,7 +390,7 @@ static int rs_parse_primary(RSParser* p, RSExpr** out_expr) {
       rs_parse_err_tok(p, "out of memory", tok);
       return -1;
     }
-    e->as.text = rs_dup(tok->text);
+    e->as.text = rs_dup_tok_string(p, tok);
     if (!e->as.text) {
       rs_expr_free(e);
       rs_parse_err_tok(p, "out of memory", tok);
@@ -319,7 +419,7 @@ static int rs_parse_primary(RSParser* p, RSExpr** out_expr) {
       rs_parse_err_tok(p, "out of memory", tok);
       return -1;
     }
-    e->as.text = rs_dup(tok->text);
+    e->as.text = rs_dup_tok_upper(p, tok);
     if (!e->as.text) {
       rs_expr_free(e);
       rs_parse_err_tok(p, "out of memory", tok);
@@ -393,7 +493,7 @@ static int rs_parse_postfix(RSParser* p, RSExpr** out_expr) {
         rs_parse_err_tok(p, "expected property name after '.'", tok);
         return -1;
       }
-      name = rs_dup(tok->text);
+      name = rs_dup_tok_upper(p, tok);
       if (!name) {
         rs_expr_free(base);
         rs_parse_err_tok(p, "out of memory", tok);
@@ -615,7 +715,7 @@ static int rs_parse_stage(RSParser* p, RSStage* out_stage) {
   tok = rs_cur(p);
   if (tok->type == RS_TOK_IDENT) {
     out_stage->kind = RS_STAGE_CMD;
-    out_stage->as.cmd.name = rs_dup(tok->text);
+    out_stage->as.cmd.name = rs_dup_tok_upper(p, tok);
     if (!out_stage->as.cmd.name) {
       rs_parse_err_tok(p, "out of memory", tok);
       return -1;
@@ -712,7 +812,7 @@ static int rs_parse_stmt(RSParser* p, RSStmt* out_stmt) {
     memset(&rhs, 0, sizeof(rhs));
 
     out_stmt->kind = RS_STMT_ASSIGN;
-    out_stmt->as.assign.name = rs_dup(tok->text);
+    out_stmt->as.assign.name = rs_dup_tok_upper(p, tok);
     if (!out_stmt->as.assign.name) {
       rs_parse_err_tok(p, "out of memory", tok);
       return -1;
@@ -765,7 +865,8 @@ static int rs_parse_program_until(RSParser* p, RSTokenType end_type, RSProgram* 
   return 0;
 }
 
-int rs_parse_tokens(const RSToken* tokens,
+int rs_parse_tokens(const char* source,
+                    const RSToken* tokens,
                     unsigned short token_count,
                     RSProgram* out_program,
                     RSError* err) {
@@ -781,6 +882,7 @@ int rs_parse_tokens(const RSToken* tokens,
   out_program->stmts = 0;
   out_program->count = 0;
 
+  p.source = source;
   p.tokens = tokens;
   p.count = token_count;
   p.pos = 0;
@@ -842,7 +944,7 @@ int rs_parse_source(const char* source, RSProgram* out_program, RSError* err) {
 
   RS_PARSE_MARK('r');
   RS_PARSE_MARK('s');
-  rc = rs_parse_tokens(tokens, count, out_program, err);
+  rc = rs_parse_tokens(source, tokens, count, out_program, err);
   RS_PARSE_MARK('t');
   #ifndef __CC65__
   free(tokens);

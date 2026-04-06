@@ -10,12 +10,10 @@ typedef void (*RSOverlayProgressFn)(unsigned char stage, void* user);
 
 int rs_overlay_boot(void);
 int rs_overlay_boot_with_progress(RSOverlayProgressFn progress, void* user);
-int rs_overlay_resume_warm(unsigned char has_script_overlay);
 int rs_overlay_prepare_parse(void);
 int rs_overlay_prepare_exec(void);
 int rs_overlay_prepare_script(void);
 int rs_overlay_active(void);
-int rs_overlay_has_script(void);
 int rs_overlay_is_phase_ready(unsigned char phase);
 unsigned char rs_overlay_last_rc(void);
 void rs_overlay_debug_mark(unsigned char code);

@@ -61,8 +61,8 @@ def parse_app_hooks(app_name):
         "local": ("TASKLIST_RESUME_OFF" in src and "resume_stash_segments(" in src and "resume_fetch_segments(" in src),
         "save_return": has_before(src, "resume_save_state", "tui_return_to_launcher"),
         "save_switch": has_before(src, "resume_save_state", "tui_switch_to_app"),
-        "warm_overlay": "rs_overlay_resume_warm(" in src,
-        "schema_v2": "READYSHELL_RESUME_SCHEMA" in src,
+        "snapshot_overlay_reuse": "if (rs_overlay_active())" in src,
+        "schema_v1": "RESUME_SCHEMA_V1" in src and "READYSHELL_RESUME_SCHEMA" not in src,
     }
 
 
@@ -109,8 +109,8 @@ def main():
             all_ok &= check(f"{app_name} init hook", hooks["init"])
             all_ok &= check(f"{app_name} load hook", hooks["load"])
         if app_name == "readyshellpoc":
-            all_ok &= check(f"{app_name} warm overlay hook", hooks["warm_overlay"])
-            all_ok &= check(f"{app_name} schema v2 constant", hooks["schema_v2"])
+            all_ok &= check(f"{app_name} snapshot overlay reuse", hooks["snapshot_overlay_reuse"])
+            all_ok &= check(f"{app_name} schema v1 constant", hooks["schema_v1"])
         all_ok &= check(f"{app_name} save before launcher return", hooks["save_return"])
         all_ok &= check(f"{app_name} save before app switch", hooks["save_switch"])
 

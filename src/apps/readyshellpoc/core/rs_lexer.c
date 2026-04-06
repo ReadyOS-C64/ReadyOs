@@ -12,23 +12,40 @@ static void rs_set_err(RSError* err,
   rs_error_set(err, RS_ERR_LEX, msg, offset, line, col);
 }
 
+static int rs_slice_ci_equal(const char* src,
+                             unsigned short start,
+                             unsigned short len,
+                             const char* expect) {
+  unsigned short i;
+
+  if (!src || !expect) {
+    return 0;
+  }
+
+  i = 0;
+  while (expect[i] != '\0') {
+    if (i >= len) {
+      return 0;
+    }
+    if (rs_ci_char((unsigned char)src[start + i]) != expect[i]) {
+      return 0;
+    }
+    ++i;
+  }
+  return i == len;
+}
+
 static int rs_emit(RSToken* out,
                    unsigned short max,
                    unsigned short* count,
                    RSTokenType type,
-                   unsigned short offset,
-                   unsigned short line,
-                   unsigned short col) {
+                   unsigned short offset) {
   if (*count >= max) {
     return -1;
   }
-  out[*count].type = type;
+  out[*count].type = (unsigned char)type;
   out[*count].offset = offset;
-  out[*count].line = line;
-  out[*count].column = col;
-  out[*count].len = 0;
-  out[*count].number = 0;
-  out[*count].text[0] = '\0';
+  out[*count].value = 0;
   (*count)++;
   return 0;
 }
@@ -46,41 +63,26 @@ static int rs_emit_ident(RSToken* out,
                          const char* src,
                          unsigned short start,
                          unsigned short end,
-                         unsigned short line,
-                         unsigned short col,
                          int is_var) {
-  unsigned short i;
   unsigned short len;
   RSTokenType type;
   if (*count >= max) {
     return -1;
   }
   len = (unsigned short)(end - start);
-  if (len >= sizeof(out[*count].text)) {
-    len = (unsigned short)(sizeof(out[*count].text) - 1u);
-  }
-
   out[*count].offset = start;
-  out[*count].line = line;
-  out[*count].column = col;
-  out[*count].len = len;
-  out[*count].number = 0;
-
-  for (i = 0; i < len; ++i) {
-    out[*count].text[i] = (char)rs_ci_char((unsigned char)src[start + i]);
-  }
-  out[*count].text[len] = '\0';
+  out[*count].value = len;
 
   if (is_var) {
     type = RS_TOK_VAR;
-  } else if (rs_ci_equal(out[*count].text, "TRUE")) {
+  } else if (rs_slice_ci_equal(src, start, len, "TRUE")) {
     type = RS_TOK_TRUE;
-  } else if (rs_ci_equal(out[*count].text, "FALSE")) {
+  } else if (rs_slice_ci_equal(src, start, len, "FALSE")) {
     type = RS_TOK_FALSE;
   } else {
     type = RS_TOK_IDENT;
   }
-  out[*count].type = type;
+  out[*count].type = (unsigned char)type;
   (*count)++;
   return 0;
 }
@@ -89,19 +91,13 @@ static int rs_emit_number(RSToken* out,
                           unsigned short max,
                           unsigned short* count,
                           unsigned short n,
-                          unsigned short start,
-                          unsigned short line,
-                          unsigned short col) {
+                          unsigned short start) {
   if (*count >= max) {
     return -1;
   }
   out[*count].type = RS_TOK_NUMBER;
   out[*count].offset = start;
-  out[*count].line = line;
-  out[*count].column = col;
-  out[*count].number = n;
-  out[*count].len = 0;
-  out[*count].text[0] = '\0';
+  out[*count].value = n;
   (*count)++;
   return 0;
 }
@@ -116,7 +112,6 @@ static int rs_emit_string(RSToken* out,
                           RSError* err) {
   unsigned short i;
   unsigned short p;
-  unsigned short dst;
   char ch;
 
   if (*count >= max) {
@@ -130,19 +125,13 @@ static int rs_emit_string(RSToken* out,
 
   out[*count].type = RS_TOK_STRING;
   out[*count].offset = *io;
-  out[*count].line = *line;
-  out[*count].column = *col;
-  out[*count].len = 0;
-  out[*count].number = 0;
-
-  dst = 0;
+  out[*count].value = 0;
   while (src[i] != '\0') {
     ch = src[i];
     if (ch == '"') {
+      out[*count].value = (unsigned short)(i - (unsigned short)(*io + 1u));
       i++;
       p++;
-      out[*count].text[dst] = '\0';
-      out[*count].len = dst;
       *io = i;
       *col = p;
       (*count)++;
@@ -156,11 +145,6 @@ static int rs_emit_string(RSToken* out,
         break;
       }
     }
-    if (dst + 1u >= sizeof(out[*count].text)) {
-      rs_set_err(err, "string too long", *io, *line, *col);
-      return -1;
-    }
-    out[*count].text[dst++] = ch;
     i++;
     p++;
   }
@@ -204,7 +188,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '\r' || ch == '\n') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_NEWLINE, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_NEWLINE, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -233,7 +217,7 @@ int rs_lex(const char* src,
         i++;
         col++;
       }
-      if (rs_emit_number(out_tokens, max_tokens, out_count, n, start, line, start_col) != 0) {
+      if (rs_emit_number(out_tokens, max_tokens, out_count, n, start) != 0) {
         rs_set_err(err, "too many tokens", start, line, start_col);
         return -1;
       }
@@ -259,8 +243,6 @@ int rs_lex(const char* src,
                         src,
                         start,
                         i,
-                        line,
-                        start_col,
                         1) != 0) {
         rs_set_err(err, "too many tokens", start, line, start_col);
         return -1;
@@ -281,8 +263,6 @@ int rs_lex(const char* src,
                         src,
                         start,
                         i,
-                        line,
-                        start_col,
                         0) != 0) {
         rs_set_err(err, "too many tokens", start, line, start_col);
         return -1;
@@ -291,7 +271,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '.' && src[i + 1] == '.') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_RANGE, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_RANGE, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -301,7 +281,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '=' && src[i + 1] == '=') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_EQ, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_EQ, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -311,7 +291,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '!' && src[i + 1] == '=') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_NEQ, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_NEQ, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -321,7 +301,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '<' && src[i + 1] == '>') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_NEQ, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_NEQ, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -331,7 +311,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '>' && src[i + 1] == '=') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_GTE, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_GTE, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -341,7 +321,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '<' && src[i + 1] == '=') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_LTE, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_LTE, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -351,7 +331,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '@') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_AT, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_AT, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -361,7 +341,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '|') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_PIPE, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_PIPE, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -371,7 +351,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '?') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_QUESTION, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_QUESTION, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -381,7 +361,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '%') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_PERCENT, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_PERCENT, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -391,7 +371,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '[') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_LBRACKET, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_LBRACKET, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -401,7 +381,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == ']') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_RBRACKET, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_RBRACKET, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -411,7 +391,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '(') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_LPAREN, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_LPAREN, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -421,7 +401,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == ')') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_RPAREN, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_RPAREN, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -431,7 +411,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '.') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_DOT, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_DOT, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -441,7 +421,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == ',') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_COMMA, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_COMMA, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -451,7 +431,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == ';') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_SEMI, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_SEMI, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -461,7 +441,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '=') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_ASSIGN, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_ASSIGN, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -471,7 +451,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '>') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_GT, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_GT, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -481,7 +461,7 @@ int rs_lex(const char* src,
     }
 
     if (ch == '<') {
-      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_LT, i, line, col) != 0) {
+      if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_LT, i) != 0) {
         rs_set_err(err, "too many tokens", i, line, col);
         return -1;
       }
@@ -494,7 +474,7 @@ int rs_lex(const char* src,
     return -1;
   }
 
-  if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_EOF, i, line, col) != 0) {
+  if (rs_emit(out_tokens, max_tokens, out_count, RS_TOK_EOF, i) != 0) {
     rs_set_err(err, "too many tokens", i, line, col);
     return -1;
   }

@@ -34,13 +34,10 @@ typedef enum {
 } RSTokenType;
 
 typedef struct RSToken {
-  RSTokenType type;
+  unsigned char type;
   unsigned short offset;
-  unsigned short line;
-  unsigned short column;
-  unsigned short len;
-  unsigned short number;
-  char text[48];
+  /* For identifiers/vars/strings this is slice length; for numbers it is the parsed value. */
+  unsigned short value;
 } RSToken;
 
 int rs_lex(const char* src,

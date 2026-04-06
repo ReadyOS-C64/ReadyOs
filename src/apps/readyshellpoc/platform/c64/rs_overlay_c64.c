@@ -375,59 +375,6 @@ int rs_overlay_boot(void) {
   return rs_overlay_boot_with_progress(0, 0);
 }
 
-int rs_overlay_resume_warm(unsigned char has_script_overlay) {
-  unsigned overlay_size;
-
-  overlay_size = (unsigned)_OVERLAY1_SIZE__;
-  if (overlay_size == 0u) {
-    g_overlay_last_rc = 0xE1u;
-    g_overlay_loaded = 0;
-    g_overlay3_loaded = 0;
-    g_overlay_cached_reu = 0;
-    rs_overlay_clear_phase();
-    return -1;
-  }
-  g_overlay1_size = (unsigned short)overlay_size;
-
-  overlay_size = (unsigned)_OVERLAY2_SIZE__;
-  if (overlay_size == 0u) {
-    g_overlay_last_rc = 0xE1u;
-    g_overlay_loaded = 0;
-    g_overlay3_loaded = 0;
-    g_overlay_cached_reu = 0;
-    rs_overlay_clear_phase();
-    return -1;
-  }
-  g_overlay2_size = (unsigned short)overlay_size;
-
-  overlay_size = (unsigned)_OVERLAY3_SIZE__;
-  if (overlay_size == 0u) {
-    g_overlay_last_rc = 0xE1u;
-    g_overlay_loaded = 0;
-    g_overlay3_loaded = 0;
-    g_overlay_cached_reu = 0;
-    rs_overlay_clear_phase();
-    return -1;
-  }
-  g_overlay3_size = (unsigned short)overlay_size;
-
-  if (!rs_reu_available()) {
-    g_overlay_last_rc = RS_OVL_RC_REU_REQUIRED;
-    g_overlay_loaded = 0;
-    g_overlay3_loaded = 0;
-    g_overlay_cached_reu = 0;
-    rs_overlay_clear_phase();
-    return -1;
-  }
-
-  g_overlay_loaded = 1;
-  g_overlay3_loaded = has_script_overlay ? 1 : 0;
-  g_overlay_cached_reu = 1;
-  g_overlay_last_rc = 0u;
-  rs_overlay_clear_phase();
-  return 0;
-}
-
 int rs_overlay_prepare_parse(void) {
   rs_overlay_dbg_put('P');
   if (!g_overlay_loaded) {
@@ -513,10 +460,6 @@ int rs_overlay_active(void) {
   return g_overlay_loaded;
 }
 
-int rs_overlay_has_script(void) {
-  return g_overlay3_loaded;
-}
-
 int rs_overlay_is_phase_ready(unsigned char phase) {
   if (!g_overlay_loaded) {
     return 0;
@@ -543,11 +486,6 @@ int rs_overlay_boot_with_progress(RSOverlayProgressFn progress, void* user) {
   return 0;
 }
 
-int rs_overlay_resume_warm(unsigned char has_script_overlay) {
-  (void)has_script_overlay;
-  return 0;
-}
-
 int rs_overlay_prepare_parse(void) {
   return 0;
 }
@@ -561,10 +499,6 @@ int rs_overlay_prepare_script(void) {
 }
 
 int rs_overlay_active(void) {
-  return 0;
-}
-
-int rs_overlay_has_script(void) {
   return 0;
 }
 

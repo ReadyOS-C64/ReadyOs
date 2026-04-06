@@ -111,7 +111,8 @@ struct RSProgram {
   unsigned short count;
 };
 
-int rs_parse_tokens(const RSToken* tokens,
+int rs_parse_tokens(const char* source,
+                    const RSToken* tokens,
                     unsigned short token_count,
                     RSProgram* out_program,
                     RSError* err);
