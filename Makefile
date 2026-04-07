@@ -32,6 +32,7 @@ CFLAGS = -t c64 -I$(LIB_DIR)
 APP_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app.cfg
 EDITOR_CFLAGS = $(APP_CFLAGS) -Os
 TASKLIST_CFLAGS = $(APP_CFLAGS) -Os
+SIMPLEFILES_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_simplefiles.cfg -Os
 SIMPLECELLS_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_simplecells.cfg -Os
 CAL26_CFLAGS = $(APP_CFLAGS) -Os
 LAUNCHER_CFG_VERBOSE ?= 0
@@ -295,8 +296,8 @@ $(TASKLIST): $(APPS_DIR)/tasklist/tasklist.c $(LIB_TASKLIST)
 	$(CC) $(TASKLIST_CFLAGS) -m $(OBJ_DIR)/tasklist.map -o $@ $^
 
 # Simple Files app (loads at $1000)
-$(SIMPLEFILES): $(APPS_DIR)/simplefiles/simplefiles.c $(LIB_SIMPLEFILES)
-	$(CC) $(APP_CFLAGS) -m $(OBJ_DIR)/simplefiles.map -o $@ $^
+$(SIMPLEFILES): $(APPS_DIR)/simplefiles/simplefiles.c $(LIB_SIMPLEFILES) $(CFG_DIR)/ready_app_simplefiles.cfg
+	$(CC) $(SIMPLEFILES_CFLAGS) -m $(OBJ_DIR)/simplefiles.map -o $@ $(APPS_DIR)/simplefiles/simplefiles.c $(LIB_SIMPLEFILES)
 
 # Simple Cells app (loads at $1000)
 $(SIMPLECELLS): $(APPS_DIR)/simplecells/simplecells.c $(APPS_DIR)/calcplus/rom_float.s $(LIB_SIMPLECELLS)
