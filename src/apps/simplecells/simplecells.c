@@ -5,6 +5,7 @@
  */
 
 #include "../../lib/tui.h"
+#include "../../lib/dir_page.h"
 #include "../../lib/reu_mgr.h"
 #include "../../lib/resume_state.h"
 #include "../../lib/storage_device.h"
@@ -40,8 +41,7 @@
 #define MAX_RAW_LEN       27
 #define RESULT_TEXT_LEN   14
 #define MAX_EVAL_DEPTH    3
-#define MAX_DIR_ENTRIES   6
-#define DIR_NAME_LEN      17
+#define MAX_DIR_ENTRIES   18
 
 #define KEY_CTRL_B        2
 #define KEY_COPY          'c'
@@ -135,7 +135,7 @@ static unsigned char clipboard_color;
 static unsigned char clipboard_len;
 static char clipboard_raw[MAX_RAW_LEN + 1];
 
-static char dir_names[MAX_DIR_ENTRIES][DIR_NAME_LEN];
+static DirPageEntry dir_entries[MAX_DIR_ENTRIES];
 static const char *dir_ptrs[MAX_DIR_ENTRIES];
 static unsigned char dir_count;
 static char dialog_buf[MAX_RAW_LEN + 1];
@@ -281,7 +281,8 @@ static unsigned char show_simple_menu(const char *title,
 static void show_format_menu(void);
 static unsigned char show_confirm(const char *msg);
 static void show_message(const char *msg, unsigned char color);
-static void read_directory(void);
+static unsigned char read_directory(unsigned char start_index,
+                                    unsigned char *out_total);
 static unsigned char show_open_dialog(void);
 static unsigned char show_save_dialog(void);
 static unsigned char file_save(const char *name);
@@ -2106,95 +2107,41 @@ static void show_help_popup(void) {
     draw_screen();
 }
 
-static void read_directory(void) {
-    unsigned char buf[2];
-    unsigned char ch;
-    unsigned char in_quotes;
-    unsigned char name_pos;
-    unsigned char type_pos;
-    unsigned char first_line;
-    unsigned char past_space;
-    int n;
+static unsigned char read_directory(unsigned char start_index,
+                                    unsigned char *out_total) {
+    unsigned char idx;
 
     dir_count = 0u;
-    if (cbm_open(LFN_DIR, storage_device_get_default(), 0, "$") != 0) {
-        return;
+    if (dir_page_read(storage_device_get_default(),
+                      start_index,
+                      CBM_T_SEQ,
+                      dir_entries,
+                      MAX_DIR_ENTRIES,
+                      &dir_count,
+                      out_total) != DIR_PAGE_RC_OK) {
+        if (out_total != 0) {
+            *out_total = 0;
+        }
+        return 0u;
     }
-    cbm_read(LFN_DIR, buf, 2);
-    first_line = 1u;
-
-    while (dir_count < MAX_DIR_ENTRIES) {
-        n = cbm_read(LFN_DIR, buf, 2);
-        if (n < 2 || (buf[0] == 0u && buf[1] == 0u)) {
-            break;
-        }
-        cbm_read(LFN_DIR, buf, 2);
-        in_quotes = 0u;
-        name_pos = 0u;
-
-        while (1) {
-            n = cbm_read(LFN_DIR, &ch, 1);
-            if (n < 1 || ch == 0u) {
-                break;
-            }
-            if (ch == 0x22u) {
-                if (in_quotes) {
-                    break;
-                }
-                in_quotes = 1u;
-                continue;
-            }
-            if (in_quotes && !first_line) {
-                if (name_pos < DIR_NAME_LEN - 1u) {
-                    dir_names[dir_count][name_pos++] = (char)ch;
-                }
-            }
-        }
-
-        past_space = 0u;
-        type_pos = 0u;
-
-        if (ch != 0u) {
-            while (1) {
-                n = cbm_read(LFN_DIR, &ch, 1);
-                if (n < 1 || ch == 0u) {
-                    break;
-                }
-                if (!past_space) {
-                    if (ch != ' ' && ch != 0xA0u) {
-                        past_space = 1u;
-                        if (type_pos < 3u) {
-                            buf[type_pos++] = ch;
-                        }
-                    }
-                } else if (type_pos < 3u && ch != ' ' && ch != 0xA0u) {
-                    buf[type_pos++] = ch;
-                }
-            }
-        }
-
-        if (first_line) {
-            first_line = 0u;
-            continue;
-        }
-        if (name_pos > 0u) {
-            dir_names[dir_count][name_pos] = 0;
-            if (type_pos == 3u && buf[0] == 'S' && buf[1] == 'E' && buf[2] == 'Q') {
-                dir_ptrs[dir_count] = dir_names[dir_count];
-                ++dir_count;
-            }
-        }
+    for (idx = 0u; idx < dir_count; ++idx) {
+        dir_ptrs[idx] = dir_entries[idx].name;
     }
-
-    cbm_close(LFN_DIR);
+    return 1u;
 }
 
 static unsigned char show_open_dialog(void) {
     TuiRect win;
     TuiMenu menu;
     unsigned char key;
-    unsigned char result;
     unsigned char menu_ready;
+    unsigned char selected;
+    unsigned char page_start;
+    unsigned char total_count;
+
+    selected = 0u;
+    page_start = 0u;
+    total_count = 0u;
 
     while (1) {
         tui_clear(TUI_COLOR_BLUE);
@@ -2204,17 +2151,18 @@ static unsigned char show_open_dialog(void) {
         win.h = 24;
         tui_window_title(&win, "load sheet", TUI_COLOR_LIGHTBLUE, TUI_COLOR_YELLOW);
         tui_puts(10, 11, "reading disk...", TUI_COLOR_YELLOW);
-        read_directory();
+        (void)read_directory(page_start, &total_count);
         tui_clear_line(11, 1, 38, TUI_COLOR_WHITE);
         tui_puts(1, 22, "drive:", TUI_COLOR_GRAY3);
         tui_print_uint(8, 22, storage_device_get_default(), TUI_COLOR_CYAN);
 
         menu_ready = 0u;
-        if (dir_count == 0u) {
+        if (total_count == 0u || dir_count == 0u) {
             tui_puts(7, 10, "no seq files found", TUI_COLOR_LIGHTRED);
             tui_puts(1, 24, "f3:drv stop:cancel", TUI_COLOR_GRAY3);
         } else {
             tui_menu_init(&menu, 1, 2, 38, 18, dir_ptrs, dir_count);
+            menu.selected = (unsigned char)(selected - page_start);
             menu.item_color = TUI_COLOR_WHITE;
             menu.sel_color = TUI_COLOR_CYAN;
             tui_menu_draw(&menu);
@@ -2227,6 +2175,8 @@ static unsigned char show_open_dialog(void) {
             if (key == TUI_KEY_F3) {
                 storage_device_set_default(
                     storage_device_toggle_8_9(storage_device_get_default()));
+                selected = 0u;
+                page_start = 0u;
                 break;
             }
             if (key == TUI_KEY_RUNSTOP || key == TUI_KEY_LARROW) {
@@ -2236,13 +2186,36 @@ static unsigned char show_open_dialog(void) {
                 continue;
             }
             if (key == TUI_KEY_RETURN) {
-                return menu.selected;
+                return (unsigned char)(selected - page_start);
             }
-            result = tui_menu_input(&menu, key);
-            if (result != 255u) {
-                return result;
+            if (key == TUI_KEY_HOME) {
+                selected = 0u;
+                page_start = 0u;
+                break;
             }
-            tui_menu_draw(&menu);
+            if (key == TUI_KEY_UP) {
+                if (selected > 0u) {
+                    --selected;
+                    if (selected < page_start) {
+                        page_start = selected;
+                        break;
+                    }
+                    menu.selected = (unsigned char)(selected - page_start);
+                    tui_menu_draw(&menu);
+                }
+                continue;
+            }
+            if (key == TUI_KEY_DOWN) {
+                if ((unsigned char)(selected + 1u) < total_count) {
+                    ++selected;
+                    if (selected >= (unsigned char)(page_start + dir_count)) {
+                        page_start = (unsigned char)(selected - dir_count + 1u);
+                        break;
+                    }
+                    menu.selected = (unsigned char)(selected - page_start);
+                    tui_menu_draw(&menu);
+                }
+            }
         }
     }
 }
@@ -2835,7 +2808,7 @@ static void app_loop(void) {
                     if (selected != 255u && selected < dir_count) {
                         tui_clear(TUI_COLOR_BLUE);
                         tui_puts(14, 12, "loading...", TUI_COLOR_YELLOW);
-                        (void)file_load(dir_names[selected]);
+                        (void)file_load(dir_entries[selected].name);
                     }
                     draw_screen();
                 }
