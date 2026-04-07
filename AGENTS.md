@@ -16,7 +16,7 @@
 - Shim jump table/data is resident at `$C800-$C9FF`; never place app data/code assumptions there unless intentionally using shim ABI.
 - Assume KERNAL/disk I/O can clobber app memory in the active region; keep persistent control state in defined safe areas only.
 - For load/switch behavior debugging, validate against launcher+shim flow, not standalone assumptions.
-- Always build and run ReadyOS through `run.sh` / `run.ps1`, not ad-hoc `make` or direct artifact launches, so all generated assets and preserved D71 user files are included and restored correctly.
+- Always build and run ReadyOS through `run.sh` / `run.ps1`, booting ReadyOS itself rather than trying to load an individual app directly; avoid ad-hoc `make`, direct artifact launches, and single-app run modes so all generated assets and preserved D71 user files are included and restored correctly.
 
 ## CAL26 REL Debugging Discipline
 

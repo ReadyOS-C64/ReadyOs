@@ -56,7 +56,7 @@
 #define CHAR_CHECKER  0x66
 #define CHAR_DOT      46
 #define CHAR_STAR     42
-#define CHAR_F        6
+#define CHAR_FLAG     30
 #define CHAR_X        24
 
 #define SHIM_CURRENT_BANK (*(volatile unsigned char*)0xC834)
@@ -434,7 +434,7 @@ static void render_cell(unsigned int idx) {
             color = selected ? TUI_COLOR_WHITE : number_color(cell_adj[idx]);
         }
     } else if (cell_flagged[idx]) {
-        ch0 = CHAR_F;
+        ch0 = CHAR_FLAG;
         ch1 = CHAR_BLANK;
         color = selected ? TUI_COLOR_LIGHTGREEN : TUI_COLOR_YELLOW;
     } else {
