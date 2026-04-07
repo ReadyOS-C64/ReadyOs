@@ -67,7 +67,9 @@
 #define KEY_CTRL_F  6
 #define KEY_CTRL_G  7
 #define KEY_CTRL_K  11
+#define KEY_CTRL_L  12
 #define KEY_CTRL_N  14
+#define KEY_CTRL_O  15
 #define KEY_CTRL_P  16
 #define KEY_CTRL_R  18
 #define KEY_CTRL_U  21
@@ -706,17 +708,41 @@ static void draw_header_static(void) {
     header.h = 2u;
 
     tui_window(&header, TUI_COLOR_LIGHTBLUE);
-    tui_puts(1, HEADER_Y, "QUICKNOTES:", TUI_COLOR_WHITE);
 }
 
 static void draw_header_dynamic(void) {
-    tui_puts_n(12, HEADER_Y, "", 16, TUI_COLOR_YELLOW);
-    tui_puts_n(30, HEADER_Y, "", 10, TUI_COLOR_CYAN);
-    tui_puts(12, HEADER_Y, filename, TUI_COLOR_YELLOW);
-    tui_puts(30, HEADER_Y, "N:", TUI_COLOR_WHITE);
-    tui_print_uint(32, HEADER_Y, (unsigned int)current_note_idx + 1u, TUI_COLOR_CYAN);
-    tui_puts(34, HEADER_Y, "/", TUI_COLOR_WHITE);
-    tui_print_uint(35, HEADER_Y, note_count, TUI_COLOR_CYAN);
+    unsigned char filename_len;
+    unsigned char title_end;
+    unsigned int current_num;
+
+    tui_hline(1u, HEADER_Y, 38u, TUI_COLOR_LIGHTBLUE);
+    tui_putc(0u, HEADER_Y, TUI_CORNER_TL, TUI_COLOR_LIGHTBLUE);
+    tui_putc(39u, HEADER_Y, TUI_CORNER_TR, TUI_COLOR_LIGHTBLUE);
+    tui_puts(1u, HEADER_Y, "QUICKNOTES:", TUI_COLOR_WHITE);
+    filename_len = 0u;
+    while (filename[filename_len] != 0 && filename_len < 18u) {
+        tui_putc((unsigned char)(12u + filename_len), HEADER_Y,
+                 tui_ascii_to_screen(filename[filename_len]), TUI_COLOR_YELLOW);
+        ++filename_len;
+    }
+    title_end = (unsigned char)(12u + filename_len);
+    if (title_end > 30u) {
+        title_end = 30u;
+    }
+    if (title_end < 31u) {
+        tui_hline(title_end, HEADER_Y, (unsigned char)(31u - title_end), TUI_COLOR_LIGHTBLUE);
+    }
+
+    tui_puts(31u, HEADER_Y, "N:", TUI_COLOR_WHITE);
+    current_num = (unsigned int)current_note_idx + 1u;
+    tui_print_uint(33u, HEADER_Y, current_num, TUI_COLOR_CYAN);
+    if (current_num >= 10u) {
+        tui_puts(35u, HEADER_Y, "/", TUI_COLOR_WHITE);
+        tui_print_uint(36u, HEADER_Y, note_count, TUI_COLOR_CYAN);
+    } else {
+        tui_puts(34u, HEADER_Y, "/", TUI_COLOR_WHITE);
+        tui_print_uint(35u, HEADER_Y, note_count, TUI_COLOR_CYAN);
+    }
 }
 
 static void draw_divider(void) {
@@ -834,9 +860,9 @@ static void draw_status(void) {
 static void draw_help(void) {
     tui_clear_line(HELP_Y, 0, 40, TUI_COLOR_GRAY3);
     if (focus_pane == PANE_LIST) {
-    tui_puts(0, HELP_Y, "RET:EDIT ^W:+ ^R:TTL ^D:DEL F8:H", TUI_COLOR_GRAY3);
+        tui_puts(0, HELP_Y, "RET/^L/^O:PANE ^W:+ ^R:TTL ^D:DEL", TUI_COLOR_GRAY3);
     } else {
-        tui_puts(0, HELP_Y, "F1:CPY F3:PST F5:SAV F6:SEL F8:H", TUI_COLOR_GRAY3);
+        tui_puts(0, HELP_Y, "^L/^O:PANE F1:CPY F3:PST F5:SAV", TUI_COLOR_GRAY3);
     }
 }
 
@@ -2019,14 +2045,14 @@ static void show_help_popup(void) {
     tui_window_title(&win, "QUICKNOTES HELP", TUI_COLOR_LIGHTBLUE, TUI_COLOR_YELLOW);
 
     tui_puts(3, 6, "READYOS QUICKNOTES", TUI_COLOR_WHITE);
-    tui_puts(3, 7, "LEFT: TITLES  RIGHT: EDITOR", TUI_COLOR_GRAY3);
-    tui_puts(3, 8, "RET:EDIT  HOME:TOP  UP/DN:NOTE", TUI_COLOR_GRAY3);
+    tui_puts(3, 7, "LEFT@COL0/^L/^O: TITLES RIGHT", TUI_COLOR_GRAY3);
+    tui_puts(3, 8, "RET:EDIT HOME:TOP UP/DN:NOTE", TUI_COLOR_GRAY3);
     tui_puts(3, 9, "CTRL+N/CTRL+P: PAGE", TUI_COLOR_GRAY3);
     tui_puts(3, 10, "CTRL+W:+NOTE CTRL+R:TITLE", TUI_COLOR_GRAY3);
     tui_puts(3, 11, "CTRL+D:DELETE CTRL+U/K:MOVE", TUI_COLOR_GRAY3);
     tui_puts(3, 12, "RET:NEW LINE DEL:BACKSP", TUI_COLOR_GRAY3);
     tui_puts(3, 13, "F1:COPY F3:PASTE F6:SELECT", TUI_COLOR_GRAY3);
-    tui_puts(3, 14, "F5:SAVE CTRL+A:SAVE AS", TUI_COLOR_GRAY3);
+    tui_puts(3, 14, "CTRL+L/O:PANE F5:SAVE CTRL+A:AS", TUI_COLOR_GRAY3);
     tui_puts(3, 15, "F7:OPEN CTRL+F/G:FIND", TUI_COLOR_GRAY3);
     tui_puts(3, 16, "FILE DLG: F3 TOGGLE D8/D9", TUI_COLOR_GRAY3);
     tui_puts(3, 17, "F2/F4:APPS CTRL+B:LAUNCHER", TUI_COLOR_GRAY3);
@@ -2106,7 +2132,7 @@ static unsigned char handle_global_nav(unsigned char key) {
         tui_return_to_launcher();
         return 1u;
     }
-    if (nav_action >= 1u && nav_action <= 15u) {
+    if (nav_action >= 1u && nav_action <= 23u) {
         resume_save_state();
         tui_switch_to_app(nav_action);
         return 1u;
@@ -2135,7 +2161,7 @@ static void quicknotes_init(void) {
     find_buf[0] = 0;
 
     bank = SHIM_CURRENT_BANK;
-    if (bank >= 1u && bank <= 15u) {
+    if (bank >= 1u && bank <= 23u) {
         resume_init_for_app(bank, bank, RESUME_SCHEMA_V1);
         resume_ready = 1u;
     }
@@ -2168,6 +2194,16 @@ static void quicknotes_loop(void) {
     while (running) {
         key = tui_getkey();
         if (handle_global_nav(key)) {
+            continue;
+        }
+        if (key == KEY_CTRL_L || key == KEY_CTRL_O) {
+            if (focus_pane == PANE_EDIT) {
+                undraw_cursor();
+                focus_pane = PANE_LIST;
+            } else {
+                focus_pane = PANE_EDIT;
+            }
+            quicknotes_refresh();
             continue;
         }
 

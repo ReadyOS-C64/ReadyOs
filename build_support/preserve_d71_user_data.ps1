@@ -13,34 +13,6 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$managedPrgs = @(
-    'preboot',
-    'prebootraw',
-    'setd71',
-    'showcfg',
-    'boot',
-    'launcher',
-    'editor',
-    'calcplus',
-    'hexview',
-    'clipmgr',
-    'reuviewer',
-    'tasklist',
-    'game2048',
-    'deminer',
-    'cal26',
-    'dizzy',
-    'readme',
-    'readyshell',
-    'rsovl1',
-    'rsovl2',
-    'rsovl3',
-    'ovl1',
-    'ovl2',
-    'ovl3',
-    'test reu'
-)
-
 $managedSeqs = @(
     'apps.cfg',
     'editor help'
@@ -56,7 +28,6 @@ function Test-ManagedBuildFile {
     )
 
     switch ($Type) {
-        'prg' { return $managedPrgs -contains $Name }
         'seq' { return $managedSeqs -contains $Name }
         default { return $false }
     }
@@ -99,7 +70,7 @@ function Invoke-BackupMode {
         }
 
         $type = $typeMatch.Groups[1].Value.ToLowerInvariant()
-        if ($type -notin @('prg', 'seq', 'rel', 'usr')) {
+        if ($type -notin @('seq', 'rel', 'usr')) {
             continue
         }
 
@@ -132,7 +103,6 @@ function Invoke-BackupMode {
         switch ($type) {
             'seq' { $readSpec = "{0},s" -f $name }
             'usr' { $readSpec = "{0},u" -f $name }
-            'prg' { $readSpec = "{0},p" -f $name }
         }
 
         & c1541 $Disk '-read' $readSpec $hostFile *> $null
@@ -177,7 +147,7 @@ function Invoke-RestoreMode {
             'rel' { $writeSpec = "{0},l,{1}" -f $name, $recLen }
             'seq' { $writeSpec = "{0},s" -f $name }
             'usr' { $writeSpec = "{0},u" -f $name }
-            default { $writeSpec = $name }
+            default { continue }
         }
 
         & c1541 $Disk '-write' $hostFile $writeSpec *> $null

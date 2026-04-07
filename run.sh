@@ -137,38 +137,8 @@ VICE_OPTS=(
     +busdevice9
 )
 
-# Files written by the build itself (program payloads). Everything else on disk
-# is treated as user data and preserved across rebuilds.
-BUILD_MANAGED_PRGS=(
-    "preboot"
-    "prebootraw"
-    "setd71"
-    "showcfg"
-    "boot"
-    "launcher"
-    "editor"
-    "calcplus"
-    "hexview"
-    "clipmgr"
-    "reuviewer"
-    "tasklist"
-    "simplefiles"
-    "simplecells"
-    "game2048"
-    "deminer"
-    "cal26"
-    "dizzy"
-    "readme"
-    "readyshell"
-    "rsovl1"
-    "rsovl2"
-    "rsovl3"
-    "ovl1"
-    "ovl2"
-    "ovl3"
-    "test reu"
-)
-
+# Only non-program user data is preserved across rebuilds. PRGs are always
+# rebuilt and reinstalled from current workspace artifacts.
 BUILD_MANAGED_SEQS=(
     "apps.cfg"
     "editor help"
@@ -428,14 +398,6 @@ is_managed_build_file() {
     local type_lc="$2"
     local f
 
-    if [ "$type_lc" = "prg" ]; then
-        for f in "${BUILD_MANAGED_PRGS[@]}"; do
-            if [ "$name_lc" = "$f" ]; then
-                return 0
-            fi
-        done
-    fi
-
     if [ "$type_lc" = "seq" ]; then
         for f in "${BUILD_MANAGED_SEQS[@]}"; do
             if [ "$name_lc" = "$f" ]; then
@@ -475,7 +437,7 @@ collect_user_disk_files() {
 
         type="$(printf "%s\n" "$line" | awk '{print tolower($NF)}')"
         case "$type" in
-            prg|seq|rel|usr) ;;
+            seq|rel|usr) ;;
             *) continue ;;
         esac
 
@@ -506,7 +468,6 @@ collect_user_disk_files() {
         case "$type" in
             seq) read_spec="${name},s" ;;
             usr) read_spec="${name},u" ;;
-            prg) read_spec="${name},p" ;;
         esac
 
         if ! c1541 "$src_disk" -read "$read_spec" "$host_file" >/dev/null 2>/dev/null; then
@@ -559,14 +520,6 @@ restore_user_disk_files() {
                     restored=$((restored + 1))
                 else
                     echo "Warning: failed to restore USR file '$name'"
-                    failed=$((failed + 1))
-                fi
-                ;;
-            *)
-                if c1541 "$dst_disk" -write "$host_file" "$name" >/dev/null 2>/dev/null; then
-                    restored=$((restored + 1))
-                else
-                    echo "Warning: failed to restore PRG file '$name'"
                     failed=$((failed + 1))
                 fi
                 ;;
