@@ -1,12 +1,24 @@
 # ReadyOS
 
-ReadyOS is a keyboard-first application environment for the Commodore 64,
-built with `cc65`, dual `D71` disk images, and REU-backed app switching.
-PRECOG `0.1.7` is the current experimental release line.
+ReadyOS PRECOG is an experimental REU-first environment for a modern
+Commodore 64 setup. It is aimed first at the Commodore 64 Ultimate, but it is
+also designed to run well in VICE with REU enabled, which makes it a practical
+fit for THEC64 Mini / Maxi style workflows too. PRECOG `0.1.7` is the current
+experimental release line.
 
-It is tuned for both `1MHz` and `48MHz` workflows and is aimed at fast
-switching between full-screen apps while keeping shared state, clipboard, and
-resume data available outside the active app window.
+What if a Commodore 64 could feel ready, not just nostalgic? ReadyOS treats
+waiting as the enemy. It is a keyboard-first, full-screen terminal-style
+environment built around instant app switching, suspend/resume, shared
+clipboard and history, and deeper links between apps. The goal is a C64
+workflow where READY means responsive, reliable, and repeatable.
+
+At a glance:
+
+- requires an REU-backed modern C64 path; tested at `16MB` REU
+- primary focus: Commodore 64 Ultimate workflows
+- practical secondary path: VICE with REU enabled
+- tuned to stay usable from `1MHz` up through `48MHz`
+- ships as two `D71` images with REU-backed app switching
 
 Project overview: https://readyos.notion.site/
 
