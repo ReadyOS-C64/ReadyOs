@@ -97,6 +97,9 @@ static char current_note_lines[MAX_NOTE_LINES][MAX_LINE_LEN];
 static char swap_note_lines[MAX_NOTE_LINES][MAX_LINE_LEN];
 static char note_titles[MAX_NOTES][NOTE_TITLE_LEN + 1];
 static unsigned char note_line_counts[MAX_NOTES];
+static unsigned char note_cursor_x[MAX_NOTES];
+static unsigned char note_cursor_y[MAX_NOTES];
+static unsigned char note_scroll_y[MAX_NOTES];
 
 static unsigned char note_count;
 static unsigned char current_note_idx;
@@ -132,6 +135,9 @@ static ResumeWriteSegment quicknotes_resume_write_segments[] = {
     { current_note_lines, sizeof(current_note_lines) },
     { note_titles, sizeof(note_titles) },
     { note_line_counts, sizeof(note_line_counts) },
+    { note_cursor_x, sizeof(note_cursor_x) },
+    { note_cursor_y, sizeof(note_cursor_y) },
+    { note_scroll_y, sizeof(note_scroll_y) },
     { &note_count, sizeof(note_count) },
     { &current_note_idx, sizeof(current_note_idx) },
     { &current_line_count, sizeof(current_line_count) },
@@ -154,6 +160,9 @@ static ResumeReadSegment quicknotes_resume_read_segments[] = {
     { current_note_lines, sizeof(current_note_lines) },
     { note_titles, sizeof(note_titles) },
     { note_line_counts, sizeof(note_line_counts) },
+    { note_cursor_x, sizeof(note_cursor_x) },
+    { note_cursor_y, sizeof(note_cursor_y) },
+    { note_scroll_y, sizeof(note_scroll_y) },
     { &note_count, sizeof(note_count) },
     { &current_note_idx, sizeof(current_note_idx) },
     { &current_line_count, sizeof(current_line_count) },
@@ -624,6 +633,9 @@ static void init_blank_document(void) {
 
     memset(note_titles, 0, sizeof(note_titles));
     memset(note_line_counts, 0, sizeof(note_line_counts));
+    memset(note_cursor_x, 0, sizeof(note_cursor_x));
+    memset(note_cursor_y, 0, sizeof(note_cursor_y));
+    memset(note_scroll_y, 0, sizeof(note_scroll_y));
     clear_note_buffer(current_note_lines);
     clear_note_buffer(swap_note_lines);
     prepare_fresh_storage();
@@ -661,6 +673,9 @@ static void save_current_note_to_slot(void) {
         current_line_count = 1u;
     }
     note_line_counts[current_note_idx] = current_line_count;
+    note_cursor_x[current_note_idx] = cursor_x;
+    note_cursor_y[current_note_idx] = cursor_y;
+    note_scroll_y[current_note_idx] = scroll_y;
     stash_buffer_to_note(current_note_idx, current_note_lines);
     current_dirty = 0u;
 }
@@ -676,9 +691,9 @@ static void load_current_note_from_slot(void) {
         current_line_count = 1u;
     }
 
-    cursor_x = 0u;
-    cursor_y = 0u;
-    scroll_y = 0u;
+    cursor_x = note_cursor_x[current_note_idx];
+    cursor_y = note_cursor_y[current_note_idx];
+    scroll_y = note_scroll_y[current_note_idx];
     clear_selection();
     clamp_view_state();
     current_dirty = 0u;
@@ -1491,6 +1506,9 @@ static unsigned char file_load(const char *name) {
 
     memset(note_titles, 0, sizeof(note_titles));
     memset(note_line_counts, 0, sizeof(note_line_counts));
+    memset(note_cursor_x, 0, sizeof(note_cursor_x));
+    memset(note_cursor_y, 0, sizeof(note_cursor_y));
+    memset(note_scroll_y, 0, sizeof(note_scroll_y));
     clear_note_buffer(current_note_lines);
     clear_note_buffer(swap_note_lines);
     prepare_fresh_storage();
@@ -1906,6 +1924,9 @@ static void create_note_after_current(void) {
     for (idx = note_count; idx > insert_idx; --idx) {
         strcpy(note_titles[idx], note_titles[idx - 1u]);
         note_line_counts[idx] = note_line_counts[idx - 1u];
+        note_cursor_x[idx] = note_cursor_x[idx - 1u];
+        note_cursor_y[idx] = note_cursor_y[idx - 1u];
+        note_scroll_y[idx] = note_scroll_y[idx - 1u];
         fetch_note_to_buffer(idx - 1u, swap_note_lines);
         stash_buffer_to_note(idx, swap_note_lines);
     }
@@ -1913,6 +1934,9 @@ static void create_note_after_current(void) {
     clear_note_buffer(current_note_lines);
     current_line_count = 1u;
     note_line_counts[insert_idx] = 1u;
+    note_cursor_x[insert_idx] = 0u;
+    note_cursor_y[insert_idx] = 0u;
+    note_scroll_y[insert_idx] = 0u;
     set_default_title(insert_idx, note_titles[insert_idx]);
     stash_buffer_to_note(insert_idx, current_note_lines);
 
@@ -1945,6 +1969,9 @@ static void delete_current_note(void) {
         clear_note_buffer(current_note_lines);
         current_line_count = 1u;
         note_line_counts[0] = 1u;
+        note_cursor_x[0] = 0u;
+        note_cursor_y[0] = 0u;
+        note_scroll_y[0] = 0u;
         set_default_title(0u, note_titles[0]);
         stash_buffer_to_note(0u, current_note_lines);
         cursor_x = 0u;
@@ -1959,12 +1986,18 @@ static void delete_current_note(void) {
     for (idx = current_note_idx; idx < note_count - 1u; ++idx) {
         strcpy(note_titles[idx], note_titles[idx + 1u]);
         note_line_counts[idx] = note_line_counts[idx + 1u];
+        note_cursor_x[idx] = note_cursor_x[idx + 1u];
+        note_cursor_y[idx] = note_cursor_y[idx + 1u];
+        note_scroll_y[idx] = note_scroll_y[idx + 1u];
         fetch_note_to_buffer(idx + 1u, swap_note_lines);
         stash_buffer_to_note(idx, swap_note_lines);
     }
 
     note_titles[note_count - 1u][0] = 0;
     note_line_counts[note_count - 1u] = 0u;
+    note_cursor_x[note_count - 1u] = 0u;
+    note_cursor_y[note_count - 1u] = 0u;
+    note_scroll_y[note_count - 1u] = 0u;
     --note_count;
     if (current_note_idx >= note_count) {
         current_note_idx = (unsigned char)(note_count - 1u);
@@ -1978,11 +2011,13 @@ static void move_current_note_up(void) {
     unsigned char other;
     char title_tmp[NOTE_TITLE_LEN + 1];
     unsigned char line_tmp;
+    unsigned char view_tmp;
 
     if (current_note_idx == 0u) {
         return;
     }
 
+    save_current_note_to_slot();
     other = (unsigned char)(current_note_idx - 1u);
     fetch_note_to_buffer(other, swap_note_lines);
     stash_buffer_to_note(other, current_note_lines);
@@ -1996,6 +2031,18 @@ static void move_current_note_up(void) {
     note_line_counts[other] = note_line_counts[current_note_idx];
     note_line_counts[current_note_idx] = line_tmp;
 
+    view_tmp = note_cursor_x[other];
+    note_cursor_x[other] = note_cursor_x[current_note_idx];
+    note_cursor_x[current_note_idx] = view_tmp;
+
+    view_tmp = note_cursor_y[other];
+    note_cursor_y[other] = note_cursor_y[current_note_idx];
+    note_cursor_y[current_note_idx] = view_tmp;
+
+    view_tmp = note_scroll_y[other];
+    note_scroll_y[other] = note_scroll_y[current_note_idx];
+    note_scroll_y[current_note_idx] = view_tmp;
+
     current_note_idx = other;
     modified = 1u;
     current_dirty = 1u;
@@ -2006,11 +2053,13 @@ static void move_current_note_down(void) {
     unsigned char other;
     char title_tmp[NOTE_TITLE_LEN + 1];
     unsigned char line_tmp;
+    unsigned char view_tmp;
 
     if (current_note_idx + 1u >= note_count) {
         return;
     }
 
+    save_current_note_to_slot();
     other = (unsigned char)(current_note_idx + 1u);
     fetch_note_to_buffer(other, swap_note_lines);
     stash_buffer_to_note(other, current_note_lines);
@@ -2023,6 +2072,18 @@ static void move_current_note_down(void) {
     line_tmp = note_line_counts[other];
     note_line_counts[other] = note_line_counts[current_note_idx];
     note_line_counts[current_note_idx] = line_tmp;
+
+    view_tmp = note_cursor_x[other];
+    note_cursor_x[other] = note_cursor_x[current_note_idx];
+    note_cursor_x[current_note_idx] = view_tmp;
+
+    view_tmp = note_cursor_y[other];
+    note_cursor_y[other] = note_cursor_y[current_note_idx];
+    note_cursor_y[current_note_idx] = view_tmp;
+
+    view_tmp = note_scroll_y[other];
+    note_scroll_y[other] = note_scroll_y[current_note_idx];
+    note_scroll_y[current_note_idx] = view_tmp;
 
     current_note_idx = other;
     modified = 1u;
