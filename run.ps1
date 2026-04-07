@@ -444,7 +444,7 @@ $script:DizzyPrg = 'dizzy.prg'
 $script:ReadmePrg = 'readme.prg'
 $script:ShowcfgPrg = 'showcfg.prg'
 
-$script:VersionBase = '0.1.6'
+$script:VersionBase = '0.1.7'
 $script:VersionStateFile = Join-Path ([System.IO.Path]::GetTempPath()) 'readyos_run_version_suffix.txt'
 $script:VersionHeaderFile = Join-Path $script:RepoRoot 'src/generated/build_version.h'
 $script:VersionAsmFile = Join-Path $script:RepoRoot 'src/generated/msg_version.inc'

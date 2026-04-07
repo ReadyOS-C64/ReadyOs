@@ -1,5 +1,17 @@
+## ReadyOS PRECOG 0.1.7
+
 The goal is **fast app switching** for Commodore 64 Ultimate use,
-tuned for both 1MHz and 48MHz while staying C64-class practical.
+tuned to stay usable at both 1MHz and 48MHz while remaining
+C64-class practical.
+
+Current snapshot:
+- Base release: **0.1.7**
+- Runtime target: clean behavior from stock-speed C64 use up through
+  Ultimate turbo workflows
+- Media layout: two `D71` disks, `readyos.d71` on drive 8 and
+  `readyos_2.d71` on drive 9
+- New since 0.1.5: **quicknotes**, **simple files**, **simple cells**,
+  and **deminer**
 
 ---
 
@@ -25,7 +37,8 @@ REU-first workflow with instant app switching, suspend/resume,
 shared clipboard + history, and deep links between apps.
 
 Designed for Commodore 64 Ultimate workflows first, ReadyOS is
-tuned to behave cleanly at both 1MHz and 48MHz operation.
+tuned to behave cleanly at both 1MHz and 48MHz operation, with the
+same keyboard-first flow preserved across speed settings.
 
 It is also built for backward compatibility with classic C64 + REU
 setups and emulator-based use.
@@ -55,7 +68,10 @@ Key attributes:
 - Tiny shim core + shared libraries that can evolve over time.
 - Shared clipboard plus clipboard history across workflows.
 - Deep links between apps to specific views or contexts.
-- Hardware-friendly speed scaling for stable UI/input behavior.
+- Hardware-friendly speed scaling for stable UI/input behavior across
+  slower and faster machines.
+- Dual-disk layout so boot-side apps and the larger app set can be
+  split cleanly across drive 8 and drive 9.
 - UltimateBuddy can extend launch/control workflows when present,
   while ReadyOS remains fully usable without it.
 
@@ -108,37 +124,34 @@ Future-facing themes:
 
 ## App Catalog
 
+The current PRECOG catalog is larger than the older 0.1.5 set.
+
+Recent additions:
+- Quicknotes for fast REU-backed notes.
+- Simple Files for dual-pane file browsing and SEQ viewing.
+- Simple Cells for spreadsheet-style work.
+- Deminer for a fast puzzle/game app that still respects ReadyOS
+  suspend/resume flow.
+
+Disk layout:
+- `readyos.d71` is drive 8.
+- `readyos_2.d71` is drive 9.
+
+### Drive 8 Apps
+
+These are the boot-side and utility-side apps on `readyos.d71`.
+
+### Quicknotes
+
+REU-backed note editor for fast capture and return-to-work flow.
+
+### Deminer
+
+Minesweeper-style puzzle tuned for keyboard play and quick resume.
+
 ### Launcher
 
 Entry point for launching, switching, and managing app flow.
-
-### Editor
-
-Text editing with save/load and system clipboard integration.
-
-### Calc Plus
-
-Expression calculator with history, modes, and function tools.
-
-### Hex View
-
-Memory browser with PETSCII and raw screen-code views.
-
-### Clipboard Manager
-
-Multi-item clipboard history with preview, import, and clear.
-
-### REU Viewer
-
-Live map view for REU usage and allocation categories.
-
-### Task List
-
-Hierarchical outliner with notes, search, and persistence.
-
-### 2048
-
-Keyboard-first PETSCII game with quick pause/resume flow.
 
 ### Calendar 26
 
@@ -166,6 +179,51 @@ Current overlay roles:
 Current limitation:
 - the current build can crash on the third entry after repeated
   app switching, so treat it as a fragile demo
+
+### Drive 9 Apps
+
+These live on `readyos_2.d71`, the second ReadyOS app disk.
+
+### Editor
+
+Text editing with save/load, selection support, and system clipboard
+integration.
+
+### Calc Plus
+
+Expression calculator with history, modes, and function tools.
+
+### Hex View
+
+Memory browser with PETSCII and raw screen-code views.
+
+### Clipboard Manager
+
+Multi-item clipboard history with preview, import, and clear.
+
+### REU Viewer
+
+Live map view for REU usage and allocation categories.
+
+### Task List
+
+Hierarchical outliner with notes, search, and persistence.
+
+### Simple Files
+
+Dual-pane file manager and SEQ viewer for disk-oriented workflows.
+
+### Simple Cells
+
+Spreadsheet-style grid with formulas, colors, and file persistence.
+
+### 2048
+
+Keyboard-first PETSCII game with quick pause/resume flow.
+
+### Read.me
+
+In-system project overview generated from markdown-lite content.
 
 ---
 

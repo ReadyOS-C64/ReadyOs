@@ -6,11 +6,21 @@ full-screen apps by treating the app runtime window as a swappable memory image
 while keeping a small resident shim and shared metadata alive outside that
 window.
 
-ReadyOS PRECOG is the current experimental path toward ReadyOS itself, with a
-particular focus on the C64 Ultimate as a machine that could feel ready for
-real use, not just nostalgic use. The core value proposition is an REU-first,
-keyboard-first, terminal-style environment with instant app switching,
-suspend/resume, shared clipboard and history, and deeper links between apps.
+ReadyOS PRECOG 0.1.7 is the current experimental path toward ReadyOS itself,
+with a particular focus on the C64 Ultimate as a machine that could feel ready
+for real use, not just nostalgic use. The core value proposition is an
+REU-first, keyboard-first, terminal-style environment with instant app
+switching, suspend/resume, shared clipboard and history, and deeper links
+between apps.
+
+Current status:
+
+- Base release is `0.1.7` with the existing rolling build suffix flow
+- Tuned for both `1MHz` and `48MHz` operation
+- Built and shipped as two `D71` images: `readyos.d71` on drive 8 and
+  `readyos_2.d71` on drive 9
+- Since `0.1.5`, the catalog has expanded with `quicknotes`,
+  `simplefiles`, `simplecells`, and `deminer`
 
 The broader vision is a fast C64 workflow where "READY" means responsive,
 reliable, and repeatable, and where this environment can later pair with
@@ -44,12 +54,15 @@ disk as `apps.cfg`.
 
 | Drive | Program | Display Name | Purpose |
 | --- | --- | --- | --- |
+| 8 | `quicknotes` | quicknotes | REU-backed note editor |
 | 9 | `editor` | editor | Text editor with clipboard support |
 | 9 | `calcplus` | calc plus | Keyboard-first expression calculator |
 | 9 | `hexview` | hex viewer | Browse memory in hex form |
 | 9 | `clipmgr` | clipboard | Manage clipboard items in REU |
 | 9 | `reuviewer` | reu viewer | Inspect REU allocation and usage |
 | 9 | `tasklist` | task list | Outline and notes app with search |
+| 9 | `simplefiles` | simple files | Dual-pane file manager and SEQ viewer |
+| 9 | `simplecells` | simple cells (alpha) | Spreadsheet with formulas and colors |
 | 9 | `game2048` | 2048 game | 2048 tile puzzle |
 | 8 | `deminer` | deminer | Minesweeper-style puzzle |
 | 8 | `cal26` | calendar 26 | 2026 calendar with REL-backed appointments |
@@ -338,7 +351,8 @@ rebuilds, while OS-owned catalog/build artifacts are rebuilt.
 - `src/generated/build_version.h`
 - `src/generated/msg_version.inc`
 
-It uses a rolling suffix written to `/tmp/readyos_run_version_suffix.txt`.
+The base version is currently `0.1.7`, with a rolling suffix written to
+`/tmp/readyos_run_version_suffix.txt`.
 `--skipbuild` preserves the currently embedded version strings because it avoids
 regenerating binaries.
 
