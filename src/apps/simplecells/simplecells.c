@@ -297,7 +297,6 @@ static unsigned char restore_resume_state(void);
 static void resume_save_state(void);
 static void fill_grid_display(unsigned char row,
                               unsigned char col,
-                              unsigned char allow_formula,
                               ScValue *value,
                               char *display);
 static void value_set_text(ScValue *value, const char *text);
@@ -1015,7 +1014,6 @@ static void format_display_value(const ScValue *value, unsigned char col, char *
 
 static void fill_grid_display(unsigned char row,
                               unsigned char col,
-                              unsigned char allow_formula,
                               ScValue *value,
                               char *display) {
     unsigned int idx;
@@ -1033,10 +1031,6 @@ static void fill_grid_display(unsigned char row,
     if ((cell_flags[idx] & CELL_FLAG_FORMULA) != 0u) {
         unsigned char err;
 
-        if (!allow_formula) {
-            strcpy(display, "=");
-            return;
-        }
         err = ERR_NONE;
         (void)eval_cell_value(row, col, 0u, value, &err);
         format_display_value(value, col, display);
@@ -1824,7 +1818,6 @@ static void draw_grid_row(unsigned char row_on_screen) {
         value = &eval_tmp_a[0];
         fill_grid_display(sheet_row,
                           col,
-                          (unsigned char)(selected != 0u),
                           value,
                           draw_display_buf);
         color = cell_effective_color(sheet_row, col, value);
