@@ -523,7 +523,7 @@ profile: programs
 
 release-all: prepare-version
 	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
-	for profile in $$($(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py list-ids); do \
+	for profile in precog-dual-d71 $$($(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py list-ids | grep -v '^precog-dual-d71$$'); do \
 		echo "==> $$profile ($$VERSION_TEXT)"; \
 		$(MAKE) PROFILE="$$profile" READYOS_VERSION_TEXT="$$VERSION_TEXT" profile; \
 	done

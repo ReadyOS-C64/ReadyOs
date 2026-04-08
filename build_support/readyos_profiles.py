@@ -21,11 +21,95 @@ import build_apps_catalog_petscii as apps_catalog
 ROOT = Path(__file__).resolve().parents[1]
 PROFILES_DIR = ROOT / "cfg" / "profiles"
 RELEASE_DIR = ROOT / "release"
+AUTHORITATIVE_PROFILE_ID = "precog-dual-d71"
+AUTHORITATIVE_DATA_DIR = ROOT / "cfg" / "authoritative"
+BOOTSTRAP_D71_BY_DRIVE = {
+    8: ROOT / "readyos.d71",
+    9: ROOT / "readyos_2.d71",
+}
 REL_SEED_D71_CANDIDATES = [
     ROOT / "readyos0-1-5.d71",
     ROOT.parent / "readyos0-1-5.d71",
     ROOT.parent.parent / "readyos0-1-5.d71",
 ]
+AUTHORITATIVE_SUPPORT_FILES = (
+    {
+        "app": "editor",
+        "disk_name": "editor help",
+        "repo_name": "editor_help.seq",
+        "type": "seq",
+        "bootstrap_drive": 9,
+        "generated_artifact": "obj/editor_help.seq",
+    },
+    {
+        "app": "tasklist",
+        "disk_name": "example tasks",
+        "repo_name": "example_tasks.seq",
+        "type": "seq",
+        "bootstrap_drive": 9,
+        "generated_artifact": "obj/tasklist_sample.seq",
+    },
+    {
+        "app": "quicknotes",
+        "disk_name": "myquicknotes",
+        "repo_name": "myquicknotes.seq",
+        "type": "seq",
+        "bootstrap_drive": 8,
+    },
+    {
+        "app": "clipmgr",
+        "disk_name": "CLIPSET1",
+        "repo_name": "clipset1.seq",
+        "type": "seq",
+        "bootstrap_drive": 8,
+    },
+    {
+        "app": "clipmgr",
+        "disk_name": "CLIPSET3",
+        "repo_name": "clipset3.seq",
+        "type": "seq",
+        "bootstrap_drive": 8,
+    },
+    {
+        "app": "simplecells",
+        "disk_name": "sheet2",
+        "repo_name": "sheet2.seq",
+        "type": "seq",
+        "bootstrap_drive": 8,
+    },
+    {
+        "app": "cal26",
+        "disk_name": "cal26.rel",
+        "repo_name": "cal26.rel",
+        "type": "rel",
+        "record_length": 64,
+        "bootstrap_drive": 8,
+    },
+    {
+        "app": "cal26",
+        "disk_name": "cal26cfg.rel",
+        "repo_name": "cal26cfg.rel",
+        "type": "rel",
+        "record_length": 32,
+        "bootstrap_drive": 8,
+    },
+    {
+        "app": "dizzy",
+        "disk_name": "dizzy.rel",
+        "repo_name": "dizzy.rel",
+        "type": "rel",
+        "record_length": 64,
+        "bootstrap_drive": 8,
+    },
+    {
+        "app": "dizzy",
+        "disk_name": "dizzycfg.rel",
+        "repo_name": "dizzycfg.rel",
+        "type": "rel",
+        "record_length": 32,
+        "bootstrap_drive": 8,
+    },
+)
 KNOWN_APP_NAMES = {
     "editor",
     "quicknotes",
@@ -275,14 +359,12 @@ def ensure_generated_assets(profile: Dict[str, object],
 
 def managed_build_names(profile: Dict[str, object], apps_set: set[str]) -> set[str]:
     managed = {"apps.cfg"}
-    if "editor" in apps_set:
-        managed.add("editor help")
-    if "tasklist" in apps_set:
-        managed.add("example tasks")
-    return managed
+    for entry in authoritative_support_entries(apps_set):
+        managed.add(str(entry["disk_name"]))
+    return {name.lower() for name in managed}
 
 
-def backup_user_files(disk_path: Path, managed_seqs: set[str]) -> tuple[Path, Path] | None:
+def backup_user_files(disk_path: Path, managed_names: set[str]) -> tuple[Path, Path] | None:
     if not disk_path.exists():
         return None
 
@@ -304,7 +386,7 @@ def backup_user_files(disk_path: Path, managed_seqs: set[str]) -> tuple[Path, Pa
         ftype = parts[-1].lower()
         if ftype not in {"seq", "rel", "usr"}:
             continue
-        if ftype == "seq" and name.lower() in managed_seqs:
+        if name.lower() in managed_names:
             continue
 
         idx += 1
@@ -363,6 +445,90 @@ def resolve_rel_seed_d71() -> Path | None:
         if candidate.exists():
             return candidate
     return None
+
+
+def authoritative_support_entries(apps_set: set[str]) -> List[Dict[str, object]]:
+    return [entry for entry in AUTHORITATIVE_SUPPORT_FILES if str(entry["app"]) in apps_set]
+
+
+def authoritative_support_path(entry: Dict[str, object]) -> Path:
+    return AUTHORITATIVE_DATA_DIR / str(entry["repo_name"])
+
+
+def extract_disk_file(source_disk: Path, disk_name: str, file_type: str, target_path: Path) -> None:
+    if file_type == "rel":
+        spec = f"{disk_name},l"
+    elif file_type == "seq":
+        spec = f"{disk_name},s"
+    else:
+        fail(f"unsupported authoritative file type: {file_type}")
+    run(["c1541", str(source_disk), "-read", spec, str(target_path)], check=False)
+    if not target_path.exists() or target_path.stat().st_size == 0:
+        target_path.unlink(missing_ok=True)
+        fail(f"missing {file_type.upper()} payload in source disk {source_disk}: {disk_name}")
+
+
+def resolve_bootstrap_d71_disks() -> Dict[int, Path]:
+    disks: Dict[int, Path] = {}
+    for drive, path in BOOTSTRAP_D71_BY_DRIVE.items():
+        if path.exists():
+            disks[int(drive)] = path
+
+    try:
+        manifest = resolve_profile(AUTHORITATIVE_PROFILE_ID, None, latest=True)
+    except ValueError:
+        manifest = None
+
+    if manifest is not None:
+        for disk in manifest.get("disks", []):
+            path = Path(str(disk.get("path", "")))
+            drive = int(disk.get("drive", 0))
+            if path.exists() and drive not in disks:
+                disks[int(disk.get("drive", 0))] = path
+
+    donor = resolve_rel_seed_d71()
+    if donor is not None and 8 not in disks:
+        disks[8] = donor
+    return disks
+
+
+def bootstrap_authoritative_support_files(apps_set: set[str]) -> None:
+    ensure_dir(AUTHORITATIVE_DATA_DIR)
+    bootstrap_disks = resolve_bootstrap_d71_disks()
+    for entry in authoritative_support_entries(apps_set):
+        target_path = authoritative_support_path(entry)
+        if target_path.exists():
+            continue
+
+        source_disk = bootstrap_disks.get(int(entry["bootstrap_drive"]))
+        if source_disk is not None:
+            extract_disk_file(source_disk, str(entry["disk_name"]), str(entry["type"]), target_path)
+            continue
+
+        generated_artifact = entry.get("generated_artifact")
+        if generated_artifact:
+            generated_path = ROOT / str(generated_artifact)
+            if generated_path.exists():
+                shutil.copyfile(generated_path, target_path)
+                continue
+
+        fail(f"unable to bootstrap authoritative support file: {target_path}")
+
+
+def write_authoritative_support_file(entry: Dict[str, object], target_disk: Path) -> None:
+    source_path = authoritative_support_path(entry)
+    if not source_path.exists():
+        fail(f"missing authoritative support file: {source_path}")
+
+    disk_name = str(entry["disk_name"])
+    run(["c1541", str(target_disk), "-delete", disk_name], check=False)
+    if str(entry["type"]) == "rel":
+        spec = f"{disk_name},l,{int(entry['record_length'])}"
+    elif str(entry["type"]) == "seq":
+        spec = f"{disk_name},s"
+    else:
+        fail(f"unsupported authoritative file type: {entry['type']}")
+    run(["c1541", str(target_disk), "-write", str(source_path), spec], check=False)
 
 
 def build_help_text(profile: Dict[str, object],
@@ -479,12 +645,13 @@ def build_release(profile_id: str,
     catalog_source = Path(catalog_override) if catalog_override else profile_catalog_source(profile)
     entries = parse_catalog_entries(profile, str(catalog_source))
     apps_set = enabled_apps(entries)
-    managed_seqs = managed_build_names(profile, apps_set)
+    managed_files = managed_build_names(profile, apps_set)
     output_dir = Path(resolved["output_dir"])
     manifest_path = Path(resolved["manifest_path"])
 
     ensure_dir(output_dir)
     ensure_generated_assets(profile, catalog_source, override_load_all, override_run_first)
+    bootstrap_authoritative_support_files(apps_set)
     rebuild_profile_boot_chain(profile, version_text)
 
     previous_manifest = None
@@ -495,12 +662,13 @@ def build_release(profile_id: str,
     if previous_manifest:
         for disk in previous_manifest.get("disks", []):
             old_path = Path(str(disk["path"]))
-            backup = backup_user_files(old_path, managed_seqs)
+            backup = backup_user_files(old_path, managed_files)
             if backup:
                 backups[int(disk["index"])] = backup
 
     for disk_meta in profile["disks"]:
         disk_index = int(disk_meta["index"])
+        disk_drive = int(disk_meta["drive"])
         disk_path = output_dir / build_disk_filename(profile, disk_meta, version_text)
         if disk_path.exists():
             disk_path.unlink()
@@ -523,10 +691,10 @@ def build_release(profile_id: str,
             if op["type"] == "seed_cal26_rel" and "cal26" in apps_set:
                 run([sys.executable, str(ROOT / "build_support" / "seed_cal26_rel.py"),
                      "--disk", str(disk_path)])
-                donor = resolve_rel_seed_d71()
-                if donor is not None and disk_meta["image_type"] == "d71":
-                    run([str(ROOT / "build_support" / "recover_cal26_rel_from_d71.sh"),
-                         str(donor), str(disk_path)], check=False)
+
+        disk_apps = {str(entry["prg"]) for entry in entries if int(entry["drive"]) == disk_drive}
+        for support_entry in authoritative_support_entries(disk_apps):
+            write_authoritative_support_file(support_entry, disk_path)
 
         if disk_index in backups:
             _stage_dir, manifest = backups[disk_index]

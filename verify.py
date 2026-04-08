@@ -788,6 +788,7 @@ def main():
     known_apps = {name for name, _ in APP_PRGS}
     for disk_meta in profile["disks"]:
         disk_index = int(disk_meta["index"])
+        disk_drive = int(disk_meta["drive"])
         runtime_disk = disks_by_index.get(disk_index)
         if runtime_disk is None:
             all_ok &= check(f"profile disk {disk_index} exists in runtime manifest", False)
@@ -810,14 +811,38 @@ def main():
                             listing.get(name) == ftype,
                             f"type={listing.get(name)} expect={ftype}")
 
-        for op in disk_meta.get("post_build", []):
-            if op.get("type") == "seed_cal26_rel" and "cal26" in apps_on_catalog:
-                all_ok &= check(f"disk {disk_index} has cal26.rel",
-                                listing.get("cal26.rel") == "rel",
-                                f"type={listing.get('cal26.rel')} expect=rel")
-                all_ok &= check(f"disk {disk_index} has cal26cfg.rel",
-                                listing.get("cal26cfg.rel") == "rel",
-                                f"type={listing.get('cal26cfg.rel')} expect=rel")
+        disk_apps = {entry["prg"] for entry in catalog_entries or [] if int(entry["drive"]) == disk_drive}
+        for support_entry in readyos_profiles.authoritative_support_entries(disk_apps):
+            disk_name = str(support_entry["disk_name"])
+            disk_name_lc = disk_name.lower()
+            ftype = str(support_entry["type"]).lower()
+            all_ok &= check(f"disk {disk_index} has {disk_name_lc}",
+                            listing.get(disk_name_lc) == ftype,
+                            f"type={listing.get(disk_name_lc)} expect={ftype}")
+
+            expected_path = readyos_profiles.authoritative_support_path(support_entry)
+            all_ok &= check(f"authoritative file exists: {expected_path.name}",
+                            expected_path.exists(),
+                            str(expected_path))
+            if not expected_path.exists():
+                continue
+
+            try:
+                if ftype == "rel":
+                    disk_bytes = read_c1541_file_bytes(runtime_disk["path"], f"{disk_name},l")
+                else:
+                    disk_bytes = read_c1541_file_bytes(runtime_disk["path"], f"{disk_name},s")
+            except ValueError as ex:
+                all_ok &= check(f"disk {disk_index} readable {disk_name_lc}", False, str(ex))
+                continue
+
+            expected_bytes = expected_path.read_bytes()
+            all_ok &= check(f"disk {disk_index} {disk_name_lc} bytes present",
+                            len(disk_bytes) > 0,
+                            f"{len(disk_bytes)} bytes")
+            all_ok &= check(f"disk {disk_index} {disk_name_lc} matches authoritative asset",
+                            disk_bytes == expected_bytes,
+                            expected_path.name)
 
     # --- Launcher shim patch contract ---
     print("\n=== Launcher Shim Patch Contract ===")
