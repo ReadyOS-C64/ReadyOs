@@ -38,7 +38,8 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "disk_name": "editor help",
         "repo_name": "editor_help.seq",
         "type": "seq",
-        "bootstrap_drive": 9,
+        "bootstrap_drive": 8,
+        "target_drive": 8,
         "generated_artifact": "obj/editor_help.seq",
     },
     {
@@ -46,7 +47,8 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "disk_name": "example tasks",
         "repo_name": "example_tasks.seq",
         "type": "seq",
-        "bootstrap_drive": 9,
+        "bootstrap_drive": 8,
+        "target_drive": 8,
         "generated_artifact": "obj/tasklist_sample.seq",
     },
     {
@@ -55,6 +57,7 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "repo_name": "myquicknotes.seq",
         "type": "seq",
         "bootstrap_drive": 8,
+        "target_drive": 8,
     },
     {
         "app": "clipmgr",
@@ -62,6 +65,7 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "repo_name": "clipset1.seq",
         "type": "seq",
         "bootstrap_drive": 8,
+        "target_drive": 8,
     },
     {
         "app": "clipmgr",
@@ -69,6 +73,7 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "repo_name": "clipset3.seq",
         "type": "seq",
         "bootstrap_drive": 8,
+        "target_drive": 8,
     },
     {
         "app": "simplecells",
@@ -76,6 +81,7 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "repo_name": "sheet2.seq",
         "type": "seq",
         "bootstrap_drive": 8,
+        "target_drive": 8,
     },
     {
         "app": "cal26",
@@ -84,6 +90,7 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "type": "rel",
         "record_length": 64,
         "bootstrap_drive": 8,
+        "target_drive": 8,
     },
     {
         "app": "cal26",
@@ -92,6 +99,7 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "type": "rel",
         "record_length": 32,
         "bootstrap_drive": 8,
+        "target_drive": 8,
     },
     {
         "app": "dizzy",
@@ -100,6 +108,7 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "type": "rel",
         "record_length": 64,
         "bootstrap_drive": 8,
+        "target_drive": 8,
     },
     {
         "app": "dizzy",
@@ -108,6 +117,7 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "type": "rel",
         "record_length": 32,
         "bootstrap_drive": 8,
+        "target_drive": 8,
     },
 )
 KNOWN_APP_NAMES = {
@@ -455,6 +465,23 @@ def authoritative_support_path(entry: Dict[str, object]) -> Path:
     return AUTHORITATIVE_DATA_DIR / str(entry["repo_name"])
 
 
+def support_target_drive(profile: Dict[str, object], entry: Dict[str, object],
+                         catalog_entries: List[Dict[str, object]]) -> int:
+    preferred = int(entry.get("target_drive", 8))
+    profile_drives = {int(disk["drive"]) for disk in profile["disks"]}
+    if preferred in profile_drives:
+        return preferred
+
+    app_name = str(entry["app"])
+    for catalog_entry in catalog_entries:
+        if str(catalog_entry["prg"]) == app_name:
+            return int(catalog_entry["drive"])
+
+    if profile_drives:
+        return min(profile_drives)
+    fail(f"profile has no drives for support file placement: {profile['id']}")
+
+
 def extract_disk_file(source_disk: Path, disk_name: str, file_type: str, target_path: Path) -> None:
     if file_type == "rel":
         spec = f"{disk_name},l"
@@ -692,8 +719,9 @@ def build_release(profile_id: str,
                 run([sys.executable, str(ROOT / "build_support" / "seed_cal26_rel.py"),
                      "--disk", str(disk_path)])
 
-        disk_apps = {str(entry["prg"]) for entry in entries if int(entry["drive"]) == disk_drive}
-        for support_entry in authoritative_support_entries(disk_apps):
+        for support_entry in authoritative_support_entries(apps_set):
+            if support_target_drive(profile, support_entry, entries) != disk_drive:
+                continue
             write_authoritative_support_file(support_entry, disk_path)
 
         if disk_index in backups:

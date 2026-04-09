@@ -53,9 +53,7 @@
         { "artifact": "simplefiles.prg", "name": "simplefiles", "type": "prg" },
         { "artifact": "simplecells.prg", "name": "simplecells", "type": "prg" },
         { "artifact": "game2048.prg", "name": "game2048", "type": "prg" },
-        { "artifact": "readme.prg", "name": "readme", "type": "prg" },
-        { "artifact": "obj/editor_help.seq", "name": "editor help", "type": "seq", "app": "editor" },
-        { "artifact": "obj/tasklist_sample.seq", "name": "example tasks", "type": "seq", "app": "tasklist" }
+        { "artifact": "readme.prg", "name": "readme", "type": "prg" }
       ]
     }
   ]

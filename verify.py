@@ -811,8 +811,9 @@ def main():
                             listing.get(name) == ftype,
                             f"type={listing.get(name)} expect={ftype}")
 
-        disk_apps = {entry["prg"] for entry in catalog_entries or [] if int(entry["drive"]) == disk_drive}
-        for support_entry in readyos_profiles.authoritative_support_entries(disk_apps):
+        for support_entry in readyos_profiles.authoritative_support_entries(apps_on_catalog):
+            if readyos_profiles.support_target_drive(profile, support_entry, catalog_entries or []) != disk_drive:
+                continue
             disk_name = str(support_entry["disk_name"])
             disk_name_lc = disk_name.lower()
             ftype = str(support_entry["type"]).lower()

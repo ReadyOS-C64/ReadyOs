@@ -1,15 +1,15 @@
 # precog (dual d71)
 
-- Version: `0.1.8Z`
+- Version: `0.1.8D`
 - Kind: `dual-d71`
 
 ## Artifacts
 
-- Drive 8: `readyos-v0.1.8z-dual-d71_1.d71`
-- Drive 9: `readyos-v0.1.8z-dual-d71_2.d71`
-- Host PRG: `readyos-v0.1.8z-dual-d71-preboot.prg`
-- Host PRG: `readyos-v0.1.8z-dual-d71-boot.prg`
-- Host PRG: `readyos-v0.1.8z-dual-d71-setd71.prg`
+- Drive 8: `readyos-v0.1.8d-dual-d71_1.d71`
+- Drive 9: `readyos-v0.1.8d-dual-d71_2.d71`
+- Host PRG: `readyos-v0.1.8d-dual-d71-preboot.prg`
+- Host PRG: `readyos-v0.1.8d-dual-d71-boot.prg`
+- Host PRG: `readyos-v0.1.8d-dual-d71-setd71.prg`
 
 ## Included Apps
 
@@ -32,15 +32,15 @@
 ## VICE Setup
 
 - Enable REU with `16MB`.
-- Configure drive 8 as `1571` with true drive enabled and attach `readyos-v0.1.8z-dual-d71_1.d71`.
-- Configure drive 9 as `1571` with true drive enabled and attach `readyos-v0.1.8z-dual-d71_2.d71`.
+- Configure drive 8 as `1571` with true drive enabled and attach `readyos-v0.1.8d-dual-d71_1.d71`.
+- Configure drive 9 as `1571` with true drive enabled and attach `readyos-v0.1.8d-dual-d71_2.d71`.
 
 ### VICE Command Example
 
-- Autostart target: `readyos-v0.1.8z-dual-d71-preboot.prg`
+- Autostart target: `readyos-v0.1.8d-dual-d71-preboot.prg`
 
 ```sh
-x64sc -reu -reusize 16384 -drive8type 1571 -drive8truedrive -devicebackend8 0 +busdevice8 -8 readyos-v0.1.8z-dual-d71_1.d71 -drive9type 1571 -drive9truedrive -devicebackend9 0 +busdevice9 -9 readyos-v0.1.8z-dual-d71_2.d71 -autostart readyos-v0.1.8z-dual-d71-preboot.prg
+x64sc -reu -reusize 16384 -drive8type 1571 -drive8truedrive -devicebackend8 0 +busdevice8 -8 readyos-v0.1.8d-dual-d71_1.d71 -drive9type 1571 -drive9truedrive -devicebackend9 0 +busdevice9 -9 readyos-v0.1.8d-dual-d71_2.d71 -autostart readyos-v0.1.8d-dual-d71-preboot.prg
 ```
 
 ## Boot
@@ -48,7 +48,7 @@ x64sc -reu -reusize 16384 -drive8type 1571 -drive8truedrive -devicebackend8 0 +b
 - This profile uses the dual-stage boot chain `PREBOOT -> SETD71 -> BOOT`.
 - Both disks must already be attached before boot, and both drives must be configured as `1571`.
 - `SETD71` is part of this variant and reasserts the dual-1571 setup before loading `BOOT`.
-- In VICE, autostart `readyos-v0.1.8z-dual-d71-preboot.prg`, or manually run `LOAD "PREBOOT",8` then `RUN`.
+- In VICE, autostart `readyos-v0.1.8d-dual-d71-preboot.prg`, or manually run `LOAD "PREBOOT",8` then `RUN`.
 
 ## C64 Ultimate
 
