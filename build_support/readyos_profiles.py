@@ -624,6 +624,10 @@ def build_help_text(profile: Dict[str, object],
         "dual-d71": "Default full-content profile for two 1571 drives. This is the main local run and verification target.",
         "d81": "Full-content single-disk profile for 1581/D81 setups where the entire current app set fits on one disk.",
         "dual-d64": "Reduced-content profile for two 1541 drives. It keeps the core productivity apps that fit on dual D64 media.",
+        "solo-d64-a": "Standalone single-D64 subset focused on editor, reference, and dizzy.",
+        "solo-d64-b": "Standalone single-D64 productivity subset with quicknotes, calculator, clipboard, and files.",
+        "solo-d64-c": "Standalone single-D64 planning subset with tasklist, calendar, and REU viewer.",
+        "solo-d64-d": "Standalone single-D64 experimental subset with readyshell, simple cells, game2048, and deminer.",
     }
 
     lines = [

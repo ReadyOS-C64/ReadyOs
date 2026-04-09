@@ -1,0 +1,35 @@
+{
+  "id": "precog-solo-d64-d",
+  "display_name": "precog (solo d64 subset d)",
+  "kind": "solo-d64-d",
+  "default_run": false,
+  "catalog_source": "cfg/profiles/precog-solo-d64-d.ini",
+  "boot": {
+    "preboot_mode": "boot",
+    "autostart_prg": "preboot.prg"
+  },
+  "disks": [
+    {
+      "index": 1,
+      "drive": 8,
+      "label": "readyos64d,ro",
+      "image_type": "d64",
+      "vice_drive_type": "1541",
+      "true_drive": true,
+      "contents": [
+        { "artifact": "preboot.prg", "name": "preboot", "type": "prg" },
+        { "artifact": "showcfg.prg", "name": "showcfg", "type": "prg" },
+        { "artifact": "boot.prg", "name": "boot", "type": "prg" },
+        { "artifact": "launcher.prg", "name": "launcher", "type": "prg" },
+        { "artifact": "readyshell.prg", "name": "readyshell", "type": "prg" },
+        { "artifact": "obj/readyshell_ovl1.prg", "name": "rsovl1", "type": "prg" },
+        { "artifact": "obj/readyshell_ovl2.prg", "name": "rsovl2", "type": "prg" },
+        { "artifact": "obj/readyshell_ovl3.prg", "name": "rsovl3", "type": "prg" },
+        { "artifact": "simplecells.prg", "name": "simplecells", "type": "prg" },
+        { "artifact": "game2048.prg", "name": "game2048", "type": "prg" },
+        { "artifact": "deminer.prg", "name": "deminer", "type": "prg" },
+        { "artifact": "obj/apps_cfg_petscii.seq", "name": "apps.cfg", "type": "seq" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "precog-solo-d64-c",
+  "display_name": "precog (solo d64 subset c)",
+  "kind": "solo-d64-c",
+  "default_run": false,
+  "catalog_source": "cfg/profiles/precog-solo-d64-c.ini",
+  "boot": {
+    "preboot_mode": "boot",
+    "autostart_prg": "preboot.prg"
+  },
+  "disks": [
+    {
+      "index": 1,
+      "drive": 8,
+      "label": "readyos64c,ro",
+      "image_type": "d64",
+      "vice_drive_type": "1541",
+      "true_drive": true,
+      "contents": [
+        { "artifact": "preboot.prg", "name": "preboot", "type": "prg" },
+        { "artifact": "showcfg.prg", "name": "showcfg", "type": "prg" },
+        { "artifact": "boot.prg", "name": "boot", "type": "prg" },
+        { "artifact": "launcher.prg", "name": "launcher", "type": "prg" },
+        { "artifact": "tasklist.prg", "name": "tasklist", "type": "prg" },
+        { "artifact": "cal26.prg", "name": "cal26", "type": "prg" },
+        { "artifact": "reuviewer.prg", "name": "reuviewer", "type": "prg" },
+        { "artifact": "obj/apps_cfg_petscii.seq", "name": "apps.cfg", "type": "seq" }
+      ],
+      "post_build": [
+        { "type": "seed_cal26_rel" }
+      ]
+    }
+  ]
+}

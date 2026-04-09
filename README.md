@@ -31,6 +31,10 @@ The canonical release layout is:
 - `releases/<version>/precog-dual-d71/`
 - `releases/<version>/precog-d81/`
 - `releases/<version>/precog-dual-d64/`
+- `releases/<version>/precog-solo-d64-a/`
+- `releases/<version>/precog-solo-d64-b/`
+- `releases/<version>/precog-solo-d64-c/`
+- `releases/<version>/precog-solo-d64-d/`
 
 Older checked-in snapshot folders such as `release/` or `Releases/` should be
 treated as historical artifacts, not the current build target.
@@ -65,7 +69,7 @@ Boot sequence:
 
 ## Release Variants
 
-ReadyOS now ships the same runtime in three media variants because the target
+ReadyOS now ships the same runtime in seven media variants because the target
 drive types and disk capacities are different.
 
 | Profile | Media | Why It Exists | Boot Flow | App Set |
@@ -73,11 +77,32 @@ drive types and disk capacities are different.
 | `precog-dual-d71` | two `D71` images on drives `8` and `9` | default full-content profile for `1571` setups and the main local verification target | `PREBOOT -> SETD71 -> BOOT` | full current app catalog |
 | `precog-d81` | one `D81` image on drive `8` | full-content single-disk profile for `1581`/`D81` setups | `PREBOOT -> BOOT` | full current app catalog |
 | `precog-dual-d64` | two `D64` images on drives `8` and `9` | reduced profile for `1541`-compatible capacity limits | `PREBOOT -> BOOT` | curated subset of the current app catalog |
+| `precog-solo-d64-a` | one `D64` image on drive `8` | standalone single-disk subset with editor, reference, and dizzy | `PREBOOT -> BOOT` | `editor`, `hexview`, `readme`, `dizzy` |
+| `precog-solo-d64-b` | one `D64` image on drive `8` | standalone single-disk productivity subset with quicknotes, calculator, clipboard, and files | `PREBOOT -> BOOT` | `quicknotes`, `calcplus`, `clipmgr`, `simplefiles` |
+| `precog-solo-d64-c` | one `D64` image on drive `8` | standalone single-disk planning subset with tasklist, calendar, and REU viewer | `PREBOOT -> BOOT` | `tasklist`, `cal26`, `reuviewer` |
+| `precog-solo-d64-d` | one `D64` image on drive `8` | standalone single-disk experimental subset with readyshell, simple cells, game2048, and deminer | `PREBOOT -> BOOT` | `readyshell`, `simplecells`, `game2048`, `deminer` |
 
 The dual-D64 profile is intentionally smaller. Right now it keeps the core
 productivity path that fits on two `D64`s: `editor`, `quicknotes`,
 `calcplus`, `clipmgr`, `tasklist`, `simplefiles`, `game2048`, `deminer`, and
 `cal26`.
+
+The solo-D64 variants exist for environments that can mount only one `D64`
+at a time, such as some web emulators and simplified media loaders. The split
+is intentional:
+
+- `editor` stays away from `quicknotes` so the text-editor and note-editor
+  workflows do not compete for the same image.
+- `cal26` stays away from `dizzy`, and `tasklist` stays away from `dizzy`,
+  because the calendar and kanban data files are both REL-backed and should
+  not share a pack with the task list.
+- `readyshell` stays with `simplecells` in the experimental pack so the more
+  demo-oriented tooling is grouped together.
+- `deminer` is included in the solo-D64 set, and the matching support payloads
+  are carried alongside each variant: `SEQ` files for `editor`, `quicknotes`,
+  `tasklist`, and `simplecells`, plus the `REL` files for `cal26` and `dizzy`.
+- Each image keeps some free blocks, so a standalone disk still has room for
+  catalog and user-file growth instead of being packed to the edge.
 
 ## App Catalog
 
