@@ -111,11 +111,15 @@ to `apps.cfg` on drive `8` for the selected profile.
 
 ## App Config Format
 
-Each profile file in `cfg/profiles/` has a `[launcher]` section for startup
-behavior and an `[apps]` section that becomes the generated `apps.cfg` on the
-disk image. The default dual-`d71` profile looks like this in simplified form:
+Each profile file in `cfg/profiles/` becomes the generated `apps.cfg` on drive
+`8`. The real file format has three sections in this order: `[system]`,
+`[launcher]`, and `[apps]`. The dual-`d71` profile begins like this:
 
 ```ini
+[system]
+variant_name=precog dual d71
+variant_boot_name=precog dual d71
+
 [launcher]
 load_all_to_reu=0
 runappfirst=
@@ -133,16 +137,29 @@ calendar for 2026 with appointments
 
 How it works:
 
+- `[system]` carries launcher-visible variant text. `variant_name` is the
+  general profile name, and `variant_boot_name` is the boot/display variant
+  string when that needs to differ.
 - `load_all_to_reu` controls whether the launcher tries to preload all app
   payloads into the REU at startup.
 - `runappfirst` optionally names an app token to auto-launch after boot.
-- Each app entry uses `drive:program:label[:flag]` on one line, followed by a
+- Each app record uses `drive:program:label[:slot]` on one line, followed by a
   human-readable description on the next line.
-- In `9:editor:editor:1`, `9` is the source drive, the second field is the
-  program filename token, the third field is the launcher label, and the
-  optional trailing `1` marks a boot/catalog flag used by the generated config.
-- Blank lines separate app records. The build flow converts this profile text
-  into the `apps.cfg` payload that the launcher reads from drive `8`.
+- In `9:editor:editor:1`, `9` is the source drive, `editor` is the PRG token,
+  the second `editor` is the launcher label, and the trailing `1` is the
+  default hotkey slot. The parser accepts slot values `1..9`; omitting the
+  fourth field means no default slot binding.
+- `drive` must be numeric and in the range `8..11`.
+- `program` must be lowercase, must not include `.prg`, must not include a
+  Commodore file-type suffix such as `,p`, and must be `12` characters or
+  fewer.
+- `label` is the launcher-visible app name and is limited to `31` characters.
+- The description line is limited to `38` characters.
+- Source text is expected to be lowercase. The build step writes the final
+  `apps.cfg` as a lowercase-PETASCII `SEQ` payload, and the launcher reads that
+  generated file from drive `8`.
+- Blank lines and comment lines are allowed in the source profile. App records
+  still follow the same alternating entry-line / description-line structure.
 
 | Drive | Program | Display Name | Current Role |
 | --- | --- | --- | --- |
