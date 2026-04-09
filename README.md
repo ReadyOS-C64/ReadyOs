@@ -109,6 +109,41 @@ is intentional:
 The launcher-visible catalog lives in `cfg/profiles/*.ini` and is generated
 to `apps.cfg` on drive `8` for the selected profile.
 
+## App Config Format
+
+Each profile file in `cfg/profiles/` has a `[launcher]` section for startup
+behavior and an `[apps]` section that becomes the generated `apps.cfg` on the
+disk image. The default dual-`d71` profile looks like this in simplified form:
+
+```ini
+[launcher]
+load_all_to_reu=0
+runappfirst=
+
+[apps]
+9:editor:editor:1
+text editor with clipboard
+
+8:quicknotes:quicknotes
+reu-backed note editor
+
+8:cal26:calendar 26
+calendar for 2026 with appointments
+```
+
+How it works:
+
+- `load_all_to_reu` controls whether the launcher tries to preload all app
+  payloads into the REU at startup.
+- `runappfirst` optionally names an app token to auto-launch after boot.
+- Each app entry uses `drive:program:label[:flag]` on one line, followed by a
+  human-readable description on the next line.
+- In `9:editor:editor:1`, `9` is the source drive, the second field is the
+  program filename token, the third field is the launcher label, and the
+  optional trailing `1` marks a boot/catalog flag used by the generated config.
+- Blank lines separate app records. The build flow converts this profile text
+  into the `apps.cfg` payload that the launcher reads from drive `8`.
+
 | Drive | Program | Display Name | Current Role |
 | --- | --- | --- | --- |
 | 9 | `editor` | editor | Text editor with clipboard, find, and disk save/open |
