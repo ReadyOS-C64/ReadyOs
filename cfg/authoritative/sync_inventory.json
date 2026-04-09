@@ -1,0 +1,55 @@
+[
+  {
+    "disk_name": "cal26.rel",
+    "repo_name": "cal26.rel",
+    "type": "rel",
+    "target_drive": 8,
+    "app": "cal26",
+    "record_length": 64
+  },
+  {
+    "disk_name": "cal26cfg.rel",
+    "repo_name": "cal26cfg.rel",
+    "type": "rel",
+    "target_drive": 8,
+    "app": "cal26",
+    "record_length": 32
+  },
+  {
+    "disk_name": "dizzy.rel",
+    "repo_name": "dizzy.rel",
+    "type": "rel",
+    "target_drive": 8,
+    "app": "dizzy",
+    "record_length": 64
+  },
+  {
+    "disk_name": "dizzycfg.rel",
+    "repo_name": "dizzycfg.rel",
+    "type": "rel",
+    "target_drive": 8,
+    "app": "dizzy",
+    "record_length": 32
+  },
+  {
+    "disk_name": "clipset3",
+    "repo_name": "clipset3.seq",
+    "type": "seq",
+    "target_drive": 8,
+    "app": "clipmgr"
+  },
+  {
+    "disk_name": "myquicknotes",
+    "repo_name": "myquicknotes.seq",
+    "type": "seq",
+    "target_drive": 8,
+    "app": "quicknotes"
+  },
+  {
+    "disk_name": "sheet2",
+    "repo_name": "sheet2.seq",
+    "type": "seq",
+    "target_drive": 8,
+    "app": "simplecells"
+  }
+]

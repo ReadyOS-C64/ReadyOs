@@ -86,7 +86,10 @@ MODE=""
 PARSE_TRACE_DEBUG=""
 INTERACTIVE=0
 LIST_PROFILES=0
+FORCE_ARTIFACTS_FROM_D71=0
+VICE_FAST=0
 DEBUG_MONCMDS=""
+FAST_VICE_ARGS=()
 
 if command -v x64sc >/dev/null 2>&1; then
     VICE="x64sc"
@@ -98,7 +101,9 @@ else
 fi
 
 cleanup_tmp() {
-    [ -n "$DEBUG_MONCMDS" ] && rm -f "$DEBUG_MONCMDS"
+    if [ -n "$DEBUG_MONCMDS" ]; then
+        rm -f "$DEBUG_MONCMDS"
+    fi
 }
 trap cleanup_tmp EXIT
 
@@ -189,6 +194,10 @@ show_help() {
     echo "  --list-profiles             List available profiles and exit"
     echo "  --build-all                 Build every release profile and exit"
     echo "  --skipbuild                 Skip automatic build before run"
+    echo "  --force-artifacts-from-d71 Promote latest built dual-D71 SEQ/REL support files"
+    echo "                              into cfg/authoritative before the requested flow"
+    echo "  --vice-fast                Disable true drive emulation, enable VICE drive traps,"
+    echo "                              and start VICE in warp mode for launch"
     echo "  --config PATH               Override the profile's catalog source"
     echo "  --load-all 0|1              Override launcher auto-preload in generated apps.cfg"
     echo "  --run-first APP             Override launcher runappfirst in generated apps.cfg"
@@ -250,6 +259,14 @@ while [ $# -gt 0 ]; do
             ;;
         --skipbuild)
             SKIP_BUILD=1
+            shift
+            ;;
+        --force-artifacts-from-d71)
+            FORCE_ARTIFACTS_FROM_D71=1
+            shift
+            ;;
+        --vice-fast)
+            VICE_FAST=1
             shift
             ;;
         --config)
@@ -363,7 +380,42 @@ PY
     fi
 }
 
+configure_fast_vice_args() {
+    FAST_VICE_ARGS=()
+    if [ "$VICE_FAST" -eq 1 ]; then
+        FAST_VICE_ARGS=(
+            -warp
+            -trapdevice8
+            -trapdevice9
+            -trapdevice10
+            -trapdevice11
+        )
+    fi
+}
+
+apply_fast_vice_overrides() {
+    local idx
+    if [ "$VICE_FAST" -eq 0 ]; then
+        return
+    fi
+    for idx in "${!PROFILE_VICE_ATTACH_ARGS[@]}"; do
+        case "${PROFILE_VICE_ATTACH_ARGS[$idx]}" in
+            -drive8truedrive|-drive9truedrive|-drive10truedrive|-drive11truedrive)
+                PROFILE_VICE_ATTACH_ARGS[$idx]="+${PROFILE_VICE_ATTACH_ARGS[$idx]#-}"
+                ;;
+        esac
+    done
+}
+
 maybe_build() {
+    if [ "$FORCE_ARTIFACTS_FROM_D71" -eq 1 ]; then
+        echo "Force-syncing authoritative support files from latest built precog-dual-d71"
+        python3 "$PROFILE_TOOL" sync-authoritative-from-d71
+        if [ "$SKIP_BUILD" -eq 1 ]; then
+            echo "Authoritative repo assets updated; launch will continue without rebuilding."
+        fi
+    fi
+
     if [ "$BUILD_ALL" -eq 1 ]; then
         RUN_VERSION_TEXT="$(python3 "$VERSION_TOOL" --next)"
         echo "Build version: $RUN_VERSION_TEXT"
@@ -376,6 +428,7 @@ maybe_build() {
     if [ "$SKIP_BUILD" -eq 1 ]; then
         echo "Skipping build (--skipbuild)."
         load_profile_env latest
+        apply_fast_vice_overrides
         return
     fi
 
@@ -407,6 +460,7 @@ maybe_build() {
 
     make "${make_args[@]}"
     load_profile_env build
+    apply_fast_vice_overrides
 }
 
 check_prg() {
@@ -441,12 +495,17 @@ print_info() {
     done
     echo "Build Support: $BUILD_SUPPORT_DIR"
     echo "ReadyShell parse trace: $(current_parse_trace_label)"
+    if [ "$VICE_FAST" -eq 1 ]; then
+        echo "VICE Fast: on (warp, traps enabled, true drive off)"
+    fi
     echo ""
 }
 
 start_vice() {
-    "$VICE" "$@"
+    "$VICE" "${FAST_VICE_ARGS[@]}" "$@"
 }
+
+configure_fast_vice_args
 
 case "${MODE:-}" in
     help|-h|--help) ;;
@@ -552,9 +611,15 @@ case "${MODE:-}" in
         fi
         check_prg "$XFILECHK_BOOT_PRG"
         check_prg "$XFILECHK_PRG"
+        DRIVE8_TRUE_FLAG="-drive8truedrive"
+        DRIVE9_TRUE_FLAG="-drive9truedrive"
+        if [ "$VICE_FAST" -eq 1 ]; then
+            DRIVE8_TRUE_FLAG="+drive8truedrive"
+            DRIVE9_TRUE_FLAG="+drive9truedrive"
+        fi
         start_vice -logfile "$VICE_LOG_FILE" -reu -reusize 16384 \
-            -drive8type 1571 -drive8truedrive -devicebackend8 0 +busdevice8 -8 "$XFILECHK_DISK_FILE_1" \
-            -drive9type 1571 -drive9truedrive -devicebackend9 0 +busdevice9 -9 "$XFILECHK_DISK_FILE_2" \
+            -drive8type 1571 "$DRIVE8_TRUE_FLAG" -devicebackend8 0 +busdevice8 -8 "$XFILECHK_DISK_FILE_1" \
+            -drive9type 1571 "$DRIVE9_TRUE_FLAG" -devicebackend9 0 +busdevice9 -9 "$XFILECHK_DISK_FILE_2" \
             -autostart "$XFILECHK_BOOT_PRG"
         ;;
     monitor)

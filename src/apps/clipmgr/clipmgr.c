@@ -862,8 +862,17 @@ static unsigned char file_save_clip_bundle(const char *name, unsigned int select
     return 0u;
 }
 
+static void lowercase_filename_in_place(char *name) {
+    while (*name != 0) {
+        if (*name >= 'A' && *name <= 'Z') {
+            *name = (char)(*name - 'A' + 'a');
+        }
+        ++name;
+    }
+}
+
 static void build_default_save_name(void) {
-    strcpy(save_buf, "CLIPSET");
+    strcpy(save_buf, "clipset");
 }
 
 static void draw_save_select_header(unsigned int select_mask) {
@@ -1032,6 +1041,7 @@ static unsigned char show_save_dialog(unsigned int select_mask) {
                 continue;
             }
 
+            lowercase_filename_in_place(save_buf);
             tui_puts(7, 12, "SAVING...", TUI_COLOR_YELLOW);
             if (file_save_clip_bundle(save_buf, select_mask) != 0u) {
                 show_message("SAVE ERROR!", TUI_COLOR_LIGHTRED);

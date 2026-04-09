@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,7 @@ RELEASES_DIR = ROOT / "releases"
 LEGACY_RELEASE_DIR = ROOT / "release"
 AUTHORITATIVE_PROFILE_ID = "precog-dual-d71"
 AUTHORITATIVE_DATA_DIR = ROOT / "cfg" / "authoritative"
+SYNCABLE_AUTHORITATIVE_INDEX = AUTHORITATIVE_DATA_DIR / "sync_inventory.json"
 BOOTSTRAP_D71_BY_DRIVE = {
     8: ROOT / "readyos.d71",
     9: ROOT / "readyos_2.d71",
@@ -33,7 +35,7 @@ REL_SEED_D71_CANDIDATES = [
     ROOT.parent / "readyos0-1-5.d71",
     ROOT.parent.parent / "readyos0-1-5.d71",
 ]
-AUTHORITATIVE_SUPPORT_FILES = (
+BUILD_OWNED_SUPPORT_FILES = (
     {
         "app": "editor",
         "disk_name": "editor help",
@@ -52,6 +54,8 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "target_drive": 8,
         "generated_artifact": "obj/tasklist_sample.seq",
     },
+)
+LEGACY_SYNCABLE_SUPPORT_FILES = (
     {
         "app": "quicknotes",
         "disk_name": "myquicknotes",
@@ -121,6 +125,7 @@ AUTHORITATIVE_SUPPORT_FILES = (
         "target_drive": 8,
     },
 )
+C1541_LIST_LINE_RE = re.compile(r'^\s*\d+\s+"([^"]+)"\s+([a-zA-Z]+)')
 KNOWN_APP_NAMES = {
     "editor",
     "quicknotes",
@@ -152,6 +157,117 @@ def run(cmd: List[str], check: bool = True, capture_output: bool = False) -> sub
         capture_output=capture_output,
         check=check,
     )
+
+
+def normalize_syncable_authoritative_entry(entry: Dict[str, object]) -> Dict[str, object]:
+    normalized = {
+        "disk_name": str(entry["disk_name"]),
+        "repo_name": str(entry["repo_name"]),
+        "type": str(entry["type"]).lower(),
+        "target_drive": int(entry.get("target_drive", 8)),
+    }
+    app_name = entry.get("app")
+    if app_name not in (None, ""):
+        normalized["app"] = str(app_name)
+    if normalized["type"] == "rel":
+        normalized["record_length"] = int(entry["record_length"])
+    elif normalized["type"] != "seq":
+        fail(f"unsupported syncable authoritative file type: {normalized['type']}")
+    return normalized
+
+
+def default_syncable_authoritative_entries() -> List[Dict[str, object]]:
+    return [normalize_syncable_authoritative_entry(entry) for entry in LEGACY_SYNCABLE_SUPPORT_FILES]
+
+
+def load_syncable_authoritative_entries() -> List[Dict[str, object]]:
+    if not SYNCABLE_AUTHORITATIVE_INDEX.exists():
+        return default_syncable_authoritative_entries()
+
+    payload = json.loads(SYNCABLE_AUTHORITATIVE_INDEX.read_text(encoding="utf-8"))
+    if not isinstance(payload, list):
+        fail(f"syncable authoritative inventory must be a JSON list: {SYNCABLE_AUTHORITATIVE_INDEX}")
+    return [normalize_syncable_authoritative_entry(entry) for entry in payload]
+
+
+def write_syncable_authoritative_inventory(entries: List[Dict[str, object]]) -> None:
+    ensure_dir(AUTHORITATIVE_DATA_DIR)
+    ordered = sorted(
+        (normalize_syncable_authoritative_entry(entry) for entry in entries),
+        key=lambda item: (str(item["type"]), str(item["repo_name"]).lower()),
+    )
+    tmp_path = SYNCABLE_AUTHORITATIVE_INDEX.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(ordered, indent=2) + "\n", encoding="utf-8")
+    tmp_path.replace(SYNCABLE_AUTHORITATIVE_INDEX)
+
+
+def build_owned_support_entries(apps_set: set[str] | None = None) -> List[Dict[str, object]]:
+    entries: List[Dict[str, object]] = []
+    for entry in BUILD_OWNED_SUPPORT_FILES:
+        if apps_set is not None and str(entry["app"]) not in apps_set:
+            continue
+        entries.append(dict(entry))
+    return entries
+
+
+def syncable_authoritative_entries(apps_set: set[str] | None = None) -> List[Dict[str, object]]:
+    entries: List[Dict[str, object]] = []
+    for entry in load_syncable_authoritative_entries():
+        app_name = entry.get("app")
+        if apps_set is not None and app_name not in (None, "") and str(app_name) not in apps_set:
+            continue
+        entries.append(dict(entry))
+    return entries
+
+
+def build_owned_excluded_disk_names() -> set[str]:
+    names = {"apps.cfg"}
+    for entry in BUILD_OWNED_SUPPORT_FILES:
+        names.add(str(entry["disk_name"]).lower())
+    return names
+
+
+def parse_c1541_record_length(proc: subprocess.CompletedProcess[str]) -> int | None:
+    marker = "record length "
+    for text in (proc.stderr, proc.stdout):
+        if marker not in text:
+            continue
+        value = text.split(marker, 1)[1].split()[0]
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def list_seq_rel_files(disk_path: Path) -> List[Dict[str, object]]:
+    proc = run(["c1541", str(disk_path), "-list"], check=False, capture_output=True)
+    if proc.returncode != 0:
+        fail(f"c1541 list failed for {disk_path}: {proc.stderr.strip()}")
+
+    entries: List[Dict[str, object]] = []
+    for line in proc.stdout.splitlines():
+        match = C1541_LIST_LINE_RE.match(line)
+        if not match:
+            continue
+        file_type = match.group(2).strip().lower()
+        if file_type not in {"seq", "rel"}:
+            continue
+        entries.append({
+            "disk_name": match.group(1).strip(),
+            "type": file_type,
+        })
+    return entries
+
+
+def repo_name_from_disk_name(disk_name: str, file_type: str) -> str:
+    base = re.sub(r"[^a-z0-9.]+", "_", disk_name.strip().lower()).strip("_")
+    if not base:
+        fail(f"cannot derive repo filename from disk name: {disk_name!r}")
+    suffix = f".{file_type}"
+    if not base.endswith(suffix):
+        base += suffix
+    return base
 
 
 def list_profile_ids() -> List[str]:
@@ -447,13 +563,8 @@ def backup_user_files(disk_path: Path, managed_names: set[str]) -> tuple[Path, P
             if not host_path.exists() or host_path.stat().st_size == 0:
                 host_path.unlink(missing_ok=True)
                 continue
-            marker = "record length "
-            rec_len = ""
-            if marker in rel.stderr:
-                rec_len = rel.stderr.split(marker, 1)[1].split()[0]
-            elif marker in rel.stdout:
-                rec_len = rel.stdout.split(marker, 1)[1].split()[0]
-            if not rec_len:
+            rec_len = parse_c1541_record_length(rel)
+            if rec_len is None:
                 host_path.unlink(missing_ok=True)
                 continue
             with manifest_path.open("a", encoding="ascii") as fh:
@@ -498,7 +609,7 @@ def resolve_rel_seed_d71() -> Path | None:
 
 
 def authoritative_support_entries(apps_set: set[str]) -> List[Dict[str, object]]:
-    return [entry for entry in AUTHORITATIVE_SUPPORT_FILES if str(entry["app"]) in apps_set]
+    return build_owned_support_entries(apps_set) + syncable_authoritative_entries(apps_set)
 
 
 def authoritative_support_path(entry: Dict[str, object]) -> Path:
@@ -522,17 +633,25 @@ def support_target_drive(profile: Dict[str, object], entry: Dict[str, object],
     fail(f"profile has no drives for support file placement: {profile['id']}")
 
 
-def extract_disk_file(source_disk: Path, disk_name: str, file_type: str, target_path: Path) -> None:
+def extract_disk_file(source_disk: Path, disk_name: str, file_type: str, target_path: Path) -> int | None:
     if file_type == "rel":
         spec = f"{disk_name},l"
     elif file_type == "seq":
         spec = f"{disk_name},s"
     else:
         fail(f"unsupported authoritative file type: {file_type}")
-    run(["c1541", str(source_disk), "-read", spec, str(target_path)], check=False)
+    proc = run(["c1541", str(source_disk), "-read", spec, str(target_path)], check=False,
+               capture_output=(file_type == "rel"))
     if not target_path.exists() or target_path.stat().st_size == 0:
         target_path.unlink(missing_ok=True)
         fail(f"missing {file_type.upper()} payload in source disk {source_disk}: {disk_name}")
+    if file_type == "rel":
+        record_length = parse_c1541_record_length(proc)
+        if record_length is None:
+            target_path.unlink(missing_ok=True)
+            fail(f"missing REL record length in source disk {source_disk}: {disk_name}")
+        return record_length
+    return None
 
 
 def resolve_bootstrap_d71_disks() -> Dict[int, Path]:
@@ -596,6 +715,97 @@ def write_authoritative_support_file(entry: Dict[str, object], target_disk: Path
     else:
         fail(f"unsupported authoritative file type: {entry['type']}")
     run(["c1541", str(target_disk), "-write", str(source_path), spec], check=False)
+
+
+def sync_authoritative_from_d71() -> None:
+    manifest = resolve_profile(AUTHORITATIVE_PROFILE_ID, None, latest=True)
+    sync_entries = load_syncable_authoritative_entries()
+    existing_by_disk_name = {
+        (str(entry["disk_name"]).lower(), str(entry["type"]).lower()): entry
+        for entry in sync_entries
+    }
+    excluded_names = build_owned_excluded_disk_names()
+    discovered: List[Dict[str, object]] = []
+    seen_name_types: set[tuple[str, str]] = set()
+
+    for disk in manifest.get("disks", []):
+        drive = int(disk["drive"])
+        disk_path = Path(str(disk["path"]))
+        if not disk_path.exists():
+            fail(f"missing authoritative source disk for sync: {disk_path}")
+        for entry in list_seq_rel_files(disk_path):
+            disk_name = str(entry["disk_name"])
+            file_type = str(entry["type"]).lower()
+            if disk_name.lower() in excluded_names:
+                continue
+            name_type_key = (disk_name.lower(), file_type)
+            if name_type_key in seen_name_types:
+                fail(f"duplicate sync candidate across dual-d71 disks: {disk_name} ({file_type})")
+            seen_name_types.add(name_type_key)
+            discovered.append({
+                "disk_name": disk_name,
+                "type": file_type,
+                "source_drive": drive,
+                "disk_path": disk_path,
+            })
+
+    discovered.sort(key=lambda item: (int(item["source_drive"]), str(item["disk_name"]).lower()))
+
+    stage_dir = Path(tempfile.mkdtemp(prefix="readyos_authoritative_sync_"))
+    new_entries: List[Dict[str, object]] = []
+    try:
+        for discovered_entry in discovered:
+            disk_name = str(discovered_entry["disk_name"])
+            file_type = str(discovered_entry["type"])
+            existing = existing_by_disk_name.get((disk_name.lower(), file_type))
+            repo_name = (
+                str(existing["repo_name"])
+                if existing is not None
+                else repo_name_from_disk_name(disk_name, file_type)
+            )
+            staged_path = stage_dir / repo_name
+            record_length = extract_disk_file(
+                Path(str(discovered_entry["disk_path"])),
+                disk_name,
+                file_type,
+                staged_path,
+            )
+            entry: Dict[str, object] = {
+                "disk_name": disk_name,
+                "repo_name": repo_name,
+                "type": file_type,
+                "target_drive": int(discovered_entry["source_drive"]),
+            }
+            if existing is not None and existing.get("app") not in (None, ""):
+                entry["app"] = str(existing["app"])
+            if file_type == "rel":
+                entry["record_length"] = int(record_length if record_length is not None else 0)
+            new_entries.append(entry)
+
+        ensure_dir(AUTHORITATIVE_DATA_DIR)
+        for entry in new_entries:
+            source_path = stage_dir / str(entry["repo_name"])
+            target_path = authoritative_support_path(entry)
+            shutil.copyfile(source_path, target_path)
+
+        previous_repo_names = {str(entry["repo_name"]) for entry in sync_entries}
+        next_repo_names = {str(entry["repo_name"]) for entry in new_entries}
+        removed_repo_names = sorted(previous_repo_names - next_repo_names)
+
+        for repo_name in removed_repo_names:
+            (AUTHORITATIVE_DATA_DIR / repo_name).unlink(missing_ok=True)
+
+        write_syncable_authoritative_inventory(new_entries)
+
+        print(f"Synced authoritative support assets from {AUTHORITATIVE_PROFILE_ID}")
+        print(f"  Source version: {manifest['version_text']}")
+        print(f"  Updated files: {len(new_entries)}")
+        if removed_repo_names:
+            print(f"  Removed files: {len(removed_repo_names)}")
+            for repo_name in removed_repo_names:
+                print(f"    removed {repo_name}")
+    finally:
+        shutil.rmtree(stage_dir, ignore_errors=True)
 
 
 def build_help_text(profile: Dict[str, object],
@@ -925,6 +1135,8 @@ def main() -> int:
     build_parser.add_argument("--override-load-all")
     build_parser.add_argument("--override-run-first")
 
+    sub.add_parser("sync-authoritative-from-d71")
+
     migrate_parser = sub.add_parser("migrate-legacy-release")
     migrate_parser.add_argument("--version", required=True)
 
@@ -956,6 +1168,9 @@ def main() -> int:
         if args.cmd == "build-release":
             build_release(args.profile, args.version, args.catalog_source,
                           args.override_load_all, args.override_run_first)
+            return 0
+        if args.cmd == "sync-authoritative-from-d71":
+            sync_authoritative_from_d71()
             return 0
         if args.cmd == "migrate-legacy-release":
             migrate_legacy_release_tree(args.version)

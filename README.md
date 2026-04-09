@@ -238,6 +238,13 @@ Main entry points:
   print the known release profile ids
 - `bash ./run.sh --build-all`
   build every release profile and exit
+- `bash ./run.sh --force-artifacts-from-d71 --build-all`
+  promote non-excluded `SEQ` files and current `REL` files from the latest
+  built `precog-dual-d71` images into `cfg/authoritative/`, then rebuild all
+  profiles from that updated authoritative set
+- `bash ./run.sh --vice-fast`
+  launch with VICE drive traps enabled, true drive emulation disabled, and the
+  emulator starting in warp mode
 - `bash ./run.sh --skipbuild`
   launch using the latest built artifacts for the selected profile
 - `make`
@@ -254,6 +261,10 @@ Notes:
 
 - `run.sh` is the preferred local workflow because it rebuilds disks, updates
   generated assets, and preserves managed disk state correctly.
+- `--force-artifacts-from-d71` is opt-in. Without it, ordinary builds keep the
+  existing repo-authoritative behavior.
+- `--vice-fast` only changes the VICE launch configuration. It does not affect
+  build outputs or the packaged release images.
 - Manual launch should match the setup in the Getting Started section.
 - Windows support is still less exercised than the Unix shell path.
 
@@ -271,6 +282,18 @@ Authoritative editable support payloads now live in `cfg/authoritative/`.
 That includes the shipped SEQ and REL support files such as `editor help`,
 `example tasks`, `myquicknotes`, `clipset1`, `clipset3`, `sheet2`,
 `cal26.rel`, `cal26cfg.rel`, `dizzy.rel`, and `dizzycfg.rel`.
+
+`cfg/authoritative/sync_inventory.json` tracks the sync-managed support set
+that may be promoted from the latest built `precog-dual-d71` images when
+`bash ./run.sh --force-artifacts-from-d71 ...` is used. Build-owned exclusions
+such as generated `apps.cfg` and generated support payloads still come from the
+normal code/build pipeline rather than from disk extraction.
+
+Forced sync is exact for non-excluded `SEQ` files and discovered `REL` files:
+new files are extracted into `cfg/authoritative/`, changed files replace the
+repo copies, and previously authoritative sync-managed files that are no longer
+present on the dual-D71 source images are removed so later rebuilds stop
+reinserting them.
 
 Normal profile rebuilds preserve non-managed user files from the prior
 profile build while replacing build-owned artifacts in `releases/<version>/<profile>/`.
