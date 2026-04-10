@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ReadyOS SHIM Architecture Report (0.1.8 / local 0.1.8G)</title>
+  <title>ReadyOS SHIM Architecture Report (0.1.8)</title>
   <style>
     :root {
       --bg: #0c141b;
@@ -213,8 +213,10 @@
       summary docs: it keeps the resident-byte map, the annotated shim routine
       walkthrough, the profile-driven catalog/release context, and the
       ABI-vs-implementation nuances that are easy to lose in condensed
-      summaries. Current checked-in artifacts are stamped <span class="mono">0.1.8G</span>;
-      that suffix is a local build stamp, not a separate public release line.
+      summaries. This report preserves the previous local snapshot values and
+      adds the current map-backed values from the same public <span class="mono">0.1.8</span>
+      release line after the ReadyShell overlay normalization. Runtime debug
+      suffix letters are intentionally not used as documentation versions.
     </p>
   </header>
 
@@ -222,7 +224,7 @@
     <section>
       <h2>Executive Snapshot</h2>
       <div class="cards">
-        <div class="card"><div class="k">Release</div><div class="v mono">0.1.8 / 0.1.8G local</div></div>
+        <div class="card"><div class="k">Release</div><div class="v mono">0.1.8 snapshot + current addenda</div></div>
         <div class="card"><div class="k">SHIM Window</div><div class="v mono">$C800-$C9FF</div></div>
         <div class="card"><div class="k">SHIM Size</div><div class="v mono">512 bytes</div></div>
         <div class="card"><div class="k">App Window</div><div class="v mono">$1000-$C5FF</div></div>
@@ -234,6 +236,13 @@
         such as the allocation table, clipboard metadata, hotkey bindings, and
         shim globals live in C64 RAM at <span class="mono">$C600-$C9FF</span>,
         not inside REU bank <span class="mono">0</span>.
+      </div>
+      <div class="notice">
+        <strong>Current drift note:</strong> the measured BSS/headroom values
+        below now preserve the previous local snapshot and add current
+        <span class="mono">0.1.8</span> <span class="mono">obj/*.map</span>
+        values where ReadyShell,
+        Tasklist, SimpleCells, QuickNotes, and Simple Files moved.
       </div>
     </section>
 
@@ -616,13 +625,15 @@ tail end              = $10000</pre>
     <section>
       <h2>Measured BSS and Headroom Snapshot</h2>
       <p class="small muted">
-        These values were rechecked from the current <span class="mono">obj/*.map</span>
-        files in the April 8, 2026 tree. This is the evidence behind the
-        “tight app” wording in the private markdown docs.
+        The first table preserves the previous local snapshot that originally
+        backed this report. The second table is the current
+        <span class="mono">0.1.8</span> addendum rechecked from
+        <span class="mono">obj/*.map</span> after the ReadyShell overlay
+        normalization.
       </p>
       <div class="grid-2">
         <div>
-          <h3>Tightest normal app images</h3>
+          <h3>Tightest normal app images (previous local snapshot)</h3>
           <table>
             <thead><tr><th>App</th><th>Runtime end</th><th>BSS bytes</th><th>Headroom</th></tr></thead>
             <tbody>
@@ -633,14 +644,35 @@ tail end              = $10000</pre>
               <tr><td class="mono">simplecells</td><td class="mono">$9EE0</td><td class="mono">2142</td><td class="mono">10015</td></tr>
             </tbody>
           </table>
+          <p class="small muted">
+            Superseded current-reality rows from this snapshot are retained for
+            historical comparison; the current rows below should be used for
+            acceptance and headroom decisions.
+          </p>
+          <h3>Current app images (0.1.8 addendum)</h3>
+          <table>
+            <thead><tr><th>App</th><th>Runtime end</th><th>BSS bytes</th><th>Headroom to $C600</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">dizzy</td><td class="mono">$BB38</td><td class="mono">6327</td><td class="mono">2759</td></tr>
+              <tr><td class="mono">tasklist</td><td class="mono">$AA80</td><td class="mono">8927</td><td class="mono">7039</td></tr>
+              <tr><td class="mono">calcplus</td><td class="mono">$A637</td><td class="mono">1321</td><td class="mono">8136</td></tr>
+              <tr><td class="mono">cal26</td><td class="mono">$A048</td><td class="mono">4803</td><td class="mono">9655</td></tr>
+              <tr><td class="mono">simplecells</td><td class="mono">$9F06</td><td class="mono">2142</td><td class="mono">9977</td></tr>
+              <tr><td class="mono">quicknotes</td><td class="mono">$9D07</td><td class="mono">6031</td><td class="mono">10488</td></tr>
+              <tr><td class="mono">simplefiles</td><td class="mono">$984D</td><td class="mono">4397</td><td class="mono">11698</td></tr>
+              <tr><td class="mono">launcher</td><td class="mono">$9BDE</td><td class="mono">4717</td><td class="mono">10785</td></tr>
+            </tbody>
+          </table>
         </div>
         <div>
           <h3>Linker-config nuance</h3>
           <ul>
             <li><strong>Normal apps:</strong> <span class="mono">cfg/ready_app.cfg</span> puts <span class="mono">BSS</span> directly inside the <span class="mono">$1000-$C5FF</span> app window.</li>
             <li><strong>Overlay app:</strong> <span class="mono">readyshell</span> uses <span class="mono">cfg/ready_app_overlay.cfg</span>, not the normal app linker contract.</li>
-            <li><strong>Current resident Readyshell image:</strong> runtime end <span class="mono">$9B74</span>, resident <span class="mono">BSS = 171</span> bytes, headroom <span class="mono">10891</span> bytes to <span class="mono">$C600</span>.</li>
-            <li><strong>Overlay guardrail:</strong> release overlay size is <span class="mono">$2440</span>, debug overlay size is <span class="mono">$2480</span>, and the explicit C stack reserve prevents resident <span class="mono">BSS</span> from growing into the overlay execution window.</li>
+            <li><strong>Historical resident Readyshell image:</strong> the previous local snapshot ended at <span class="mono">$9B74</span>, with resident <span class="mono">BSS = 171</span> bytes and raw headroom <span class="mono">10891</span> bytes to <span class="mono">$C600</span>.</li>
+            <li><strong>Current resident ReadyShell image:</strong> the current <span class="mono">0.1.8</span> map has resident <span class="mono">BSS $9B02-$9BAC</span>, <span class="mono">BSS = 171</span> bytes, and raw resident headroom <span class="mono">10835</span> bytes to <span class="mono">$C600</span>.</li>
+            <li><strong>True current ReadyShell headroom:</strong> overlay payload fit is tighter than resident-to-<span class="mono">$C600</span>. Current overlay1 is <span class="mono">$A1C0-$C278</span> and leaves <span class="mono">$0387 / 903</span> bytes; overlay2 leaves <span class="mono">1655</span> bytes; overlay3 leaves <span class="mono">6934</span> bytes.</li>
+            <li><strong>Overlay guardrail:</strong> release overlay size remains <span class="mono">$2440</span> and debug overlay size remains <span class="mono">$2480</span>. The old explicit-C-stack-reserve wording is retained as historical shorthand, but current safety depends on ONCE/BSS ending below <span class="mono">__OVERLAY_LOADADDR__</span>, overlays loading at <span class="mono">$A1C0</span>, and ReadyShell stack relocation being handled separately.</li>
           </ul>
         </div>
       </div>
@@ -755,9 +787,10 @@ tail end              = $10000</pre>
   </main>
 
   <footer>
-    Updated for the current ReadyOS 0.1.8 private documentation sync
-    (checked-in local build stamp: 0.1.8G). Older shim report variants in this
-    directory are historical snapshots only.
+    Updated for the ReadyOS 0.1.8 private documentation sync. The original
+    snapshot values are preserved; current map-backed addenda use the public
+    0.1.8 version label. Older shim report variants in this directory are
+    historical snapshots only.
   </footer>
 </body>
 </html>
