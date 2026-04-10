@@ -73,6 +73,10 @@ try {
                 @((Assert-RepoFile 'obj/readyshell_ovl1.prg'), 'rsovl1'),
                 @((Assert-RepoFile 'obj/readyshell_ovl2.prg'), 'rsovl2'),
                 @((Assert-RepoFile 'obj/readyshell_ovl3.prg'), 'rsovl3'),
+                @((Assert-RepoFile 'obj/readyshell_ovl4.prg'), 'rsovl4'),
+                @((Assert-RepoFile 'obj/readyshell_ovl5.prg'), 'rsovl5'),
+                @((Assert-RepoFile 'obj/readyshell_ovl6.prg'), 'rsovl6'),
+                @((Assert-RepoFile 'obj/readyshell_ovl7.prg'), 'rsovl7'),
                 @((Assert-RepoFile 'obj/apps_cfg_petscii.seq'), 'apps.cfg,s'),
                 @((Assert-RepoFile 'obj/editor_help.seq'), 'editor help,s')
             )

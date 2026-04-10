@@ -1,6 +1,7 @@
 #include "rs_vm.h"
 
 #include "rs_cmd.h"
+#include "rs_cmd_overlay.h"
 #include "rs_format.h"
 #include "rs_pipe.h"
 #include "../platform/rs_memcfg.h"
@@ -688,6 +689,210 @@ static int vm_cmd_prt(RSVM* vm,
                                err);
 }
 
+static int vm_emit_result(RSVM* vm,
+                          const RSPipeline* pipeline,
+                          unsigned short next_stage_index,
+                          RSValue* result,
+                          RSOutCollect* collect,
+                          RSError* err) {
+  unsigned short i;
+  if (next_stage_index < pipeline->count && result->tag == RS_VAL_ARRAY) {
+    for (i = 0u; i < result->as.array.count; ++i) {
+      if (vm_exec_pipeline_from(vm,
+                                pipeline,
+                                next_stage_index,
+                                &result->as.array.items[i],
+                                1,
+                                collect,
+                                err) != 0) {
+        return -1;
+      }
+    }
+    return 0;
+  }
+  return vm_exec_pipeline_from(vm, pipeline, next_stage_index, result, 1, collect, err);
+}
+
+static void vm_cmd_frame_init(RSCommandFrame* frame,
+                              RSValue* args,
+                              unsigned short arg_count,
+                              const RSValue* current,
+                              int has_current,
+                              RSValue* out,
+                              RSError* err) {
+  memset(frame, 0, sizeof(*frame));
+  frame->args = args;
+  frame->arg_count = arg_count;
+  frame->item = has_current ? current : 0;
+  frame->out = out;
+  frame->err = err;
+}
+
+static int vm_cmd_drvi(RSVM* vm,
+                       const RSPipeline* pipeline,
+                       unsigned short stage_index,
+                       RSValue* args,
+                       unsigned short arg_count,
+                       RSOutCollect* collect,
+                       RSError* err) {
+  RSValue result;
+  RSCommandFrame frame;
+  int rc;
+  (void)vm;
+  rs_value_init_false(&result);
+  vm_cmd_frame_init(&frame, args, arg_count, 0, 0, &result, err);
+  rc = rs_overlay_command_call(RS_CMD_DRVI, RS_CMD_OVL_OP_RUN, &frame);
+  if (rc != 0) {
+    rs_value_free(&result);
+    vm_err(err, rc == -2 ? "DRVI arg" : "DRVI fail");
+    return -1;
+  }
+  rc = vm_exec_pipeline_from(vm,
+                             pipeline,
+                             (unsigned short)(stage_index + 1u),
+                             &result,
+                             1,
+                             collect,
+                             err);
+  rs_value_free(&result);
+  return rc;
+}
+
+static int vm_cmd_lst(RSVM* vm,
+                      const RSPipeline* pipeline,
+                      unsigned short stage_index,
+                      RSValue* args,
+                      unsigned short arg_count,
+                      RSOutCollect* collect,
+                      RSError* err) {
+  RSCommandFrame frame;
+  RSValue item;
+  unsigned short i;
+  int rc;
+  rs_value_init_false(&item);
+  vm_cmd_frame_init(&frame, args, arg_count, 0, 0, &item, err);
+  rc = rs_overlay_command_call(RS_CMD_LST, RS_CMD_OVL_OP_BEGIN, &frame);
+  if (rc != 0) {
+    vm_err(err, rc == -2 ? "LST arg" : "LST fail");
+    return -1;
+  }
+  for (i = 0u; i < frame.count; ++i) {
+    frame.index = i;
+    rs_value_free(&item);
+    rs_value_init_false(&item);
+    rc = rs_overlay_command_call(RS_CMD_LST, RS_CMD_OVL_OP_ITEM, &frame);
+    if (rc != 0) {
+      rs_value_free(&item);
+      vm_err(err, "LST fail");
+      return -1;
+    }
+    if (vm_exec_pipeline_from(vm,
+                              pipeline,
+                              (unsigned short)(stage_index + 1u),
+                              &item,
+                              1,
+                              collect,
+                              err) != 0) {
+      rs_value_free(&item);
+      return -1;
+    }
+  }
+  rs_value_free(&item);
+  return 0;
+}
+
+static int vm_cmd_ldv(RSVM* vm,
+                      const RSPipeline* pipeline,
+                      unsigned short stage_index,
+                      RSValue* args,
+                      unsigned short arg_count,
+                      RSOutCollect* collect,
+                      RSError* err) {
+  RSValue result;
+  RSCommandFrame frame;
+  unsigned short i;
+  int rc;
+  rs_value_init_false(&result);
+  vm_cmd_frame_init(&frame, args, arg_count, 0, 0, &result, err);
+  if (stage_index + 1u < pipeline->count) {
+    rc = rs_overlay_command_call(RS_CMD_LDV, RS_CMD_OVL_OP_BEGIN, &frame);
+    if (rc != 0) {
+      rs_value_free(&result);
+      vm_err(err, rc == -2 ? "LDV path" : "LDV parse");
+      return -1;
+    }
+    for (i = 0u; i < frame.count; ++i) {
+      frame.index = i;
+      rs_value_free(&result);
+      rs_value_init_false(&result);
+      rc = rs_overlay_command_call(RS_CMD_LDV, RS_CMD_OVL_OP_ITEM, &frame);
+      if (rc != 0) {
+        rs_value_free(&result);
+        vm_err(err, "LDV parse");
+        return -1;
+      }
+      if (vm_exec_pipeline_from(vm,
+                                pipeline,
+                                (unsigned short)(stage_index + 1u),
+                                &result,
+                                1,
+                                collect,
+                                err) != 0) {
+        rs_value_free(&result);
+        return -1;
+      }
+    }
+    rs_value_free(&result);
+    return 0;
+  }
+  rc = rs_overlay_command_call(RS_CMD_LDV, RS_CMD_OVL_OP_RUN, &frame);
+  if (rc != 0) {
+    rs_value_free(&result);
+    vm_err(err, rc == -2 ? "LDV path" : "LDV parse");
+    return -1;
+  }
+  rc = vm_emit_result(vm,
+                      pipeline,
+                      (unsigned short)(stage_index + 1u),
+                      &result,
+                      collect,
+                      err);
+  rs_value_free(&result);
+  return rc;
+}
+
+static int vm_cmd_stv(RSVM* vm,
+                      const RSPipeline* pipeline,
+                      unsigned short stage_index,
+                      const RSValue* current,
+                      int has_current,
+                      RSValue* args,
+                      unsigned short arg_count,
+                      RSOutCollect* collect,
+                      RSError* err) {
+  RSValue result;
+  RSCommandFrame frame;
+  int rc;
+
+  rs_value_init_false(&result);
+  vm_cmd_frame_init(&frame, args, arg_count, current, has_current, &result, err);
+  rc = rs_overlay_command_call(RS_CMD_STV, RS_CMD_OVL_OP_RUN, &frame);
+  if (rc != 0) {
+    rs_value_free(&result);
+    vm_err(err, rc == -2 ? "STV args" : "STV ser");
+    return -1;
+  }
+  rc = vm_exec_pipeline_from(vm,
+                             pipeline,
+                             (unsigned short)(stage_index + 1u),
+                             &result,
+                             1,
+                             collect,
+                             err);
+  rs_value_free(&result);
+  return rc;
+}
+
 static int vm_exec_command_stage(RSVM* vm,
                                  const RSStage* stage,
                                  const RSPipeline* pipeline,
@@ -721,6 +926,14 @@ static int vm_exec_command_stage(RSVM* vm,
     rc = vm_cmd_tap(vm, pipeline, stage_index, current, has_current, args, arg_count, collect, err);
   } else if (id == RS_CMD_PRT) {
     rc = vm_cmd_prt(vm, pipeline, stage_index, current, has_current, args, arg_count, collect, err);
+  } else if (id == RS_CMD_DRVI) {
+    rc = vm_cmd_drvi(vm, pipeline, stage_index, args, arg_count, collect, err);
+  } else if (id == RS_CMD_LST) {
+    rc = vm_cmd_lst(vm, pipeline, stage_index, args, arg_count, collect, err);
+  } else if (id == RS_CMD_LDV) {
+    rc = vm_cmd_ldv(vm, pipeline, stage_index, args, arg_count, collect, err);
+  } else if (id == RS_CMD_STV) {
+    rc = vm_cmd_stv(vm, pipeline, stage_index, current, has_current, args, arg_count, collect, err);
   } else {
     rc = -1;
     vm_err(err, "command not implemented");

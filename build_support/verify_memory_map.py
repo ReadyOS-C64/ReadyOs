@@ -331,8 +331,8 @@ def main():
                 f"RS_VARS_MAX={rs_vars_max}",
             )
             ok &= check(
-                "readyshell heap below BASIC/overlay window",
-                rs_heap_addr >= app_start and rs_heap_end < 0xA000,
+                "readyshell heap inside app window",
+                rs_heap_addr >= app_start and rs_heap_end <= app_end,
                 f"{fmt_range(rs_heap_addr, rs_heap_end)}",
             )
             ok &= check(
@@ -352,7 +352,8 @@ def main():
                     bss_end < rs_heap_addr,
                     f"BSS ends ${bss_end:04X}; heap starts ${rs_heap_addr:04X}",
                 )
-            for ovl_addr_name in ("OVL1ADDR", "OVL2ADDR", "OVL3ADDR"):
+            for ovl_addr_name in ("OVL1ADDR", "OVL2ADDR", "OVL3ADDR",
+                                  "OVL4ADDR", "OVL5ADDR", "OVL6ADDR", "OVL7ADDR"):
                 if ovl_addr_name not in segs:
                     ok &= check(f"readyshell:{ovl_addr_name} exists", False)
                     continue
@@ -367,7 +368,8 @@ def main():
                     start == overlay_loadaddr and end == overlay_start - 1,
                     f"{fmt_range(start, end)} expected {fmt_range(overlay_loadaddr, overlay_start - 1)}",
                 )
-            for ovl_name in ("OVERLAY1", "OVERLAY2", "OVERLAY3"):
+            for ovl_name in ("OVERLAY1", "OVERLAY2", "OVERLAY3",
+                             "OVERLAY4", "OVERLAY5", "OVERLAY6", "OVERLAY7"):
                 if ovl_name not in segs:
                     ok &= check(f"readyshell:{ovl_name} exists", False)
                     continue

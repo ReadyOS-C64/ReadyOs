@@ -65,6 +65,11 @@ static void reu_apply_fixed_system_banks(void) {
     REU_ALLOC_TABLE[REU_BANK_RS_OVL2] = REU_RS_OVL2;
     REU_ALLOC_TABLE[REU_BANK_RS_OVL3] = REU_RS_OVL3;
     REU_ALLOC_TABLE[REU_BANK_RS_DEBUG] = REU_RS_DEBUG;
+    REU_ALLOC_TABLE[REU_BANK_RS_OVL4] = REU_RS_OVL4;
+    REU_ALLOC_TABLE[REU_BANK_RS_OVL5] = REU_RS_OVL5;
+    REU_ALLOC_TABLE[REU_BANK_RS_OVL6] = REU_RS_OVL6;
+    REU_ALLOC_TABLE[REU_BANK_RS_OVL7] = REU_RS_OVL7;
+    REU_ALLOC_TABLE[REU_BANK_RS_SCRATCH] = REU_RS_SCRATCH;
 }
 
 static unsigned char reu_fixed_bank_type(unsigned char bank) {
@@ -73,6 +78,11 @@ static unsigned char reu_fixed_bank_type(unsigned char bank) {
         case REU_BANK_RS_OVL2:  return REU_RS_OVL2;
         case REU_BANK_RS_OVL3:  return REU_RS_OVL3;
         case REU_BANK_RS_DEBUG: return REU_RS_DEBUG;
+        case REU_BANK_RS_OVL4:  return REU_RS_OVL4;
+        case REU_BANK_RS_OVL5:  return REU_RS_OVL5;
+        case REU_BANK_RS_OVL6:  return REU_RS_OVL6;
+        case REU_BANK_RS_OVL7:  return REU_RS_OVL7;
+        case REU_BANK_RS_SCRATCH: return REU_RS_SCRATCH;
         default:                return 0xFF;
     }
 }

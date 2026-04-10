@@ -78,8 +78,8 @@ typedef struct {
 
 #define RS_RUNTIME_ADDR 0xCA00u
 #define RS_RUNTIME_LIMIT_ADDR 0xD000u
-#define RS_HEAP_ADDR 0x9C00u
-#define RS_HEAP_SIZE 0x0400u
+#define RS_HEAP_ADDR 0xA1C0u
+#define RS_HEAP_SIZE 0x02A0u
 
 #define RS_RUNTIME ((ReadyShellRuntimeState*)RS_RUNTIME_ADDR)
 #define g_vm (RS_RUNTIME->vm)
@@ -701,8 +701,8 @@ static int shell_read_logical_line(char *out, unsigned short max) {
 }
 
 static void shell_show_help(void) {
-    shell_write_line("ReadyShell POC commands:");
-    shell_write_line("  PRT, GEN, TAP");
+    shell_write_line("ReadyShell:");
+    shell_write_line("  PRT GEN TAP DRVI LST LDV STV");
     shell_write_line("  vars/expr: $A=1,2,3");
     shell_write_line("  filter: ?[ @>5 ]");
     shell_write_line("  foreach: %[ PRT @ ]");
@@ -726,23 +726,6 @@ static void shell_print_error(const RSError *err) {
         shell_print_u16((unsigned short)rs_overlay_last_rc());
     }
     shell_newline();
-}
-
-static int c64_file_read(void *user,
-                         const char *path,
-                         unsigned char *dst,
-                         unsigned short max,
-                         unsigned short *out_len) {
-    (void)user;
-    return rs_file_read_all(path, dst, max, out_len);
-}
-
-static int c64_file_write(void *user,
-                          const char *path,
-                          const unsigned char *src,
-                          unsigned short len) {
-    (void)user;
-    return rs_file_write_all(path, src, len);
 }
 
 static int c64_list_dir(void *user, unsigned char drive, RSValue *out_array) {
@@ -780,16 +763,16 @@ int main(void) {
     rs_vm_init(&g_vm);
 
     g_platform.user = 0;
-    g_platform.file_read = c64_file_read;
-    g_platform.file_write = c64_file_write;
+    g_platform.file_read = 0;
+    g_platform.file_write = 0;
     g_platform.list_dir = c64_list_dir;
     g_platform.drive_info = c64_drive_info;
     rs_vm_set_platform(&g_vm, &g_platform);
     rs_vm_set_writer(&g_vm, shell_writer, 0);
 
     shell_draw_chrome();
-    shell_write_line("Demo. Limited memory. May crash.");
-    shell_write_line("Type HELP for usage.");
+    shell_write_line("ReadyShell");
+    shell_write_line("HELP for usage");
     rs_overlay_debug_mark('M');
 
     if (rs_overlay_active()) {
@@ -799,7 +782,7 @@ int main(void) {
         shell_newline();
     } else {
         rs_overlay_debug_mark('k');
-        shell_write_line("overlay load failed: need rsovl1/2/3");
+        shell_write_line("overlay failed");
     }
 
     for (;;) {
