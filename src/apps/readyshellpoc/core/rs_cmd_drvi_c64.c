@@ -3,6 +3,7 @@
 #include "rs_cmd_value_local.h"
 
 #include <cbm.h>
+#include <string.h>
 
 #if defined(__CC65__)
 #pragma code-name(push, "OVERLAY4")
@@ -10,33 +11,107 @@
 #pragma bss-name(push, "OVERLAY4")
 #endif
 
+#define DRVI_LFN_CMD 15u
+
+static void drvi_cleanup_io(void) {
+  cbm_k_clrch();
+  cbm_k_clall();
+}
+
+static void drvi_trim_field(char* s) {
+  unsigned short i;
+  unsigned short end;
+  if (!s) {
+    return;
+  }
+  end = (unsigned short)strlen(s);
+  while (end > 0u && (s[end - 1u] == ' ' || (unsigned char)s[end - 1u] == 0xA0u)) {
+    --end;
+  }
+  s[end] = '\0';
+  i = 0u;
+  while (s[i] == ' ' || (unsigned char)s[i] == 0xA0u) {
+    ++i;
+  }
+  if (i != 0u) {
+    memmove(s, s + i, strlen(s + i) + 1u);
+  }
+}
+
+static void drvi_name_from_dirent(const char* src,
+                                  char* out,
+                                  unsigned short max) {
+  unsigned short i;
+  unsigned short j;
+  if (!out || max == 0u) {
+    return;
+  }
+  out[0] = '\0';
+  if (!src) {
+    return;
+  }
+  j = 0u;
+  for (i = 0u; i < 16u && src[i] != '\0' && j + 1u < max; ++i) {
+    if (src[i] == '"') {
+      continue;
+    }
+    out[j++] = src[i];
+  }
+  out[j] = '\0';
+  drvi_trim_field(out);
+}
+
+static void drvi_maybe_set_1571_mode(unsigned char drive) {
+  if (drive != 8u && drive != 9u) {
+    return;
+  }
+  drvi_cleanup_io();
+  if (cbm_open(DRVI_LFN_CMD, drive, 15, "u0>m1") == 0) {
+    cbm_close(DRVI_LFN_CMD);
+  }
+  drvi_cleanup_io();
+}
+
 static int drvi_make_object(unsigned char drive, RSValue* out) {
   RSValue vdrive;
   RSValue vdisk;
   RSValue vid;
   RSValue vfree;
-  RSValue vtype;
   unsigned short free_blocks;
   unsigned char st;
+  char diskname[20];
+  char diskid[8];
   struct cbm_dirent ent;
 
   if (!out) {
     return -1;
   }
 
+  diskname[0] = '\0';
+  diskid[0] = '\0';
   free_blocks = 0u;
-  if (cbm_opendir(1, drive) == 0) {
-    for (;;) {
-      st = cbm_readdir(1, &ent);
-      if (st != 0u) {
-        if (st == 2u) {
-          free_blocks = ent.size;
-        }
-        break;
-      }
-    }
-    cbm_closedir(1);
+  drvi_maybe_set_1571_mode(drive);
+  if (cbm_opendir(1, drive) != 0) {
+    return -1;
   }
+
+  st = cbm_readdir(1, &ent);
+  if (st != 0u) {
+    cbm_closedir(1);
+    return -1;
+  }
+  drvi_name_from_dirent(ent.name, diskname, sizeof(diskname));
+
+  for (;;) {
+    st = cbm_readdir(1, &ent);
+    if (st != 0u) {
+      if (st == 2u) {
+        free_blocks = ent.size;
+      }
+      break;
+    }
+  }
+  cbm_closedir(1);
 
   rs_cmd_value_free(out);
   if (rs_cmd_value_object_new(out) != 0) {
@@ -47,11 +122,9 @@ static int drvi_make_object(unsigned char drive, RSValue* out) {
   rs_cmd_value_init_u16(&vfree, free_blocks);
   rs_cmd_value_init_false(&vdisk);
   rs_cmd_value_init_false(&vid);
-  rs_cmd_value_init_false(&vtype);
 
-  if (rs_cmd_value_init_string(&vdisk, "DISK") != 0 ||
-      rs_cmd_value_init_string(&vid, "") != 0 ||
-      rs_cmd_value_init_string(&vtype, "1541") != 0) {
+  if (rs_cmd_value_init_string(&vdisk, diskname) != 0 ||
+      rs_cmd_value_init_string(&vid, diskid) != 0) {
     rs_cmd_value_free(out);
     return -1;
   }
@@ -59,18 +132,15 @@ static int drvi_make_object(unsigned char drive, RSValue* out) {
   if (rs_cmd_object_set(out, "DRIVE", &vdrive) != 0 ||
       rs_cmd_object_set(out, "DISKNAME", &vdisk) != 0 ||
       rs_cmd_object_set(out, "ID", &vid) != 0 ||
-      rs_cmd_object_set(out, "BLOCKSFREE", &vfree) != 0 ||
-      rs_cmd_object_set(out, "TYPE", &vtype) != 0) {
+      rs_cmd_object_set(out, "BLOCKSFREE", &vfree) != 0) {
     rs_cmd_value_free(&vdisk);
     rs_cmd_value_free(&vid);
-    rs_cmd_value_free(&vtype);
     rs_cmd_value_free(out);
     return -1;
   }
 
   rs_cmd_value_free(&vdisk);
   rs_cmd_value_free(&vid);
-  rs_cmd_value_free(&vtype);
   return 0;
 }
 

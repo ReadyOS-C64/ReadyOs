@@ -17,6 +17,7 @@
  *  12 = probe missing drive via DIR open then recover
  *  13 = probe missing drive via full DIR scan then recover
  *  14 = report 16-bit blocks-free totals after forcing 1571 mode
+ *  15 = probe DRVI metadata strategies (raw "$" header vs BAM/header sector)
  */
 
 #include <cbm.h>
@@ -44,7 +45,17 @@
 #define READ_BUF_CAP 96
 #define STATUS_CAP   24
 
-#define DBG_LEN      0x80
+#define DBG_LEN      0x140
+
+#define DRVI_PROBE_BASE8     0x80u
+#define DRVI_PROBE_BASE9     0xE0u
+#define DRVI_RAW_PREVIEW_LEN 16u
+#define DRVI_NAME_LEN        16u
+#define DRVI_ID_LEN          4u
+#define DRVI_BAM_NAME_OFF    0x90u
+#define DRVI_BAM_NAME_LEN    16u
+#define DRVI_BAM_ID_OFF      0xA2u
+#define DRVI_BAM_ID_LEN      2u
 
 #define STEP_NONE       0u
 #define STEP_MODE       1u
@@ -65,8 +76,11 @@ typedef struct {
 static unsigned char file_buf_a[READ_BUF_CAP];
 static unsigned char file_buf_b[READ_BUF_CAP];
 static unsigned char dbg[DBG_LEN];
+static unsigned char drvi_bam_buf[256];
 
 static void cleanup_io(void);
+static void print_line(const char *text);
+static void checkpoint_dump(char stage);
 static unsigned char write_debug_dump_file(void);
 static unsigned char write_named_dump_file(const char *name);
 
@@ -377,6 +391,120 @@ static void dbg_store_entry(unsigned char offset, const HarnessEntry *entry) {
     dbg[offset + 2u] = (unsigned char)((entry->size >> 8) & 0xFFu);
 }
 
+static void dbg_store_bytes(unsigned int offset,
+                            const unsigned char *src,
+                            unsigned char len,
+                            unsigned char max_len) {
+    unsigned char i;
+
+    for (i = 0u; i < max_len; ++i) {
+        dbg[offset + i] = (src != 0 && i < len) ? src[i] : 0u;
+    }
+}
+
+static void dbg_store_text(unsigned int offset,
+                           const char *src,
+                           unsigned char max_len) {
+    unsigned char i;
+
+    for (i = 0u; i < max_len; ++i) {
+        dbg[offset + i] = (src != 0 && src[i] != 0) ? (unsigned char)src[i] : 0u;
+    }
+}
+
+static void trim_field(char *s) {
+    unsigned char i;
+    unsigned char end;
+
+    if (s == 0) {
+        return;
+    }
+    end = (unsigned char)strlen(s);
+    while (end > 0u && (s[end - 1u] == ' ' || (unsigned char)s[end - 1u] == 0xA0u)) {
+        --end;
+    }
+    s[end] = 0;
+    i = 0u;
+    while (s[i] == ' ' || (unsigned char)s[i] == 0xA0u) {
+        ++i;
+    }
+    if (i != 0u) {
+        memmove(s, s + i, strlen(s + i) + 1u);
+    }
+}
+
+static void copy_fixed_field(const unsigned char *src,
+                             unsigned char src_len,
+                             char *out,
+                             unsigned char out_cap) {
+    unsigned char i;
+    unsigned char j;
+
+    if (out == 0 || out_cap == 0u) {
+        return;
+    }
+    out[0] = 0;
+    if (src == 0) {
+        return;
+    }
+    j = 0u;
+    for (i = 0u; i < src_len && j + 1u < out_cap; ++i) {
+        out[j++] = (char)(src[i] == 0xA0u ? ' ' : src[i]);
+    }
+    out[j] = 0;
+    trim_field(out);
+}
+
+static void copy_quoted_name_and_id(const char *line,
+                                    char *name_out,
+                                    unsigned char name_cap,
+                                    char *id_out,
+                                    unsigned char id_cap) {
+    unsigned char i;
+    unsigned char j;
+
+    if (name_out != 0 && name_cap > 0u) {
+        name_out[0] = 0;
+    }
+    if (id_out != 0 && id_cap > 0u) {
+        id_out[0] = 0;
+    }
+    if (line == 0 || name_out == 0 || id_out == 0 || name_cap == 0u || id_cap == 0u) {
+        return;
+    }
+
+    i = 0u;
+    while (line[i] != 0 && line[i] != '"') {
+        ++i;
+    }
+    if (line[i] != '"') {
+        return;
+    }
+    ++i;
+    j = 0u;
+    while (line[i] != 0 && line[i] != '"' && j + 1u < name_cap) {
+        name_out[j++] = line[i++];
+    }
+    name_out[j] = 0;
+    trim_field(name_out);
+
+    while (line[i] != 0 && line[i] != '"') {
+        ++i;
+    }
+    if (line[i] == '"') {
+        ++i;
+    }
+    while (line[i] == ' ' || (unsigned char)line[i] == 0xA0u) {
+        ++i;
+    }
+    j = 0u;
+    while (line[i] != 0 && line[i] != ' ' && (unsigned char)line[i] != 0xA0u && j + 1u < id_cap) {
+        id_out[j++] = line[i++];
+    }
+    id_out[j] = 0;
+    trim_field(id_out);
+}
+
 static void parse_status_line(const char *line,
                               unsigned char *code_out,
                               char *msg_out,
@@ -462,6 +590,34 @@ static unsigned char fetch_status(unsigned char device,
     }
 
     (void)read_status_open(code_out, msg_out, msg_cap);
+    cbm_close(LFN_CMD);
+    cleanup_io();
+    return RC_OK;
+}
+
+static unsigned char send_cmd_bytes(unsigned char device,
+                                    const char *cmd) {
+    unsigned char rc;
+    unsigned char i;
+
+    cleanup_io();
+    if (cbm_open(LFN_CMD, device, 15, "") != 0) {
+        cleanup_io();
+        return RC_IO;
+    }
+
+    rc = cbm_k_ckout(LFN_CMD);
+    if (rc != 0u) {
+        cbm_close(LFN_CMD);
+        cleanup_io();
+        return RC_IO;
+    }
+
+    for (i = 0u; cmd[i] != 0; ++i) {
+        cbm_k_bsout((unsigned char)cmd[i]);
+    }
+
+    cbm_k_clrch();
     cbm_close(LFN_CMD);
     cleanup_io();
     return RC_OK;
@@ -622,6 +778,154 @@ static unsigned char probe_dir_scan(unsigned char device) {
             return 0u;
         }
     }
+}
+
+static unsigned char probe_drvi_raw_header(unsigned char device,
+                                           unsigned int base_off) {
+    struct cbm_dirent ent;
+    unsigned char st;
+    unsigned char code;
+    unsigned char status_rc;
+    int open_rc;
+    char name[DRVI_NAME_LEN + 1u];
+    char id[DRVI_ID_LEN + 1u];
+
+    name[0] = 0;
+    id[0] = 0;
+
+    cleanup_io();
+    (void)fetch_status(device, "", &code, 0, 0u);
+    cleanup_io();
+    open_rc = cbm_opendir(LFN_DIR, device);
+    dbg[base_off + 0u] = (unsigned char)((open_rc < 0) ? 0xFFu : (unsigned char)open_rc);
+    if (open_rc != 0) {
+        cleanup_io();
+        (void)fetch_status(device, "", &code, 0, 0u);
+        dbg[base_off + 2u] = RC_IO;
+        dbg[base_off + 3u] = code;
+        return RC_IO;
+    }
+
+    st = cbm_readdir(LFN_DIR, &ent);
+    cbm_closedir(LFN_DIR);
+    cleanup_io();
+
+    status_rc = fetch_status(device, "", &code, 0, 0u);
+    dbg[base_off + 1u] = st;
+    dbg[base_off + 2u] = status_rc;
+    dbg[base_off + 3u] = code;
+    dbg_store_text(base_off + 10u, ent.name, DRVI_RAW_PREVIEW_LEN);
+    copy_fixed_field((const unsigned char*)ent.name, 16u, name, sizeof(name));
+    dbg_store_text(base_off + 26u, name, DRVI_NAME_LEN);
+    dbg_store_text(base_off + 42u, id, DRVI_ID_LEN);
+    return RC_OK;
+}
+
+static unsigned char probe_drvi_bam_header(unsigned char device,
+                                           unsigned int base_off) {
+    unsigned char code;
+    unsigned char status_rc;
+    int data_open_rc;
+    unsigned char cmd_send_rc;
+    int n;
+    char name[DRVI_NAME_LEN + 1u];
+    char id[DRVI_ID_LEN + 1u];
+
+    name[0] = 0;
+    id[0] = 0;
+
+    cleanup_io();
+    data_open_rc = cbm_open(LFN_AUX, device, 2, "#");
+    dbg[base_off + 4u] = (unsigned char)((data_open_rc < 0) ? 0xFFu : (unsigned char)data_open_rc);
+    if (data_open_rc != 0) {
+        cleanup_io();
+        (void)fetch_status(device, "", &code, 0, 0u);
+        dbg[base_off + 6u] = RC_IO;
+        dbg[base_off + 7u] = code;
+        return RC_IO;
+    }
+
+    cmd_send_rc = send_cmd_bytes(device, "U1 2 0 18 0");
+    dbg[base_off + 5u] = cmd_send_rc;
+    if (cmd_send_rc != RC_OK) {
+        cbm_close(LFN_AUX);
+        cleanup_io();
+        (void)fetch_status(device, "", &code, 0, 0u);
+        dbg[base_off + 6u] = RC_IO;
+        dbg[base_off + 7u] = code;
+        return RC_IO;
+    }
+
+    n = cbm_read(LFN_AUX, drvi_bam_buf, sizeof(drvi_bam_buf));
+    dbg[base_off + 8u] = (unsigned char)(n & 0xFF);
+    dbg[base_off + 9u] = (unsigned char)((n >> 8) & 0xFF);
+    cbm_close(LFN_AUX);
+    cleanup_io();
+
+    status_rc = fetch_status(device, "", &code, 0, 0u);
+    dbg[base_off + 6u] = status_rc;
+    dbg[base_off + 7u] = code;
+    if (n < (int)sizeof(drvi_bam_buf)) {
+        return RC_IO;
+    }
+
+    dbg_store_bytes(base_off + 46u,
+                    drvi_bam_buf + DRVI_BAM_NAME_OFF,
+                    DRVI_BAM_NAME_LEN,
+                    DRVI_BAM_NAME_LEN);
+    dbg_store_bytes(base_off + 62u,
+                    drvi_bam_buf + DRVI_BAM_ID_OFF,
+                    DRVI_BAM_ID_LEN,
+                    DRVI_ID_LEN);
+    copy_fixed_field(drvi_bam_buf + DRVI_BAM_NAME_OFF,
+                     DRVI_BAM_NAME_LEN,
+                     name,
+                     sizeof(name));
+    copy_fixed_field(drvi_bam_buf + DRVI_BAM_ID_OFF,
+                     DRVI_BAM_ID_LEN,
+                     id,
+                     sizeof(id));
+    dbg_store_text(base_off + 66u, name, DRVI_NAME_LEN);
+    dbg_store_text(base_off + 82u, id, DRVI_ID_LEN);
+    return RC_OK;
+}
+
+static unsigned char test_drvi_metadata_probe(void) {
+    unsigned char rc;
+
+    dbg_push_stage('V');
+    print_line("");
+    print_line("CASE DRVI");
+
+    rc = probe_drvi_raw_header(DRIVE8, DRVI_PROBE_BASE8);
+    cprintf("RAW  D8 %u %s/%s\r\n",
+            rc,
+            (char*)(dbg + DRVI_PROBE_BASE8 + 26u),
+            (char*)(dbg + DRVI_PROBE_BASE8 + 42u));
+    checkpoint_dump('a');
+
+    rc = probe_drvi_bam_header(DRIVE8, DRVI_PROBE_BASE8);
+    cprintf("BAM  D8 %u %s/%s\r\n",
+            rc,
+            (char*)(dbg + DRVI_PROBE_BASE8 + 66u),
+            (char*)(dbg + DRVI_PROBE_BASE8 + 82u));
+    checkpoint_dump('b');
+
+    rc = probe_drvi_raw_header(DRIVE9, DRVI_PROBE_BASE9);
+    cprintf("RAW  D9 %u %s/%s\r\n",
+            rc,
+            (char*)(dbg + DRVI_PROBE_BASE9 + 26u),
+            (char*)(dbg + DRVI_PROBE_BASE9 + 42u));
+    checkpoint_dump('c');
+
+    rc = probe_drvi_bam_header(DRIVE9, DRVI_PROBE_BASE9);
+    cprintf("BAM  D9 %u %s/%s\r\n",
+            rc,
+            (char*)(dbg + DRVI_PROBE_BASE9 + 66u),
+            (char*)(dbg + DRVI_PROBE_BASE9 + 82u));
+    checkpoint_dump('d');
+
+    return 0u;
 }
 
 static unsigned char find_entry(unsigned char device,
@@ -1269,6 +1573,8 @@ static unsigned char run_selected_case(void) {
             checkpoint_dump('b');
             return 0u;
         }
+        case 15:
+            return test_drvi_metadata_probe();
         default:
             break;
     }

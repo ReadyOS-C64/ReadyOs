@@ -80,6 +80,9 @@ int rs_overlay_command_call(RSCommandId id, unsigned char op, RSCommandFrame* fr
       }
       drive = (unsigned char)drive16;
     }
+    if (drive != 8u && drive != 9u) {
+      return -1;
+    }
     rs_value_free(frame->out);
     if (rs_value_object_new(frame->out) != 0) {
       return -1;
@@ -90,7 +93,7 @@ int rs_overlay_command_call(RSCommandId id, unsigned char op, RSCommandFrame* fr
       rs_value_free(frame->out);
       return -1;
     }
-    if (rs_value_init_string(&tmp, "disk") != 0) {
+    if (rs_value_init_string(&tmp, "readyos") != 0) {
       rs_value_free(frame->out);
       return -1;
     }
@@ -115,16 +118,6 @@ int rs_overlay_command_call(RSCommandId id, unsigned char op, RSCommandFrame* fr
       rs_value_free(frame->out);
       return -1;
     }
-    if (rs_value_init_string(&tmp, "1541") != 0) {
-      rs_value_free(frame->out);
-      return -1;
-    }
-    if (rs_value_object_set(frame->out, "type", &tmp) != 0) {
-      rs_value_free(&tmp);
-      rs_value_free(frame->out);
-      return -1;
-    }
-    rs_value_free(&tmp);
     return 0;
   }
   return -1;

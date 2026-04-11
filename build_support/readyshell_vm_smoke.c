@@ -127,7 +127,7 @@ static int smoke_drive_info(void* user, unsigned char drive, RSValue* out_obj) {
     rs_value_free(out_obj);
     return -1;
   }
-  if (rs_value_init_string(&tmp, "disk") != 0) {
+  if (rs_value_init_string(&tmp, "readyos") != 0) {
     rs_value_free(out_obj);
     return -1;
   }
@@ -137,7 +137,7 @@ static int smoke_drive_info(void* user, unsigned char drive, RSValue* out_obj) {
     return -1;
   }
   rs_value_free(&tmp);
-  if (rs_value_init_string(&tmp, "") != 0) {
+  if (rs_value_init_string(&tmp, "ro") != 0) {
     rs_value_free(out_obj);
     return -1;
   }
@@ -152,16 +152,6 @@ static int smoke_drive_info(void* user, unsigned char drive, RSValue* out_obj) {
     rs_value_free(out_obj);
     return -1;
   }
-  if (rs_value_init_string(&tmp, "1541") != 0) {
-    rs_value_free(out_obj);
-    return -1;
-  }
-  if (rs_value_object_set(out_obj, "type", &tmp) != 0) {
-    rs_value_free(&tmp);
-    rs_value_free(out_obj);
-    return -1;
-  }
-  rs_value_free(&tmp);
   return 0;
 }
 
@@ -323,12 +313,12 @@ int main(void) {
   static const SmokeExpect lst_index_blocks[] = { { "30", SMOKE_LINE_PRT } };
 #if READYSHELL_VM_SMOKE_OVERLAY
   static const SmokeExpect drvi_line[] = {
-    { "{drive:8,diskname:disk,id:,blocksfree:664,type:1541}", SMOKE_LINE_RENDER }
+    { "{drive:8,diskname:readyos,id:,blocksfree:664}", SMOKE_LINE_RENDER }
   };
   static const SmokeExpect drvi_drive_line[] = { { "9", SMOKE_LINE_PRT } };
   static const SmokeExpect drvi_blocks_line[] = { { "664", SMOKE_LINE_PRT } };
   static const SmokeExpect drvi_sel_line[] = {
-    { "{DRIVE:8,DISKNAME:disk}", SMOKE_LINE_RENDER }
+    { "{DRIVE:8,DISKNAME:readyos,ID:}", SMOKE_LINE_RENDER }
   };
 #endif
 
@@ -373,11 +363,13 @@ int main(void) {
   fail |= smoke_run_expect(&vm, &out, "PRT $D(249)", idx_250_line, 1);
 #if READYSHELL_VM_SMOKE_OVERLAY
   fail |= smoke_run_expect(&vm, &out, "DRVI", drvi_line, 1);
-  fail |= smoke_run_expect(&vm, &out, "DRVI | SEL \"DRIVE\",\"DISKNAME\"", drvi_sel_line, 1);
+  fail |= smoke_run_expect(&vm, &out, "DRVI | SEL \"DRIVE\",\"DISKNAME\",\"ID\"", drvi_sel_line, 1);
+  fail |= smoke_run_expect(&vm, &out, "DRVI | SEL \"TYPE\"", 0, 0);
   fail |= smoke_run_expect(&vm, &out, "$I = DRVI", 0, 0);
   fail |= smoke_run_expect(&vm, &out, "PRT $I.BLOCKSFREE", drvi_blocks_line, 1);
   fail |= smoke_run_expect(&vm, &out, "$J = DRVI 9", 0, 0);
   fail |= smoke_run_expect(&vm, &out, "PRT $J.DRIVE", drvi_drive_line, 1);
+  fail |= smoke_run_expect_error(&vm, &out, "DRVI 10");
 #endif
   fail |= smoke_run_expect(&vm, &out, "$DIR = LST", 0, 0);
   fail |= smoke_run_expect(&vm, &out, "PRT $DIR(1).NAME", lst_index_name, 1);
