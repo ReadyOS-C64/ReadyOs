@@ -170,22 +170,27 @@ Kanban workflow board tuned for fast keyboard organization.
 
 ### Ready Shell
 
-ReadyShell POC is unstable, but it can still be explored.
+ReadyShell is an overlay-based shell with expressions, pipelines,
+filters, foreach stages, disk commands, and value serialization.
 
 It is split into a resident program plus overlay files:
 - `readyshell`
 - `rsovl1`
 - `rsovl2`
 - `rsovl3`
+- `rsovl4`
+- `rsovl5`
+- `rsovl6`
+- `rsovl7`
 
-Current overlay roles:
-- `rsovl1` for parse work
-- `rsovl2` for exec/value/cmd/pipe/vars work
-- `rsovl3` for script control work
+Key shell commands:
+- `PRT`, `GEN`, `TAP`
+- `TOP`, `SEL`
+- `DRVI`, `LST`
+- `LDV`, `STV`
 
-Current limitation:
-- the current build can crash on the third entry after repeated
-  app switching, so treat it as a fragile demo
+For a larger walkthrough with worked examples, see the ReadyShell
+tutorial markdown in `src/apps/readyshellpoc/ReadyShelltutorial.md`.
 
 ### Secondary-Disk Apps
 

@@ -138,7 +138,7 @@ def audit_profile(profile_id: str) -> bool:
         expected_names = set(expected_seqrel)
         missing = sorted(expected_names - actual_names)
         unexpected = sorted(actual_names - expected_names)
-        if missing or unexpected:
+        if missing:
             all_ok = False
 
         print(f"  disk {disk_index} drive {disk['drive']}: {disk_path.name}")
@@ -147,7 +147,7 @@ def audit_profile(profile_id: str) -> bool:
         if missing:
             print(f"    MISSING: {missing}")
         if unexpected:
-            print(f"    EXTRA:   {unexpected}")
+            print(f"    PRESERVED USER FILES: {unexpected}")
 
         for name in sorted(expected_names):
             exp = expected_seqrel[name]

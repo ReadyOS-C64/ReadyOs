@@ -1,8 +1,10 @@
-# ReadyShell POC 0.1.1 Guide
+# ReadyShell Guide
 
-This document describes the **current ReadyShell POC app in ReadyOS** (`ReadyShell POC 0.1.1`), with examples for language features, commands, pipelines, and shell behavior.
+This document describes the **current ReadyShell app in ReadyOS**, with examples for language features, commands, pipelines, and shell behavior.
 
 It is intentionally implementation-accurate for this build, not a forward-looking spec.
+
+For a broader recipe-style walkthrough, see [ReadyShelltutorial.md](./ReadyShelltutorial.md).
 
 ## 1. Scope: What Is Implemented
 
@@ -19,15 +21,20 @@ Implemented in this POC:
   - `PRT`
   - `GEN`
   - `TAP`
+  - `TOP`
+  - `SEL`
+  - `DRVI`
+  - `LST`
+  - `LDV`
+  - `STV`
 - REPL built-ins:
   - `HELP`
   - `VER`
   - `CLEAR`
 
-Intentionally not available in this POC:
+Still intentionally out of scope in this POC:
 
-- Disk/device commands (`DRVI`, `LST`, `LDV`, `STV`)
-- Full reference-shell command set
+- Full reference-shell command set beyond the commands listed here
 
 ## 2. Shell Input and Editing
 
@@ -484,7 +491,7 @@ Behavior:
 REPL built-ins (not pipeline commands):
 
 - `HELP` -> concise command summary
-- `VER` -> prints shell core version (`0.1.1`)
+- `VER` -> prints the shell core version string
 - `CLEAR` -> redraws ReadyOS TUI shell screen
 
 ## 12. Errors and Diagnostics
@@ -504,13 +511,8 @@ Typical messages:
 - `range bounds must be numeric`
 - `variable table full`
 
-## 13. Disabled/Unavailable In This POC
+## 13. More Examples
 
-These are intentionally not included in this app build:
-
-- `DRVI`
-- `LST`
-- `LDV`
-- `STV`
-
-Trying to run them currently yields command errors.
+For a larger, example-heavy guide covering pipelines, filtering, foreach,
+printing, disk commands, serialization, arrays, comparisons, `TOP`, and
+`SEL`, see [ReadyShelltutorial.md](./ReadyShelltutorial.md).

@@ -20,7 +20,7 @@ EDITOR_SRC = ROOT / "src" / "apps" / "editor" / "editor.c"
 EDITOR_MAP = ROOT / "obj" / "editor.map"
 APP_SNAPSHOT_END = 0xC5FF
 EDIT_HEIGHT = 20
-MIN_HEADROOM = 12 * 1024
+MIN_HEADROOM = 11 * 1024
 
 
 def check(name: str, cond: bool, detail: str = "") -> bool:

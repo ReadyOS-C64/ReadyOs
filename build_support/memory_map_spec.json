@@ -9,8 +9,8 @@
     "himem": "0xC600",
     "default_parse_trace_debug": 0,
     "overlay_size_profiles": {
-      "release": "0x2180",
-      "debug": "0x2480"
+      "release": "0x3800",
+      "debug": "0x3B00"
     },
     "reu_offsets": {
       "overlay1": "0x400000",
@@ -104,6 +104,7 @@
     "0xC89C",
     "0xCA00",
     "0xCE00",
+    "0xCFF0",
     "0xD012",
     "0xD800",
     "0xDF00",

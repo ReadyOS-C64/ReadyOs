@@ -934,8 +934,6 @@ def main():
         all_ok &= check("resume region ends at bank boundary", resume_end == 0x10000,
                         f'0x{resume_end:05X} (expect 0x10000)')
 
-    all_ok &= check("resume_state.c exists", os.path.exists(os.path.join("src", "lib", "resume_state.c")))
-
     try:
         with open("Makefile", "r", encoding="utf-8", errors="replace") as f:
             mk = f.read()
@@ -943,28 +941,47 @@ def main():
         all_ok &= check("Makefile exists", False, "missing")
         tasklist_links_resume = False
     else:
-        resume_lib_vars = {
-            "editor": "LIB_EDITOR",
-            "calcplus": "LIB_CALCPLUS",
-            "hexview": "LIB_HEXVIEW",
-            "clipmgr": "LIB_CLIPMGR",
-            "reuviewer": "LIB_REUVIEWER",
-            "tasklist": "LIB_TASKLIST",
-            "game2048": "LIB_GAME2048",
-            "deminer": "LIB_DEMINER",
-            "cal26": "LIB_CAL26",
-            "dizzy": "LIB_DIZZY",
-            "readme": "LIB_README",
-            "readyshellpoc": "LIB_READYSHELL",
+        resume_module_paths = {
+            "resume_state_ctx.c exists": os.path.join("src", "lib", "resume_state_ctx.c"),
+            "resume_state_core.c exists": os.path.join("src", "lib", "resume_state_core.c"),
+            "resume_state_segments.c exists": os.path.join("src", "lib", "resume_state_segments.c"),
         }
-        all_ok &= check("Makefile defines RESUME_STATE_SRC", "RESUME_STATE_SRC" in mk)
-        tasklist_line = re.search(r"^LIB_TASKLIST\s*=.*$", mk, re.MULTILINE)
-        tasklist_links_resume = tasklist_line is not None and "$(RESUME_STATE_SRC)" in tasklist_line.group(0)
-        for app_name, var_name in resume_lib_vars.items():
+        resume_make_vars = (
+            "RESUME_STATE_CTX_SRC",
+            "RESUME_STATE_CORE_SRC",
+            "RESUME_STATE_SEGMENTS_SRC",
+            "RESUME_STATE_SIMPLE_SRCS",
+            "RESUME_STATE_SEGMENT_SRCS",
+            "RESUME_STATE_ALL_SRCS",
+        )
+        resume_lib_expectations = {
+            "LIB_EDITOR": "$(RESUME_STATE_SEGMENT_SRCS)",
+            "LIB_CALCPLUS": "$(RESUME_STATE_SEGMENT_SRCS)",
+            "LIB_HEXVIEW": "$(RESUME_STATE_SIMPLE_SRCS)",
+            "LIB_CLIPMGR": "$(RESUME_STATE_SIMPLE_SRCS)",
+            "LIB_REUVIEWER": "$(RESUME_STATE_SIMPLE_SRCS)",
+            "LIB_TASKLIST": "$(RESUME_STATE_ALL_SRCS)",
+            "LIB_GAME2048": "$(RESUME_STATE_SIMPLE_SRCS)",
+            "LIB_DEMINER": "$(RESUME_STATE_SIMPLE_SRCS)",
+            "LIB_CAL26": "$(RESUME_STATE_SEGMENT_SRCS)",
+            "LIB_DIZZY": "$(RESUME_STATE_SEGMENT_SRCS)",
+            "LIB_README": "$(RESUME_STATE_SIMPLE_SRCS)",
+            "LIB_READYSHELL": "$(RESUME_STATE_SIMPLE_SRCS)",
+        }
+
+        for name, path in resume_module_paths.items():
+            all_ok &= check(name, os.path.exists(path))
+
+        for var_name in resume_make_vars:
+            all_ok &= check(f"Makefile defines {var_name}", var_name in mk)
+
+        tasklist_links_resume = False
+        for var_name, expect_ref in resume_lib_expectations.items():
             line = re.search(rf"^{var_name}\s*=.*$", mk, re.MULTILINE)
-            if app_name == "tasklist":
-                continue
-            all_ok &= check(f"{var_name} links resume_state", line is not None and "$(RESUME_STATE_SRC)" in line.group(0))
+            links_expected_resume = line is not None and expect_ref in line.group(0)
+            all_ok &= check(f"{var_name} links resume_state", links_expected_resume)
+            if var_name == "LIB_TASKLIST":
+                tasklist_links_resume = links_expected_resume
 
     for app_name in ("editor", "calcplus", "hexview", "clipmgr", "reuviewer",
                      "tasklist", "game2048", "deminer", "cal26", "dizzy", "readme",

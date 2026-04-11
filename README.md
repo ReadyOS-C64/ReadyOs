@@ -176,13 +176,11 @@ How it works:
 | 8 | `cal26` | calendar 26 | 2026 calendar with month, week, day, upcoming, and REL-backed appointments; task reading is currently broken |
 | 8 | `dizzy` | dizzy kanban | Kanban board with REL-backed persistence, search, and reorder |
 | 9 | `readme` | read.me | In-system ReadyOS guide viewer |
-| 8 | `readyshell` | ready shell (demo) | Overlay-based shell POC/demo |
+| 8 | `readyshell` | ready shell | Overlay-based shell with pipelines, disk commands, and serialization |
 | 8 | `deminer` | deminer | Minesweeper-style puzzle with suspend/resume |
 
 Notes:
 
-- `readyshell` uses overlay files on disk 1 and should still be treated as a
-  demo path rather than a stable daily-use app.
 - `cal26` currently has a known regression: task reading is broken.
 - `showcfg.prg` is a BASIC inspector for the generated `apps.cfg` payload on
   drive `8`.
