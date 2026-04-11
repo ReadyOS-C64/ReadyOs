@@ -699,6 +699,9 @@ tasklist-smoke-host:
 file-dialog-memory-report:
 	python3 $(BUILD_SUPPORT_DIR)/file_dialog_memory_report.py
 
+readyshell-overlay-report: $(DISK1) $(READYSHELL)
+	python3 $(BUILD_SUPPORT_DIR)/readyshell_overlay_report.py --profile "$(PROFILE)" --disk "$(DISK1)"
+
 # Run Ready OS (boot loader)
 run:
 	bash ./run.sh --profile "$(PROFILE)"
@@ -726,6 +729,7 @@ help:
 	@echo "  tasklist-smoke-host - Run Tasklist host-side smoke checks"
 	@echo "  readyshell-vm-smoke-host - Run ReadyShell VM/pipeline host smoke checks"
 	@echo "  readyshell-reu-tests-host - Run ReadyShell REU heap/value host tests"
+	@echo "  readyshell-overlay-report - Generate ReadyShell overlay Markdown + HTML docs"
 	@echo "  seed-cal26  - Seed CAL26 REL files on readyos.d71 with sample events"
 	@echo "  launcher-verbose - Rebuild launcher with verbose config diagnostics"
 	@echo "  run         - Run Ready OS through run.sh for PROFILE=<id>"
