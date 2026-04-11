@@ -28,11 +28,11 @@
 #define BODY_BOTTOM 23
 #define HELP_Y 24
 
-#define PROMPT_TEXT "RS> "
-#define PROMPT_LEN 4
-#define PHYSICAL_MAX 35
+#define PROMPT_TEXT ">"
+#define PROMPT_LEN 1
 #define LOGICAL_MAX 160
 #define INPUT_COLS (SCREEN_WIDTH - PROMPT_LEN)
+#define PHYSICAL_MAX INPUT_COLS
 
 /* Key codes */
 #define KEY_RETURN 13
@@ -508,7 +508,7 @@ static void shell_draw_chrome(void) {
     clear_screen_color(C_BLUE, C_WHITE);
     draw_window(0, TITLE_Y, 40, 3, C_LIGHTBLUE);
     draw_text(15, 0, "READYSHELL", C_YELLOW);
-    draw_text(13, 1, "READYOS", C_CYAN);
+    draw_text(3, 1, "readyshell v0.2 - demo - may crash", C_CYAN);
 
     for (row = BODY_TOP; row <= BODY_BOTTOM; ++row) {
         clear_line(row, C_WHITE);
@@ -528,7 +528,7 @@ static void shell_draw_prompt(const char *buf, unsigned char len, unsigned char 
     (void)pos;
 
     clear_line(g_cursor_y, C_WHITE);
-    draw_text(0, g_cursor_y, PROMPT_TEXT, C_CYAN);
+    draw_text(0, g_cursor_y, PROMPT_TEXT, C_YELLOW);
 
     for (col = 0; col < INPUT_COLS; ++col) {
         if (col < len) c = (unsigned char)buf[col];
@@ -792,6 +792,7 @@ int main(void) {
     } else if (rs_overlay_boot_with_progress(shell_overlay_progress, 0) == 0) {
         rs_overlay_debug_mark('K');
         shell_newline();
+        shell_write_line("see readme help or website");
     } else {
         rs_overlay_debug_mark('k');
         shell_write_line("overlay failed");
