@@ -1,5 +1,6 @@
 #include "rs_cmd_overlay.h"
 
+#include "rs_cmd_dir_local.h"
 #include "rs_cmd_value_local.h"
 #include "../platform/rs_platform.h"
 
@@ -123,7 +124,7 @@ static int lst_begin(RSCommandFrame* frame) {
   if (lst_parse_drive(frame, &drive) != 0) {
     return -2;
   }
-  if (cbm_opendir(1, drive) != 0) {
+  if (rs_cmd_dir_open_header(drive, &ent) != 0) {
     return -1;
   }
 
@@ -131,10 +132,6 @@ static int lst_begin(RSCommandFrame* frame) {
   for (;;) {
     char name[20];
     char type[4];
-    st = cbm_readdir(1, &ent);
-    if (st != 0u) {
-      break;
-    }
     if (count >= (unsigned short)LST_MAX_RECORDS) {
       cbm_closedir(1);
       return -3;
@@ -146,6 +143,10 @@ static int lst_begin(RSCommandFrame* frame) {
       return -1;
     }
     ++count;
+    st = cbm_readdir(1, &ent);
+    if (st != 0u) {
+      break;
+    }
   }
 
   cbm_closedir(1);

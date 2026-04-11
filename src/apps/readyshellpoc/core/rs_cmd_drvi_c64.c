@@ -1,5 +1,6 @@
 #include "rs_cmd_overlay.h"
 
+#include "rs_cmd_dir_local.h"
 #include "rs_cmd_value_local.h"
 
 #include <cbm.h>
@@ -12,11 +13,6 @@
 #endif
 
 #define DRVI_LFN_CMD 15u
-
-static void drvi_cleanup_io(void) {
-  cbm_k_clrch();
-  cbm_k_clall();
-}
 
 static void drvi_trim_field(char* s) {
   unsigned short i;
@@ -65,22 +61,20 @@ static void drvi_maybe_set_1571_mode(unsigned char drive) {
   if (drive != 8u && drive != 9u) {
     return;
   }
-  drvi_cleanup_io();
+  rs_cmd_dir_cleanup_io();
   if (cbm_open(DRVI_LFN_CMD, drive, 15, "u0>m1") == 0) {
     cbm_close(DRVI_LFN_CMD);
   }
-  drvi_cleanup_io();
+  rs_cmd_dir_cleanup_io();
 }
 
 static int drvi_make_object(unsigned char drive, RSValue* out) {
   RSValue vdrive;
   RSValue vdisk;
-  RSValue vid;
   RSValue vfree;
   unsigned short free_blocks;
   unsigned char st;
   char diskname[20];
-  char diskid[8];
   struct cbm_dirent ent;
 
   if (!out) {
@@ -88,16 +82,9 @@ static int drvi_make_object(unsigned char drive, RSValue* out) {
   }
 
   diskname[0] = '\0';
-  diskid[0] = '\0';
   free_blocks = 0u;
   drvi_maybe_set_1571_mode(drive);
-  if (cbm_opendir(1, drive) != 0) {
-    return -1;
-  }
-
-  st = cbm_readdir(1, &ent);
-  if (st != 0u) {
-    cbm_closedir(1);
+  if (rs_cmd_dir_open_header(drive, &ent) != 0) {
     return -1;
   }
   drvi_name_from_dirent(ent.name, diskname, sizeof(diskname));
@@ -121,26 +108,21 @@ static int drvi_make_object(unsigned char drive, RSValue* out) {
   rs_cmd_value_init_u16(&vdrive, drive);
   rs_cmd_value_init_u16(&vfree, free_blocks);
   rs_cmd_value_init_false(&vdisk);
-  rs_cmd_value_init_false(&vid);
 
-  if (rs_cmd_value_init_string(&vdisk, diskname) != 0 ||
-      rs_cmd_value_init_string(&vid, diskid) != 0) {
+  if (rs_cmd_value_init_string(&vdisk, diskname) != 0) {
     rs_cmd_value_free(out);
     return -1;
   }
 
   if (rs_cmd_object_set(out, "DRIVE", &vdrive) != 0 ||
       rs_cmd_object_set(out, "DISKNAME", &vdisk) != 0 ||
-      rs_cmd_object_set(out, "ID", &vid) != 0 ||
       rs_cmd_object_set(out, "BLOCKSFREE", &vfree) != 0) {
     rs_cmd_value_free(&vdisk);
-    rs_cmd_value_free(&vid);
     rs_cmd_value_free(out);
     return -1;
   }
 
   rs_cmd_value_free(&vdisk);
-  rs_cmd_value_free(&vid);
   return 0;
 }
 

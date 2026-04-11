@@ -27,6 +27,7 @@ LOG_DIR="$ROOT_DIR/logs"
 HARNESS_DIR_REL="artifacts/dev_harness/xfilechk"
 HARNESS_DIR="$ROOT_DIR/$HARNESS_DIR_REL"
 HARNESS_BOOT_REL="$HARNESS_DIR_REL/xfilechk_boot.prg"
+HARNESS_PRG_REL="$HARNESS_DIR_REL/xfilechk.prg"
 mkdir -p "$LOG_DIR"
 
 CASE_ID=0
@@ -34,6 +35,8 @@ LIMIT_CYCLES="${LIMIT_CYCLES:-12000000}"
 TRUE_DRIVE="${TRUE_DRIVE:-1}"
 VICE_SPEED="${VICE_SPEED:-800}"
 WARP="${WARP:-0}"
+EXTRA_VICE_ARGS=()
+AUTOSTART_TARGET="$HARNESS_BOOT_REL"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -81,6 +84,17 @@ LIST9="$LOG_DIR/xfilechk_c${CASE_ID}_${TS}.d9.list.txt"
 cp -f "$HARNESS_DIR/xfilechk.d71" "$CASE_DISK_8"
 cp -f "$HARNESS_DIR/xfilechk_2.d71" "$CASE_DISK_9"
 
+if [[ "$CASE_ID" = "16" ]]; then
+  TRUE_DRIVE=0
+  AUTOSTART_TARGET="$HARNESS_PRG_REL"
+  EXTRA_VICE_ARGS=(
+    -trapdevice8
+    -trapdevice9
+    -trapdevice10
+    -trapdevice11
+  )
+fi
+
 echo "[probe] Running headless xfilechk case=$CASE_ID"
 set +e
 if [[ "$TRUE_DRIVE" = "1" ]]; then
@@ -96,13 +110,14 @@ if [[ "$TRUE_DRIVE" = "1" ]]; then
       -devicebackend9 0 \
       +busdevice8 \
       +busdevice9 \
+      "${EXTRA_VICE_ARGS[@]}" \
       -drive8truedrive \
       -drive9truedrive \
       -8 "$CASE_DISK_8" \
       -9 "$CASE_DISK_9" \
       -limitcycles "$LIMIT_CYCLES" \
       -autostartprgmode 1 \
-      "$HARNESS_BOOT_REL" \
+      "$AUTOSTART_TARGET" \
       >"$STDOUT_LOG" 2>"$STDERR_LOG"
   else
     script -q /dev/null x64sc \
@@ -115,13 +130,14 @@ if [[ "$TRUE_DRIVE" = "1" ]]; then
       -devicebackend9 0 \
       +busdevice8 \
       +busdevice9 \
+      "${EXTRA_VICE_ARGS[@]}" \
       -drive8truedrive \
       -drive9truedrive \
       -8 "$CASE_DISK_8" \
       -9 "$CASE_DISK_9" \
       -limitcycles "$LIMIT_CYCLES" \
       -autostartprgmode 1 \
-      "$HARNESS_BOOT_REL" \
+      "$AUTOSTART_TARGET" \
       >"$STDOUT_LOG" 2>"$STDERR_LOG"
   fi
 else
@@ -137,11 +153,12 @@ else
       -devicebackend9 0 \
       +busdevice8 \
       +busdevice9 \
+      "${EXTRA_VICE_ARGS[@]}" \
       -8 "$CASE_DISK_8" \
       -9 "$CASE_DISK_9" \
       -limitcycles "$LIMIT_CYCLES" \
       -autostartprgmode 1 \
-      "$HARNESS_BOOT_REL" \
+      "$AUTOSTART_TARGET" \
       >"$STDOUT_LOG" 2>"$STDERR_LOG"
   else
     script -q /dev/null x64sc \
@@ -154,11 +171,12 @@ else
       -devicebackend9 0 \
       +busdevice8 \
       +busdevice9 \
+      "${EXTRA_VICE_ARGS[@]}" \
       -8 "$CASE_DISK_8" \
       -9 "$CASE_DISK_9" \
       -limitcycles "$LIMIT_CYCLES" \
       -autostartprgmode 1 \
-      "$HARNESS_BOOT_REL" \
+      "$AUTOSTART_TARGET" \
       >"$STDOUT_LOG" 2>"$STDERR_LOG"
   fi
 fi

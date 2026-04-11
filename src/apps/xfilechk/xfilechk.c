@@ -18,6 +18,7 @@
  *  13 = probe missing drive via full DIR scan then recover
  *  14 = report 16-bit blocks-free totals after forcing 1571 mode
  *  15 = probe DRVI metadata strategies (raw "$" header vs BAM/header sector)
+ *  16 = probe directory recovery modes after touching missing drives
  */
 
 #include <cbm.h>
@@ -45,7 +46,7 @@
 #define READ_BUF_CAP 96
 #define STATUS_CAP   24
 
-#define DBG_LEN      0x140
+#define DBG_LEN      0x340
 
 #define DRVI_PROBE_BASE8     0x80u
 #define DRVI_PROBE_BASE9     0xE0u
@@ -56,6 +57,11 @@
 #define DRVI_BAM_NAME_LEN    16u
 #define DRVI_BAM_ID_OFF      0xA2u
 #define DRVI_BAM_ID_LEN      2u
+
+#define DIRREC_BASE          0x180u
+#define DIRREC_SLOT_SIZE     12u
+#define DIRREC_CHECK_COUNT   8u
+#define DIRREC_MODE_COUNT    4u
 
 #define STEP_NONE       0u
 #define STEP_MODE       1u
@@ -821,6 +827,71 @@ static unsigned char probe_drvi_raw_header(unsigned char device,
     return RC_OK;
 }
 
+static unsigned char probe_drvi_present(unsigned char device) {
+    struct cbm_dirent ent;
+    unsigned char st;
+
+    cleanup_io();
+    if (cbm_opendir(LFN_DIR, device) != 0) {
+        cleanup_io();
+        return 0u;
+    }
+
+    st = cbm_readdir(LFN_DIR, &ent);
+    cbm_closedir(LFN_DIR);
+    cleanup_io();
+    return (unsigned char)(st == 0u && ent.name[0] != 0);
+}
+
+static void dirrec_prepare(unsigned char device,
+                           unsigned char mode) {
+    if (mode == 0u) {
+        return;
+    }
+
+    cleanup_io();
+    if (mode >= 2u) {
+        if (cbm_open(LFN_CMD, device, 15, "") == 0) {
+            cbm_close(LFN_CMD);
+        }
+    }
+    if (mode >= 3u) {
+        if (cbm_open(LFN_CMD, device, 15, "I0") == 0) {
+            cbm_close(LFN_CMD);
+        }
+    }
+    cleanup_io();
+}
+
+static unsigned char probe_dir_present_mode(unsigned char device,
+                                            unsigned char mode,
+                                            unsigned int base_off) {
+    struct cbm_dirent ent;
+    unsigned char st;
+    int open_rc;
+
+    st = 0xFFu;
+    memset(&ent, 0, sizeof(ent));
+
+    dirrec_prepare(device, mode);
+    open_rc = cbm_opendir(LFN_DIR, device);
+    if (open_rc == 0) {
+        st = cbm_readdir(LFN_DIR, &ent);
+        cbm_closedir(LFN_DIR);
+    }
+    cleanup_io();
+
+    dbg[base_off + 0u] = mode;
+    dbg[base_off + 1u] = device;
+    dbg[base_off + 2u] = (unsigned char)((open_rc < 0) ? 0xFFu : (unsigned char)open_rc);
+    dbg[base_off + 3u] = st;
+    dbg[base_off + 4u] = 0xFFu;
+    dbg[base_off + 5u] = 0xFFu;
+    dbg_store_text(base_off + 6u, ent.name, DIRREC_SLOT_SIZE - 6u);
+
+    return (unsigned char)(open_rc == 0 && st == 0u && ent.name[0] != 0);
+}
+
 static unsigned char probe_drvi_bam_header(unsigned char device,
                                            unsigned int base_off) {
     unsigned char code;
@@ -892,7 +963,9 @@ static unsigned char probe_drvi_bam_header(unsigned char device,
 
 static unsigned char test_drvi_metadata_probe(void) {
     unsigned char rc;
+    unsigned char bits;
 
+    dbg[2] = 1u;
     dbg_push_stage('V');
     print_line("");
     print_line("CASE DRVI");
@@ -918,6 +991,14 @@ static unsigned char test_drvi_metadata_probe(void) {
             (char*)(dbg + DRVI_PROBE_BASE9 + 42u));
     checkpoint_dump('c');
 
+    bits = 0u;
+    if (probe_drvi_present(DRIVE8)) bits |= 0x01u;
+    if (probe_drvi_present(DRIVE9)) bits |= 0x02u;
+    if (probe_drvi_present(10u)) bits |= 0x04u;
+    if (probe_drvi_present(11u)) bits |= 0x08u;
+    dbg[0x21] = bits;
+    dbg[0x22] = bits;
+
     rc = probe_drvi_bam_header(DRIVE9, DRVI_PROBE_BASE9);
     cprintf("BAM  D9 %u %s/%s\r\n",
             rc,
@@ -925,6 +1006,63 @@ static unsigned char test_drvi_metadata_probe(void) {
             (char*)(dbg + DRVI_PROBE_BASE9 + 82u));
     checkpoint_dump('d');
 
+    return 0u;
+}
+
+static unsigned char test_dir_recovery_modes(void) {
+    unsigned char mode;
+    unsigned char pass_mask;
+    unsigned char ok;
+    unsigned int base_off;
+
+    dbg[2] = 1u;
+    dbg_push_stage('R');
+    print_line("");
+    print_line("CASE DREC");
+
+    pass_mask = 0u;
+    for (mode = 0u; mode < DIRREC_MODE_COUNT; ++mode) {
+        base_off = DIRREC_BASE + ((unsigned int)mode * (unsigned int)DIRREC_CHECK_COUNT *
+                                  (unsigned int)DIRREC_SLOT_SIZE);
+        ok = 1u;
+
+        if (!probe_dir_present_mode(DRIVE8, mode, base_off + 0u * DIRREC_SLOT_SIZE)) {
+            ok = 0u;
+        }
+        if (!probe_dir_present_mode(DRIVE9, mode, base_off + 1u * DIRREC_SLOT_SIZE)) {
+            ok = 0u;
+        }
+        if (probe_dir_present_mode(10u, mode, base_off + 2u * DIRREC_SLOT_SIZE)) {
+            ok = 0u;
+        }
+        if (!probe_dir_present_mode(DRIVE8, mode, base_off + 3u * DIRREC_SLOT_SIZE)) {
+            ok = 0u;
+        }
+        if (!probe_dir_present_mode(DRIVE9, mode, base_off + 4u * DIRREC_SLOT_SIZE)) {
+            ok = 0u;
+        }
+        if (probe_dir_present_mode(11u, mode, base_off + 5u * DIRREC_SLOT_SIZE)) {
+            ok = 0u;
+        }
+        if (!probe_dir_present_mode(DRIVE8, mode, base_off + 6u * DIRREC_SLOT_SIZE)) {
+            ok = 0u;
+        }
+        if (!probe_dir_present_mode(DRIVE9, mode, base_off + 7u * DIRREC_SLOT_SIZE)) {
+            ok = 0u;
+        }
+
+        if (ok) {
+            pass_mask |= (unsigned char)(1u << mode);
+        }
+        dbg[0x20u + mode] = ok;
+        checkpoint_dump((char)('a' + mode));
+    }
+
+    dbg[0x24u] = pass_mask;
+    if (pass_mask == 0u) {
+        dbg_set_fail(STEP_PROBE, 7u);
+        return 1u;
+    }
     return 0u;
 }
 
@@ -1575,6 +1713,8 @@ static unsigned char run_selected_case(void) {
         }
         case 15:
             return test_drvi_metadata_probe();
+        case 16:
+            return test_dir_recovery_modes();
         default:
             break;
     }
@@ -1605,6 +1745,7 @@ static unsigned char run_selected_case(void) {
 
 int main(void) {
     unsigned char failed;
+    unsigned char need_mode_set;
 
     clrscr();
     dbg_clear();
@@ -1612,22 +1753,28 @@ int main(void) {
     print_label_uc("CASE ", (unsigned char)XFILECHK_CASE);
 
     dbg_push_stage('M');
-    if (set_1571_mode(DRIVE8) != 0u) {
-        dbg[6] = 1u;
-        dbg_set_fail(STEP_MODE, 1u);
-        print_line("MODE SET FAIL");
-        (void)write_debug_dump_file();
-        return 1;
+    need_mode_set = (unsigned char)(XFILECHK_CASE != 16);
+    if (need_mode_set) {
+        if (set_1571_mode(DRIVE8) != 0u) {
+            dbg[6] = 1u;
+            dbg_set_fail(STEP_MODE, 1u);
+            print_line("MODE SET FAIL");
+            (void)write_debug_dump_file();
+            return 1;
+        }
+        dbg[6] = 0u;
+        if (set_1571_mode(DRIVE9) != 0u) {
+            dbg[7] = 1u;
+            dbg_set_fail(STEP_MODE, 2u);
+            print_line("MODE SET FAIL");
+            (void)write_debug_dump_file();
+            return 1;
+        }
+        dbg[7] = 0u;
+    } else {
+        dbg[6] = 0u;
+        dbg[7] = 0u;
     }
-    dbg[6] = 0u;
-    if (set_1571_mode(DRIVE9) != 0u) {
-        dbg[7] = 1u;
-        dbg_set_fail(STEP_MODE, 2u);
-        print_line("MODE SET FAIL");
-        (void)write_debug_dump_file();
-        return 1;
-    }
-    dbg[7] = 0u;
     (void)write_debug_dump_file();
 
     failed = run_selected_case();

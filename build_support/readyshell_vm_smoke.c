@@ -313,12 +313,12 @@ int main(void) {
   static const SmokeExpect lst_index_blocks[] = { { "30", SMOKE_LINE_PRT } };
 #if READYSHELL_VM_SMOKE_OVERLAY
   static const SmokeExpect drvi_line[] = {
-    { "{drive:8,diskname:readyos,id:,blocksfree:664}", SMOKE_LINE_RENDER }
+    { "{drive:8,diskname:readyos,blocksfree:664}", SMOKE_LINE_RENDER }
   };
   static const SmokeExpect drvi_drive_line[] = { { "9", SMOKE_LINE_PRT } };
   static const SmokeExpect drvi_blocks_line[] = { { "664", SMOKE_LINE_PRT } };
   static const SmokeExpect drvi_sel_line[] = {
-    { "{DRIVE:8,DISKNAME:readyos,ID:}", SMOKE_LINE_RENDER }
+    { "{DRIVE:8,DISKNAME:readyos}", SMOKE_LINE_RENDER }
   };
 #endif
 
@@ -363,7 +363,8 @@ int main(void) {
   fail |= smoke_run_expect(&vm, &out, "PRT $D(249)", idx_250_line, 1);
 #if READYSHELL_VM_SMOKE_OVERLAY
   fail |= smoke_run_expect(&vm, &out, "DRVI", drvi_line, 1);
-  fail |= smoke_run_expect(&vm, &out, "DRVI | SEL \"DRIVE\",\"DISKNAME\",\"ID\"", drvi_sel_line, 1);
+  fail |= smoke_run_expect(&vm, &out, "DRVI | SEL \"DRIVE\",\"DISKNAME\"", drvi_sel_line, 1);
+  fail |= smoke_run_expect(&vm, &out, "DRVI | SEL \"ID\"", 0, 0);
   fail |= smoke_run_expect(&vm, &out, "DRVI | SEL \"TYPE\"", 0, 0);
   fail |= smoke_run_expect(&vm, &out, "$I = DRVI", 0, 0);
   fail |= smoke_run_expect(&vm, &out, "PRT $I.BLOCKSFREE", drvi_blocks_line, 1);

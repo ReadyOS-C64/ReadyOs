@@ -20,6 +20,20 @@ STEP_NAMES = {
     8: "stage",
 }
 
+DIRREC_BASE = 0x180
+DIRREC_SLOT_SIZE = 12
+DIRREC_MODE_COUNT = 4
+DIRREC_CHECKS = [
+    "base8",
+    "base9",
+    "miss10",
+    "after10_8",
+    "after10_9",
+    "miss11",
+    "after11_8",
+    "after11_9",
+]
+
 
 def bit_drives(mask: int) -> str:
     parts = []
@@ -56,6 +70,19 @@ def probe_slot(raw: bytes, base: int) -> dict[str, object]:
         "bam_id_field": decode_field(raw[base + 62:base + 66]),
         "bam_name": decode_field(raw[base + 66:base + 82]),
         "bam_id": decode_field(raw[base + 82:base + 86]),
+    }
+
+
+def dirrec_slot(raw: bytes, base: int) -> dict[str, object]:
+    return {
+        "mode": raw[base + 0],
+        "drive": raw[base + 1],
+        "open_rc": raw[base + 2],
+        "read_rc": raw[base + 3],
+        "status_rc": raw[base + 4],
+        "status_code": raw[base + 5],
+        "preview": decode_field(raw[base + 6:base + DIRREC_SLOT_SIZE]),
+        "ok": raw[base + 2] == 0 and raw[base + 3] == 0,
     }
 
 
@@ -187,6 +214,36 @@ def main() -> int:
         if d9["raw_preview"].upper() != "XFILECHK9":
             print("RESULT: FAIL (drive9 directory header mismatch)")
             return 1
+        if (probe_open & 0x03) != 0x03 or (probe_open & 0x0C) != 0x00:
+            print("RESULT: FAIL (drive open presence bits mismatch)")
+            return 1
+        if (probe_first & 0x03) != 0x03 or (probe_first & 0x0C) != 0x00:
+            print("RESULT: FAIL (drive first-entry presence bits mismatch)")
+            return 1
+    if case_id == 16:
+        winning_modes = []
+        for mode in range(DIRREC_MODE_COUNT):
+            print(f"dirrec mode={mode}:")
+            mode_ok = True
+            for idx, name in enumerate(DIRREC_CHECKS):
+                slot = dirrec_slot(raw, DIRREC_BASE + mode * len(DIRREC_CHECKS) * DIRREC_SLOT_SIZE + idx * DIRREC_SLOT_SIZE)
+                print(
+                    f"  {name}: d{slot['drive']} open={slot['open_rc']} read={slot['read_rc']}"
+                    f" st_rc={slot['status_rc']} st={slot['status_code']} preview={slot['preview']!r}"
+                )
+                if name in ("miss10", "miss11"):
+                    if slot["ok"]:
+                        mode_ok = False
+                else:
+                    if not slot["ok"]:
+                        mode_ok = False
+            print(f"  pass={mode_ok}")
+            if mode_ok:
+                winning_modes.append(mode)
+        if not winning_modes:
+            print("RESULT: FAIL (no recovery mode kept present drives alive after missing-drive probes)")
+            return 1
+        print(f"winning_modes={','.join(str(x) for x in winning_modes)}")
     print(f"stages={stages or '-'} status_msg={status_msg or '-'} dump_open={dump_open} dump_write={dump_write}")
 
     if marker != 0x58 or version != 0x01:

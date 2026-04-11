@@ -42,6 +42,10 @@ static int smoke_build_dir_entry(RSValue* out,
   return 0;
 }
 
+static unsigned char smoke_drive_present(unsigned char drive) {
+  return (unsigned char)(drive == 8u || drive == 9u);
+}
+
 int rs_overlay_command_call(RSCommandId id, unsigned char op, RSCommandFrame* frame) {
   static const char* names[] = { "alpha", "beta", "gamma" };
   static const unsigned short blocks[] = { 10u, 20u, 30u };
@@ -80,7 +84,7 @@ int rs_overlay_command_call(RSCommandId id, unsigned char op, RSCommandFrame* fr
       }
       drive = (unsigned char)drive16;
     }
-    if (drive != 8u && drive != 9u) {
+    if (!smoke_drive_present(drive)) {
       return -1;
     }
     rs_value_free(frame->out);
@@ -98,16 +102,6 @@ int rs_overlay_command_call(RSCommandId id, unsigned char op, RSCommandFrame* fr
       return -1;
     }
     if (rs_value_object_set(frame->out, "diskname", &tmp) != 0) {
-      rs_value_free(&tmp);
-      rs_value_free(frame->out);
-      return -1;
-    }
-    rs_value_free(&tmp);
-    if (rs_value_init_string(&tmp, "") != 0) {
-      rs_value_free(frame->out);
-      return -1;
-    }
-    if (rs_value_object_set(frame->out, "id", &tmp) != 0) {
       rs_value_free(&tmp);
       rs_value_free(frame->out);
       return -1;
