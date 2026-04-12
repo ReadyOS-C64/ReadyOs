@@ -20,6 +20,7 @@ Implemented in this POC:
 - Commands:
   - `PRT`
   - `GEN`
+  - `MORE`
   - `TAP`
   - `TOP`
   - `SEL`
@@ -68,6 +69,13 @@ Pipeline typing on C64 keyboard:
 - Parser pipeline operator is `|`
 - **On C64 keyboard, type `!` to enter `|`**
 - Some C64 key variants are also normalized to pipe
+
+Streaming output pause:
+
+- While lines are printing, press any key to pause output
+- Footer changes to `PAUSED - PRESS ANY KEY`
+- Resume by releasing the current key and pressing any key again
+- This pauses ReadyShell before it continues feeding more pipeline output to the printer
 
 ## 3. Statement Forms
 
@@ -326,6 +334,27 @@ Behavior:
 
 - First two auto-print outputs
 - Last one is explicitly printed by `PRT`, so no extra auto-print duplication
+- While auto-printed or `PRT` output is streaming, any key can pause the stream
+
+### 7.6 `MORE` paging behavior
+
+`MORE` is a pass-through pipeline stage. It does not collect, transform, or print
+items itself. It simply forwards each item and requests a pause every N items.
+
+Examples:
+
+```text
+1..50 | MORE
+1..50 | MORE | PRT @
+1..9 | MORE 5
+```
+
+Behavior:
+
+- `MORE` defaults to a page size of `20`
+- `MORE 5` pauses after every 5th item
+- The triggering item still passes through normally
+- After resume, the next page continues from the next item
 
 ## 8. Commands
 
@@ -402,6 +431,39 @@ GEN 3 | TAP "PASS1" | ?[ @ > 1 ] | TAP "PASS2"
 Errors:
 
 - Used without an active pipeline item -> `TAP requires pipeline item`
+
+### 8.4 `MORE`
+
+Purpose:
+
+- Pass current pipeline item onward unchanged
+- Trigger the shell pause after every Nth item
+
+Syntax:
+
+```text
+MORE
+MORE <count>
+```
+
+Examples:
+
+```text
+1..50 | MORE
+1..50 | MORE | PRT "HEY ", @
+LST | MORE
+1..9 | MORE 5
+```
+
+Notes:
+
+- Default page size is `20`
+- `MORE` is pipeline-oriented; by itself it does not print anything
+- `MORE` pauses by setting the shared shell pause state, so the downstream output path stops until resumed
+
+Errors:
+
+- Zero, non-numeric, or multiple arguments -> `MORE expects count`
 
 ## 9. Script Blocks
 
