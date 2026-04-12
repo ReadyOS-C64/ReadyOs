@@ -40,7 +40,7 @@ OVERLAY_SPECS: dict[int, OverlaySpec] = {
         "obj/rsparser.prg",
         "rsparser",
         "None directly; parse phase support.",
-        "Boot-loaded from disk, then cached in REU bank 0x40 at 0x400000.",
+        "Boot-loaded from disk, then cached in the shared core-overlay REU bank.",
         "Lives entirely inside the shared overlay window while active.",
     ),
     2: OverlaySpec(
@@ -50,8 +50,8 @@ OVERLAY_SPECS: dict[int, OverlaySpec] = {
         "rsvm.prg",
         "obj/rsvm.prg",
         "rsvm",
-        "PRT, TOP, SEL, GEN, TAP and the shared execution paths that command overlays return to.",
-        "Boot-loaded from disk, then cached in REU bank 0x41 at 0x410000.",
+        "PRT, MORE, TOP, SEL, GEN, TAP and the shared execution paths that command overlays return to.",
+        "Boot-loaded from disk, then cached in the shared core-overlay REU bank.",
         "Includes rs_vm_fmt_buf[128] and rs_vm_line_buf[384] inside the overlay image.",
     ),
     3: OverlaySpec(
@@ -108,10 +108,13 @@ def read_text(path: Path) -> str:
 
 
 def parse_define(text: str, name: str) -> int:
-    match = re.search(rf"#define\s+{re.escape(name)}\s+0x([0-9A-Fa-f]+)(?:u|ul|U|UL|l|L)?", text)
+    match = re.search(
+        rf"#define\s+{re.escape(name)}\s+(0x[0-9A-Fa-f]+|[0-9]+)(?:u|ul|U|UL|l|L)?",
+        text,
+    )
     if not match:
         raise ValueError(f"missing define {name}")
-    return int(match.group(1), 16)
+    return int(match.group(1), 0)
 
 
 def parse_map_segments(map_text: str) -> dict[str, tuple[int, int, int]]:
@@ -342,6 +345,7 @@ def build_report_context(args: argparse.Namespace) -> dict[str, object]:
     value_c = read_text(args.value_c)
     overlay_c = read_text(args.overlay_c)
     shell_c = read_text(args.shell_c)
+    ui_state_h = read_text(args.ui_state_h)
 
     scratch_off = parse_define(cmd_overlay_h, "RS_CMD_SCRATCH_OFF")
     scratch_len = parse_define(cmd_overlay_h, "RS_CMD_SCRATCH_LEN")
@@ -351,13 +355,30 @@ def build_report_context(args: argparse.Namespace) -> dict[str, object]:
     heap_arena_end_rel = parse_define(value_c, "RS_REU_HEAP_ARENA_END")
     runtime_addr = parse_define(shell_c, "RS_RUNTIME_ADDR")
     runtime_limit = parse_define(shell_c, "RS_RUNTIME_LIMIT_ADDR")
-    reu_offsets = {
-        1: parse_define(overlay_c, "RS_REU_OVERLAY1_OFF"),
-        2: parse_define(overlay_c, "RS_REU_OVERLAY2_OFF"),
-    }
     dbg_head_off = parse_define(overlay_c, "RS_REU_DBG_HEAD_OFF")
     dbg_data_off = parse_define(overlay_c, "RS_REU_DBG_DATA_OFF")
     dbg_data_len = parse_define(overlay_c, "RS_REU_DBG_DATA_LEN")
+    shared_meta_off = parse_define(ui_state_h, "RS_REU_SHARED_META_OFF")
+    ovl_meta_off = shared_meta_off
+    ovl_meta_len = parse_define(ui_state_h, "RS_REU_OVL_CACHE_META_LEN")
+    ovl_cache_bank = parse_define(ui_state_h, "RS_REU_OVL_CACHE_BANK")
+    ovl_parse_rel = parse_define(ui_state_h, "RS_REU_OVL_CACHE_PARSE_REL")
+    ovl_exec_rel = parse_define(ui_state_h, "RS_REU_OVL_CACHE_EXEC_REL")
+    ovl_slot_len = parse_define(ui_state_h, "RS_REU_OVL_CACHE_SLOT_LEN")
+    ui_flags_off = parse_define(ui_state_h, "RS_REU_UI_FLAGS_OFF")
+    ovl_cache_base = parse_define(overlay_c, "RS_REU_OVL_CACHE_BASE")
+
+    code_start, code_end, code_size = segments["CODE"]
+    ro_start, ro_end, ro_size = segments["RODATA"]
+    data_start, data_end, data_size = segments["DATA"]
+    init_start, init_end, init_size = segments["INIT"]
+    once_start, once_end, once_size = segments["ONCE"]
+
+    bank_size = 0x10000
+    parse_abs = ovl_cache_base + ovl_parse_rel
+    exec_abs = ovl_cache_base + ovl_exec_rel
+    cache_tail_start = exec_abs + ovl_slot_len
+    cache_tail_size = bank_size - (ovl_exec_rel + ovl_slot_len)
 
     disk_label, disk_blocks, free_blocks = parse_disk_listing(args.disk)
 
@@ -369,7 +390,14 @@ def build_report_context(args: argparse.Namespace) -> dict[str, object]:
         file_size = prg_path.stat().st_size
         live_start, live_end, live_size = segments[f"OVERLAY{num}"]
         window_free = window_size - live_size
-        reu_off = reu_offsets.get(num)
+        reu_off = None
+        reu_slot_end = None
+        if num == 1:
+            reu_off = parse_abs
+            reu_slot_end = parse_abs + ovl_slot_len - 1
+        elif num == 2:
+            reu_off = exec_abs
+            reu_slot_end = exec_abs + ovl_slot_len - 1
         overlays.append(
             {
                 "num": num,
@@ -383,6 +411,7 @@ def build_report_context(args: argparse.Namespace) -> dict[str, object]:
                 "window_free": window_free,
                 "window_pct": (live_size / window_size) * 100.0,
                 "reu_off": reu_off,
+                "reu_slot_end": reu_slot_end,
             }
         )
 
@@ -412,6 +441,11 @@ def build_report_context(args: argparse.Namespace) -> dict[str, object]:
         "heap_size": heap_size,
         "runtime_addr": runtime_addr,
         "runtime_limit": runtime_limit,
+        "code_size": code_size,
+        "rodata_size": ro_size,
+        "data_size": data_size,
+        "init_size": init_size,
+        "once_size": once_size,
         "scratch_off": scratch_off,
         "scratch_len": scratch_len,
         "dbg_head_off": dbg_head_off,
@@ -420,6 +454,19 @@ def build_report_context(args: argparse.Namespace) -> dict[str, object]:
         "dbg_end_off": dbg_data_off + dbg_data_len - 1,
         "dbg_span_len": dbg_data_off + dbg_data_len - dbg_head_off,
         "heap_bank_base": heap_bank_base,
+        "shared_meta_off": shared_meta_off,
+        "ovl_meta_off": ovl_meta_off,
+        "ovl_meta_len": ovl_meta_len,
+        "ovl_cache_bank": ovl_cache_bank,
+        "ovl_parse_rel": ovl_parse_rel,
+        "ovl_exec_rel": ovl_exec_rel,
+        "ovl_slot_len": ovl_slot_len,
+        "ovl_cache_base": ovl_cache_base,
+        "ovl_parse_abs": parse_abs,
+        "ovl_exec_abs": exec_abs,
+        "cache_tail_start": cache_tail_start,
+        "cache_tail_size": cache_tail_size,
+        "ui_flags_off": ui_flags_off,
         "heap_meta_abs": heap_bank_base + heap_meta_rel,
         "heap_arena_abs": heap_bank_base + heap_arena_rel,
         "heap_arena_end_abs": heap_bank_base + heap_arena_end_rel - 1,
@@ -434,7 +481,11 @@ def render_markdown(ctx: dict[str, object]) -> str:
     overlay_rows = []
     for row in ctx["overlays"]:
         spec = row["spec"]
-        reu_loc = fmt_hex24(row["reu_off"]) if row["reu_off"] is not None else "disk-only"
+        reu_loc = (
+            f"bank `0x{ctx['ovl_cache_bank']:02X}` slot `{fmt_hex24(row['reu_off'])}-{fmt_hex24(row['reu_slot_end'])}`"
+            if row["reu_off"] is not None
+            else "disk-only"
+        )
         overlay_rows.append(
             f"| {row['num']} | {spec.title} | `{spec.build_prg}` | `{spec.disk_name}` | "
             f"`{row['file_size']}` | `{row['disk_blocks']}` | `{row['live_size']}` | `{fmt_pct(row['window_pct'])}` | "
@@ -445,7 +496,7 @@ def render_markdown(ctx: dict[str, object]) -> str:
     for row in ctx["overlays"]:
         spec = row["spec"]
         reu_line = (
-            f"Cached in REU bank `0x{row['reu_off'] >> 16:02X}` at `{fmt_hex24(row['reu_off'])}`."
+            f"Cached in shared bank `0x{ctx['ovl_cache_bank']:02X}`, slot `{fmt_hex24(row['reu_off'])}-{fmt_hex24(row['reu_slot_end'])}`, as a full `{ctx['ovl_slot_len']:#06x}`-byte overlay-window snapshot."
             if row["reu_off"] is not None
             else "Not cached in a dedicated REU overlay bank; loaded from disk on demand."
         )
@@ -470,18 +521,17 @@ def render_markdown(ctx: dict[str, object]) -> str:
         )
 
     reu_rows = []
-    for row in ctx["cached_overlays"]:
-        reu_start = int(row["reu_off"])
-        reu_end = reu_start + int(row["live_size"]) - 1
-        reu_rows.append(
-            f"| Overlay {row['num']} cache | `{fmt_hex24(reu_start)}-{fmt_hex24(reu_end)}` | `{row['live_size']}` | "
-            f"Cached at boot, paged back for overlay {row['num']}. |"
-        )
     reu_rows.extend(
         [
+            f"| Shared cache bank | `{fmt_hex24(ctx['ovl_cache_base'])}-{fmt_hex24(ctx['ovl_cache_base'] + 0xFFFF)}` | `65536` | One bank reserved for both core overlays and their free tail. |",
+            f"| Overlay 1 parse slot | `{fmt_hex24(ctx['ovl_parse_abs'])}-{fmt_hex24(ctx['ovl_parse_abs'] + ctx['ovl_slot_len'] - 1)}` | `{ctx['ovl_slot_len']}` | Full overlay-window snapshot for overlay 1. |",
+            f"| Overlay 2 exec slot | `{fmt_hex24(ctx['ovl_exec_abs'])}-{fmt_hex24(ctx['ovl_exec_abs'] + ctx['ovl_slot_len'] - 1)}` | `{ctx['ovl_slot_len']}` | Full overlay-window snapshot for overlay 2. |",
+            f"| Shared bank free tail | `{fmt_hex24(ctx['cache_tail_start'])}-{fmt_hex24(ctx['ovl_cache_base'] + 0xFFFF)}` | `{ctx['cache_tail_size']}` | Currently unused tail after the two core overlay slots. |",
             f"| Debug trace ring | `{fmt_hex24(ctx['dbg_head_off'])}-{fmt_hex24(ctx['dbg_end_off'])}` | `{ctx['dbg_span_len']}` | Overlay debug markers and verification state. |",
             f"| Command scratch | `{fmt_hex24(ctx['scratch_off'])}-{fmt_hex24(ctx['scratch_off'] + ctx['scratch_len'] - 1)}` | `{ctx['scratch_len']}` | Inter-overlay handoff area for command frames and streaming state. |",
-            f"| REU heap metadata | `{fmt_hex24(ctx['heap_meta_abs'])}-{fmt_hex24(ctx['heap_meta_abs'] + 0xFF)}` | `256` | ReadyShell REU heap header region. |",
+            f"| Shared ReadyShell metadata | `{fmt_hex24(ctx['ovl_meta_off'])}-{fmt_hex24(ctx['ovl_meta_off'] + ctx['ovl_meta_len'] - 1)}` | `{ctx['ovl_meta_len']}` | Shared core-overlay cache metadata record. |",
+            f"| Pause flag | `{fmt_hex24(ctx['ui_flags_off'])}` | `1` | Shared output-pause bit used by resident output and `MORE`. |",
+            f"| REU heap metadata | `{fmt_hex24(ctx['heap_meta_abs'])}-{fmt_hex24(ctx['heap_meta_abs'] + 0xFF)}` | `256` | ReadyShell REU heap header region, including shared metadata bytes. |",
             f"| REU heap arena | `{fmt_hex24(ctx['heap_arena_abs'])}-{fmt_hex24(ctx['heap_arena_end_abs'])}` | `{ctx['heap_arena_size']}` | Persistent value payload arena for REU-backed strings/arrays/objects. |",
         ]
     )
@@ -500,9 +550,9 @@ def render_markdown(ctx: dict[str, object]) -> str:
             f"- Resident BSS / heap below overlays: BSS `{fmt_range(ctx['bss_start'], ctx['bss_end'])}` (`{ctx['bss_size']}` bytes), heap `{fmt_range(ctx['heap_start'], ctx['heap_end'])}` (`{ctx['heap_size']}` bytes).",
             f"- High RAM runtime region outside the app window: `{fmt_range(ctx['runtime_addr'], ctx['runtime_limit'] - 1)}`.",
             "- REU policy split:",
-            f"  - overlays {fmt_overlay_nums(ctx['cached_overlays'])} are boot-loaded from disk and cached into fixed REU banks",
+            f"  - overlays {fmt_overlay_nums(ctx['cached_overlays'])} are boot-loaded from disk and cached into one shared REU bank using fixed full-window slots",
             f"  - overlays {fmt_overlay_nums(ctx['demand_overlays'])} are loaded from disk on demand for each command call",
-            "  - bank 0x48 is shared for command handoff scratch and the REU-backed ReadyShell value arena",
+            "  - bank 0x48 is shared for overlay metadata, pause state, command handoff scratch, and the REU-backed ReadyShell value arena",
             "",
             "## Runtime Memory Map",
             "",
@@ -521,6 +571,25 @@ def render_markdown(ctx: dict[str, object]) -> str:
             "| --- | --- | ---: | --- |",
             *reu_rows,
             "",
+            "## Shared Core Overlay Cache Visual",
+            "",
+            "```text",
+            f"REU bank 0x{ctx['ovl_cache_bank']:02X}",
+            "",
+            f"+----------------------------------------+ {fmt_hex24(ctx['ovl_parse_abs'])}",
+            "| overlay 1 parse slot                   |",
+            f"| full overlay-window image: {ctx['ovl_slot_len']:#06x}      |",
+            "| active file: rsparser.prg              |",
+            f"+----------------------------------------+ {fmt_hex24(ctx['ovl_exec_abs'])}",
+            "| overlay 2 exec slot                    |",
+            f"| full overlay-window image: {ctx['ovl_slot_len']:#06x}      |",
+            "| active file: rsvm.prg                  |",
+            f"+----------------------------------------+ {fmt_hex24(ctx['cache_tail_start'])}",
+            "| free tail                              |",
+            f"| {ctx['cache_tail_size']:#06x} bytes                           |",
+            f"+----------------------------------------+ {fmt_hex24(ctx['ovl_cache_base'] + 0xFFFF)}",
+            "```",
+            "",
             "## Overlay Inventory",
             "",
             "| Ovl | Role | Build PRG | Disk name | PRG bytes | Disk blocks | Live bytes | Window use | REU cache | Commands |",
@@ -535,6 +604,13 @@ def render_markdown(ctx: dict[str, object]) -> str:
             f"- Resident sources: `{short_sources(ctx['resident_sources'])}`",
             f"- Resident asm/runtime support: `{short_sources(ctx['resident_asm_sources'])}`",
             f"- Command role: {RESIDENT_COMMANDS}",
+            "- Current linker-visible resident footprint:",
+            f"  - `CODE` `0x{ctx['code_size']:04X}`",
+            f"  - `RODATA` `0x{ctx['rodata_size']:04X}`",
+            f"  - `DATA` `0x{ctx['data_size']:04X}`",
+            f"  - `INIT` `0x{ctx['init_size']:04X}`",
+            f"  - `ONCE` `0x{ctx['once_size']:04X}`",
+            f"  - `BSS` `0x{ctx['bss_size']:04X}`",
             "",
             "## Per-Overlay Details",
             "",
@@ -545,6 +621,7 @@ def render_markdown(ctx: dict[str, object]) -> str:
             f"- Overlay 2 is effectively full: `{ctx['overlays'][1]['live_size']}` of `{ctx['window_size']}` bytes (`{fmt_pct(ctx['overlays'][1]['window_pct'])}`).",
             f"- Overlay 1 is also large at `{ctx['overlays'][0]['live_size']}` bytes (`{fmt_pct(ctx['overlays'][0]['window_pct'])}`).",
             f"- The resident heap below the overlay load address is only `{ctx['heap_size']}` bytes, so large transient work must lean on overlays and REU-backed storage.",
+            f"- Overlays {fmt_overlay_nums(ctx['cached_overlays'])} no longer consume separate REU banks; they share bank `0x{ctx['ovl_cache_bank']:02X}` and leave `{ctx['cache_tail_size']}` bytes free at the tail of that bank.",
             f"- Command overlays {fmt_overlay_nums(ctx['demand_overlays'])} stay smaller on disk and in RAM, but they pay the disk-load cost per command because they are not REU-cached today.",
             "- Overlay 2 carries the shared formatting buffers, so its footprint reflects both command support code and the text-rendering scratch it owns.",
         ]
@@ -557,7 +634,7 @@ def render_html(ctx: dict[str, object]) -> str:
     for row in ctx["overlays"]:
         spec = row["spec"]
         reu_html = (
-            f'bank <code>0x{row["reu_off"] >> 16:02X}</code> at <code>{fmt_hex24(row["reu_off"])}</code>'
+            f'bank <code>0x{ctx["ovl_cache_bank"]:02X}</code> slot <code>{fmt_hex24(row["reu_off"])}-{fmt_hex24(row["reu_slot_end"])}</code>'
             if row["reu_off"] is not None
             else "disk only"
         )
@@ -594,17 +671,18 @@ def render_html(ctx: dict[str, object]) -> str:
             "</section>"
         )
 
-    reu_items = []
-    for row in ctx["cached_overlays"]:
-        reu_start = int(row["reu_off"])
-        reu_end = reu_start + int(row["live_size"]) - 1
-        reu_items.append(
-            f"<li><strong>Overlay {row['num']} cache:</strong> <code>{fmt_hex24(reu_start)}-{fmt_hex24(reu_end)}</code> ({row['live_size']} bytes)</li>"
-        )
+    reu_items = [
+        f"<li><strong>Shared cache bank:</strong> <code>{fmt_hex24(ctx['ovl_cache_base'])}-{fmt_hex24(ctx['ovl_cache_base'] + 0xFFFF)}</code> (65536 bytes)</li>",
+        f"<li><strong>Overlay 1 parse slot:</strong> <code>{fmt_hex24(ctx['ovl_parse_abs'])}-{fmt_hex24(ctx['ovl_parse_abs'] + ctx['ovl_slot_len'] - 1)}</code> ({ctx['ovl_slot_len']} bytes)</li>",
+        f"<li><strong>Overlay 2 exec slot:</strong> <code>{fmt_hex24(ctx['ovl_exec_abs'])}-{fmt_hex24(ctx['ovl_exec_abs'] + ctx['ovl_slot_len'] - 1)}</code> ({ctx['ovl_slot_len']} bytes)</li>",
+        f"<li><strong>Shared bank free tail:</strong> <code>{fmt_hex24(ctx['cache_tail_start'])}-{fmt_hex24(ctx['ovl_cache_base'] + 0xFFFF)}</code> ({ctx['cache_tail_size']} bytes)</li>",
+    ]
     reu_items.extend(
         [
             f"<li><strong>Debug trace ring:</strong> <code>{fmt_hex24(ctx['dbg_head_off'])}-{fmt_hex24(ctx['dbg_end_off'])}</code> ({ctx['dbg_span_len']} bytes)</li>",
             f"<li><strong>Command scratch:</strong> <code>{fmt_hex24(ctx['scratch_off'])}-{fmt_hex24(ctx['scratch_off'] + ctx['scratch_len'] - 1)}</code> ({ctx['scratch_len']} bytes)</li>",
+            f"<li><strong>Shared metadata:</strong> <code>{fmt_hex24(ctx['ovl_meta_off'])}-{fmt_hex24(ctx['ovl_meta_off'] + ctx['ovl_meta_len'] - 1)}</code> ({ctx['ovl_meta_len']} bytes)</li>",
+            f"<li><strong>Pause flag:</strong> <code>{fmt_hex24(ctx['ui_flags_off'])}</code> (1 byte)</li>",
             f"<li><strong>Heap metadata:</strong> <code>{fmt_hex24(ctx['heap_meta_abs'])}-{fmt_hex24(ctx['heap_meta_abs'] + 0xFF)}</code></li>",
             f"<li><strong>Heap arena:</strong> <code>{fmt_hex24(ctx['heap_arena_abs'])}-{fmt_hex24(ctx['heap_arena_end_abs'])}</code> ({ctx['heap_arena_size']} bytes)</li>",
         ]
@@ -722,6 +800,56 @@ def render_html(ctx: dict[str, object]) -> str:
       padding: 10px 12px;
       border-radius: 8px;
     }}
+    .bank-visual {{
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }}
+    .bank {{
+      border: 1px solid #375770;
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(7, 15, 22, 0.48);
+    }}
+    .bank-title {{
+      font-weight: 700;
+      margin-bottom: 8px;
+    }}
+    .stack {{
+      display: grid;
+      gap: 8px;
+    }}
+    .slot {{
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.18);
+    }}
+    .slot.parse {{
+      background: linear-gradient(180deg, rgba(122,208,192,0.32), rgba(122,208,192,0.14));
+      border-color: rgba(122,208,192,0.55);
+    }}
+    .slot.exec {{
+      background: linear-gradient(180deg, rgba(139,184,255,0.32), rgba(139,184,255,0.14));
+      border-color: rgba(139,184,255,0.55);
+    }}
+    .slot.free {{
+      background: linear-gradient(180deg, rgba(255,159,122,0.20), rgba(255,159,122,0.08));
+      border-color: rgba(255,159,122,0.45);
+    }}
+    .slot.meta {{
+      background: linear-gradient(180deg, rgba(242,190,107,0.28), rgba(242,190,107,0.12));
+      border-color: rgba(242,190,107,0.55);
+    }}
+    .slot.heap {{
+      background: linear-gradient(180deg, rgba(131,227,161,0.28), rgba(131,227,161,0.10));
+      border-color: rgba(131,227,161,0.52);
+    }}
+    .slot small {{
+      display: block;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }}
     @media (max-width: 1100px) {{
       .cards {{ grid-template-columns: repeat(2, minmax(150px, 1fr)); }}
       .grid-2, .detail-grid {{ grid-template-columns: 1fr; }}
@@ -747,9 +875,11 @@ def render_html(ctx: dict[str, object]) -> str:
       <div class="card"><div class="k">Resident Heap</div><div class="v">{ctx['heap_size']} bytes</div></div>
     </div>
     <div class="note">
-      Overlays {html.escape(fmt_overlay_nums(ctx['cached_overlays']))} are boot-loaded once and cached in fixed REU banks.
+      Overlays {html.escape(fmt_overlay_nums(ctx['cached_overlays']))} are boot-loaded once and cached in one shared REU bank using
+      two full-window slots.
       Overlays {html.escape(fmt_overlay_nums(ctx['demand_overlays']))} are loaded from disk on demand. Bank
-      <code>0x48</code> is shared for command handoff scratch and the REU-backed ReadyShell value arena.
+      <code>0x48</code> is shared for overlay metadata, pause state, command handoff scratch,
+      and the REU-backed ReadyShell value arena.
     </div>
   </section>
 
@@ -770,6 +900,27 @@ def render_html(ctx: dict[str, object]) -> str:
       <ul>
         {''.join(reu_items)}
       </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Shared REU Bank Visual</h2>
+    <div class="bank-visual">
+      <div class="bank">
+        <div class="bank-title">Bank <code>0x{ctx['ovl_cache_bank']:02X}</code>: Core Overlay Cache</div>
+        <div class="stack">
+          <div class="slot parse"><strong>Overlay 1 parse slot</strong> <code>{fmt_hex24(ctx['ovl_parse_abs'])}-{fmt_hex24(ctx['ovl_parse_abs'] + ctx['ovl_slot_len'] - 1)}</code><small>Full <code>0x{ctx['ovl_slot_len']:04X}</code>-byte window image for <code>rsparser.prg</code>. Live payload is <code>{ctx['overlays'][0]['live_size']}</code> bytes, but the cache stores the whole overlay window so writable overlay data survives phase switching.</small></div>
+          <div class="slot exec"><strong>Overlay 2 exec slot</strong> <code>{fmt_hex24(ctx['ovl_exec_abs'])}-{fmt_hex24(ctx['ovl_exec_abs'] + ctx['ovl_slot_len'] - 1)}</code><small>Full <code>0x{ctx['ovl_slot_len']:04X}</code>-byte window image for <code>rsvm.prg</code>. Live payload is <code>{ctx['overlays'][1]['live_size']}</code> bytes.</small></div>
+          <div class="slot free"><strong>Free tail</strong> <code>{fmt_hex24(ctx['cache_tail_start'])}-{fmt_hex24(ctx['ovl_cache_base'] + 0xFFFF)}</code><small><code>{ctx['cache_tail_size']}</code> bytes currently left free because overlays 1 and 2 now share one bank instead of consuming separate banks.</small></div>
+        </div>
+      </div>
+      <div class="bank">
+        <div class="bank-title">Bank <code>0x48</code>: Shared Shell State</div>
+        <div class="stack">
+          <div class="slot meta"><strong>Shared metadata + pause</strong> <code>{fmt_hex24(ctx['ovl_meta_off'])}-{fmt_hex24(ctx['ui_flags_off'])}</code><small>Overlay cache metadata record plus the shared pause bit used by the resident line printer and <code>MORE</code>.</small></div>
+          <div class="slot heap"><strong>Command scratch + value arena</strong> <code>{fmt_hex24(ctx['scratch_off'])}-{fmt_hex24(ctx['heap_arena_end_abs'])}</code><small>Command handoff scratch, REU heap metadata, and the persistent value arena for REU-backed strings, arrays, and objects.</small></div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -807,6 +958,7 @@ def render_html(ctx: dict[str, object]) -> str:
       <li><strong>Resident sources:</strong> <code>{html.escape(short_sources(ctx['resident_sources']))}</code></li>
       <li><strong>Resident asm/runtime:</strong> <code>{html.escape(short_sources(ctx['resident_asm_sources']))}</code></li>
       <li><strong>Role:</strong> {html.escape(RESIDENT_COMMANDS)}</li>
+      <li><strong>Current resident segments:</strong> <code>CODE ${ctx['code_size']:04X}</code>, <code>RODATA ${ctx['rodata_size']:04X}</code>, <code>DATA ${ctx['data_size']:04X}</code>, <code>INIT ${ctx['init_size']:04X}</code>, <code>ONCE ${ctx['once_size']:04X}</code>, <code>BSS ${ctx['bss_size']:04X}</code></li>
     </ul>
   </section>
 
@@ -823,6 +975,7 @@ def render_html(ctx: dict[str, object]) -> str:
       <li>Overlay 2 is effectively full at {ctx['overlays'][1]['live_size']} bytes of {ctx['window_size']} ({fmt_pct(ctx['overlays'][1]['window_pct'])}).</li>
       <li>Overlay 1 is also large at {ctx['overlays'][0]['live_size']} bytes ({fmt_pct(ctx['overlays'][0]['window_pct'])}).</li>
       <li>The resident heap below the overlay load address is only {ctx['heap_size']} bytes, so large working sets depend on overlays and REU-backed storage.</li>
+      <li>Overlays {html.escape(fmt_overlay_nums(ctx['cached_overlays']))} now share bank <code>0x{ctx['ovl_cache_bank']:02X}</code> and leave a free tail of {ctx['cache_tail_size']} bytes in that bank instead of consuming separate banks.</li>
       <li>Command overlays {html.escape(fmt_overlay_nums(ctx['demand_overlays']))} are smaller, but they pay a disk-load cost on every command invocation because they are not cached in fixed REU banks today.</li>
       <li>Overlay 2 owns the shared formatting buffers, which is why it consumes almost the entire overlay window.</li>
     </ul>
@@ -863,6 +1016,11 @@ def main() -> int:
         default=ROOT / "src" / "apps" / "readyshellpoc" / "readyshellpoc.c",
     )
     parser.add_argument(
+        "--ui-state-h",
+        type=Path,
+        default=ROOT / "src" / "apps" / "readyshellpoc" / "core" / "rs_ui_state.h",
+    )
+    parser.add_argument(
         "--markdown-out",
         type=Path,
         default=ROOT / "docs" / "readyshell_overlay_inventory.md",
@@ -894,6 +1052,7 @@ def main() -> int:
     args.value_c = (args.root / args.value_c).resolve() if not args.value_c.is_absolute() else args.value_c.resolve()
     args.overlay_c = (args.root / args.overlay_c).resolve() if not args.overlay_c.is_absolute() else args.overlay_c.resolve()
     args.shell_c = (args.root / args.shell_c).resolve() if not args.shell_c.is_absolute() else args.shell_c.resolve()
+    args.ui_state_h = (args.root / args.ui_state_h).resolve() if not args.ui_state_h.is_absolute() else args.ui_state_h.resolve()
     args.markdown_out = (
         (args.root / args.markdown_out).resolve() if not args.markdown_out.is_absolute() else args.markdown_out.resolve()
     )

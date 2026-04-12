@@ -77,6 +77,49 @@ Streaming output pause:
 - Resume by releasing the current key and pressing any key again
 - This pauses ReadyShell before it continues feeding more pipeline output to the printer
 
+## 2.1 Runtime Memory Layout
+
+Current release build memory layout:
+
+- Resident app window: `$1000-$C5FF` (`46592` bytes)
+- Overlay load-address bytes: `$8DFE-$8DFF`
+- Overlay execution window: `$8E00-$C5FF` (`14336` bytes)
+- Resident BSS: `$8673-$8869` (`503` bytes)
+- Resident heap: `$886A-$8DFD` (`1428` bytes)
+- High RAM runtime outside the app snapshot: `$CA00-$CFFF`
+
+Overlay policy:
+
+- Overlays `1` and `2` are still separate files on disk
+- They now share one REU cache bank, `0x40`
+- Each shared cache slot stores the full overlay window size, not just file bytes
+- Overlays `3-6` remain disk-loaded command overlays
+- Shared REU metadata, pause state, command scratch, and the value arena live in bank `0x48`
+
+Shared REU cache layout:
+
+```text
+bank 0x40
++-------------------------------+ 0x400000
+| overlay 1 parse slot          |
+| full window snapshot 0x3800   |
++-------------------------------+ 0x403800
+| overlay 2 exec slot           |
+| full window snapshot 0x3800   |
++-------------------------------+ 0x407000
+| free tail in bank 0x40        |
++-------------------------------+ 0x40FFFF
+```
+
+Current overlay set:
+
+- `OVERLAY1` `rsparser.prg`: parser / lexer, `13005` live bytes, cached in bank `0x40` parse slot
+- `OVERLAY2` `rsvm.prg`: execution core for `PRT`, `MORE`, `TOP`, `SEL`, `GEN`, `TAP`, `13897` live bytes, cached in bank `0x40` exec slot
+- `OVERLAY3` `rsdrvi.prg`: `DRVI`, disk-loaded
+- `OVERLAY4` `rslst.prg`: `LST`, disk-loaded
+- `OVERLAY5` `rsldv.prg`: `LDV`, disk-loaded
+- `OVERLAY6` `rsstv.prg`: `STV`, disk-loaded
+
 ## 3. Statement Forms
 
 A logical command line can contain one or more statements.
