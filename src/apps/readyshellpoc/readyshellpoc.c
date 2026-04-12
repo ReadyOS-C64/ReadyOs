@@ -33,18 +33,29 @@
 #define LOGICAL_MAX 160
 #define INPUT_COLS (SCREEN_WIDTH - PROMPT_LEN)
 #define PHYSICAL_MAX INPUT_COLS
+#define FOOTER_NORMAL_TEXT "RET RUN F2/F4 APPS CTRL+B"
+#define FOOTER_PAUSED_TEXT "PAUSED - PRESS ANY KEY"
 
 /* Key codes */
 #define KEY_RETURN 13
 #define KEY_LEFT 157
 #define KEY_RIGHT 29
 #define KEY_DEL 20
+#define KEY_SPACE ' '
 #define KEY_NEXT_APP TUI_KEY_NEXT_APP
 #define KEY_PREV_APP TUI_KEY_PREV_APP
 #define KEY_RUNSTOP TUI_KEY_RUNSTOP
 
 /* Shim ABI */
 #define SHIM_CURRENT_BANK (*(unsigned char*)0xC834)
+
+/*
+ * Shared ReadyShell UI flags live in REU bank 0x48 metadata space instead of
+ * overlay or resident heap RAM. This keeps the pause state visible across the
+ * resident/output boundary without colliding with command scratch payloads.
+ */
+#define RS_REU_UI_FLAGS_OFF 0x4880F0ul
+#define RS_UI_FLAG_PAUSED 0x01u
 
 /* PETSCII box chars (screen codes) */
 #define BOX_TL 0x70
@@ -74,6 +85,8 @@ typedef struct {
     unsigned char cursor_x;
     unsigned int off;
     unsigned char i;
+    unsigned char pause_flags_local;
+    unsigned char pause_store_mode;
 } ReadyShellRuntimeState;
 
 #define RS_RUNTIME_ADDR 0xCA00u
@@ -89,6 +102,8 @@ typedef struct {
 #define g_cursor_x (RS_RUNTIME->cursor_x)
 #define g_off (RS_RUNTIME->off)
 #define g_i (RS_RUNTIME->i)
+#define g_pause_flags_local (RS_RUNTIME->pause_flags_local)
+#define g_pause_store_mode (RS_RUNTIME->pause_store_mode)
 
 static char g_line[LOGICAL_MAX];
 typedef struct {
@@ -100,6 +115,7 @@ static void clear_line(unsigned char y, unsigned char color);
 static void draw_text_n(unsigned char x, unsigned char y, const char *s, unsigned char n, unsigned char color);
 static void resume_save_state(void);
 static void shell_overlay_progress(unsigned char stage, void *user);
+static void shell_draw_footer_normal(void);
 void rs_set_c_stack_top(void);
 
 extern unsigned char rs_heap_bss_run[];
@@ -263,6 +279,74 @@ static void clear_line(unsigned char y, unsigned char color) {
     }
 }
 
+static void shell_draw_footer_text(const char *text, unsigned char color) {
+    clear_line(HELP_Y, color);
+    draw_text_n(0, HELP_Y, text, SCREEN_WIDTH, color);
+}
+
+static unsigned char shell_pause_store_backend(void) {
+    if (g_pause_store_mode == 0u) {
+        g_pause_store_mode = rs_reu_available() ? 2u : 1u;
+        g_pause_flags_local = 0u;
+        if (g_pause_store_mode == 2u) {
+            (void)rs_reu_write(RS_REU_UI_FLAGS_OFF, &g_pause_flags_local, 1u);
+        }
+    }
+    return g_pause_store_mode;
+}
+
+static unsigned char shell_pause_flags(void) {
+    unsigned char flags;
+
+    if (shell_pause_store_backend() == 2u) {
+        flags = g_pause_flags_local;
+        if (rs_reu_read(RS_REU_UI_FLAGS_OFF, &flags, 1u) == 0) {
+            g_pause_flags_local = flags;
+        }
+    }
+    return g_pause_flags_local;
+}
+
+static void shell_pause_set_flags(unsigned char flags) {
+    g_pause_flags_local = flags;
+    if (shell_pause_store_backend() == 2u) {
+        (void)rs_reu_write(RS_REU_UI_FLAGS_OFF, &flags, 1u);
+    }
+}
+
+static void shell_draw_footer_normal(void) {
+    shell_draw_footer_text(FOOTER_NORMAL_TEXT, C_GRAY3);
+}
+
+static void shell_draw_footer_paused(void) {
+    shell_draw_footer_text(FOOTER_PAUSED_TEXT, C_YELLOW);
+}
+
+static void shell_wait_if_paused(void) {
+    unsigned char key;
+    unsigned char flags;
+
+    flags = shell_pause_flags();
+    if ((flags & RS_UI_FLAG_PAUSED) == 0u) {
+        return;
+    }
+
+    /* Make the keyboard the active input stream before we block here. */
+    cbm_k_clrch();
+    shell_draw_footer_paused();
+    for (;;) {
+        key = (unsigned char)cgetc();
+        if (key == 0u) {
+            continue;
+        }
+        flags = (unsigned char)(shell_pause_flags() & (unsigned char)~RS_UI_FLAG_PAUSED);
+        shell_pause_set_flags(flags);
+        cbm_k_clrch();
+        shell_draw_footer_normal();
+        return;
+    }
+}
+
 static void draw_text(unsigned char x, unsigned char y, const char *s, unsigned char color) {
     unsigned char cx;
 
@@ -386,10 +470,21 @@ static void shell_write_line(const char *s) {
 }
 
 static int shell_writer(void *user, const char *line) {
+    unsigned char key;
+    unsigned char flags;
     unsigned char color;
     (void)user;
     color = (rs_vm_current_output_kind() == RS_VM_OUTPUT_PRT) ? C_CYAN : C_WHITE;
     shell_write_line_color(line, color);
+
+    if (kbhit()) {
+        key = (unsigned char)cgetc();
+        if (key == KEY_SPACE) {
+            flags = (unsigned char)(shell_pause_flags() | RS_UI_FLAG_PAUSED);
+            shell_pause_set_flags(flags);
+        }
+    }
+    shell_wait_if_paused();
     return 0;
 }
 
@@ -516,8 +611,7 @@ static void shell_draw_chrome(void) {
         clear_line(row, C_WHITE);
     }
 
-    clear_line(HELP_Y, C_GRAY3);
-    draw_text_n(0, HELP_Y, "RET RUN F2/F4 APPS CTRL+B", 40, C_GRAY3);
+    shell_draw_footer_normal();
 
     g_cursor_y = BODY_TOP;
     g_cursor_x = 0;
@@ -777,6 +871,7 @@ int main(void) {
     }
 
     rs_vm_init(&g_vm);
+    shell_pause_set_flags(0u);
 
     g_platform.user = 0;
     g_platform.file_read = 0;
