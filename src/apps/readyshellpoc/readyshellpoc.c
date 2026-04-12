@@ -509,8 +509,8 @@ static void shell_draw_chrome(void) {
 
     clear_screen_color(C_BLUE, C_WHITE);
     draw_window(0, TITLE_Y, 40, 3, C_LIGHTBLUE);
-    draw_text(15, 0, "READYSHELL", C_YELLOW);
-    draw_text(3, 1, "readyshell v0.2 - demo - may crash", C_CYAN);
+    draw_text(11, 0, "READYOS READYSHELL", C_YELLOW);
+    draw_text(8, 1, "readyshell v0.2 (beta)", C_CYAN);
 
     for (row = BODY_TOP; row <= BODY_BOTTOM; ++row) {
         clear_line(row, C_WHITE);
