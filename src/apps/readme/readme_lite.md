@@ -177,8 +177,7 @@ It is split into a resident program plus overlay files:
 - `readyshell`
 - `rsparser`
 - `rsvm`
-- `rsdrvi`
-- `rslst`
+- `rsdrvilst`
 - `rsldv`
 - `rsstv`
 

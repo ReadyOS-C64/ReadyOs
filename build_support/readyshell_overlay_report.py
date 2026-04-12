@@ -27,6 +27,7 @@ class OverlaySpec:
     disk_staging_prg: str
     disk_name: str
     command_summary: str
+    command_list: tuple[str, ...]
     reu_policy: str
     ram_notes: str
 
@@ -40,6 +41,7 @@ OVERLAY_SPECS: dict[int, OverlaySpec] = {
         "obj/rsparser.prg",
         "rsparser",
         "None directly; parse phase support.",
+        (),
         "Boot-loaded from disk, then cached in the shared core-overlay REU bank.",
         "Lives entirely inside the shared overlay window while active.",
     ),
@@ -51,50 +53,43 @@ OVERLAY_SPECS: dict[int, OverlaySpec] = {
         "obj/rsvm.prg",
         "rsvm",
         "PRT, MORE, TOP, SEL, GEN, TAP and the shared execution paths that command overlays return to.",
+        ("PRT", "MORE", "TOP", "SEL", "GEN", "TAP"),
         "Boot-loaded from disk, then cached in the shared core-overlay REU bank.",
         "Includes rs_vm_fmt_buf[128] and rs_vm_line_buf[384] inside the overlay image.",
     ),
     3: OverlaySpec(
         3,
-        "Drive Info",
-        "Single-command overlay for DRVI.",
-        "rsdrvi.prg",
-        "obj/rsdrvi.prg",
-        "rsdrvi",
-        "DRVI",
+        "Drive Info + Directory Listing",
+        "Shared command overlay for DRVI and LST.",
+        "rsdrvilst.prg",
+        "obj/rsdrvilst.prg",
+        "rsdrvilst",
+        "DRVI, LST",
+        ("DRVI", "LST"),
         "Loaded from disk on demand for each command call. No dedicated REU cache.",
         "Shares the inter-command REU handoff area at 0x480000-0x487FFF.",
     ),
     4: OverlaySpec(
         4,
-        "Directory Listing",
-        "Single-command overlay for LST.",
-        "rslst.prg",
-        "obj/rslst.prg",
-        "rslst",
-        "LST",
-        "Loaded from disk on demand for each command call. No dedicated REU cache.",
-        "Shares the inter-command REU handoff area at 0x480000-0x487FFF.",
-    ),
-    5: OverlaySpec(
-        5,
         "Load Value",
         "Single-command overlay for LDV.",
         "rsldv.prg",
         "obj/rsldv.prg",
         "rsldv",
         "LDV",
+        ("LDV",),
         "Loaded from disk on demand for each command call. No dedicated REU cache.",
         "Uses the shared handoff region plus the REU-backed value arena in bank 0x48 when hydrating pointer-backed values.",
     ),
-    6: OverlaySpec(
-        6,
+    5: OverlaySpec(
+        5,
         "Store Value",
         "Single-command overlay for STV.",
         "rsstv.prg",
         "obj/rsstv.prg",
         "rsstv",
         "STV",
+        ("STV",),
         "Loaded from disk on demand for each command call. No dedicated REU cache.",
         "Uses the shared handoff region plus the REU-backed value arena in bank 0x48 when serializing pointer-backed values.",
     ),
@@ -302,6 +297,43 @@ def resolve_default_disk_path(root: Path, profile_id: str) -> Path:
 
 def short_sources(items: list[str]) -> str:
     return ", ".join(Path(item).name for item in items)
+
+
+def command_chips(commands: tuple[str, ...]) -> str:
+    if not commands:
+        return "none"
+    return " | ".join(commands)
+
+
+def overlay_kind_label(row: dict[str, object]) -> str:
+    spec = row["spec"]
+    if row["num"] == 2:
+        return "shared execution core"
+    if len(spec.command_list) > 1:
+        return "shared command overlay"
+    if len(spec.command_list) == 1:
+        return "single-command overlay"
+    return "support overlay"
+
+
+def command_topology_block(ctx: dict[str, object]) -> list[str]:
+    rows: list[str] = ["Resident ReadyShell dispatcher", "  |"]
+    command_rows = [row for row in ctx["overlays"] if row["spec"].command_list]
+    for idx, row in enumerate(command_rows):
+        spec = row["spec"]
+        connector = "`--" if idx == len(command_rows) - 1 else "+--"
+        branch_indent = "       " if idx == len(command_rows) - 1 else "|      "
+        rows.append(
+            f"  {connector} Overlay {row['num']}  {spec.disk_name:<10} [{overlay_kind_label(row)}]"
+        )
+        rows.append(f"  {branch_indent}commands: {command_chips(spec.command_list)}")
+        if row["num"] == 2:
+            rows.append(f"  {branch_indent}note: shared execution paths that command overlays return to")
+        if row["num"] != 2 and len(spec.command_list) > 1:
+            rows.append(f"  {branch_indent}note: multiple commands share one disk sidecar and one RAM image")
+        if idx != len(command_rows) - 1:
+            rows.append("  |")
+    return rows
 
 
 def build_report_context(args: argparse.Namespace) -> dict[str, object]:
@@ -596,6 +628,15 @@ def render_markdown(ctx: dict[str, object]) -> str:
             "| ---: | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |",
             *overlay_rows,
             "",
+            "## Command Topology",
+            "",
+            "```text",
+            *command_topology_block(ctx),
+            "```",
+            "",
+            "- `DRVI` and `LST` now co-reside in `rsdrvilst`, so both commands load the same disk sidecar and the same overlay image.",
+            f"- Overlays {fmt_overlay_nums(ctx['demand_overlays'])} remain disk-loaded command overlays; only overlays {fmt_overlay_nums(ctx['cached_overlays'])} are REU-cached.",
+            "",
             "## Resident Program",
             "",
             f"- Build PRG: `readyshell.prg`",
@@ -794,6 +835,69 @@ def render_html(ctx: dict[str, object]) -> str:
       grid-template-columns: repeat(2, minmax(320px, 1fr));
       gap: 12px;
     }}
+    .topology-grid {{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }}
+    .overlay-card {{
+      border: 1px solid #375770;
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(7, 15, 22, 0.48);
+    }}
+    .overlay-card.shared {{
+      border-color: rgba(122,208,192,0.55);
+      box-shadow: inset 0 0 0 1px rgba(122,208,192,0.18);
+    }}
+    .overlay-card.exec {{
+      border-color: rgba(139,184,255,0.55);
+      box-shadow: inset 0 0 0 1px rgba(139,184,255,0.18);
+    }}
+    .overlay-head {{
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }}
+    .overlay-name {{
+      font-weight: 700;
+      font-size: 1rem;
+    }}
+    .overlay-kind {{
+      font-size: .72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }}
+    .overlay-meta {{
+      color: var(--muted);
+      font-size: .82rem;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }}
+    .command-pills {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }}
+    .pill {{
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-size: .8rem;
+      background: rgba(122,208,192,0.16);
+      border: 1px solid rgba(122,208,192,0.42);
+      color: var(--ink);
+    }}
+    .pill.exec {{
+      background: rgba(139,184,255,0.16);
+      border-color: rgba(139,184,255,0.42);
+    }}
     .note {{
       border-left: 4px solid var(--accent-2);
       background: rgba(242, 190, 107, 0.10);
@@ -852,6 +956,7 @@ def render_html(ctx: dict[str, object]) -> str:
     }}
     @media (max-width: 1100px) {{
       .cards {{ grid-template-columns: repeat(2, minmax(150px, 1fr)); }}
+      .topology-grid {{ grid-template-columns: 1fr; }}
       .grid-2, .detail-grid {{ grid-template-columns: 1fr; }}
     }}
   </style>
@@ -946,6 +1051,42 @@ def render_html(ctx: dict[str, object]) -> str:
           {''.join(overlay_rows)}
         </tbody>
       </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Command Topology</h2>
+    <div class="note">
+      This view is command-centric rather than file-centric. Shared overlays stand out here because multiple command pills sit inside one overlay card.
+    </div>
+    <div class="topology-grid">
+      {''.join(
+          (
+              "<div class='overlay-card exec'>"
+              "<div class='overlay-head'>"
+              "<div class='overlay-name'>Overlay 2</div>"
+              "<div class='overlay-kind'>shared execution core</div>"
+              "</div>"
+              "<div class='overlay-meta'><code>rsvm</code><br />Shared execution paths that command overlays return to.</div>"
+              "<div class='command-pills'>"
+              + "".join(f"<span class='pill exec'>{html.escape(cmd)}</span>" for cmd in ctx['overlays'][1]['spec'].command_list)
+              + "</div></div>"
+          )
+          + "".join(
+              "<div class='overlay-card "
+              + ("shared" if len(row['spec'].command_list) > 1 else "")
+              + "'>"
+              "<div class='overlay-head'>"
+              f"<div class='overlay-name'>Overlay {row['num']}</div>"
+              f"<div class='overlay-kind'>{html.escape(overlay_kind_label(row))}</div>"
+              "</div>"
+              f"<div class='overlay-meta'><code>{html.escape(row['spec'].disk_name)}</code><br />{html.escape(row['spec'].purpose)}</div>"
+              "<div class='command-pills'>"
+              + "".join(f"<span class='pill'>{html.escape(cmd)}</span>" for cmd in row['spec'].command_list)
+              + "</div></div>"
+              for row in ctx['demand_overlays']
+          )
+      )}
     </div>
   </section>
 

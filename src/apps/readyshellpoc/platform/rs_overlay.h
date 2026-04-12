@@ -9,7 +9,6 @@ typedef void (*RSOverlayProgressFn)(unsigned char stage, void* user);
 #define RS_OVERLAY_PHASE_CMD3   3u
 #define RS_OVERLAY_PHASE_CMD4   4u
 #define RS_OVERLAY_PHASE_CMD5   5u
-#define RS_OVERLAY_PHASE_CMD6   6u
 
 int rs_overlay_boot(void);
 int rs_overlay_boot_with_progress(RSOverlayProgressFn progress, void* user);

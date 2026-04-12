@@ -149,16 +149,14 @@ READYSHELL_STACKSIZE ?= 0x0800
 READYSHELL_OBJ_DIR = $(OBJ_DIR)/readyshell
 READYSHELL_OVL1_PRG = rsparser.prg
 READYSHELL_OVL2_PRG = rsvm.prg
-READYSHELL_OVL3_PRG = rsdrvi.prg
-READYSHELL_OVL4_PRG = rslst.prg
-READYSHELL_OVL5_PRG = rsldv.prg
-READYSHELL_OVL6_PRG = rsstv.prg
+READYSHELL_OVL3_PRG = rsdrvilst.prg
+READYSHELL_OVL4_PRG = rsldv.prg
+READYSHELL_OVL5_PRG = rsstv.prg
 READYSHELL_OVL1_DISK = $(OBJ_DIR)/rsparser.prg
 READYSHELL_OVL2_DISK = $(OBJ_DIR)/rsvm.prg
-READYSHELL_OVL3_DISK = $(OBJ_DIR)/rsdrvi.prg
-READYSHELL_OVL4_DISK = $(OBJ_DIR)/rslst.prg
-READYSHELL_OVL5_DISK = $(OBJ_DIR)/rsldv.prg
-READYSHELL_OVL6_DISK = $(OBJ_DIR)/rsstv.prg
+READYSHELL_OVL3_DISK = $(OBJ_DIR)/rsdrvilst.prg
+READYSHELL_OVL4_DISK = $(OBJ_DIR)/rsldv.prg
+READYSHELL_OVL5_DISK = $(OBJ_DIR)/rsstv.prg
 
 READYSHELL_OVERLAY1_SRCS = \
 	$(READYSHELL_CORE_DIR)/rs_lexer.c \
@@ -172,13 +170,14 @@ READYSHELL_OVERLAY2_SRCS = \
 	$(READYSHELL_CORE_DIR)/rs_cmd.c \
 	$(READYSHELL_CORE_DIR)/rs_pipe.c
 READYSHELL_OVERLAY3_SRCS = \
+	$(READYSHELL_CORE_DIR)/rs_cmd_lst_c64.c \
 	$(READYSHELL_CORE_DIR)/rs_cmd_drvi_c64.c
 READYSHELL_OVERLAY4_SRCS = \
-	$(READYSHELL_CORE_DIR)/rs_cmd_lst_c64.c
-READYSHELL_OVERLAY5_SRCS = \
 	$(READYSHELL_CORE_DIR)/rs_cmd_ldv_c64.c
-READYSHELL_OVERLAY6_SRCS = \
+READYSHELL_OVERLAY5_SRCS = \
 	$(READYSHELL_CORE_DIR)/rs_cmd_stv_c64.c
+READYSHELL_OVERLAY6_SRCS = \
+
 READYSHELL_RESIDENT_SRCS = \
 	$(READYSHELL_DIR)/readyshellpoc.c \
 	$(READYSHELL_CORE_DIR)/rs_token.c \
@@ -417,7 +416,6 @@ $(READYSHELL): $(READYSHELL_RESIDENT_OBJS) $(READYSHELL_OVERLAY1_OBJS) $(READYSH
 	cp -f $(READYSHELL_OVL3_PRG) $(READYSHELL_OVL3_DISK)
 	cp -f $(READYSHELL_OVL4_PRG) $(READYSHELL_OVL4_DISK)
 	cp -f $(READYSHELL_OVL5_PRG) $(READYSHELL_OVL5_DISK)
-	cp -f $(READYSHELL_OVL6_PRG) $(READYSHELL_OVL6_DISK)
 
 # Temporary REL diagnostics app (standalone at $0801)
 $(XRELCHK): $(APPS_DIR)/xrelchk/xrelchk.c
@@ -659,7 +657,7 @@ help:
 	@echo "  cal26.prg    - Calendar 2026 app (loads at \$$1000)"
 	@echo "  dizzy.prg    - Kanban task board app (loads at \$$1000)"
 	@echo "  readme.prg   - Project README app (loads at \$$1000)"
-	@echo "  readyshell.prg - ReadyShell app (loads at \$$1000, overlays rsparser/rsvm/rsdrvi/rslst/rsldv/rsstv on disk 1)"
+	@echo "  readyshell.prg - ReadyShell app (loads at \$$1000, overlays rsparser/rsvm/rsdrvilst/rsldv/rsstv on disk 1)"
 	@echo "  $(XFILECHK) - Standalone IEC file-operation harness (loads at \$$0801)"
 	@echo "  releases/<version>/<profile>/readyos-v<version>-<kind>[_n].<ext>"
 	@echo "              - Versioned disk images for the selected profile"

@@ -37,7 +37,6 @@ static unsigned short g_overlay2_size = 0u;
 static unsigned short g_overlay3_size = 0u;
 static unsigned short g_overlay4_size = 0u;
 static unsigned short g_overlay5_size = 0u;
-static unsigned short g_overlay6_size = 0u;
 static int g_overlay_loaded = 0;
 static int g_overlay_cached_reu = 0;
 static unsigned char g_overlay_last_rc = 0u;
@@ -141,8 +140,6 @@ extern unsigned char _OVERLAY4_LOAD__[];
 extern unsigned char _OVERLAY4_SIZE__[];
 extern unsigned char _OVERLAY5_LOAD__[];
 extern unsigned char _OVERLAY5_SIZE__[];
-extern unsigned char _OVERLAY6_LOAD__[];
-extern unsigned char _OVERLAY6_SIZE__[];
 
 extern int rs_vmovl_cmd_drvi(RSCommandFrame* frame);
 extern int rs_vmovl_cmd_lst(RSCommandFrame* frame);
@@ -379,12 +376,6 @@ int rs_overlay_boot_with_progress(RSOverlayProgressFn progress, void* user) {
     return -1;
   }
   g_overlay5_size = (unsigned short)overlay_size;
-  overlay_size = (unsigned)_OVERLAY6_SIZE__;
-  if (overlay_size == 0u) {
-    g_overlay_last_rc = 0xE1u;
-    return -1;
-  }
-  g_overlay6_size = (unsigned short)overlay_size;
   g_overlay_loaded = 0;
   rs_overlay_clear_phase();
   g_overlay_cached_reu = 0;
@@ -537,25 +528,25 @@ static int rs_overlay_prepare_command(RSCommandId id) {
   }
 
   if (id == RS_CMD_DRVI) {
-    name = "0:rsdrvi,p";
+    name = "0:rsdrvilst,p";
     load = _OVERLAY3_LOAD__;
     size = g_overlay3_size;
     phase = RS_OVERLAY_PHASE_CMD3;
   } else if (id == RS_CMD_LST) {
-    name = "0:rslst,p";
+    name = "0:rsdrvilst,p";
+    load = _OVERLAY3_LOAD__;
+    size = g_overlay3_size;
+    phase = RS_OVERLAY_PHASE_CMD3;
+  } else if (id == RS_CMD_LDV) {
+    name = "0:rsldv,p";
     load = _OVERLAY4_LOAD__;
     size = g_overlay4_size;
     phase = RS_OVERLAY_PHASE_CMD4;
-  } else if (id == RS_CMD_LDV) {
-    name = "0:rsldv,p";
+  } else if (id == RS_CMD_STV) {
+    name = "0:rsstv,p";
     load = _OVERLAY5_LOAD__;
     size = g_overlay5_size;
     phase = RS_OVERLAY_PHASE_CMD5;
-  } else if (id == RS_CMD_STV) {
-    name = "0:rsstv,p";
-    load = _OVERLAY6_LOAD__;
-    size = g_overlay6_size;
-    phase = RS_OVERLAY_PHASE_CMD6;
   } else {
     g_overlay_last_rc = RS_OVL_RC_REU_CMD;
     rs_overlay_dbg_put('!');

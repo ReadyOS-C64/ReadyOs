@@ -115,10 +115,9 @@ Current overlay set:
 
 - `OVERLAY1` `rsparser.prg`: parser / lexer, `13005` live bytes, cached in bank `0x40` parse slot
 - `OVERLAY2` `rsvm.prg`: execution core for `PRT`, `MORE`, `TOP`, `SEL`, `GEN`, `TAP`, `13897` live bytes, cached in bank `0x40` exec slot
-- `OVERLAY3` `rsdrvi.prg`: `DRVI`, disk-loaded
-- `OVERLAY4` `rslst.prg`: `LST`, disk-loaded
-- `OVERLAY5` `rsldv.prg`: `LDV`, disk-loaded
-- `OVERLAY6` `rsstv.prg`: `STV`, disk-loaded
+- `OVERLAY3` `rsdrvilst.prg`: `DRVI` + `LST`, disk-loaded
+- `OVERLAY4` `rsldv.prg`: `LDV`, disk-loaded
+- `OVERLAY5` `rsstv.prg`: `STV`, disk-loaded
 
 ## 3. Statement Forms
 
