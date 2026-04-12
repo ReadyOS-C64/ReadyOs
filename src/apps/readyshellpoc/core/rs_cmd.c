@@ -8,6 +8,9 @@ RSCommandId rs_cmd_id(const char* name) {
   if (rs_ci_equal(name, "PRT")) {
     return RS_CMD_PRT;
   }
+  if (rs_ci_equal(name, "MORE")) {
+    return RS_CMD_MORE;
+  }
   if (rs_ci_equal(name, "TOP")) {
     return RS_CMD_TOP;
   }

@@ -6,6 +6,7 @@
 
 #include "core/rs_config.h"
 #include "core/rs_errors.h"
+#include "core/rs_ui_state.h"
 #include "core/rs_vm.h"
 #include "platform/rs_overlay.h"
 #include "platform/rs_platform.h"
@@ -48,13 +49,11 @@
 /* Shim ABI */
 #define SHIM_CURRENT_BANK (*(unsigned char*)0xC834)
 
-/*
- * Shared ReadyShell UI flags live in REU bank 0x48 metadata space instead of
- * overlay or resident heap RAM. This keeps the pause state visible across the
- * resident/output boundary without colliding with command scratch payloads.
- */
-#define RS_REU_UI_FLAGS_OFF 0x4880F0ul
-#define RS_UI_FLAG_PAUSED 0x01u
+/* KERNAL keyboard state */
+#define RS_KBD_BUFFER_COUNT (*(volatile unsigned char*)0x00C6)
+#define RS_KBD_CURRENT_KEY (*(volatile unsigned char*)0x00CB)
+#define RS_KBD_MODIFIERS (*(volatile unsigned char*)0x028D)
+#define RS_KBD_NO_KEY 0x40u
 
 /* PETSCII box chars (screen codes) */
 #define BOX_TL 0x70
@@ -86,6 +85,7 @@ typedef struct {
     unsigned char i;
     unsigned char pause_flags_local;
     unsigned char pause_store_mode;
+    unsigned char pause_arm_latched;
 } ReadyShellRuntimeState;
 
 #define RS_RUNTIME_ADDR 0xCA00u
@@ -103,6 +103,7 @@ typedef struct {
 #define g_i (RS_RUNTIME->i)
 #define g_pause_flags_local (RS_RUNTIME->pause_flags_local)
 #define g_pause_store_mode (RS_RUNTIME->pause_store_mode)
+#define g_pause_arm_latched (RS_RUNTIME->pause_arm_latched)
 
 static char g_line[LOGICAL_MAX];
 typedef struct {
@@ -321,8 +322,43 @@ static void shell_draw_footer_paused(void) {
     shell_draw_footer_text(FOOTER_PAUSED_TEXT, C_YELLOW);
 }
 
+static void shell_pause_clear_buffer(void) {
+    RS_KBD_BUFFER_COUNT = 0u;
+}
+
+static unsigned char shell_pause_key_down(void) {
+    cbm_k_scnkey();
+    return (unsigned char)(
+        RS_KBD_CURRENT_KEY != RS_KBD_NO_KEY ||
+        (RS_KBD_MODIFIERS & 0x07u) != 0u
+    );
+}
+
+static void shell_pause_sync_latch(void) {
+    g_pause_arm_latched = shell_pause_key_down();
+    shell_pause_clear_buffer();
+}
+
+static void shell_pause_arm_poll(void) {
+    unsigned char flags;
+    unsigned char key_down;
+
+    key_down = shell_pause_key_down();
+    if (!key_down) {
+        g_pause_arm_latched = 0u;
+        return;
+    }
+    if (g_pause_arm_latched) {
+        return;
+    }
+
+    g_pause_arm_latched = 1u;
+    shell_pause_clear_buffer();
+    flags = (unsigned char)(shell_pause_flags() | RS_UI_FLAG_PAUSED);
+    shell_pause_set_flags(flags);
+}
+
 static void shell_wait_if_paused(void) {
-    unsigned char key;
     unsigned char flags;
 
     flags = shell_pause_flags();
@@ -333,17 +369,22 @@ static void shell_wait_if_paused(void) {
     /* Make the keyboard the active input stream before we block here. */
     cbm_k_clrch();
     shell_draw_footer_paused();
-    for (;;) {
-        key = (unsigned char)cgetc();
-        if (key == 0u) {
-            continue;
-        }
-        flags = (unsigned char)(shell_pause_flags() & (unsigned char)~RS_UI_FLAG_PAUSED);
-        shell_pause_set_flags(flags);
-        cbm_k_clrch();
-        shell_draw_footer_normal();
-        return;
+    shell_pause_clear_buffer();
+
+    while (shell_pause_key_down()) {
+        waitvsync();
     }
+    shell_pause_clear_buffer();
+
+    while (!shell_pause_key_down()) {
+        waitvsync();
+    }
+
+    flags = (unsigned char)(shell_pause_flags() & (unsigned char)~RS_UI_FLAG_PAUSED);
+    shell_pause_set_flags(flags);
+    cbm_k_clrch();
+    shell_pause_sync_latch();
+    shell_draw_footer_normal();
 }
 
 static void draw_text(unsigned char x, unsigned char y, const char *s, unsigned char color) {
@@ -470,19 +511,11 @@ static void shell_write_line(const char *s) {
 
 static int shell_writer(void *user, const char *line) {
     unsigned char color;
-    unsigned char key;
-    unsigned char flags;
     (void)user;
     color = (rs_vm_current_output_kind() == RS_VM_OUTPUT_PRT) ? C_CYAN : C_WHITE;
     shell_write_line_color(line, color);
 
-    if (kbhit()) {
-        key = (unsigned char)cgetc();
-        if (key != 0u) {
-            flags = (unsigned char)(shell_pause_flags() | RS_UI_FLAG_PAUSED);
-            shell_pause_set_flags(flags);
-        }
-    }
+    shell_pause_arm_poll();
     shell_wait_if_paused();
     return 0;
 }
@@ -871,6 +904,7 @@ int main(void) {
 
     rs_vm_init(&g_vm);
     shell_pause_set_flags(0u);
+    shell_pause_sync_latch();
 
     g_platform.user = 0;
     g_platform.file_read = 0;

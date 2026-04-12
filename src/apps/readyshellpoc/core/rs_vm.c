@@ -4,6 +4,8 @@
 #include "rs_format.h"
 #include "rs_pipe.h"
 #include "rs_serialize.h"
+#include "rs_ui_state.h"
+#include "../platform/rs_platform.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +18,7 @@ typedef struct RSExecOptions {
   RSValue* outputs;
   unsigned short output_count;
   struct RSTopStageState* top_states;
+  struct RSMoreStageState* more_states;
 } RSExecOptions;
 
 typedef struct RSTopStageState {
@@ -25,10 +28,47 @@ typedef struct RSTopStageState {
   unsigned char init;
 } RSTopStageState;
 
+typedef struct RSMoreStageState {
+  unsigned short seen;
+  unsigned short interval;
+  unsigned char init;
+} RSMoreStageState;
+
+#define RS_MORE_DEFAULT_INTERVAL 20u
+
 static RSVMOutputKind g_rs_vm_output_kind = RS_VM_OUTPUT_RENDER;
 
 static void rs_vm_err(RSError* err, const char* msg) {
   rs_error_set(err, RS_ERR_EXEC, msg, 0, 1, 1);
+}
+
+static int rs_vm_opt_stage_state_alloc(RSExecOptions* opt, unsigned short count) {
+  if (!opt || count == 0u) {
+    return 0;
+  }
+  opt->top_states = (RSTopStageState*)malloc(sizeof(RSTopStageState) * count);
+  if (!opt->top_states) {
+    return -1;
+  }
+  opt->more_states = (RSMoreStageState*)malloc(sizeof(RSMoreStageState) * count);
+  if (!opt->more_states) {
+    free(opt->top_states);
+    opt->top_states = 0;
+    return -1;
+  }
+  memset(opt->top_states, 0, sizeof(RSTopStageState) * count);
+  memset(opt->more_states, 0, sizeof(RSMoreStageState) * count);
+  return 0;
+}
+
+static void rs_vm_opt_stage_state_free(RSExecOptions* opt) {
+  if (!opt) {
+    return;
+  }
+  free(opt->top_states);
+  free(opt->more_states);
+  opt->top_states = 0;
+  opt->more_states = 0;
 }
 
 void rs_vm_init(RSVM* vm) {
@@ -481,6 +521,34 @@ static int rs_vm_parse_top_args(const RSValue* args,
   return 0;
 }
 
+static int rs_vm_parse_more_args(const RSValue* args,
+                                 unsigned short arg_count,
+                                 unsigned short* out_interval) {
+  unsigned short interval;
+  if (!out_interval || arg_count > 1u) {
+    return -1;
+  }
+  interval = RS_MORE_DEFAULT_INTERVAL;
+  if (arg_count == 1u) {
+    if (rs_value_to_u16(&args[0], &interval) != 0 || interval == 0u) {
+      return -1;
+    }
+  }
+  *out_interval = interval;
+  return 0;
+}
+
+static int rs_vm_more_pause_set(void) {
+  unsigned char flags;
+  if (!rs_reu_available()) {
+    return 0;
+  }
+  flags = 0u;
+  (void)rs_reu_read(RS_REU_UI_FLAGS_OFF, &flags, 1u);
+  flags = (unsigned char)(flags | RS_UI_FLAG_PAUSED);
+  return rs_reu_write(RS_REU_UI_FLAGS_OFF, &flags, 1u);
+}
+
 static int rs_vm_get_sel_name(const RSValue* value, const char** out_name) {
   static char name_buf[256];
   if (!value || !out_name || !rs_value_is_string_like(value) ||
@@ -527,6 +595,48 @@ static int rs_vm_cmd_top(RSVM* vm,
     return 0;
   }
   ++state->seen;
+  return rs_vm_exec_pipeline_from(vm,
+                                  pipeline,
+                                  (unsigned short)(stage_index + 1u),
+                                  item,
+                                  1,
+                                  opt,
+                                  err);
+}
+
+static int rs_vm_cmd_more(RSVM* vm,
+                          const RSPipeline* pipeline,
+                          unsigned short stage_index,
+                          const RSValue* item,
+                          int has_item,
+                          RSValue* args,
+                          unsigned short arg_count,
+                          RSExecOptions* opt,
+                          RSError* err) {
+  RSMoreStageState* state;
+  (void)vm;
+  if (!has_item) {
+    return 0;
+  }
+  if (!opt || !opt->more_states) {
+    rs_vm_err(err, "MORE state unavailable");
+    return -1;
+  }
+  state = &opt->more_states[stage_index];
+  if (!state->init) {
+    if (rs_vm_parse_more_args(args, arg_count, &state->interval) != 0) {
+      rs_vm_err(err, "MORE expects count");
+      return -1;
+    }
+    state->seen = 0u;
+    state->init = 1u;
+  }
+  ++state->seen;
+  if ((unsigned short)(state->seen % state->interval) == 0u &&
+      rs_vm_more_pause_set() != 0) {
+    rs_vm_err(err, "MORE pause failed");
+    return -1;
+  }
   return rs_vm_exec_pipeline_from(vm,
                                   pipeline,
                                   (unsigned short)(stage_index + 1u),
@@ -741,6 +851,12 @@ static int rs_vm_exec_command_stage(RSVM* vm,
     }
     rs_vm_free_args(args, arg_count);
     return 0;
+  }
+
+  if (id == RS_CMD_MORE) {
+    n = rs_vm_cmd_more(vm, pipeline, stage_index, item, has_item, args, arg_count, opt, err);
+    rs_vm_free_args(args, arg_count);
+    return n;
   }
 
   if (id == RS_CMD_TOP) {
@@ -1171,16 +1287,13 @@ static int rs_vm_exec_stmt(RSVM* vm,
   opt.outputs = 0;
   opt.output_count = 0;
   opt.top_states = 0;
+  opt.more_states = 0;
 
   if (stmt->kind == RS_STMT_ASSIGN) {
     if (stmt->as.assign.rhs_is_pipeline) {
-      if (stmt->as.assign.pipeline.count > 0) {
-        opt.top_states = (RSTopStageState*)malloc(sizeof(RSTopStageState) * stmt->as.assign.pipeline.count);
-        if (!opt.top_states) {
-          rs_vm_err(err, "out of memory");
-          return -1;
-        }
-        memset(opt.top_states, 0, sizeof(RSTopStageState) * stmt->as.assign.pipeline.count);
+      if (rs_vm_opt_stage_state_alloc(&opt, stmt->as.assign.pipeline.count) != 0) {
+        rs_vm_err(err, "out of memory");
+        return -1;
       }
       if (rs_vm_run_pipeline(vm,
                              &stmt->as.assign.pipeline,
@@ -1188,17 +1301,17 @@ static int rs_vm_exec_stmt(RSVM* vm,
                              has_at,
                              &opt,
                              err) != 0) {
-        free(opt.top_states);
+        rs_vm_opt_stage_state_free(&opt);
         rs_pipe_free_items(opt.outputs, opt.output_count);
         return -1;
       }
       if (rs_vm_assign_from_outputs(&value, &opt) != 0) {
-        free(opt.top_states);
+        rs_vm_opt_stage_state_free(&opt);
         rs_pipe_free_items(opt.outputs, opt.output_count);
         rs_vm_err(err, "out of memory");
         return -1;
       }
-      free(opt.top_states);
+      rs_vm_opt_stage_state_free(&opt);
       rs_pipe_free_items(opt.outputs, opt.output_count);
     } else {
       if (rs_vm_eval_expr(vm, stmt->as.assign.expr, at, has_at, &value, err) != 0) {
@@ -1226,16 +1339,12 @@ static int rs_vm_exec_stmt(RSVM* vm,
       opt.capture_outputs = 0;
       opt.stream_outputs = rs_vm_should_auto_print_pipeline(&stmt->as.pipeline);
     }
-    if (stmt->as.pipeline.count > 0) {
-      opt.top_states = (RSTopStageState*)malloc(sizeof(RSTopStageState) * stmt->as.pipeline.count);
-      if (!opt.top_states) {
-        rs_vm_err(err, "out of memory");
-        return -1;
-      }
-      memset(opt.top_states, 0, sizeof(RSTopStageState) * stmt->as.pipeline.count);
+    if (rs_vm_opt_stage_state_alloc(&opt, stmt->as.pipeline.count) != 0) {
+      rs_vm_err(err, "out of memory");
+      return -1;
     }
     if (rs_vm_run_pipeline(vm, &stmt->as.pipeline, at, has_at, &opt, err) != 0) {
-      free(opt.top_states);
+      rs_vm_opt_stage_state_free(&opt);
       rs_pipe_free_items(opt.outputs, opt.output_count);
       return -1;
     }
@@ -1245,14 +1354,14 @@ static int rs_vm_exec_stmt(RSVM* vm,
       *out_has_last = 0;
     } else {
       if (rs_vm_assign_from_outputs(out_last, &opt) != 0) {
-        free(opt.top_states);
+        rs_vm_opt_stage_state_free(&opt);
         rs_pipe_free_items(opt.outputs, opt.output_count);
         rs_vm_err(err, "out of memory");
         return -1;
       }
       *out_has_last = 1;
     }
-    free(opt.top_states);
+    rs_vm_opt_stage_state_free(&opt);
     rs_pipe_free_items(opt.outputs, opt.output_count);
     return 0;
   }

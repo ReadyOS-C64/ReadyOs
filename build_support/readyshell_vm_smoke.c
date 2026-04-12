@@ -3,7 +3,9 @@
 
 #include "build_support/readyshell_reu_host.h"
 #include "src/apps/readyshellpoc/core/rs_errors.h"
+#include "src/apps/readyshellpoc/core/rs_ui_state.h"
 #include "src/apps/readyshellpoc/core/rs_vm.h"
+#include "src/apps/readyshellpoc/platform/rs_platform.h"
 
 #ifndef READYSHELL_VM_SMOKE_OVERLAY
 #define READYSHELL_VM_SMOKE_OVERLAY 0
@@ -244,6 +246,30 @@ static int smoke_run_expect_error(RSVM* vm, SmokeOut* out, const char* source) {
   return 0;
 }
 
+static void smoke_pause_flag_clear(void) {
+  unsigned char flags;
+  flags = 0u;
+  (void)rs_reu_write(RS_REU_UI_FLAGS_OFF, &flags, 1u);
+}
+
+static int smoke_expect_pause_flag(const char* source, int expect_set) {
+  unsigned char flags;
+  flags = 0u;
+  if (rs_reu_read(RS_REU_UI_FLAGS_OFF, &flags, 1u) != 0) {
+    printf("FAIL src='%s' pause_flag unreadable\n", source);
+    return 1;
+  }
+  if (((flags & RS_UI_FLAG_PAUSED) != 0u) != expect_set) {
+    printf("FAIL src='%s' pause_flag got=%u expected=%u\n",
+           source,
+           (unsigned)((flags & RS_UI_FLAG_PAUSED) != 0u),
+           (unsigned)expect_set);
+    return 1;
+  }
+  printf("OK   src='%s' pause=%u\n", source, (unsigned)expect_set);
+  return 0;
+}
+
 int main(void) {
   RSVM vm;
   RSVMPlatform platform;
@@ -292,6 +318,9 @@ int main(void) {
     { "3", SMOKE_LINE_RENDER },
     { "4", SMOKE_LINE_RENDER },
     { "5", SMOKE_LINE_RENDER }
+  };
+  static const SmokeExpect render_one[] = {
+    { "1", SMOKE_LINE_RENDER }
   };
   static const SmokeExpect top_skip_two[] = {
     { "3", SMOKE_LINE_RENDER },
@@ -356,6 +385,18 @@ int main(void) {
   fail |= smoke_run_expect(&vm, &out, "$T | ?[ @ == \"YO\" ]", string_ci_render, 1);
   fail |= smoke_run_expect(&vm, &out, "1..10 | TOP 5", top_first_five, 5);
   fail |= smoke_run_expect(&vm, &out, "1..10 | TOP 3,2", top_skip_two, 3);
+  smoke_pause_flag_clear();
+  fail |= smoke_run_expect(&vm, &out, "1..5 | MORE", top_first_five, 5);
+  fail |= smoke_expect_pause_flag("1..5 | MORE", 0);
+  smoke_pause_flag_clear();
+  fail |= smoke_run_expect(&vm, &out, "1..21 | MORE | TOP 1", render_one, 1);
+  fail |= smoke_expect_pause_flag("1..21 | MORE | TOP 1", 1);
+  smoke_pause_flag_clear();
+  fail |= smoke_run_expect(&vm, &out, "1..9 | MORE 5 | TOP 1", render_one, 1);
+  fail |= smoke_expect_pause_flag("1..9 | MORE 5 | TOP 1", 1);
+  fail |= smoke_run_expect_error(&vm, &out, "1..3 | MORE 0");
+  fail |= smoke_run_expect_error(&vm, &out, "1..3 | MORE \"X\"");
+  fail |= smoke_run_expect_error(&vm, &out, "1..3 | MORE 5,2");
   fail |= smoke_run_expect(&vm, &out, "LST | SEL \"NAME\"", sel_name_lines, 3);
   fail |= smoke_run_expect(&vm, &out, "LST | SEL \"name\",\"type\"", sel_pair_lines, 3);
   fail |= smoke_run_expect(&vm, &out, "LST | SEL \"missing\"", 0, 0);
