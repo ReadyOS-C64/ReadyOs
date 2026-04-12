@@ -2,6 +2,7 @@
 #include "../rs_platform.h"
 #include "../rs_memcfg.h"
 #include "../../core/rs_cmd_overlay.h"
+#include "../../core/rs_ui_state.h"
 
 #ifndef RS_C64_OVERLAY_RUNTIME
 #define RS_C64_OVERLAY_RUNTIME 0
@@ -15,11 +16,12 @@
 #include <string.h>
 
 #define RS_OVERLAY_UNIT 8u
-#define RS_REU_OVERLAY1_OFF 0x400000ul
-#define RS_REU_OVERLAY2_OFF 0x410000ul
 #define RS_REU_DBG_HEAD_OFF 0x43F000ul
 #define RS_REU_DBG_DATA_OFF 0x43F010ul
 #define RS_REU_DBG_DATA_LEN 0x0200u
+#define RS_REU_OVL_CACHE_BASE 0x400000ul
+#define RS_REU_OVL_CACHE_PARSE_OFF (RS_REU_OVL_CACHE_BASE + (unsigned long)RS_REU_OVL_CACHE_PARSE_REL)
+#define RS_REU_OVL_CACHE_EXEC_OFF  (RS_REU_OVL_CACHE_BASE + (unsigned long)RS_REU_OVL_CACHE_EXEC_REL)
 #define RS_RAM_DBG_HEAD      (*(unsigned char*)0xC7F0)
 #define RS_RAM_DBG_BASE      ((unsigned char*)0xC7A0)
 #define RS_RAM_DBG_LEN       0x40u
@@ -43,6 +45,7 @@ static unsigned char g_overlay_active_phase = RS_OVERLAY_PHASE_NONE;
 static unsigned short g_dbg_pos = 0u;
 static unsigned char g_ram_dbg_pos = 0u;
 static unsigned char g_reu_verify_buf[128];
+static unsigned char g_overlay_meta_buf[RS_REU_OVL_CACHE_META_LEN];
 /* 0 = unknown, 1 = disabled (no REU), 2 = enabled */
 static unsigned char g_dbg_state = 0u;
 
@@ -259,6 +262,60 @@ static int rs_overlay_verify_reu(unsigned long off, const unsigned char* src, un
   return 0;
 }
 
+static void rs_overlay_meta_clear(void) {
+  memset(g_overlay_meta_buf, 0, sizeof(g_overlay_meta_buf));
+  (void)rs_reu_write(RS_REU_OVL_CACHE_META_OFF, g_overlay_meta_buf, sizeof(g_overlay_meta_buf));
+}
+
+static void rs_overlay_meta_write(unsigned char valid_mask) {
+  g_overlay_meta_buf[0] = 'O';
+  g_overlay_meta_buf[1] = 'V';
+  g_overlay_meta_buf[2] = 1u;
+  g_overlay_meta_buf[3] = valid_mask;
+  g_overlay_meta_buf[4] = RS_REU_OVL_CACHE_BANK;
+  g_overlay_meta_buf[5] = 0u;
+  g_overlay_meta_buf[6] = (unsigned char)(RS_REU_OVL_CACHE_PARSE_REL & 0xFFu);
+  g_overlay_meta_buf[7] = (unsigned char)((RS_REU_OVL_CACHE_PARSE_REL >> 8u) & 0xFFu);
+  g_overlay_meta_buf[8] = (unsigned char)(RS_REU_OVL_CACHE_EXEC_REL & 0xFFu);
+  g_overlay_meta_buf[9] = (unsigned char)((RS_REU_OVL_CACHE_EXEC_REL >> 8u) & 0xFFu);
+  g_overlay_meta_buf[10] = (unsigned char)(RS_REU_OVL_CACHE_SLOT_LEN & 0xFFu);
+  g_overlay_meta_buf[11] = (unsigned char)((RS_REU_OVL_CACHE_SLOT_LEN >> 8u) & 0xFFu);
+  (void)rs_reu_write(RS_REU_OVL_CACHE_META_OFF, g_overlay_meta_buf, sizeof(g_overlay_meta_buf));
+}
+
+static int rs_overlay_meta_read(unsigned char needed_mask) {
+  unsigned short parse_rel;
+  unsigned short exec_rel;
+  unsigned short slot_len;
+
+  memset(g_overlay_meta_buf, 0, sizeof(g_overlay_meta_buf));
+  if (rs_reu_read(RS_REU_OVL_CACHE_META_OFF, g_overlay_meta_buf, sizeof(g_overlay_meta_buf)) != 0) {
+    return -1;
+  }
+  if (g_overlay_meta_buf[0] != 'O' ||
+      g_overlay_meta_buf[1] != 'V' ||
+      g_overlay_meta_buf[2] != 1u ||
+      g_overlay_meta_buf[4] != RS_REU_OVL_CACHE_BANK) {
+    return -1;
+  }
+  if ((g_overlay_meta_buf[3] & needed_mask) != needed_mask) {
+    return -1;
+  }
+
+  parse_rel = (unsigned short)g_overlay_meta_buf[6] |
+              ((unsigned short)g_overlay_meta_buf[7] << 8u);
+  exec_rel = (unsigned short)g_overlay_meta_buf[8] |
+             ((unsigned short)g_overlay_meta_buf[9] << 8u);
+  slot_len = (unsigned short)g_overlay_meta_buf[10] |
+             ((unsigned short)g_overlay_meta_buf[11] << 8u);
+  if (parse_rel != RS_REU_OVL_CACHE_PARSE_REL ||
+      exec_rel != RS_REU_OVL_CACHE_EXEC_REL ||
+      slot_len != RS_REU_OVL_CACHE_SLOT_LEN) {
+    return -1;
+  }
+  return 0;
+}
+
 static int rs_overlay_load1_disk(void) {
   rs_overlay_dbg_put('1');
   cbm_k_clall();
@@ -338,6 +395,7 @@ int rs_overlay_boot_with_progress(RSOverlayProgressFn progress, void* user) {
     g_overlay_last_rc = RS_OVL_RC_REU_REQUIRED;
     return -1;
   }
+  rs_overlay_meta_clear();
 
   /* Keep C64 filenames short and lowercase on disk images. */
   rs_overlay_progress_tick(progress, user, 2u);
@@ -348,8 +406,12 @@ int rs_overlay_boot_with_progress(RSOverlayProgressFn progress, void* user) {
   }
   rs_overlay_progress_tick(progress, user, 5u);
   rs_overlay_dbg_put('C');
-  if (rs_overlay_cache_to_reu(RS_REU_OVERLAY1_OFF, _OVERLAY1_LOAD__, g_overlay1_size) != 0 ||
-      rs_overlay_verify_reu(RS_REU_OVERLAY1_OFF, _OVERLAY1_LOAD__, g_overlay1_size) != 0) {
+  if (rs_overlay_cache_to_reu(RS_REU_OVL_CACHE_PARSE_OFF,
+                              _OVERLAY1_LOAD__,
+                              RS_REU_OVL_CACHE_SLOT_LEN) != 0 ||
+      rs_overlay_verify_reu(RS_REU_OVL_CACHE_PARSE_OFF,
+                            _OVERLAY1_LOAD__,
+                            RS_REU_OVL_CACHE_SLOT_LEN) != 0) {
     g_overlay_last_rc = RS_OVL_RC_REU_CACHE;
     rs_overlay_dbg_put('!');
     rs_overlay_dbg_put('Y');
@@ -361,13 +423,19 @@ int rs_overlay_boot_with_progress(RSOverlayProgressFn progress, void* user) {
     rs_overlay_clear_phase();
     return -1;
   }
-  if (rs_overlay_cache_to_reu(RS_REU_OVERLAY2_OFF, _OVERLAY2_LOAD__, g_overlay2_size) != 0 ||
-      rs_overlay_verify_reu(RS_REU_OVERLAY2_OFF, _OVERLAY2_LOAD__, g_overlay2_size) != 0) {
+  if (rs_overlay_cache_to_reu(RS_REU_OVL_CACHE_EXEC_OFF,
+                              _OVERLAY2_LOAD__,
+                              RS_REU_OVL_CACHE_SLOT_LEN) != 0 ||
+      rs_overlay_verify_reu(RS_REU_OVL_CACHE_EXEC_OFF,
+                            _OVERLAY2_LOAD__,
+                            RS_REU_OVL_CACHE_SLOT_LEN) != 0) {
     g_overlay_last_rc = RS_OVL_RC_REU_CACHE;
     rs_overlay_dbg_put('!');
     rs_overlay_dbg_put('Y');
     return -1;
   }
+  rs_overlay_meta_write((unsigned char)(RS_REU_OVL_CACHE_VALID_PARSE |
+                                        RS_REU_OVL_CACHE_VALID_EXEC));
   rs_overlay_set_phase(RS_OVERLAY_PHASE_EXEC);
   g_overlay_loaded = 1;
   g_overlay_cached_reu = 1;
@@ -394,8 +462,17 @@ int rs_overlay_prepare_parse(void) {
     rs_overlay_dbg_put('!');
     return -1;
   }
+  if (rs_overlay_meta_read(RS_REU_OVL_CACHE_VALID_PARSE) != 0) {
+    g_overlay_cached_reu = 0;
+    g_overlay_last_rc = RS_OVL_RC_REU_REQUIRED;
+    rs_overlay_clear_phase();
+    rs_overlay_dbg_put('!');
+    return -1;
+  }
   rs_overlay_dbg_put('R');
-  if (rs_overlay_read_from_reu(RS_REU_OVERLAY1_OFF, _OVERLAY1_LOAD__, g_overlay1_size) == 0) {
+  if (rs_overlay_read_from_reu(RS_REU_OVL_CACHE_PARSE_OFF,
+                               _OVERLAY1_LOAD__,
+                               RS_REU_OVL_CACHE_SLOT_LEN) == 0) {
     rs_overlay_set_phase(RS_OVERLAY_PHASE_PARSE);
     rs_overlay_dbg_put('p');
     return 0;
@@ -419,8 +496,17 @@ int rs_overlay_prepare_exec(void) {
     rs_overlay_dbg_put('!');
     return -1;
   }
+  if (rs_overlay_meta_read(RS_REU_OVL_CACHE_VALID_EXEC) != 0) {
+    g_overlay_cached_reu = 0;
+    g_overlay_last_rc = RS_OVL_RC_REU_REQUIRED;
+    rs_overlay_clear_phase();
+    rs_overlay_dbg_put('!');
+    return -1;
+  }
   rs_overlay_dbg_put('R');
-  if (rs_overlay_read_from_reu(RS_REU_OVERLAY2_OFF, _OVERLAY2_LOAD__, g_overlay2_size) == 0) {
+  if (rs_overlay_read_from_reu(RS_REU_OVL_CACHE_EXEC_OFF,
+                               _OVERLAY2_LOAD__,
+                               RS_REU_OVL_CACHE_SLOT_LEN) == 0) {
     rs_overlay_set_phase(RS_OVERLAY_PHASE_EXEC);
     rs_overlay_dbg_put('e');
     return 0;
