@@ -11,7 +11,7 @@
 #define RS_CMD_OVL_OP_PROCESS 4u
 #define RS_CMD_OVL_OP_END     5u
 
-#define RS_CMD_FRAME_F_ARRAY  0x01u
+#define RS_CMD_FRAME_F_ARRAY          0x01u
 
 /* REU-backed inter-overlay handoff area for streaming command state. */
 #define RS_CMD_SCRATCH_OFF 0x480000ul

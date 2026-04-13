@@ -850,6 +850,7 @@ int main(void) {
     }
 
     for (;;) {
+        signed char exec_rc;
         if (shell_read_logical_line(g_line, sizeof(g_line)) < 0) break;
 
         shell_trim(g_line);
@@ -875,7 +876,8 @@ int main(void) {
 
         rs_error_init(&g_err);
         rs_overlay_debug_mark('V');
-        if (rs_vm_exec_source(&g_vm, g_line, &g_err) != 0) {
+        if (((exec_rc = rs_vm_exec_source(&g_vm, g_line, &g_err)) != 0) ||
+            g_err.code != RS_ERR_NONE) {
             rs_overlay_debug_mark('X');
             shell_print_error(&g_err);
         } else {

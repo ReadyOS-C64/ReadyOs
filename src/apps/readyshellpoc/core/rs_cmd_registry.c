@@ -4,8 +4,8 @@
 #include "../platform/rs_overlay.h"
 #include "../platform/rs_platform.h"
 
-#define RS_CMD_REG_DESC_COUNT  4u
-#define RS_CMD_REG_STATE_COUNT 3u
+#define RS_CMD_REG_DESC_COUNT  7u
+#define RS_CMD_REG_STATE_COUNT 5u
 
 #define RS_CMD_REG_DESC_ID_OFF        0u
 #define RS_CMD_REG_DESC_OVL_INDEX_OFF 1u
@@ -24,13 +24,18 @@ static const unsigned char g_cmd_seed[RS_CMD_REG_DESC_COUNT][RS_REU_CMD_REG_DESC
   { (unsigned char)RS_CMD_DRVI, 0u, RS_CMD_REG_CAP_RUN, RS_CMD_HANDLER_OVL3_DRVI, 0u, 0u },
   { (unsigned char)RS_CMD_LST,  0u, (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_ITEM), RS_CMD_HANDLER_OVL3_LST, 0u, 0u },
   { (unsigned char)RS_CMD_LDV,  1u, (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_ITEM | RS_CMD_REG_CAP_RUN), RS_CMD_HANDLER_OVL4_LDV, 0u, 0u },
-  { (unsigned char)RS_CMD_STV,  2u, (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_PROCESS | RS_CMD_REG_CAP_END | RS_CMD_REG_CAP_RUN), RS_CMD_HANDLER_OVL5_STV, 0u, 0u }
+  { (unsigned char)RS_CMD_STV,  2u, (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_PROCESS | RS_CMD_REG_CAP_END | RS_CMD_REG_CAP_RUN), RS_CMD_HANDLER_OVL5_STV, 0u, 0u },
+  { (unsigned char)RS_CMD_DEL,  3u, RS_CMD_REG_CAP_RUN, RS_CMD_HANDLER_OVL6_DEL, 0u, 0u },
+  { (unsigned char)RS_CMD_REN,  3u, RS_CMD_REG_CAP_RUN, RS_CMD_HANDLER_OVL6_REN, 0u, 0u },
+  { (unsigned char)RS_CMD_CAT,  4u, (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_ITEM), RS_CMD_HANDLER_OVL7_CAT, 0u, 0u }
 };
 
 static const unsigned char g_state_seed[RS_CMD_REG_STATE_COUNT][RS_REU_CMD_REG_STATE_LEN] = {
   { RS_OVERLAY_PHASE_CMD3, RS_CMD_OVL_LOAD_F_DISK, 0u, 0u, 0u, 0u, 'r', 's', 'd', 'r', 'v', 'i', 'l', 's', 't', 0u, 0u, 0u },
   { RS_OVERLAY_PHASE_CMD4, RS_CMD_OVL_LOAD_F_DISK, 0u, 0u, 0u, 0u, 'r', 's', 'l', 'd', 'v', 0u, 0u, 0u, 0u, 0u, 0u, 0u },
-  { RS_OVERLAY_PHASE_CMD5, RS_CMD_OVL_LOAD_F_DISK, 0u, 0u, 0u, 0u, 'r', 's', 's', 't', 'v', 0u, 0u, 0u, 0u, 0u, 0u, 0u }
+  { RS_OVERLAY_PHASE_CMD5, RS_CMD_OVL_LOAD_F_DISK, 0u, 0u, 0u, 0u, 'r', 's', 's', 't', 'v', 0u, 0u, 0u, 0u, 0u, 0u, 0u },
+  { RS_OVERLAY_PHASE_CMD3, RS_CMD_OVL_LOAD_F_DISK, 0u, 0u, 0u, 0u, 'r', 's', 'f', 'o', 'p', 's', 0u, 0u, 0u, 0u, 0u, 0u },
+  { RS_OVERLAY_PHASE_CMD3, RS_CMD_OVL_LOAD_F_DISK, 0u, 0u, 0u, 0u, 'r', 's', 'c', 'a', 't', 0u, 0u, 0u, 0u, 0u, 0u, 0u }
 };
 
 static unsigned long rs_cmd_reg_desc_abs(unsigned char index) {

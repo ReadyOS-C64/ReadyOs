@@ -5,62 +5,56 @@
 char rs_vm_fmt_buf[128];
 char rs_vm_line_buf[384];
 
+typedef struct RSCommandInfo {
+  const char* name;
+  RSCommandId id;
+  unsigned char caps;
+} RSCommandInfo;
+
+static const RSCommandInfo g_cmd_info[] = {
+  { "PRT",  RS_CMD_PRT,  0u },
+  { "MORE", RS_CMD_MORE, 0u },
+  { "TOP",  RS_CMD_TOP,  0u },
+  { "SEL",  RS_CMD_SEL,  0u },
+  { "LDV",  RS_CMD_LDV,  (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_ITEM | RS_CMD_REG_CAP_RUN) },
+  { "STV",  RS_CMD_STV,  (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_PROCESS | RS_CMD_REG_CAP_END | RS_CMD_REG_CAP_RUN) },
+  { "LST",  RS_CMD_LST,  (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_ITEM) },
+  { "DRVI", RS_CMD_DRVI, RS_CMD_REG_CAP_RUN },
+  { "CAT",  RS_CMD_CAT,  (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_ITEM) },
+  { "DEL",  RS_CMD_DEL,  RS_CMD_REG_CAP_RUN },
+  { "REN",  RS_CMD_REN,  RS_CMD_REG_CAP_RUN },
+  { "GEN",  RS_CMD_GEN,  0u },
+  { "TAP",  RS_CMD_TAP,  0u }
+};
+
+static const RSCommandInfo* rs_cmd_info_find(RSCommandId id) {
+  unsigned char i;
+  for (i = 0u; i < (unsigned char)(sizeof(g_cmd_info) / sizeof(g_cmd_info[0])); ++i) {
+    if (g_cmd_info[i].id == id) {
+      return &g_cmd_info[i];
+    }
+  }
+  return 0;
+}
+
 RSCommandId rs_cmd_id(const char* name) {
-  if (rs_ci_equal(name, "PRT")) {
-    return RS_CMD_PRT;
-  }
-  if (rs_ci_equal(name, "MORE")) {
-    return RS_CMD_MORE;
-  }
-  if (rs_ci_equal(name, "TOP")) {
-    return RS_CMD_TOP;
-  }
-  if (rs_ci_equal(name, "SEL")) {
-    return RS_CMD_SEL;
-  }
-  if (rs_ci_equal(name, "LDV")) {
-    return RS_CMD_LDV;
-  }
-  if (rs_ci_equal(name, "STV")) {
-    return RS_CMD_STV;
-  }
-  if (rs_ci_equal(name, "LST")) {
-    return RS_CMD_LST;
-  }
-  if (rs_ci_equal(name, "DRVI")) {
-    return RS_CMD_DRVI;
-  }
-  if (rs_ci_equal(name, "GEN")) {
-    return RS_CMD_GEN;
-  }
-  if (rs_ci_equal(name, "TAP")) {
-    return RS_CMD_TAP;
+  unsigned char i;
+  for (i = 0u; i < (unsigned char)(sizeof(g_cmd_info) / sizeof(g_cmd_info[0])); ++i) {
+    if (rs_ci_equal(name, g_cmd_info[i].name)) {
+      return g_cmd_info[i].id;
+    }
   }
   return RS_CMD_UNKNOWN;
 }
 
 int rs_cmd_is_external(RSCommandId id) {
-  return id == RS_CMD_LDV ||
-         id == RS_CMD_STV ||
-         id == RS_CMD_LST ||
-         id == RS_CMD_DRVI;
+  const RSCommandInfo* info;
+  info = rs_cmd_info_find(id);
+  return info && info->caps != 0u;
 }
 
 unsigned char rs_cmd_external_caps(RSCommandId id) {
-  if (id == RS_CMD_DRVI) {
-    return RS_CMD_REG_CAP_RUN;
-  }
-  if (id == RS_CMD_LST) {
-    return (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_ITEM);
-  }
-  if (id == RS_CMD_LDV) {
-    return (unsigned char)(RS_CMD_REG_CAP_BEGIN | RS_CMD_REG_CAP_ITEM | RS_CMD_REG_CAP_RUN);
-  }
-  if (id == RS_CMD_STV) {
-    return (unsigned char)(RS_CMD_REG_CAP_BEGIN |
-                           RS_CMD_REG_CAP_PROCESS |
-                           RS_CMD_REG_CAP_END |
-                           RS_CMD_REG_CAP_RUN);
-  }
-  return 0u;
+  const RSCommandInfo* info;
+  info = rs_cmd_info_find(id);
+  return info ? info->caps : 0u;
 }

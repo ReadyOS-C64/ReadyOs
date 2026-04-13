@@ -146,6 +146,8 @@ extern unsigned char _OVERLAY5_SIZE__[];
 extern int rs_vmovl_overlay3(unsigned char handler, RSCommandFrame* frame);
 extern int rs_vmovl_overlay4(unsigned char handler, RSCommandFrame* frame);
 extern int rs_vmovl_overlay5(unsigned char handler, RSCommandFrame* frame);
+extern int rs_vmovl_overlay6(unsigned char handler, RSCommandFrame* frame);
+extern int rs_vmovl_overlay7(unsigned char handler, RSCommandFrame* frame);
 
 static int rs_overlay_name_normalized(const char* path, char* out, unsigned short max) {
   unsigned short i;
@@ -594,6 +596,10 @@ int rs_overlay_command_call(RSCommandId id, unsigned char op, RSCommandFrame* fr
     rc = rs_vmovl_overlay4(desc.handler, frame);
   } else if (desc.overlay_index == 2u) {
     rc = rs_vmovl_overlay5(desc.handler, frame);
+  } else if (desc.overlay_index == 3u) {
+    rc = rs_vmovl_overlay6(desc.handler, frame);
+  } else if (desc.overlay_index == 4u) {
+    rc = rs_vmovl_overlay7(desc.handler, frame);
   } else {
     rc = -1;
   }

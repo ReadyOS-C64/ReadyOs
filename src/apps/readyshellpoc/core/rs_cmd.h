@@ -13,6 +13,9 @@ typedef enum {
   RS_CMD_STV,
   RS_CMD_LST,
   RS_CMD_DRVI,
+  RS_CMD_CAT,
+  RS_CMD_DEL,
+  RS_CMD_REN,
   RS_CMD_GEN,
   RS_CMD_TAP
 } RSCommandId;

@@ -14,7 +14,7 @@
 #define RS_REU_CMD_REG_DESC_CAP        16u
 #define RS_REU_CMD_REG_STATE_OFF       0x488080ul
 #define RS_REU_CMD_REG_STATE_LEN       18u
-#define RS_REU_CMD_REG_STATE_CAP       4u
+#define RS_REU_CMD_REG_STATE_CAP       5u
 
 #define RS_REU_SHARED_META_OFF         0x4880E0ul
 #define RS_REU_OVL_CACHE_META_OFF      RS_REU_SHARED_META_OFF

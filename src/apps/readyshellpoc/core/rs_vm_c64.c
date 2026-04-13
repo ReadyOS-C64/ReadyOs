@@ -1029,7 +1029,6 @@ static int vm_cmd_external(RSVM* vm,
       (((op_caps & RS_CMD_REG_CAP_RUN) == 0u) || stage_index + 1u < pipeline->count)) {
     use_items = 1u;
   }
-
   rs_value_init_false(&result);
   vm_cmd_frame_init(&frame, args, arg_count, current, has_current, &result, err);
 

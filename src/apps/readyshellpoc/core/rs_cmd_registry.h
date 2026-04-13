@@ -25,6 +25,9 @@
 #define RS_CMD_HANDLER_OVL3_LST  2u
 #define RS_CMD_HANDLER_OVL4_LDV  1u
 #define RS_CMD_HANDLER_OVL5_STV  1u
+#define RS_CMD_HANDLER_OVL6_DEL  1u
+#define RS_CMD_HANDLER_OVL6_REN  2u
+#define RS_CMD_HANDLER_OVL7_CAT  1u
 
 typedef struct RSExternalCmdDescriptor {
   RSCommandId id;
