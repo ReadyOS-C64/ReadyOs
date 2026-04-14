@@ -53,8 +53,19 @@ static int copy_parse_dest(const RSValue* arg,
   return rs_cmd_file_parse_embedded_name(arg, out_drive, out_name, max);
 }
 
-static int copy_is_regular(unsigned char type) {
-  return type == CBM_T_SEQ || type == CBM_T_PRG || type == CBM_T_USR;
+static void copy_build_open_name(const char* name,
+                                 unsigned char type,
+                                 char mode,
+                                 char* out) {
+  unsigned char len;
+
+  strcpy(out, name);
+  len = (unsigned char)strlen(out);
+  out[len] = ',';
+  out[len + 1u] = (char)rs_cmd_file_type_mode(type);
+  out[len + 2u] = ',';
+  out[len + 3u] = mode;
+  out[len + 4u] = '\0';
 }
 
 static int copy_stream_file(unsigned char src_drive,
@@ -63,14 +74,21 @@ static int copy_stream_file(unsigned char src_drive,
                             const char* dst_name,
                             unsigned char type,
                             RSError* err) {
+  char src_spec[24];
+  char dst_spec[24];
   int nread;
   int nwrote;
+  unsigned char code;
 
-  if (rs_cmd_file_open_name(RS_CMD_FILE_LFN_DATA, src_drive, src_name, type, 'r') != 0) {
+  copy_build_open_name(src_name, type, 'r', src_spec);
+  copy_build_open_name(dst_name, type, 'w', dst_spec);
+
+  rs_cmd_file_cleanup_io();
+  if (cbm_open(RS_CMD_FILE_LFN_DATA, src_drive, 2, src_spec) != 0) {
     rs_cmd_file_note_status(err, src_drive, 255u);
     return -1;
   }
-  if (rs_cmd_file_open_name(3u, dst_drive, dst_name, type, 'w') != 0) {
+  if (cbm_open(3u, dst_drive, 2, dst_spec) != 0) {
     cbm_close(RS_CMD_FILE_LFN_DATA);
     rs_cmd_file_cleanup_io();
     rs_cmd_file_note_status(err, dst_drive, 255u);
@@ -89,6 +107,7 @@ static int copy_stream_file(unsigned char src_drive,
     if (nread == 0) {
       break;
     }
+
     nwrote = cbm_write(3u, g_copy_buf, (unsigned int)nread);
     if (nwrote != nread) {
       cbm_close(3u);
@@ -102,14 +121,17 @@ static int copy_stream_file(unsigned char src_drive,
   cbm_close(3u);
   cbm_close(RS_CMD_FILE_LFN_DATA);
   rs_cmd_file_cleanup_io();
+
+  code = 255u;
+  rs_cmd_file_status_msg[0] = '\0';
   if (rs_cmd_file_fetch_status(dst_drive,
-                               g_copy_buf,
+                               &code,
                                rs_cmd_file_status_msg,
                                sizeof(rs_cmd_file_status_msg)) == 0 &&
-      g_copy_buf[0] <= 1u) {
+      code <= 1u) {
     return 0;
   }
-  rs_cmd_file_set_error(err, g_copy_buf[0], rs_cmd_file_status_msg);
+  rs_cmd_file_set_error(err, code, rs_cmd_file_status_msg);
   return -1;
 }
 
@@ -144,7 +166,7 @@ static int copy_run(RSCommandFrame* frame) {
     rs_cmd_file_set_error(frame->err, 62u, g_copy_need_file);
     return 0;
   }
-  if (!copy_is_regular(type)) {
+  if (((type & _CBM_T_REG) == 0u) || type == CBM_T_REL) {
     rs_cmd_file_set_error(frame->err, 255u, g_copy_unsupported);
     return 0;
   }
