@@ -17,6 +17,7 @@ static const char g_copy_need_name[] = "NEED NAME";
 static const char g_copy_need_new[] = "NEED NEW NAME";
 static const char g_copy_need_file[] = "FILE NOT FOUND";
 static const char g_copy_unsupported[] = "UNSUPPORTED";
+static const char g_copy_ok[] = "File Copied Succesfully.";
 
 static unsigned char g_copy_buf[128];
 
@@ -135,6 +136,15 @@ static int copy_stream_file(unsigned char src_drive,
   return -1;
 }
 
+static void copy_note_success(RSCommandFrame* frame) {
+  if (!frame) {
+    return;
+  }
+  strncpy(frame->line, g_copy_ok, RS_CMD_FRAME_LINE_CAP - 1u);
+  frame->line[RS_CMD_FRAME_LINE_CAP - 1u] = '\0';
+  frame->flags |= RS_CMD_FRAME_F_PRT_LINE;
+}
+
 static int copy_run(RSCommandFrame* frame) {
   unsigned char src_drive;
   unsigned char dst_drive;
@@ -142,6 +152,7 @@ static int copy_run(RSCommandFrame* frame) {
   char src_name[17];
   char dst_name[17];
   char cmd[40];
+  int ok;
 
   if (!frame || !frame->out || !frame->args || frame->arg_count != 2u) {
     return -1;
@@ -176,18 +187,24 @@ static int copy_run(RSCommandFrame* frame) {
     copy_append(cmd, dst_name);
     copy_append(cmd, "=");
     copy_append(cmd, src_name);
-    rs_cmd_value_init_bool(frame->out,
-                           rs_cmd_file_run_command(src_drive, cmd, frame->err) == 0);
+    ok = (rs_cmd_file_run_command(src_drive, cmd, frame->err) == 0);
+    if (ok) {
+      copy_note_success(frame);
+    }
+    rs_cmd_value_init_bool(frame->out, ok);
     return 0;
   }
 
-  rs_cmd_value_init_bool(frame->out,
-                         copy_stream_file(src_drive,
-                                          src_name,
-                                          dst_drive,
-                                          dst_name,
-                                          type,
-                                          frame->err) == 0);
+  ok = (copy_stream_file(src_drive,
+                         src_name,
+                         dst_drive,
+                         dst_name,
+                         type,
+                         frame->err) == 0);
+  if (ok) {
+    copy_note_success(frame);
+  }
+  rs_cmd_value_init_bool(frame->out, ok);
   return 0;
 }
 

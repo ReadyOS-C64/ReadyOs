@@ -1000,6 +1000,20 @@ static void vm_cmd_frame_init(RSCommandFrame* frame,
   frame->err = err;
 }
 
+static int vm_cmd_external_prt_line(RSVM* vm,
+                                    const RSCommandFrame* frame,
+                                    RSError* err) {
+  if (!vm || !frame || (frame->flags & RS_CMD_FRAME_F_PRT_LINE) == 0u ||
+      frame->line[0] == '\0') {
+    return 0;
+  }
+  if (vm_write_prt_line(vm, frame->line) != 0) {
+    vm_err(err, "write failed");
+    return -1;
+  }
+  return 0;
+}
+
 static int vm_cmd_external(RSVM* vm,
                            RSCommandId id,
                            const RSPipeline* pipeline,
@@ -1074,6 +1088,10 @@ static int vm_cmd_external(RSVM* vm,
   if (rc != 0) {
     rs_value_free(&result);
     vm_err(err, rc == -2 ? "command args" : "command fail");
+    return -1;
+  }
+  if (vm_cmd_external_prt_line(vm, &frame, err) != 0) {
+    rs_value_free(&result);
     return -1;
   }
   if ((id == RS_CMD_PUT || id == RS_CMD_ADD) && result.tag == RS_VAL_TRUE) {
