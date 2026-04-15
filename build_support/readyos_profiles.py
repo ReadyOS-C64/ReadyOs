@@ -142,6 +142,7 @@ KNOWN_APP_NAMES = {
     "simplefiles",
     "simplecells",
     "game2048",
+    "sidetris",
     "deminer",
     "cal26",
     "dizzy",
