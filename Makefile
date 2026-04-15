@@ -58,6 +58,7 @@ SIMPLEFILES = simplefiles.prg
 SIMPLECELLS = simplecells.prg
 GAME2048 = game2048.prg
 DEMINER = deminer.prg
+SIDETRIS = sidetris.prg
 CAL26 = cal26.prg
 DIZZY = dizzy.prg
 READMEAPP = readme.prg
@@ -272,13 +273,14 @@ LIB_SIMPLEFILES = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(REU_DMA_SR
 LIB_SIMPLECELLS = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(LIB_REU_DMA) $(RESUME_STATE_SEGMENT_SRCS) $(STORAGE_DEVICE_SRC) $(DIR_PAGE_SRC)
 LIB_GAME2048 = $(TUI_BASE_NAV) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_DEMINER = $(TUI_BASE_NAV) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
+LIB_SIDETRIS = $(TUI_BASE_NAV) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_CAL26 = $(TUI_BASE_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(LIB_CLIP_COPY_PASTE_COUNT) $(RESUME_STATE_SEGMENT_SRCS)
 LIB_DIZZY = $(TUI_BASE_INPUT_NAV) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SEGMENT_SRCS)
 LIB_README = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_READYSHELL = $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 
 # Primary binaries shared across profiles
-PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(CAL26) $(DIZZY) $(READMEAPP) $(READYSHELL)
+PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READMEAPP) $(READYSHELL)
 
 # Default target
 all: profile
@@ -406,6 +408,10 @@ $(GAME2048): $(APPS_DIR)/game2048/game2048.c $(LIB_GAME2048)
 # Deminer game app (loads at $1000)
 $(DEMINER): $(APPS_DIR)/deminer/deminer.c $(LIB_DEMINER)
 	$(CC) $(APP_CFLAGS) -m $(OBJ_DIR)/deminer.map -o $@ $^
+
+# Sidetris game app (loads at $1000)
+$(SIDETRIS): $(APPS_DIR)/sidetris/sidetris.c $(LIB_SIDETRIS)
+	$(CC) $(APP_CFLAGS) -Os -m $(OBJ_DIR)/sidetris.map -o $@ $^
 
 # Calendar 2026 app (loads at $1000)
 $(CAL26): $(APPS_DIR)/cal26/cal26.c $(LIB_CAL26)
@@ -771,6 +777,7 @@ help:
 	@echo "  reuviewer.prg- REU memory viewer (loads at \$$1000)"
 	@echo "  game2048.prg - 2048 puzzle game (loads at \$$1000)"
 	@echo "  deminer.prg  - PETSCII minesweeper game (loads at \$$1000)"
+	@echo "  sidetris.prg - Sideways PETSCII Tetris game (loads at \$$1000)"
 	@echo "  cal26.prg    - Calendar 2026 app (loads at \$$1000)"
 	@echo "  dizzy.prg    - Kanban task board app (loads at \$$1000)"
 	@echo "  readme.prg   - Project README app (loads at \$$1000)"

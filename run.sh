@@ -66,6 +66,7 @@ CALCPLUS_PRG="calcplus.prg"
 HEXVIEW_PRG="hexview.prg"
 GAME2048_PRG="game2048.prg"
 DEMINER_PRG="deminer.prg"
+SIDETRIS_PRG="sidetris.prg"
 CAL26_PRG="cal26.prg"
 DIZZY_PRG="dizzy.prg"
 README_PRG="readme.prg"
@@ -193,6 +194,7 @@ show_help() {
     echo "  calcplus       Run calcplus.prg directly"
     echo "  hexview        Run hexview.prg directly"
     echo "  2048           Run game2048.prg directly"
+    echo "  sidetris       Run sidetris.prg directly"
     echo "  deminer        Run deminer.prg directly"
     echo "  cal26          Run cal26.prg directly"
     echo "  dizzy          Run dizzy.prg directly"
@@ -614,6 +616,11 @@ case "${MODE:-}" in
         check_prg "$GAME2048_PRG"
         print_info "Standalone" "$GAME2048_PRG"
         start_vice -logfile "$VICE_LOG_FILE" -reu -reusize 16384 -autostartprgmode 1 "$GAME2048_PRG"
+        ;;
+    sidetris)
+        check_prg "$SIDETRIS_PRG"
+        print_info "Standalone" "$SIDETRIS_PRG"
+        start_vice -logfile "$VICE_LOG_FILE" -reu -reusize 16384 -autostartprgmode 1 "$SIDETRIS_PRG"
         ;;
     deminer)
         check_prg "$DEMINER_PRG"

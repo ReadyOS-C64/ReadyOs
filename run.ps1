@@ -118,6 +118,7 @@ Modes:
   calcplus       Run calcplus.prg directly
   hexview        Run hexview.prg directly
   2048           Run game2048.prg directly
+  sidetris       Run sidetris.prg directly
   deminer        Run deminer.prg directly
   cal26          Run cal26.prg directly
   dizzy          Run dizzy.prg directly
@@ -325,6 +326,7 @@ $script:EditorPrg = 'editor.prg'
 $script:CalcplusPrg = 'calcplus.prg'
 $script:HexviewPrg = 'hexview.prg'
 $script:Game2048Prg = 'game2048.prg'
+$script:SidetrisPrg = 'sidetris.prg'
 $script:DeminerPrg = 'deminer.prg'
 $script:Cal26Prg = 'cal26.prg'
 $script:DizzyPrg = 'dizzy.prg'
@@ -526,6 +528,12 @@ switch ($script:Mode) {
         Assert-FileExists -Path $script:Game2048Prg -Kind 'Program file'
         Print-Info -RunMode 'Standalone' -Target $script:Game2048Prg
         Start-ViceProcess @('-logfile', $script:ViceLogFile, '-reu', '-reusize', '16384', '-autostartprgmode', '1', $script:Game2048Prg)
+    }
+
+    'sidetris' {
+        Assert-FileExists -Path $script:SidetrisPrg -Kind 'Program file'
+        Print-Info -RunMode 'Standalone' -Target $script:SidetrisPrg
+        Start-ViceProcess @('-logfile', $script:ViceLogFile, '-reu', '-reusize', '16384', '-autostartprgmode', '1', $script:SidetrisPrg)
     }
 
     'deminer' {

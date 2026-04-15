@@ -39,6 +39,7 @@ APP_PRGS = [
     ("simplefiles", "simplefiles.prg"),
     ("simplecells", "simplecells.prg"),
     ("game2048", "game2048.prg"),
+    ("sidetris", "sidetris.prg"),
     ("deminer", "deminer.prg"),
     ("cal26", "cal26.prg"),
     ("dizzy", "dizzy.prg"),
@@ -967,6 +968,7 @@ def main():
             "LIB_REUVIEWER": "$(RESUME_STATE_SIMPLE_SRCS)",
             "LIB_TASKLIST": "$(RESUME_STATE_ALL_SRCS)",
             "LIB_GAME2048": "$(RESUME_STATE_SIMPLE_SRCS)",
+            "LIB_SIDETRIS": "$(RESUME_STATE_SIMPLE_SRCS)",
             "LIB_DEMINER": "$(RESUME_STATE_SIMPLE_SRCS)",
             "LIB_CAL26": "$(RESUME_STATE_SEGMENT_SRCS)",
             "LIB_DIZZY": "$(RESUME_STATE_SEGMENT_SRCS)",
@@ -989,7 +991,7 @@ def main():
                 tasklist_links_resume = links_expected_resume
 
     for app_name in ("editor", "calcplus", "hexview", "clipmgr", "reuviewer",
-                     "tasklist", "game2048", "deminer", "cal26", "dizzy", "readme",
+                     "tasklist", "game2048", "sidetris", "deminer", "cal26", "dizzy", "readme",
                      "readyshellpoc"):
         path = os.path.join("src", "apps", app_name, f"{app_name}.c")
         try:
