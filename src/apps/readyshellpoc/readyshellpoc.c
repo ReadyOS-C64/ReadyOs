@@ -177,13 +177,8 @@ static unsigned char ascii_to_screen(unsigned char ascii) {
         case '@': return 0;
         case '[': return 27;
         case ']': return 29;
-        /*
-         * On cc65/C64 the source literal '|' follows the target charset, while
-         * generated SEQ help files currently carry raw ASCII 124. Accept both.
-         */
-        case 124u:
-        case '|':
-            return BOX_V;
+        /* Use the known-visible vertical line glyph in ReadyOS screen mode. */
+        case '|': return BOX_V;
         case '_': return 100;
         default: return 32;
     }
@@ -819,7 +814,7 @@ int main(void) {
     g_line[0] = 0;
     resume_ready = 0;
     bank = SHIM_CURRENT_BANK;
-    if (bank >= 1 && bank <= 15) {
+    if (bank >= 1 && bank <= 23) {
         resume_init_for_app(bank, bank, RESUME_SCHEMA_V1);
         resume_ready = 1;
         if (resume_try_load(&resume_blob, sizeof(resume_blob), &payload_len) &&
