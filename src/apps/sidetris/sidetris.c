@@ -559,8 +559,8 @@ static void draw_info_lines(void) {
 
     draw_field(0, INFO_Y, 5, "SCORE", TUI_COLOR_GRAY3);
     draw_field(6, INFO_Y, 10, score_buf, TUI_COLOR_WHITE);
-    draw_field(24, INFO_Y, 4, "BEST", TUI_COLOR_GRAY3);
-    draw_right_field(29, INFO_Y, 11, best_buf, TUI_COLOR_LIGHTGREEN);
+    draw_field(25, INFO_Y, 4, "BEST", TUI_COLOR_GRAY3);
+    draw_right_field(30, INFO_Y, 10, best_buf, TUI_COLOR_LIGHTGREEN);
 
     draw_field(0, (unsigned char)(INFO_Y + 1), 5, "LINES", TUI_COLOR_GRAY3);
     draw_field(6, (unsigned char)(INFO_Y + 1), 5, lines_buf, TUI_COLOR_WHITE);
@@ -568,7 +568,7 @@ static void draw_info_lines(void) {
     strcpy(level_text + 4, level_buf);
     draw_centered_field(13, (unsigned char)(INFO_Y + 1), 10, level_text, TUI_COLOR_WHITE);
     draw_field(24, (unsigned char)(INFO_Y + 1), 5, "SPEED", TUI_COLOR_GRAY3);
-    draw_right_field(35, (unsigned char)(INFO_Y + 1), 5, speed_buf, TUI_COLOR_CYAN);
+    draw_right_field(30, (unsigned char)(INFO_Y + 1), 10, speed_buf, TUI_COLOR_CYAN);
 }
 
 static void draw_board_frame(void) {
@@ -683,7 +683,6 @@ static void draw_board_cells(void) {
 
 static void draw_status_lines(void) {
     char last_buf[11];
-    char tick_buf[4];
 
     tui_clear_line(STATUS_Y, 0, 40, TUI_COLOR_WHITE);
     tui_clear_line(GLOBAL_HELP_Y, 0, 40, TUI_COLOR_GRAY3);
@@ -695,27 +694,19 @@ static void draw_status_lines(void) {
         draw_field(0, STATUS_Y, 15, "RETURN OR SPACE", TUI_COLOR_WHITE);
         draw_field(16, STATUS_Y, 5, "LAST", TUI_COLOR_GRAY3);
         draw_field(22, STATUS_Y, 10, last_buf, TUI_COLOR_WHITE);
-        draw_field(0, GLOBAL_HELP_Y, 24, "F2/F4 APPS  CTRL+B HOME", TUI_COLOR_GRAY3);
+        draw_centered_field(0, GLOBAL_HELP_Y, 40, "F2/F4 APPS  CTRL+B HOME", TUI_COLOR_GRAY2);
         draw_field(0, HELP_Y, 36, "W/S OR UP/DN ADJUST SPEED 1-100", TUI_COLOR_GRAY3);
         draw_field(0, HELP2_Y, 31, "RETURN/SPACE START", TUI_COLOR_GRAY3);
         return;
     }
 
-    u8_to_ascii(current_drop_ticks(), tick_buf);
-
     if (mode == MODE_PAUSE) {
         draw_field(0, STATUS_Y, 16, "PAUSED", TUI_COLOR_YELLOW);
     } else if (mode == MODE_OVER) {
         draw_field(0, STATUS_Y, 16, "GAME OVER", TUI_COLOR_LIGHTRED);
-    } else {
-        draw_field(0, STATUS_Y, 18, "CLEAR FULL COLUMNS", TUI_COLOR_WHITE);
     }
 
-    draw_field(22, STATUS_Y, 4, "TICK", TUI_COLOR_GRAY3);
-    draw_field(27, STATUS_Y, 3, tick_buf, TUI_COLOR_WHITE);
-    draw_field(31, STATUS_Y, 4, "DROP", TUI_COLOR_CYAN);
-
-    draw_field(0, GLOBAL_HELP_Y, 24, "F2/F4 APPS  CTRL+B HOME", TUI_COLOR_GRAY3);
+    draw_centered_field(0, GLOBAL_HELP_Y, 40, "F2/F4 APPS  CTRL+B HOME", TUI_COLOR_GRAY2);
 
     if (mode == MODE_PAUSE) {
         draw_field(0, HELP_Y, 32, "P/RET/SPACE RESUME  R RESTART", TUI_COLOR_GRAY3);
