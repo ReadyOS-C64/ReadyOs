@@ -32,7 +32,7 @@
 #define BOARD_FRAME_W (BOARD_W + 2)
 #define BOARD_FRAME_H (BOARD_H + 2)
 #define PREVIEW_X (BOARD_X - PREVIEW_W - 1)
-#define PREVIEW_Y 8
+#define PREVIEW_Y 9
 #define PREVIEW_W 8
 #define PREVIEW_H 6
 #define STATUS_Y 20
@@ -56,6 +56,7 @@
 
 #define SPEED_COUNT 100
 #define SPEED_DEFAULT 49
+#define PLAY_TAGLINE_COUNT 20
 
 #define PIECE_I 0
 #define PIECE_O 1
@@ -92,6 +93,7 @@ static unsigned char piece_x;
 static unsigned char piece_y;
 static unsigned char bag_count;
 static unsigned char drop_tick;
+static unsigned char play_tagline_state;
 
 static unsigned int lines_cleared;
 static unsigned int rng_state;
@@ -109,6 +111,7 @@ typedef struct {
     unsigned char piece_x;
     unsigned char piece_y;
     unsigned char bag_count;
+    unsigned char play_tagline_state;
     unsigned char piece_bag[PIECE_COUNT];
     unsigned int lines_cleared;
     unsigned int rng_state;
@@ -119,6 +122,29 @@ typedef struct {
 } SidetrisResumeV1;
 
 static SidetrisResumeV1 resume_blob;
+
+static const char *play_taglines[PLAY_TAGLINE_COUNT] = {
+    "syntax over sleep",
+    "i brake for basic",
+    "byte me softly",
+    "warp speed, nerd",
+    "10 print lol",
+    "stay awhile, press play",
+    "floppies never die",
+    "reboot & conquer",
+    "keep calm, code on",
+    "be kind, rewind",
+    "may the for loop",
+    "insert coin",
+    "c64 and chill",
+    "alt-f4 your fear",
+    "error 404: nap",
+    "praise the crt",
+    "live by the beep",
+    "read me maybe",
+    "save often",
+    "load \"*\",8,1"
+};
 
 static const signed char piece_cells[PIECE_COUNT][ROTATION_COUNT][BLOCK_COORD_COUNT] = {
     {
@@ -190,6 +216,8 @@ static unsigned char pull_piece(void);
 static unsigned char speed_display_value(void);
 static unsigned char base_drop_ticks(void);
 static unsigned char current_drop_ticks(void);
+static const char *current_play_subtitle(void);
+static void advance_play_subtitle(void);
 static void update_level_from_lines(void);
 static void update_session_best(void);
 static void draw_header(void);
@@ -499,6 +527,21 @@ static unsigned char current_drop_ticks(void) {
     return ticks;
 }
 
+static const char *current_play_subtitle(void) {
+    if (play_tagline_state == 0) {
+        return "flow from the left";
+    }
+    return play_taglines[(unsigned char)(play_tagline_state - 1)];
+}
+
+static void advance_play_subtitle(void) {
+    if (play_tagline_state >= PLAY_TAGLINE_COUNT) {
+        play_tagline_state = 1;
+    } else {
+        ++play_tagline_state;
+    }
+}
+
 static void update_level_from_lines(void) {
     level = (unsigned char)(1 + (lines_cleared / 10));
     if (level == 0) {
@@ -526,7 +569,7 @@ static void draw_header(void) {
     color = TUI_COLOR_CYAN;
 
     if (mode == MODE_PLAY) {
-        subtitle = "FLOW FROM THE LEFT";
+        subtitle = current_play_subtitle();
         color = TUI_COLOR_WHITE;
     } else if (mode == MODE_PAUSE) {
         subtitle = "PAUSED";
@@ -682,28 +725,22 @@ static void draw_board_cells(void) {
 }
 
 static void draw_status_lines(void) {
-    char last_buf[11];
-
     tui_clear_line(STATUS_Y, 0, 40, TUI_COLOR_WHITE);
     tui_clear_line(GLOBAL_HELP_Y, 0, 40, TUI_COLOR_GRAY3);
     tui_clear_line(HELP_Y, 0, 40, TUI_COLOR_GRAY3);
     tui_clear_line(HELP2_Y, 0, 40, TUI_COLOR_GRAY3);
 
     if (mode == MODE_MENU) {
-        u32_to_ascii(last_score, last_buf);
-        draw_field(0, STATUS_Y, 15, "RETURN OR SPACE", TUI_COLOR_WHITE);
-        draw_field(16, STATUS_Y, 5, "LAST", TUI_COLOR_GRAY3);
-        draw_field(22, STATUS_Y, 10, last_buf, TUI_COLOR_WHITE);
         draw_centered_field(0, GLOBAL_HELP_Y, 40, "F2/F4 APPS  CTRL+B HOME", TUI_COLOR_GRAY2);
-        draw_field(0, HELP_Y, 36, "W/S OR UP/DN ADJUST SPEED 1-100", TUI_COLOR_GRAY3);
-        draw_field(0, HELP2_Y, 31, "RETURN/SPACE START", TUI_COLOR_GRAY3);
+        draw_centered_field(0, HELP_Y, 40, "W/S OR UP/DN ADJUST SPEED 1-100", TUI_COLOR_GRAY3);
+        draw_centered_field(0, HELP2_Y, 40, "RETURN OR SPACE TO START", TUI_COLOR_GRAY3);
         return;
     }
 
     if (mode == MODE_PAUSE) {
         draw_field(0, STATUS_Y, 16, "PAUSED", TUI_COLOR_YELLOW);
     } else if (mode == MODE_OVER) {
-        draw_field(0, STATUS_Y, 16, "GAME OVER", TUI_COLOR_LIGHTRED);
+        draw_centered_field(0, STATUS_Y, 40, "GAME OVER", TUI_COLOR_LIGHTRED);
     }
 
     draw_centered_field(0, GLOBAL_HELP_Y, 40, "F2/F4 APPS  CTRL+B HOME", TUI_COLOR_GRAY2);
@@ -712,7 +749,7 @@ static void draw_status_lines(void) {
         draw_field(0, HELP_Y, 32, "P/RET/SPACE RESUME  R RESTART", TUI_COLOR_GRAY3);
         draw_field(0, HELP2_Y, 23, "M MENU", TUI_COLOR_GRAY3);
     } else if (mode == MODE_OVER) {
-        draw_field(0, HELP_Y, 36, "R/RET/SPACE RESTART  M MENU", TUI_COLOR_GRAY3);
+        draw_centered_field(0, HELP_Y, 40, "R/RET/SPACE RESTART  M MENU", TUI_COLOR_GRAY3);
     } else {
         draw_field(0, HELP_Y, 39, "W/UP UP  S/DN DOWN  A/L CCW  D/R CW", TUI_COLOR_GRAY3);
         draw_field(0, HELP2_Y, 39, "SPACE DROP  P PAUSE  R RESET  M MENU", TUI_COLOR_GRAY3);
@@ -827,6 +864,7 @@ static void reset_run_state(void) {
     piece_x = 0;
     piece_y = 0;
     bag_count = 0;
+    play_tagline_state = 0;
     invalidate_board_cache();
 }
 
@@ -949,6 +987,7 @@ static void lock_active_piece(void) {
         update_session_best();
     }
 
+    advance_play_subtitle();
     if (!spawn_piece()) {
         update_session_best();
         last_score = score;
@@ -962,6 +1001,8 @@ static void lock_active_piece(void) {
     if (mode == MODE_OVER) {
         draw_header();
         draw_game_over_box();
+    } else {
+        draw_header();
     }
 }
 
@@ -1095,6 +1136,7 @@ static void resume_save_state(void) {
     resume_blob.piece_x = piece_x;
     resume_blob.piece_y = piece_y;
     resume_blob.bag_count = bag_count;
+    resume_blob.play_tagline_state = play_tagline_state;
     memcpy(resume_blob.piece_bag, piece_bag, sizeof(piece_bag));
     resume_blob.lines_cleared = lines_cleared;
     resume_blob.rng_state = rng_state;
@@ -1135,6 +1177,9 @@ static unsigned char resume_restore_state(void) {
     if (resume_blob.piece_rotation >= ROTATION_COUNT || resume_blob.bag_count > PIECE_COUNT) {
         return 0;
     }
+    if (resume_blob.play_tagline_state > PLAY_TAGLINE_COUNT) {
+        return 0;
+    }
     if (resume_blob.piece_x >= BOARD_W || resume_blob.piece_y >= BOARD_H) {
         return 0;
     }
@@ -1161,6 +1206,7 @@ static unsigned char resume_restore_state(void) {
     piece_x = resume_blob.piece_x;
     piece_y = resume_blob.piece_y;
     bag_count = resume_blob.bag_count;
+    play_tagline_state = resume_blob.play_tagline_state;
     memcpy(piece_bag, resume_blob.piece_bag, sizeof(piece_bag));
     lines_cleared = resume_blob.lines_cleared;
     rng_state = resume_blob.rng_state;
