@@ -11,6 +11,7 @@
 
 #include "../../lib/tui.h"
 #include "../../lib/resume_state.h"
+#include <cbm.h>
 #include <c64.h>
 #include <conio.h>
 #include <string.h>
@@ -44,6 +45,12 @@
 
 /* Shim data address used by existing apps */
 #define SHIM_CURRENT_BANK (*(volatile unsigned char*)0xC834)
+
+/* KERNAL keyboard state */
+#define RS_KBD_BUFFER_COUNT (*(volatile unsigned char*)0x00C6)
+#define RS_KBD_CURRENT_KEY (*(volatile unsigned char*)0x00CB)
+#define RS_KBD_MODIFIERS (*(volatile unsigned char*)0x028D)
+#define RS_KBD_NO_KEY 0x40u
 
 /* Entropy taps */
 #define RASTER_LINE (*(volatile unsigned char*)0xD012)
@@ -123,6 +130,27 @@ static void draw_right_field(unsigned char x, unsigned char y, unsigned char wid
     }
 
     draw_field(draw_x, y, text_len, text, color);
+}
+
+static void clear_keyboard_buffer(void) {
+    cbm_k_clrch();
+    RS_KBD_BUFFER_COUNT = 0u;
+}
+
+static unsigned char keyboard_key_down(void) {
+    cbm_k_scnkey();
+    return (unsigned char)(
+        RS_KBD_CURRENT_KEY != RS_KBD_NO_KEY ||
+        (RS_KBD_MODIFIERS & 0x07u) != 0u
+    );
+}
+
+static void wait_for_full_key_release(void) {
+    clear_keyboard_buffer();
+    while (keyboard_key_down()) {
+        waitvsync();
+    }
+    clear_keyboard_buffer();
 }
 
 static unsigned char cell_x(unsigned char col) {
@@ -362,6 +390,21 @@ static void draw_pause_overlay(void) {
     tui_puts(7, PAUSE_Y + 10, "F2/F4        SWITCH APPS", TUI_COLOR_GRAY3);
     tui_puts(7, PAUSE_Y + 11, "CTRL+B       LAUNCHER", TUI_COLOR_GRAY3);
     tui_puts(7, PAUSE_Y + 13, "GOAL: MAKE 2048", TUI_COLOR_LIGHTGREEN);
+}
+
+static void draw_game_over_overlay(void) {
+    TuiRect popup = {PAUSE_X, PAUSE_Y, PAUSE_W, PAUSE_H};
+    char score_buf[11];
+
+    u32_to_ascii(score, score_buf);
+
+    save_pause_background();
+    tui_window_title(&popup, "GAME OVER", TUI_COLOR_LIGHTBLUE, TUI_COLOR_LIGHTRED);
+    tui_puts(11, PAUSE_Y + 4, "NO MORE MOVES", TUI_COLOR_WHITE);
+    tui_puts(11, PAUSE_Y + 7, "FINAL SCORE", TUI_COLOR_GRAY3);
+    draw_centered_field(11, PAUSE_Y + 9, 10, score_buf, TUI_COLOR_LIGHTGREEN);
+    tui_puts(9, PAUSE_Y + 12, "R      RESTART", TUI_COLOR_WHITE);
+    tui_puts(9, PAUSE_Y + 14, "F2/F4  SWITCH APPS", TUI_COLOR_GRAY3);
 }
 
 static void spawn_tile(void) {
@@ -670,14 +713,13 @@ static void game_draw_initial(void) {
     draw_board_frame();
     draw_help_line();
     draw_changed_tiles();
+    if (game_over) {
+        draw_game_over_overlay();
+    }
 }
 
 static void update_keyrepeat_mode(void) {
-    if (!paused && !game_over) {
-        (void)tui_keyrepeat_set(TUI_KEYREPEAT_CURSOR);
-    } else {
-        tui_keyrepeat_default();
-    }
+    tui_keyrepeat_default();
 }
 
 static void game_loop(void) {
@@ -701,14 +743,13 @@ static void game_loop(void) {
                 update_keyrepeat_mode();
                 restore_pause_background();
                 draw_subheader();
+                wait_for_full_key_release();
             } else if (key == 'r' || key == 'R') {
                 paused = 0;
-                restore_pause_background();
                 reset_game();
                 update_keyrepeat_mode();
-                draw_subheader();
-                draw_help_line();
-                draw_changed_tiles();
+                game_draw_initial();
+                wait_for_full_key_release();
             }
             continue;
         }
@@ -718,15 +759,15 @@ static void game_loop(void) {
             update_keyrepeat_mode();
             draw_subheader();
             draw_pause_overlay();
+            wait_for_full_key_release();
             continue;
         }
 
         if (game_over && (key == 'r' || key == 'R')) {
             reset_game();
             update_keyrepeat_mode();
-            draw_subheader();
-            draw_help_line();
-            draw_changed_tiles();
+            game_draw_initial();
+            wait_for_full_key_release();
             continue;
         }
 
@@ -741,6 +782,9 @@ static void game_loop(void) {
                 draw_subheader();
                 draw_help_line();
                 draw_changed_tiles();
+                if (game_over) {
+                    draw_game_over_overlay();
+                }
             }
         }
     }
