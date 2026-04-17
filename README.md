@@ -182,7 +182,7 @@ How it works:
 | 8 | `cal26` | calendar 26 | 2026 calendar with month, week, day, upcoming, and REL-backed appointments; task reading is currently broken |
 | 8 | `dizzy` | dizzy kanban | Kanban board with REL-backed persistence, search, and reorder |
 | 9 | `readme` | read.me | In-system ReadyOS guide viewer |
-| 8 | `readyshell` | ready shell | Overlay-based shell with expressions, pipelines, value save/load, directory queries, and text/file commands including `cat`, `put`, `add`, `del`, `ren`, and `copy` |
+| 8 | `readyshell` | ready shell | Overlay-based shell with expressions, pipelines, wildcard directory queries, value save/load, and text/file commands including `cat`, `put`, `add`, `del`, `ren`, and `copy` |
 | 8 | `deminer` | deminer | Minesweeper-style puzzle with suspend/resume |
 
 Notes:
@@ -198,6 +198,10 @@ Notes:
   `7`, and `8`.
 - Current ReadyShell command set: `PRT`, `MORE`, `TOP`, `SEL`, `GEN`, `TAP`,
   `DRVI`, `LST`, `LDV`, `STV`, `CAT`, `PUT`, `ADD`, `DEL`, `REN`, and `COPY`.
+- `LST` accepts wildcard patterns, optional drive selection, and optional
+  comma-separated file-type filters such as `PRG`, `SEQ`, `USR`, and `REL`.
+- `LDV` and `STV` accept either embedded drive syntax like `"9:snap"` or a
+  trailing drive argument like `"snap", 9`.
 - `PUT` and `ADD` use direct `COMMAND <expr>, <filename>` syntax. `PUT`
   creates or replaces PETASCII text files; `ADD` appends to `SEQ` files and
   creates them when missing.

@@ -297,9 +297,17 @@ Directory listing also defaults to drive `8`:
 ```ruby
 LST
 LST 9
+LST "t*"
+LST "9:t*"
+LST "*.PRG", "PRG"
+LST "t*", 9, "PRG,SEQ"
 LST | SEL "NAME"
 LST | SEL "NAME","TYPE"
 ```
+
+Pattern strings use normal CBM wildcards such as `*` and `?`. Type filters are
+case-insensitive and accept comma-separated values such as `PRG`, `SEQ`, `USR`,
+`REL`, `DIR`, `CBM`, and `DEL`.
 
 Use `LST` as data:
 
@@ -319,6 +327,7 @@ Save a range result:
 ```ruby
 $A = 1..20
 STV $A, "range20"
+STV $A, "range20", 9
 ```
 
 Save a filtered directory snapshot:
@@ -326,12 +335,16 @@ Save a filtered directory snapshot:
 ```ruby
 $DIR = LST | ?[ @.TYPE == "PRG" ] | TOP 10
 STV $DIR, "prgdir"
+STV $DIR, "9:prgdir"
+STV $DIR, "prgdir", 9
 ```
 
 Load it back later:
 
 ```ruby
 $SNAP = LDV "prgdir"
+$BACKUP = LDV "9:prgdir"
+$ALT = LDV "prgdir", 9
 PRT $SNAP(0).NAME
 PRT $SNAP(0).TYPE
 ```
@@ -340,7 +353,9 @@ Load a scalar snapshot:
 
 ```ruby
 STV 42, "answer"
+STV 42, "answer", 9
 $ANSWER = LDV "answer"
+$BACKUP = LDV "answer", 9
 PRT $ANSWER
 ```
 

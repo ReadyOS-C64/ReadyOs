@@ -1,6 +1,7 @@
 #include "rs_cmd_overlay.h"
 #include "rs_cmd_registry.h"
 
+#include "rs_cmd_drive_local.h"
 #include "rs_cmd_ser_local.h"
 
 #include <cbm.h>
@@ -17,39 +18,60 @@
 #define STV_DATA_LEN   (RS_CMD_SCRATCH_LEN - 0x0100u)
 #define STV_PATH_MAX   96u
 
-static int stv_name_with_mode(const char* path, char* out, unsigned short max) {
+static int stv_name_with_mode(const char* path,
+                              unsigned char fallback_drive,
+                              unsigned char* drive_out,
+                              char* out,
+                              unsigned short max) {
+  const char* name;
+  unsigned char drive;
   unsigned short n;
-  unsigned short i;
-  int has_meta;
-  if (!path || !out || max < 8u) {
+  if (!path || !drive_out || !out || max < 8u) {
     return -1;
   }
-  has_meta = 0;
-  n = (unsigned short)strlen(path);
-  for (i = 0u; i < n; ++i) {
-    if (path[i] == ':' || path[i] == ',') {
-      has_meta = 1;
-      break;
-    }
+  if (rs_cmd_drive_parse_prefix(path, fallback_drive, &drive, &name) != 0) {
+    return -1;
   }
-  if (has_meta) {
+  n = (unsigned short)strlen(name);
+  if (rs_cmd_drive_has_char(name, ',')) {
     if (n + 1u > max) {
       return -1;
     }
-    memcpy(out, path, n + 1u);
-    return 0;
+    memcpy(out, name, n + 1u);
+  } else {
+    if ((unsigned long)n + 8ul > (unsigned long)max) {
+      return -1;
+    }
+    out[0] = '0';
+    out[1] = ':';
+    memcpy(out + 2u, name, n);
+    out[2u + n] = ',';
+    out[3u + n] = 's';
+    out[4u + n] = ',';
+    out[5u + n] = 'w';
+    out[6u + n] = '\0';
   }
-  if ((unsigned long)n + 8ul > (unsigned long)max) {
+  *drive_out = drive;
+  return 0;
+}
+
+static int stv_parse_fallback_drive_arg(const RSCommandFrame* frame,
+                                        unsigned short drive_arg_index,
+                                        unsigned char* out_drive) {
+  unsigned short drive16;
+
+  if (!frame || !out_drive) {
     return -1;
   }
-  out[0] = '0';
-  out[1] = ':';
-  memcpy(out + 2u, path, n);
-  out[2u + n] = ',';
-  out[3u + n] = 's';
-  out[4u + n] = ',';
-  out[5u + n] = 'w';
-  out[6u + n] = '\0';
+  if (frame->arg_count <= drive_arg_index) {
+    *out_drive = 8u;
+    return 0;
+  }
+  if (rs_cmd_value_to_u16(&frame->args[drive_arg_index], &drive16) != 0 ||
+      drive16 < 8u || drive16 > 11u) {
+    return -1;
+  }
+  *out_drive = (unsigned char)drive16;
   return 0;
 }
 
@@ -94,15 +116,19 @@ static int stv_meta_read(unsigned short* used, unsigned short* count, char* path
   return 0;
 }
 
-static int stv_write_reu_file(const char* path, unsigned short len) {
+static int stv_write_reu_file(const char* path,
+                              unsigned char fallback_drive,
+                              unsigned short len) {
   char namebuf[96];
+  unsigned char drive;
   unsigned short written;
   unsigned short chunk;
   int n;
-  if (!path || stv_name_with_mode(path, namebuf, sizeof(namebuf)) != 0) {
+  if (!path ||
+      stv_name_with_mode(path, fallback_drive, &drive, namebuf, sizeof(namebuf)) != 0) {
     return -1;
   }
-  if (cbm_open(2, 8, CBM_WRITE, namebuf) != 0) {
+  if (cbm_open(2, drive, CBM_WRITE, namebuf) != 0) {
     cbm_k_clrch();
     return -1;
   }
@@ -149,12 +175,19 @@ static int stv_patch_header(unsigned short used, unsigned short count) {
 
 static int stv_begin(RSCommandFrame* frame) {
   const char* path;
+  char stored_path[STV_PATH_MAX];
   unsigned char header[9];
+  unsigned char fallback_drive;
   if (!frame || !frame->args || frame->arg_count < 1u) {
     return -1;
   }
   path = rs_cmd_value_cstr(&frame->args[0]);
-  if (!path) {
+  if (!path || frame->arg_count > 2u ||
+      stv_parse_fallback_drive_arg(frame, 1u, &fallback_drive) != 0 ||
+      rs_cmd_drive_canonicalize_path(path,
+                                     fallback_drive,
+                                     stored_path,
+                                     sizeof(stored_path)) != 0) {
     return -2;
   }
   header[0] = 'R';
@@ -171,7 +204,7 @@ static int stv_begin(RSCommandFrame* frame) {
   }
   frame->used = sizeof(header);
   frame->count = 0u;
-  return stv_meta_write(frame->used, frame->count, path);
+  return stv_meta_write(frame->used, frame->count, stored_path);
 }
 
 static int stv_process(RSCommandFrame* frame) {
@@ -197,15 +230,17 @@ static int stv_end(RSCommandFrame* frame) {
   unsigned short used;
   unsigned short count;
   char path[STV_PATH_MAX];
+  unsigned char fallback_drive;
   int ok;
   if (!frame || !frame->out) {
     return -1;
   }
   if (stv_meta_read(&used, &count, path, sizeof(path)) != 0 ||
+      stv_parse_fallback_drive_arg(frame, 1u, &fallback_drive) != 0 ||
       stv_patch_header(used, count) != 0) {
     return -1;
   }
-  ok = (stv_write_reu_file(path, used) == 0);
+  ok = (stv_write_reu_file(path, fallback_drive, used) == 0);
   rs_cmd_value_free(frame->out);
   rs_cmd_value_init_bool(frame->out, ok);
   frame->used = used;
@@ -216,6 +251,7 @@ static int stv_end(RSCommandFrame* frame) {
 static int stv_run_direct(RSCommandFrame* frame) {
   const char* path;
   const RSValue* value;
+  unsigned char fallback_drive;
   unsigned short used;
   unsigned short payload_len;
   unsigned char h[6];
@@ -224,19 +260,20 @@ static int stv_run_direct(RSCommandFrame* frame) {
     return -1;
   }
   if (frame->item) {
-    if (frame->arg_count < 1u) {
+    if (frame->arg_count < 1u || frame->arg_count > 2u) {
       return -2;
     }
     value = frame->item;
     path = rs_cmd_value_cstr(&frame->args[0]);
   } else {
-    if (frame->arg_count < 2u) {
+    if (frame->arg_count < 2u || frame->arg_count > 3u) {
       return -2;
     }
     value = &frame->args[0];
     path = rs_cmd_value_cstr(&frame->args[1]);
   }
-  if (!path) {
+  if (!path ||
+      stv_parse_fallback_drive_arg(frame, frame->item ? 1u : 2u, &fallback_drive) != 0) {
     return -2;
   }
   h[0] = 'R';
@@ -258,7 +295,7 @@ static int stv_run_direct(RSCommandFrame* frame) {
   if (rs_reu_write(STV_DATA_OFF + 4ul, h, 2u) != 0) {
     return -1;
   }
-  ok = (stv_write_reu_file(path, used) == 0);
+  ok = (stv_write_reu_file(path, fallback_drive, used) == 0);
   rs_cmd_value_free(frame->out);
   rs_cmd_value_init_bool(frame->out, ok);
   frame->used = used;

@@ -628,6 +628,11 @@ Syntax:
 ```text
 LST
 LST <drive>
+LST <pattern>
+LST <pattern>, <drive>
+LST <pattern>, <types>
+LST <pattern>, <drive>, <types>
+LST <drive>, <types>
 ```
 
 Examples:
@@ -635,12 +640,19 @@ Examples:
 ```text
 LST
 LST 9
+LST "t*"
+LST "9:t*"
+LST "*.PRG", "PRG"
+LST "t*", 9, "PRG,SEQ"
 LST | SEL "NAME","TYPE"
 ```
 
 Notes:
 
 - Each emitted item is an object with fields such as `NAME`, `TYPE`, and `BLOCKS`
+- Patterns use normal CBM directory wildcards such as `*` and `?`
+- Type filters are case-insensitive and accept comma-separated tokens from `SEQ`, `PRG`, `USR`, `REL`, `DIR`, `CBM`, and `DEL`
+- If the pattern embeds a drive prefix such as `9:`, that embedded drive wins over any separate drive argument
 - `LST` is useful as a data source for `SEL`, `TOP`, filters, and saved snapshots
 
 ### 8.9 `LDV`
@@ -653,14 +665,23 @@ Syntax:
 
 ```text
 LDV <filename>
+LDV <filename>, <drive>
 ```
 
 Examples:
 
 ```text
 $SNAP = LDV "bigfiles"
+$BACKUP = LDV "9:bigfiles"
+$ALT = LDV "bigfiles", 9
 PRT $SNAP(0).NAME
 ```
+
+Notes:
+
+- If the filename embeds a device prefix such as `9:`, `LDV` opens that device
+- A trailing drive argument is also accepted: `LDV "bigfiles", 9`
+- Filenames without an embedded device prefix still load from device `8`
 
 ### 8.10 `STV`
 
@@ -672,6 +693,7 @@ Syntax:
 
 ```text
 STV <expr>, <filename>
+STV <expr>, <filename>, <drive>
 ```
 
 Examples:
@@ -679,7 +701,15 @@ Examples:
 ```text
 $DIR = LST | ?[ @.TYPE == "PRG" ] | TOP 10
 STV $DIR, "prgdir"
+STV $DIR, "9:prgdir"
+STV $DIR, "prgdir", 9
 ```
+
+Notes:
+
+- If the filename embeds a device prefix such as `9:`, `STV` writes to that device
+- A trailing drive argument is also accepted: `STV $DIR, "prgdir", 9`
+- Filenames without an embedded device prefix still save to device `8`
 
 ### 8.11 `CAT`
 

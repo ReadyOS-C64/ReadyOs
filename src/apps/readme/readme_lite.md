@@ -171,7 +171,8 @@ Kanban workflow board tuned for fast keyboard organization.
 ### Ready Shell
 
 ReadyShell is an overlay-based shell with expressions, pipelines,
-filters, foreach stages, disk commands, and value serialization.
+filters, foreach stages, wildcard directory queries, disk commands,
+and value serialization.
 
 For shipped command help, run `help`, then follow the hint:
 `cat "rshelp" | more`.
@@ -196,11 +197,15 @@ Key shell commands:
 - `DEL`, `REN`, `COPY`
 
 Current file-command behavior:
+- `LST` can filter by wildcard pattern, drive, and file type tokens such as
+  `PRG`, `SEQ`, `USR`, and `REL`.
 - `CAT` emits one string per text line from a PETASCII `SEQ` file.
 - `PUT <expr>, <file>` creates or replaces a text file from a string or array
   of strings.
 - `ADD <expr>, <file>` appends strings to an existing `SEQ` file, or creates
   it if missing.
+- `LDV` and `STV` accept either embedded drive syntax like `"9:snap"` or a
+  trailing drive argument such as `"snap", 9`.
 - `DEL`, `REN`, and `COPY` cover scratch, rename, and copy workflows.
 
 For a larger walkthrough with worked examples, see the ReadyShell

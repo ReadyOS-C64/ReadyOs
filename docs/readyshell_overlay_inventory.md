@@ -1,13 +1,13 @@
-# ReadyShell Overlay Inventory Report (v0.2B)
+# ReadyShell Overlay Inventory Report (v0.2W)
 
 Artifact-backed report generated from the current local ReadyShell build, linker map, and D71 disk image.
 
 ## Executive Summary
 
-- Profile / disk source: `precog-dual-d71` using `releases/0.2/precog-dual-d71/readyos-v0.2b-dual-d71_1.d71` (disk label `readyos`, `106` blocks free).
-- Resident ReadyShell PRG: `readyshell.prg` on disk as `readyshell`, `30571` bytes and `121` D71 blocks.
+- Profile / disk source: `precog-dual-d71` using `releases/0.2/precog-dual-d71/readyos-v0.2w-dual-d71_1.d71` (disk label `readyos`, `80` blocks free).
+- Resident ReadyShell PRG: `readyshell.prg` on disk as `readyshell`, `30478` bytes and `120` D71 blocks.
 - Overlay execution window: `$8E00-$C5FF` for `14336` bytes, with PRG load-address bytes at `$8DFE-$8DFF`.
-- Resident BSS / heap below overlays: BSS `$8769-$895F` (`503` bytes), heap `$8960-$8DFD` (`1182` bytes).
+- Resident BSS / heap below overlays: BSS `$870C-$8902` (`503` bytes), heap `$8904-$8DFD` (`1274` bytes).
 - High RAM runtime region outside the app window: `$CA00-$CFFF`.
 - REU policy split:
   - overlays 1-8 are boot-loaded during shell startup and cached into fixed full-window REU slots
@@ -21,8 +21,8 @@ Artifact-backed report generated from the current local ReadyShell build, linker
 | Resident app window | `$1000-$C5FF` | `46592` | ReadyOS app-owned RAM window for ReadyShell. |
 | Overlay load address bytes | `$8DFE-$8DFF` | `2` | PRG load address emitted ahead of each overlay sidecar file. |
 | Overlay execution window | `$8E00-$C5FF` | `14336` | Shared live area for whichever overlay is active. |
-| Resident BSS | `$8769-$895F` | `503` | Resident writable data below the overlay load address. |
-| Resident heap | `$8960-$8DFD` | `1182` | cc65 heap carved below the overlay load address. |
+| Resident BSS | `$870C-$8902` | `503` | Resident writable data below the overlay load address. |
+| Resident heap | `$8904-$8DFD` | `1274` | cc65 heap carved below the overlay load address. |
 | High-RAM runtime | `$CA00-$CFFF` | `1536` | Fixed ReadyShell runtime state outside the app snapshot window. |
 
 ## REU Layout And Loading Model
@@ -132,11 +132,11 @@ REU bank 0x41
 | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
 | 1 | Parser / Lexer | `rsparser.prg` | `rsparser` | `13007` | `52` | `13005` | `90.7%` | bank `0x40` slot `$400000-$4037FF` | None directly; parse phase support. |
 | 2 | Execution Core | `rsvm.prg` | `rsvm` | `14035` | `56` | `14033` | `97.9%` | bank `0x40` slot `$403800-$406FFF` | PRT, MORE, TOP, SEL, GEN, TAP and the shared execution paths that command overlays return to. |
-| 3 | Drive Info + Directory Listing | `rsdrvilst.prg` | `rsdrvilst` | `7745` | `31` | `7743` | `54.0%` | bank `0x40` slot `$407000-$40A7FF` | DRVI, LST |
-| 4 | Load Value | `rsldv.prg` | `rsldv` | `11156` | `44` | `11154` | `77.8%` | bank `0x41` slot `$410000-$4137FF` | LDV |
-| 5 | Store Value | `rsstv.prg` | `rsstv` | `8972` | `36` | `8970` | `62.6%` | bank `0x40` slot `$40A800-$40DFFF` | STV |
+| 3 | Drive Info + Directory Listing | `rsdrvilst.prg` | `rsdrvilst` | `11274` | `45` | `11272` | `78.6%` | bank `0x40` slot `$407000-$40A7FF` | DRVI, LST |
+| 4 | Load Value | `rsldv.prg` | `rsldv` | `11886` | `47` | `11884` | `82.9%` | bank `0x41` slot `$410000-$4137FF` | LDV |
+| 5 | Store Value | `rsstv.prg` | `rsstv` | `10207` | `41` | `10205` | `71.2%` | bank `0x40` slot `$40A800-$40DFFF` | STV |
 | 6 | File Delete / Rename / Write | `rsfops.prg` | `rsfops` | `14335` | `57` | `14333` | `100.0%` | bank `0x41` slot `$413800-$416FFF` | DEL, REN, PUT, ADD |
-| 7 | File Read | `rscat.prg` | `rscat` | `7999` | `32` | `7997` | `55.8%` | bank `0x41` slot `$417000-$41A7FF` | CAT |
+| 7 | File Read | `rscat.prg` | `rscat` | `8080` | `32` | `8078` | `56.3%` | bank `0x41` slot `$417000-$41A7FF` | CAT |
 | 8 | File Copy | `rscopy.prg` | `rscopy` | `6601` | `26` | `6599` | `46.0%` | bank `0x41` slot `$41A800-$41DFFF` | COPY |
 
 ## Command Topology
@@ -181,8 +181,8 @@ Resident ReadyShell dispatcher
 - Resident asm/runtime support: `rs_runtime_c64.s`
 - Command role: Resident app shell loop plus vm/overlay runtime. Command tokens resolved here, then dispatched to overlay 2 or command overlays.
 - Current linker-visible resident footprint:
-  - `CODE` `0x7239`
-  - `RODATA` `0x0462`
+  - `CODE` `0x7224`
+  - `RODATA` `0x041A`
   - `DATA` `0x0047`
   - `INIT` `0x001C`
   - `ONCE` `0x0038`
@@ -226,9 +226,9 @@ Resident ReadyShell dispatcher
 - Disk filename: `rsdrvilst`
 - Source files: `rs_cmd_lst_c64.c, rs_cmd_drvi_c64.c`
 - Commands: DRVI, LST
-- Runtime bytes in overlay window: `7743` at `$8E00-$AC3E`
-- Window share: `54.0%` used, `6593` bytes free
-- Disk footprint: `7745` bytes, `31` D71 blocks
+- Runtime bytes in overlay window: `11272` at `$8E00-$BA07`
+- Window share: `78.6%` used, `3064` bytes free
+- Disk footprint: `11274` bytes, `45` D71 blocks
 - REU policy: Boot-loaded from disk during shell startup, then restored from bank `0x40` slot `$407000-$40A7FF` as a full `0x3800`-byte overlay-window snapshot.
 - RAM notes: Shares the inter-command REU handoff area at 0x480000-0x487FFF.
 
@@ -240,9 +240,9 @@ Resident ReadyShell dispatcher
 - Disk filename: `rsldv`
 - Source files: `rs_cmd_ldv_c64.c`
 - Commands: LDV
-- Runtime bytes in overlay window: `11154` at `$8E00-$B991`
-- Window share: `77.8%` used, `3182` bytes free
-- Disk footprint: `11156` bytes, `44` D71 blocks
+- Runtime bytes in overlay window: `11884` at `$8E00-$BC6B`
+- Window share: `82.9%` used, `2452` bytes free
+- Disk footprint: `11886` bytes, `47` D71 blocks
 - REU policy: Boot-loaded from disk during shell startup, then restored from bank `0x41` slot `$410000-$4137FF` as a full `0x3800`-byte overlay-window snapshot.
 - RAM notes: Uses the shared handoff region plus the REU-backed value arena in bank 0x48 when hydrating pointer-backed values.
 
@@ -254,9 +254,9 @@ Resident ReadyShell dispatcher
 - Disk filename: `rsstv`
 - Source files: `rs_cmd_stv_c64.c`
 - Commands: STV
-- Runtime bytes in overlay window: `8970` at `$8E00-$B109`
-- Window share: `62.6%` used, `5366` bytes free
-- Disk footprint: `8972` bytes, `36` D71 blocks
+- Runtime bytes in overlay window: `10205` at `$8E00-$B5DC`
+- Window share: `71.2%` used, `4131` bytes free
+- Disk footprint: `10207` bytes, `41` D71 blocks
 - REU policy: Boot-loaded from disk during shell startup, then restored from bank `0x40` slot `$40A800-$40DFFF` as a full `0x3800`-byte overlay-window snapshot.
 - RAM notes: Uses the shared handoff region plus the REU-backed value arena in bank 0x48 when serializing pointer-backed values.
 
@@ -282,9 +282,9 @@ Resident ReadyShell dispatcher
 - Disk filename: `rscat`
 - Source files: `rs_cmd_cat_c64.c`
 - Commands: CAT
-- Runtime bytes in overlay window: `7997` at `$8E00-$AD3C`
-- Window share: `55.8%` used, `6339` bytes free
-- Disk footprint: `7999` bytes, `32` D71 blocks
+- Runtime bytes in overlay window: `8078` at `$8E00-$AD8D`
+- Window share: `56.3%` used, `6258` bytes free
+- Disk footprint: `8080` bytes, `32` D71 blocks
 - REU policy: Boot-loaded from disk during shell startup, then restored from bank `0x41` slot `$417000-$41A7FF` as a full `0x3800`-byte overlay-window snapshot.
 - RAM notes: Uses overlay-local file I/O logic plus shared REU scratch when line staging is needed.
 
@@ -306,7 +306,7 @@ Resident ReadyShell dispatcher
 
 - Overlay 2 is effectively full: `14033` of `14336` bytes (`97.9%`).
 - Overlay 1 is also large at `13005` bytes (`90.7%`).
-- The resident heap below the overlay load address is only `1182` bytes, so large transient work must lean on overlays and REU-backed storage.
+- The resident heap below the overlay load address is only `1274` bytes, so large transient work must lean on overlays and REU-backed storage.
 - ReadyShell now uses two fixed REU cache banks: `0x40` for overlays `1`, `2`, `3`, and `5`, and `0x41` for overlays `4`, `6`, `7`, and `8`.
 - Bank `0x40` leaves `8192` bytes free at the tail; bank `0x41` leaves `8192` bytes free.
 - External commands now pay a one-time boot preload cost instead of a repeated disk-load cost during each command call.

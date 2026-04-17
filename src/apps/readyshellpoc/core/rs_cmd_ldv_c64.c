@@ -1,6 +1,7 @@
 #include "rs_cmd_overlay.h"
 #include "rs_cmd_registry.h"
 
+#include "rs_cmd_drive_local.h"
 #include "rs_cmd_ldv_local.h"
 #include "rs_cmd_ser_local.h"
 
@@ -13,51 +14,77 @@
 #pragma bss-name(push, "OVERLAY4")
 #endif
 
-static int ldv_name_with_mode(const char* path, char* out, unsigned short max) {
+static int ldv_name_with_mode(const char* path,
+                              unsigned char fallback_drive,
+                              unsigned char* drive_out,
+                              char* out,
+                              unsigned short max) {
+  const char* name;
+  unsigned char drive;
   unsigned short n;
-  unsigned short i;
-  int has_meta;
-  if (!path || !out || max < 8u) {
+  if (!path || !drive_out || !out || max < 8u) {
     return -1;
   }
-  has_meta = 0;
-  n = (unsigned short)strlen(path);
-  for (i = 0u; i < n; ++i) {
-    if (path[i] == ':' || path[i] == ',') {
-      has_meta = 1;
-      break;
-    }
+  if (rs_cmd_drive_parse_prefix(path, fallback_drive, &drive, &name) != 0) {
+    return -1;
   }
-  if (has_meta) {
+  n = (unsigned short)strlen(name);
+  if (rs_cmd_drive_has_char(name, ',')) {
     if (n + 1u > max) {
       return -1;
     }
-    memcpy(out, path, n + 1u);
-    return 0;
+    memcpy(out, name, n + 1u);
+  } else {
+    if ((unsigned long)n + 8ul > (unsigned long)max) {
+      return -1;
+    }
+    out[0] = '0';
+    out[1] = ':';
+    memcpy(out + 2u, name, n);
+    out[2u + n] = ',';
+    out[3u + n] = 's';
+    out[4u + n] = ',';
+    out[5u + n] = 'r';
+    out[6u + n] = '\0';
   }
-  if ((unsigned long)n + 8ul > (unsigned long)max) {
-    return -1;
-  }
-  out[0] = '0';
-  out[1] = ':';
-  memcpy(out + 2u, path, n);
-  out[2u + n] = ',';
-  out[3u + n] = 's';
-  out[4u + n] = ',';
-  out[5u + n] = 'r';
-  out[6u + n] = '\0';
+  *drive_out = drive;
   return 0;
 }
 
-static int ldv_read_file_to_reu(const char* path, unsigned short* out_len) {
-  char namebuf[96];
-  int n;
-  unsigned short total;
+static int ldv_parse_fallback_drive(const RSCommandFrame* frame,
+                                    unsigned char* out_drive) {
+  unsigned short drive16;
 
-  if (!path || !out_len || ldv_name_with_mode(path, namebuf, sizeof(namebuf)) != 0) {
+  if (!frame || !out_drive) {
     return -1;
   }
-  if (cbm_open(2, 8, CBM_READ, namebuf) != 0) {
+  if (frame->arg_count < 2u) {
+    *out_drive = 8u;
+    return 0;
+  }
+  if (rs_cmd_value_to_u16(&frame->args[1], &drive16) != 0 ||
+      drive16 < 8u || drive16 > 11u) {
+    return -1;
+  }
+  *out_drive = (unsigned char)drive16;
+  return 0;
+}
+
+static int ldv_read_file_to_reu(const RSCommandFrame* frame,
+                                const char* path,
+                                unsigned short* out_len) {
+  char namebuf[96];
+  unsigned char drive;
+  int n;
+  unsigned short total;
+  unsigned char fallback_drive;
+
+  if (!frame || !path || !out_len ||
+      ldv_parse_fallback_drive(frame, &fallback_drive) != 0 ||
+      ldv_name_with_mode(path, fallback_drive, &drive, namebuf, sizeof(namebuf)) != 0) {
+    return -1;
+  }
+  if (cbm_open(2, drive, CBM_READ, namebuf) != 0) {
     cbm_k_clrch();
     return -1;
   }
@@ -127,7 +154,10 @@ static int ldv_begin(RSCommandFrame* frame) {
   if (!path) {
     return -2;
   }
-  if (ldv_read_file_to_reu(path, &len) != 0 ||
+  if (frame->arg_count > 2u) {
+    return -1;
+  }
+  if (ldv_read_file_to_reu(frame, path, &len) != 0 ||
       ldv_validate_header(len, &payload_len) != 0) {
     return -3;
   }
@@ -183,7 +213,10 @@ static int ldv_run(RSCommandFrame* frame) {
   if (!path) {
     return -2;
   }
-  if (ldv_read_file_to_reu(path, &len) != 0) {
+  if (frame->arg_count > 2u) {
+    return -1;
+  }
+  if (ldv_read_file_to_reu(frame, path, &len) != 0) {
     rs_cmd_value_free(frame->out);
     rs_cmd_value_init_bool(frame->out, 0);
     return 0;

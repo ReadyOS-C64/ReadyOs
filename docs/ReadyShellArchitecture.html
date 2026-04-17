@@ -108,9 +108,49 @@
       gap: 18px;
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+    .behavior-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 14px;
+    }
+    .behavior-card {
+      padding: 14px 15px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.025), rgba(0,0,0,.08)),
+        rgba(7, 15, 22, .72);
+    }
+    .behavior-card h3 {
+      margin: 0 0 8px;
+      font-size: .95rem;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    .behavior-card p {
+      margin: 0 0 8px;
+      color: var(--muted);
+    }
+    .behavior-card ul {
+      margin: 8px 0 0 18px;
+    }
+    .behavior-card.lst h3 { color: var(--accent); }
+    .behavior-card.load h3 { color: #89c7ff; }
+    .behavior-card.store h3 { color: #f2be6b; }
+    .behavior-card.files h3 { color: #f29d7d; }
+    .callout {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(122, 208, 192, .28);
+      background: rgba(122, 208, 192, .08);
+      color: var(--muted);
+    }
     .note { color: var(--muted); }
     @media (max-width: 900px) {
       .grid { grid-template-columns: 1fr; }
+      .behavior-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -167,8 +207,8 @@ resident shell loop
           <tr><td>Resident app window</td><td><code>$1000-$C5FF</code></td><td>ReadyShell-owned app RAM</td></tr>
           <tr><td>Overlay load bytes</td><td><code>$8DFE-$8DFF</code></td><td>Overlay PRG load-address bytes</td></tr>
           <tr><td>Overlay execution window</td><td><code>$8E00-$C5FF</code></td><td>Shared live overlay window</td></tr>
-          <tr><td>Resident BSS</td><td><code>$8769-$895F</code></td><td>Resident writable state</td></tr>
-          <tr><td>Resident heap</td><td><code>$8960-$8DFD</code></td><td>cc65 heap below overlay load</td></tr>
+          <tr><td>Resident BSS</td><td><code>$870C-$8902</code></td><td>Resident writable state</td></tr>
+          <tr><td>Resident heap</td><td><code>$8904-$8DFD</code></td><td>cc65 heap below overlay load</td></tr>
           <tr><td>High runtime area</td><td><code>$CA00-$CFFF</code></td><td>Resident runtime state outside app snapshot</td></tr>
         </tbody>
       </table>
@@ -207,6 +247,49 @@ resident shell loop
       External commands are driven through one generic resident execution path
       plus the REU-backed command registry.
     </p>
+    <div class="behavior-grid">
+      <article class="behavior-card lst">
+        <h3>LST</h3>
+        <p>Directory listing now takes more than a bare drive number.</p>
+        <ul>
+          <li>Pattern strings support CBM wildcards such as <code>*</code> and <code>?</code>.</li>
+          <li>Type filters accept comma-separated tokens such as <code>PRG</code>, <code>SEQ</code>, <code>USR</code>, <code>REL</code>, <code>DIR</code>, <code>CBM</code>, and <code>DEL</code>.</li>
+          <li>Examples: <code>LST "t*", 9, "PRG,SEQ"</code>, <code>LST "*.PRG", "PRG"</code>.</li>
+        </ul>
+      </article>
+      <article class="behavior-card load">
+        <h3>LDV</h3>
+        <p>Load-value syntax matches the filename-oriented commands now.</p>
+        <ul>
+          <li>Embedded drive form: <code>LDV "9:snap"</code></li>
+          <li>Separate drive form: <code>LDV "snap", 9</code></li>
+          <li>Embedded drive prefixes win if both are present.</li>
+        </ul>
+      </article>
+      <article class="behavior-card store">
+        <h3>STV</h3>
+        <p>Store-value syntax mirrors <code>LDV</code>.</p>
+        <ul>
+          <li>Embedded drive form: <code>STV $A, "9:snap"</code></li>
+          <li>Separate drive form: <code>STV $A, "snap", 9</code></li>
+          <li>The same precedence rule applies: embedded prefix beats fallback drive.</li>
+        </ul>
+      </article>
+      <article class="behavior-card files">
+        <h3>Other File Commands</h3>
+        <p>Filename handling is intentionally more uniform across the overlay commands.</p>
+        <ul>
+          <li><code>CAT</code>, <code>PUT</code>, <code>ADD</code>, <code>DEL</code>, and <code>COPY</code> honor embedded drive prefixes.</li>
+          <li><code>REN</code> still uses its traditional explicit drive argument form.</li>
+          <li>This keeps overlay-local parsing behavior aligned with the broader shell UX.</li>
+        </ul>
+      </article>
+    </div>
+    <div class="callout">
+      The practical rule is simple: if a command accepts a filename and an
+      embedded drive prefix makes sense for it, ReadyShell now prefers that form
+      and treats a trailing numeric drive as a fallback selector.
+    </div>
   </section>
 
   <section class="grid">
@@ -348,7 +431,7 @@ bank 0x48
   <section>
     <h2>Current Constraints</h2>
     <ul>
-      <li>Resident heap below the overlay load address is <code>1182</code> bytes.</li>
+      <li>Resident heap below the overlay load address is <code>1274</code> bytes.</li>
       <li><code>OVERLAY2</code> is still the tightest overlay and remains the next likely growth bottleneck.</li>
       <li>Each fixed cache bank leaves <code>8192</code> bytes of free tail after the current slot layout.</li>
       <li>External commands now pay a one-time startup preload cost instead of repeated disk loads during each command call.</li>

@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "build_support/readyshell_reu_host.h"
+#include "src/apps/readyshellpoc/core/rs_cmd_drive_local.h"
 #include "src/apps/readyshellpoc/core/rs_cmd_ldv_local.h"
 #include "src/apps/readyshellpoc/core/rs_format.h"
 #include "src/apps/readyshellpoc/core/rs_serialize.h"
@@ -39,12 +40,46 @@ int main(void) {
   unsigned char bytes[2048];
   unsigned short used;
   unsigned short payload_used;
+  unsigned char drive;
+  const char* name;
   char fmt[256];
   int fail;
 
   fail = 0;
   readyshell_reu_host_reset();
   rs_value_heap_reset();
+
+  fail |= expect_true("drive parse default",
+                      rs_cmd_drive_parse_prefix("answer", 8u, &drive, &name) == 0 &&
+                      drive == 8u &&
+                      strcmp(name, "answer") == 0);
+  fail |= expect_true("drive parse embedded unit",
+                      rs_cmd_drive_parse_prefix("9:answer", 8u, &drive, &name) == 0 &&
+                      drive == 9u &&
+                      strcmp(name, "answer") == 0);
+  fail |= expect_true("drive parse keeps raw open spec",
+                      rs_cmd_drive_parse_prefix("0:answer,s,r", 8u, &drive, &name) == 0 &&
+                      drive == 8u &&
+                      strcmp(name, "0:answer,s,r") == 0);
+  fail |= expect_true("drive parse fallback unit",
+                      rs_cmd_drive_parse_prefix("answer", 9u, &drive, &name) == 0 &&
+                      drive == 9u &&
+                      strcmp(name, "answer") == 0);
+  fail |= expect_true("drive char helper",
+                      rs_cmd_drive_has_char("0:answer,s,r", ',') &&
+                      !rs_cmd_drive_has_char("answer", ','));
+  fail |= expect_true("drive canonicalize default",
+                      rs_cmd_drive_canonicalize_path("answer", 8u, fmt, sizeof(fmt)) == 0 &&
+                      strcmp(fmt, "answer") == 0);
+  fail |= expect_true("drive canonicalize fallback",
+                      rs_cmd_drive_canonicalize_path("answer", 9u, fmt, sizeof(fmt)) == 0 &&
+                      strcmp(fmt, "9:answer") == 0);
+  fail |= expect_true("drive canonicalize raw open spec",
+                      rs_cmd_drive_canonicalize_path("0:answer,s,w", 9u, fmt, sizeof(fmt)) == 0 &&
+                      strcmp(fmt, "9:0:answer,s,w") == 0);
+  fail |= expect_true("drive canonicalize embedded wins",
+                      rs_cmd_drive_canonicalize_path("10:answer", 9u, fmt, sizeof(fmt)) == 0 &&
+                      strcmp(fmt, "10:answer") == 0);
 
   fail |= expect_true("heap reset", rs_value_heap_next_free() == 0x8100u);
 

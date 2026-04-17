@@ -3,7 +3,7 @@ use: cat "rshelp"|more
 clear - redraw shell
 eg: clear
 lst - list files
-eg: lst | more
+eg: lst "t*",9,"prg"
 drvi - drive info
 eg: drvi 9
 cat - read text
@@ -29,9 +29,9 @@ eg: lst | top 3
 gen - count 1..n
 eg: gen 5
 ldv - load value
-eg: $a=ldv "snap"
+eg: $a=ldv "snap",9
 stv - save value
-eg: stv $a,"snap"
+eg: stv $a,"snap",9
 help - show hint
 eg: help
 ver - show version

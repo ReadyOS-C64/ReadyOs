@@ -56,8 +56,8 @@ Current release build layout:
 | Resident app window | `$1000-$C5FF` | ReadyShell-owned app RAM |
 | Overlay load bytes | `$8DFE-$8DFF` | PRG load-address bytes for overlay sidecars |
 | Overlay execution window | `$8E00-$C5FF` | Shared live window for whichever overlay is active |
-| Resident BSS | `$8769-$895F` | Resident writable state below overlays |
-| Resident heap | `$8960-$8DFD` | cc65 heap below overlay load address |
+| Resident BSS | `$870C-$8902` | Resident writable state below overlays |
+| Resident heap | `$8904-$8DFD` | cc65 heap below overlay load address |
 | High runtime area | `$CA00-$CFFF` | ReadyShell runtime state outside app snapshot |
 
 Important constraints:
@@ -138,6 +138,17 @@ These live outside `OVERLAY2`:
 
 These are driven through the REU-backed external-command registry plus one
 generic resident execution path.
+
+Current user-facing command notes that affect the overlay logic:
+
+- `LST` accepts a wildcard pattern, an optional drive argument, and an optional
+  comma-separated type filter. Embedded drive prefixes inside the pattern such
+  as `9:*.PRG` take precedence over a separate numeric drive argument.
+- `LDV` accepts either `LDV "9:snap"` or `LDV "snap", 9`.
+- `STV` accepts either `STV $A, "9:snap"` or `STV $A, "snap", 9`.
+- `CAT`, `PUT`, `ADD`, `DEL`, and `COPY` also honor embedded drive prefixes in
+  their filename arguments, while `REN` still uses the traditional explicit
+  drive argument form.
 
 ## 5. Parse And Pipeline Flow
 
@@ -308,7 +319,7 @@ the REU-backed value arena all live there at fixed addresses.
 
 ## 10. Current Constraints
 
-- Resident heap below the overlay load address is `1182` bytes.
+- Resident heap below the overlay load address is `1274` bytes.
 - `OVERLAY2` is still the tightest overlay and remains the next likely growth
   bottleneck.
 - The fixed cache layout leaves `8192` bytes free at the tail of bank `0x40`
