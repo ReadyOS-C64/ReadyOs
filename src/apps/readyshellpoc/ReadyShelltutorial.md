@@ -16,6 +16,9 @@ This tutorial is example-first. Every example is written in ReadyShell syntax.
   - `0` items becomes `FALSE`
   - `1` item becomes that item directly
   - `2+` items become an array
+- `SEL "NAME"` returns the property value itself for each item, so directory
+  entries become plain strings.
+- `SEL "NAME", "TYPE"` returns a new object containing only those properties.
 - Object values usually come from commands like `LST` and `DRVI`.
 - Missing properties and out-of-range indexes evaluate to `FALSE`.
 
@@ -250,6 +253,7 @@ LST | TOP 3
 
 ```ruby
 1..10 | TOP 3,2
+LST | TOP 3,1
 LST | TOP 2,1 | SEL "NAME"
 ```
 
@@ -257,18 +261,23 @@ LST | TOP 2,1 | SEL "NAME"
 
 `SEL` projects properties out of object pipeline items.
 
-Select one property:
+Select one property. Each pipeline item becomes just that property value:
 
 ```ruby
 LST | SEL "NAME"
 LST | SEL "BLOCKS"
+$NAMES = LST | TOP 3 | SEL "NAME"
+PRT $NAMES(0)
 ```
 
-Select several properties into a new object:
+Select several properties. Each pipeline item becomes a new object containing
+just those fields:
 
 ```ruby
 LST | SEL "NAME","TYPE"
 LST | SEL "NAME","BLOCKS"
+$ROWS = LST | TOP 3 | SEL "NAME","TYPE"
+PRT $ROWS(0).NAME
 ```
 
 Combine with filters:
@@ -298,6 +307,7 @@ Directory listing also defaults to drive `8`:
 LST
 LST 9
 LST "t*"
+LST "t?"
 LST "9:t*"
 LST "*.PRG", "PRG"
 LST "t*", 9, "PRG,SEQ"
@@ -316,6 +326,8 @@ $DIR = LST
 PRT $DIR(0).NAME
 $PRGS = LST | ?[ @.TYPE == "PRG" ]
 PRT $PRGS(0).NAME
+$NAMES = LST | TOP 3 | SEL "NAME"
+PRT $NAMES(1)
 ```
 
 ## Saving and Loading Values
@@ -358,6 +370,9 @@ $ANSWER = LDV "answer"
 $BACKUP = LDV "answer", 9
 PRT $ANSWER
 ```
+
+The `RSV1` serialized value format used by `STV` and `LDV` is documented in
+`docs/readyshell_rsv1_format.md`.
 
 Loading a missing file yields `FALSE`:
 

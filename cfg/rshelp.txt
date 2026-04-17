@@ -1,40 +1,57 @@
 readyshell quick ref
-use: cat "rshelp"|more
+! types the | pipe on c64 keyboard
+use: cat "rshelp" | more
 clear - redraw shell
-eg: clear
+  clear
 lst - list files
-eg: lst "t*",9,"prg"
+  lst 9
+  lst "9:t*"
+  lst "t?",9
+  lst "t*",9,"seq,prg"
 drvi - drive info
-eg: drvi 9
+  drvi 9
 cat - read text
-eg: cat "notes"
+  cat "9:notes"
 copy - copy file
-eg: copy "a","b"
+  copy "8:notes","9:notes2"
 ren - rename file
-eg: ren "a","b"
+  ren "old","new",9
 del - scratch file
-eg: del "notes"
+  del "9:notes"
 put - write seq file
-eg: put $a,"notes"
+  put $a,"9:notes"
 add - append seq file
-eg: add $a,"notes"
+  add $a,"9:notes"
 prt - print value
-eg: prt "hi",5
-more - page output
-eg: gen 40 | more
+  prt "hi",5
+more - page every 20 or n items
+  gen 40 | more
+  gen 40 | more 10
 sel - pick fields
-eg: lst|sel "name"
-top - first n items
-eg: lst | top 3
+  lst | sel "name"
+  lst | sel "name","blocks"
+top - keep n items, skip m first
+  lst | top 3
+  lst | top 3,1
 gen - count 1..n
-eg: gen 5
+  gen 5
 ldv - load value
-eg: $a=ldv "snap",9
+  $a=ldv "snap",9
+  $a=ldv "9:snap"
 stv - save value
-eg: stv $a,"snap",9
+  stv $a,"snap",9
+  stv $a,"9:snap"
 help - show hint
-eg: help
-ver - show version
-eg: ver
-tap - internal debug
-eg: gen 3 | tap
+  help
+pipeline examples
+  lst | prt @.name
+  lst | ?[ @.type=="prg" ] | sel "name"
+  lst | ?[ @.blocks>10 ] | sel "name","blocks"
+  lst | %[ prt @.name ; @ ] | top 3
+vars and indexing
+  $a=1..10
+  $dir=lst | top 3
+  prt $dir(0).name
+  $some=$dir | top 2,1
+  $names=lst | top 3 | sel "name"
+  prt $names(1)

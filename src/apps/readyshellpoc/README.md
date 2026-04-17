@@ -225,6 +225,8 @@ When assignment RHS is a pipeline:
 - 0 emitted items -> variable becomes `FALSE`
 - 1 emitted item -> variable becomes that single value
 - 2+ emitted items -> variable becomes array of emitted items
+- This matters with `SEL`: `SEL "NAME"` produces plain values, while
+  `SEL "NAME","TYPE"` produces objects
 
 ## 6. Expressions
 
@@ -558,6 +560,7 @@ Examples:
 ```text
 GEN 10 | TOP 4
 LST | TOP 3
+LST | TOP 3,1
 LST | TOP 2,1 | SEL "NAME"
 ```
 
@@ -583,14 +586,22 @@ Examples:
 
 ```text
 LST | SEL "NAME"
+LST | TOP 3 | SEL "NAME"
 LST | SEL "NAME","BLOCKS"
+LST | TOP 3 | SEL "NAME","TYPE"
 DRVI | SEL "DRIVE","DISKNAME"
 ```
 
 Notes:
 
-- Selecting one property emits that property value directly
-- Selecting several properties emits a new object containing just those fields
+- Selecting one property emits that property value directly. For example,
+  `LST | SEL "NAME"` emits plain filename strings.
+- Selecting several properties emits a new object containing just those fields.
+  For example, `LST | SEL "NAME","BLOCKS"` emits objects such as
+  `{NAME:"...",BLOCKS:12}`.
+- This also affects captured results: `$NAMES = LST | TOP 3 | SEL "NAME"`
+  yields an array of strings, while `$ROWS = LST | TOP 3 | SEL "NAME","TYPE"`
+  yields an array of objects.
 
 ### 8.7 `DRVI`
 
@@ -710,6 +721,8 @@ Notes:
 - If the filename embeds a device prefix such as `9:`, `STV` writes to that device
 - A trailing drive argument is also accepted: `STV $DIR, "prgdir", 9`
 - Filenames without an embedded device prefix still save to device `8`
+- The serialized file format used by `STV` and `LDV` is documented in
+  [../../docs/readyshell_rsv1_format.md](../../docs/readyshell_rsv1_format.md)
 
 ### 8.11 `CAT`
 
@@ -913,6 +926,24 @@ $TOP = GEN 10 | ?[ @ <= 4 ]
 PRT $TOP
 ```
 
+Print object fields from a pipeline:
+
+```text
+LST | TOP 3 | PRT @.NAME
+```
+
+Filter object pipeline items:
+
+```text
+LST | ?[ @.TYPE == "PRG" ] | SEL "NAME"
+```
+
+Foreach over object pipeline items:
+
+```text
+LST | TOP 3 | %[ PRT "FILE ", @.NAME ; @ ] | SEL "NAME","BLOCKS"
+```
+
 Per-item side effect plus pass-through:
 
 ```text
@@ -935,6 +966,15 @@ $B = "HEY","THERE",$A
 PRT $B
 PRT $B(2)
 PRT $B(2)(2)
+```
+
+Directory objects, assignment, and indexing:
+
+```text
+$DIR = LST | TOP 3
+PRT $DIR(0).NAME
+$NAMES = LST | TOP 3 | SEL "NAME"
+PRT $NAMES(1)
 ```
 
 Multiple statements with `;`:

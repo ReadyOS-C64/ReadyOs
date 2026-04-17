@@ -174,6 +174,8 @@ ReadyShell is an overlay-based shell with expressions, pipelines,
 filters, foreach stages, wildcard directory queries, disk commands,
 and value serialization.
 
+On the C64 keyboard, type `!` to enter the pipeline operator `|`.
+
 For shipped command help, run `help`, then follow the hint:
 `cat "rshelp" | more`.
 
@@ -199,6 +201,11 @@ Key shell commands:
 Current file-command behavior:
 - `LST` can filter by wildcard pattern, drive, and file type tokens such as
   `PRG`, `SEQ`, `USR`, and `REL`.
+- `SEL "NAME"` emits the property value itself, such as a plain filename
+  string.
+- `SEL "NAME", "TYPE"` emits a new object containing only those named
+  properties.
+- `TOP count, skip` keeps `count` items after skipping the first `skip` items.
 - `CAT` emits one string per text line from a PETASCII `SEQ` file.
 - `PUT <expr>, <file>` creates or replaces a text file from a string or array
   of strings.
@@ -208,8 +215,20 @@ Current file-command behavior:
   trailing drive argument such as `"snap", 9`.
 - `DEL`, `REN`, and `COPY` cover scratch, rename, and copy workflows.
 
+Common examples:
+- `LST "9:t*"`
+- `LST "t?", 9`
+- `LST "t*", 9, "SEQ,PRG"`
+- `LST | TOP 3, 1 | SEL "NAME"` skips one row, then keeps three
+- `LST | SEL "NAME"` returns plain names
+- `LST | SEL "NAME", "TYPE"` returns objects with `NAME` and `TYPE`
+- `STV $A, "snap", 9` or `STV $A, "9:snap"`
+- `$A = LDV "snap", 9` or `$A = LDV "9:snap"`
+
 For a larger walkthrough with worked examples, see the ReadyShell
 tutorial markdown in `src/apps/readyshellpoc/ReadyShelltutorial.md`.
+The ReadyShell serialized value file format used by `STV` and `LDV` is
+documented in `docs/readyshell_rsv1_format.md`.
 
 ### Secondary-Disk Apps
 

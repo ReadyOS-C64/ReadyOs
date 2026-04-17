@@ -8,6 +8,9 @@ For command syntax and user-facing behavior, see
 For the generated size and placement inventory, see
 [./readyshell_overlay_inventory.md](./readyshell_overlay_inventory.md).
 
+Keyboard note: on a C64 keyboard, users type `!` to enter the pipeline
+operator `|`.
+
 ## 1. End-To-End Shape
 
 ReadyShell is an overlayed C64 app with four main layers:
@@ -146,9 +149,13 @@ Current user-facing command notes that affect the overlay logic:
   as `9:*.PRG` take precedence over a separate numeric drive argument.
 - `LDV` accepts either `LDV "9:snap"` or `LDV "snap", 9`.
 - `STV` accepts either `STV $A, "9:snap"` or `STV $A, "snap", 9`.
+- `TOP` accepts `TOP count` or `TOP count,skip`.
 - `CAT`, `PUT`, `ADD`, `DEL`, and `COPY` also honor embedded drive prefixes in
   their filename arguments, while `REN` still uses the traditional explicit
   drive argument form.
+
+The on-disk `RSV1` value format used by `STV` and `LDV` is documented in
+[./readyshell_rsv1_format.md](./readyshell_rsv1_format.md).
 
 ## 5. Parse And Pipeline Flow
 
