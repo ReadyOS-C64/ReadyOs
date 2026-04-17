@@ -4,6 +4,24 @@
 9:editor:editor:1
 text editor with clipboard
 
+8:readyshell:ready shell (demo)
+command shell poc scaffold
+
+9:simplefiles:simple files
+dual pane file manager and seq viewer
+
+9:clipmgr:clipboard
+manage clipboard items
+
+8:cal26:calendar 26
+calendar for 2026 with appointments
+
+9:tasklist:task list
+outliner with notes and search
+
+9:reuviewer:reu viewer
+view reu memory usage
+
 8:quicknotes:quicknotes
 reu-backed note editor
 
@@ -13,18 +31,6 @@ keyboard-first expression calculator
 9:hexview:hex viewer
 browse memory in hex format
 
-9:clipmgr:clipboard
-manage clipboard items
-
-9:reuviewer:reu viewer
-view reu memory usage
-
-9:tasklist:task list
-outliner with notes and search
-
-9:simplefiles:simple files
-dual pane file manager and seq viewer
-
 9:simplecells:simple cells (alpha)
 spreadsheet with formulas and colors
 
@@ -33,9 +39,6 @@ spreadsheet with formulas and colors
 
 9:sidetris:sidetris
 sideways tetris
-
-8:cal26:calendar 26
-calendar for 2026 with appointments
 
 8:dizzy:dizzy kanban
 fizzy inspired kanban app
