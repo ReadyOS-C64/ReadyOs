@@ -27,16 +27,14 @@
 
 #define TITLE_Y 0
 #define BODY_TOP 3
-#define BODY_BOTTOM 23
-#define HELP_Y 24
+#define BODY_BOTTOM 24
 
 #define PROMPT_TEXT ">"
 #define PROMPT_LEN 1
 #define LOGICAL_MAX 160
 #define INPUT_COLS (SCREEN_WIDTH - PROMPT_LEN)
 #define PHYSICAL_MAX INPUT_COLS
-#define FOOTER_NORMAL_TEXT "RET RUN F2/F4 APPS CTRL+B"
-#define FOOTER_PAUSED_TEXT "PAUSED - PRESS ANY KEY"
+#define PAUSE_TEXT "PAUSED - PRESS ANY KEY"
 
 /* Key codes */
 #define KEY_RETURN 13
@@ -113,7 +111,6 @@ static void clear_line(unsigned char y, unsigned char color);
 static void draw_text(unsigned char x, unsigned char y, const char *s, unsigned char color);
 static void resume_save_state(void);
 static void shell_overlay_progress(unsigned char stage, void *user);
-static void shell_draw_footer_normal(void);
 void rs_set_c_stack_top(void);
 
 extern unsigned char rs_heap_bss_run[];
@@ -273,11 +270,6 @@ static void clear_line(unsigned char y, unsigned char color) {
     }
 }
 
-static void shell_draw_footer_text(const char *text, unsigned char color) {
-    clear_line(HELP_Y, color);
-    draw_text(0, HELP_Y, text, color);
-}
-
 static unsigned char shell_pause_flags(void) {
     unsigned char flags;
     flags = 0u;
@@ -289,12 +281,9 @@ static void shell_pause_set_flags(unsigned char flags) {
     (void)rs_reu_write(RS_REU_UI_FLAGS_OFF, &flags, 1u);
 }
 
-static void shell_draw_footer_normal(void) {
-    shell_draw_footer_text(FOOTER_NORMAL_TEXT, C_GRAY3);
-}
-
-static void shell_draw_footer_paused(void) {
-    shell_draw_footer_text(FOOTER_PAUSED_TEXT, C_YELLOW);
+static void shell_draw_pause_notice(void) {
+    clear_line(g_cursor_y, C_WHITE);
+    draw_text(0, g_cursor_y, PAUSE_TEXT, C_YELLOW);
 }
 
 static void shell_pause_clear_buffer(void) {
@@ -331,7 +320,7 @@ static void shell_wait_if_paused(void) {
 
     /* Make the keyboard the active input stream before we block here. */
     cbm_k_clrch();
-    shell_draw_footer_paused();
+    shell_draw_pause_notice();
     shell_pause_clear_buffer();
 
     while (shell_pause_key_down()) {
@@ -350,7 +339,7 @@ static void shell_wait_if_paused(void) {
     shell_pause_set_flags(flags);
     cbm_k_clrch();
     shell_pause_clear_buffer();
-    shell_draw_footer_normal();
+    clear_line(g_cursor_y, C_WHITE);
 }
 
 static void draw_text(unsigned char x, unsigned char y, const char *s, unsigned char color) {
@@ -459,7 +448,7 @@ static void shell_write_line(const char *s) {
 static int shell_writer(void *user, const char *line) {
     unsigned char color;
     (void)user;
-    color = (rs_vm_current_output_kind() == RS_VM_OUTPUT_PRT) ? C_CYAN : C_WHITE;
+    color = (rs_vm_current_output_kind() == RS_VM_OUTPUT_PRT) ? C_CYAN : C_GRAY3;
     shell_write_line_color(line, color);
 
     shell_pause_arm_poll();
@@ -571,8 +560,6 @@ static void shell_draw_chrome(void) {
     for (row = BODY_TOP; row <= BODY_BOTTOM; ++row) {
         clear_line(row, C_WHITE);
     }
-
-    shell_draw_footer_normal();
 
     g_cursor_y = BODY_TOP;
     g_cursor_x = 0;
