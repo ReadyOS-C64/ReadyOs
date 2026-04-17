@@ -1,6 +1,7 @@
 #include "rs_cmd_overlay.h"
 
 #include "rs_cmd_dir_local.h"
+#include "rs_cmd_file_local.h"
 #include "rs_cmd_value_local.h"
 #include "../platform/rs_platform.h"
 
@@ -19,8 +20,129 @@
 #define LST_NAME_LEN 17u
 #define LST_TYPE_OFF 19u
 #define LST_TYPE_LEN 4u
+#define LST_PATTERN_LEN 17u
+#define LST_SPEC_LEN    18u
 
 static unsigned char g_lst_buf[LST_RECORD_SIZE];
+static char g_lst_name[20];
+static char g_lst_type[4];
+static char g_lst_pattern[LST_PATTERN_LEN];
+static char g_lst_spec[LST_SPEC_LEN];
+
+static int lst_copy_pattern(char* out, unsigned short max, const char* src) {
+  unsigned short n;
+
+  if (!out || max == 0u || !src) {
+    return -1;
+  }
+  n = (unsigned short)strlen(src);
+  if (n + 1u > max) {
+    return -1;
+  }
+  memcpy(out, src, n + 1u);
+  return 0;
+}
+
+static int lst_parse_args(RSCommandFrame* frame,
+                          unsigned char* out_drive,
+                          char* out_pattern,
+                          unsigned short pattern_max) {
+  unsigned short drive16;
+  const char* src;
+  const char* pattern;
+  unsigned char drive;
+
+  if (!frame || !out_drive || !out_pattern || pattern_max == 0u) {
+    return -1;
+  }
+
+  drive = rs_cmd_file_default_drive();
+  out_pattern[0] = '\0';
+
+  if (frame->arg_count == 0u) {
+    *out_drive = drive;
+    return 0;
+  }
+
+  src = rs_cmd_value_cstr(&frame->args[0]);
+  if (src) {
+    if (rs_cmd_file_parse_drive_prefix(src, drive, &drive, &pattern) != 0 ||
+        lst_copy_pattern(out_pattern, pattern_max, pattern) != 0) {
+      return -1;
+    }
+    if (frame->arg_count >= 2u) {
+      if (rs_cmd_value_to_u16(&frame->args[1], &drive16) != 0 || drive16 > 255u) {
+        return -1;
+      }
+      if (src[0] < '0' || src[0] > '9') {
+        drive = (unsigned char)drive16;
+      }
+    }
+    if (frame->arg_count > 2u) {
+      return -1;
+    }
+    *out_drive = drive;
+    return 0;
+  }
+
+  if (frame->arg_count != 1u ||
+      rs_cmd_value_to_u16(&frame->args[0], &drive16) != 0 || drive16 > 255u) {
+    return -1;
+  }
+  *out_drive = (unsigned char)drive16;
+  return 0;
+}
+
+static int lst_build_dir_spec(const char* pattern,
+                              char* out,
+                              unsigned short max) {
+  unsigned short n;
+
+  if (!out || max < 2u) {
+    return -1;
+  }
+
+  out[0] = '$';
+  if (!pattern || pattern[0] == '\0') {
+    out[1] = '\0';
+    return 0;
+  }
+
+  n = (unsigned short)strlen(pattern);
+  if (n + 2u > max) {
+    return -1;
+  }
+  memcpy(out + 1u, pattern, n + 1u);
+  return 0;
+}
+
+static int lst_open_header(unsigned char drive,
+                           const char* pattern,
+                           struct cbm_dirent* ent) {
+  unsigned char mode;
+  unsigned char st;
+
+  if (!ent || lst_build_dir_spec(pattern, g_lst_spec, sizeof(g_lst_spec)) != 0) {
+    return -1;
+  }
+
+  for (mode = 0u; mode < 4u; ++mode) {
+    rs_cmd_dir_prepare(drive, mode);
+    if (cbm_opendir(RS_CMD_DIR_LFN, drive, g_lst_spec) != 0) {
+      continue;
+    }
+
+    st = cbm_readdir(RS_CMD_DIR_LFN, ent);
+    if (st == 0u) {
+      return 0;
+    }
+
+    cbm_closedir(RS_CMD_DIR_LFN);
+    rs_cmd_dir_cleanup_io();
+  }
+
+  return -1;
+}
 
 static void lst_name_from_dirent(const char* in, char* out, unsigned short max) {
   unsigned short i;
@@ -99,57 +221,39 @@ static int lst_read_record(unsigned short index) {
   return rs_reu_read(off, g_lst_buf, LST_RECORD_SIZE);
 }
 
-static int lst_parse_drive(RSCommandFrame* frame, unsigned char* out_drive) {
-  unsigned short drive16;
-  if (!frame || !out_drive) {
-    return -1;
-  }
-  if (frame->arg_count == 0u) {
-    *out_drive = 8u;
-    return 0;
-  }
-  if (rs_cmd_value_to_u16(&frame->args[0], &drive16) != 0 || drive16 > 255u) {
-    return -1;
-  }
-  *out_drive = (unsigned char)drive16;
-  return 0;
-}
-
 static int lst_begin(RSCommandFrame* frame) {
   unsigned char drive;
   unsigned char st;
   unsigned short count;
   struct cbm_dirent ent;
 
-  if (lst_parse_drive(frame, &drive) != 0) {
+  if (lst_parse_args(frame, &drive, g_lst_pattern, sizeof(g_lst_pattern)) != 0) {
     return -2;
   }
-  if (rs_cmd_dir_open_header(drive, &ent) != 0) {
+  if (lst_open_header(drive, g_lst_pattern, &ent) != 0) {
     return -1;
   }
 
   count = 0u;
   for (;;) {
-    char name[20];
-    char type[4];
     if (count >= (unsigned short)LST_MAX_RECORDS) {
-      cbm_closedir(1);
+      cbm_closedir(RS_CMD_DIR_LFN);
       return -3;
     }
-    lst_name_from_dirent(ent.name, name, sizeof(name));
-    lst_type_to_text(ent.type, type, sizeof(type));
-    if (lst_write_record(count, name, type, ent.size) != 0) {
-      cbm_closedir(1);
+    lst_name_from_dirent(ent.name, g_lst_name, sizeof(g_lst_name));
+    lst_type_to_text(ent.type, g_lst_type, sizeof(g_lst_type));
+    if (lst_write_record(count, g_lst_name, g_lst_type, ent.size) != 0) {
+      cbm_closedir(RS_CMD_DIR_LFN);
       return -1;
     }
     ++count;
-    st = cbm_readdir(1, &ent);
+    st = cbm_readdir(RS_CMD_DIR_LFN, &ent);
     if (st != 0u) {
       break;
     }
   }
 
-  cbm_closedir(1);
+  cbm_closedir(RS_CMD_DIR_LFN);
   frame->drive = drive;
   frame->count = count;
   frame->index = 0u;
