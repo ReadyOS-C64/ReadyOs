@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "src/apps/readyshellpoc/core/rs_errors.h"
-#include "src/apps/readyshellpoc/core/rs_parse.h"
+#include "src/apps/readyshell/core/rs_errors.h"
+#include "src/apps/readyshell/core/rs_parse.h"
 
 static int run_case(const char* source, int expect_ok) {
   RSProgram program;

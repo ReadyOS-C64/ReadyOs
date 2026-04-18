@@ -95,7 +95,7 @@ def main():
     print("\n=== App Hooks ===")
     for app_name in ("editor", "quicknotes", "calcplus", "hexview", "clipmgr", "reuviewer",
                      "tasklist", "simplefiles", "game2048", "sidetris", "deminer", "cal26", "dizzy", "readme",
-                     "readyshellpoc"):
+                     "readyshell"):
         try:
             hooks = parse_app_hooks(app_name)
         except (FileNotFoundError, ValueError) as ex:
@@ -108,7 +108,7 @@ def main():
             all_ok &= check(f"{app_name} includes resume header", hooks["include"])
             all_ok &= check(f"{app_name} init hook", hooks["init"])
             all_ok &= check(f"{app_name} load hook", hooks["load"])
-        if app_name == "readyshellpoc":
+        if app_name == "readyshell":
             all_ok &= check(f"{app_name} snapshot overlay reuse", hooks["snapshot_overlay_reuse"])
             all_ok &= check(f"{app_name} schema v1 constant", hooks["schema_v1"])
         all_ok &= check(f"{app_name} save before launcher return", hooks["save_return"])

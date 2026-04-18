@@ -1,5 +1,5 @@
 /*
- * readyshellpoc.c - ReadyShell POC for ReadyOS
+ * readyshell.c - ReadyShell for ReadyOS
  *
  * For Commodore 64, compiled with CC65
  */

@@ -1000,7 +1000,7 @@ def main():
 
     for app_name in ("editor", "calcplus", "hexview", "clipmgr", "reuviewer",
                      "tasklist", "game2048", "sidetris", "deminer", "cal26", "dizzy", "readme",
-                     "readyshellpoc"):
+                     "readyshell"):
         path = os.path.join("src", "apps", app_name, f"{app_name}.c")
         try:
             hooks = parse_resume_hook_contract(path)

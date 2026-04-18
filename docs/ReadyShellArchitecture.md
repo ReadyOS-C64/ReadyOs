@@ -4,7 +4,7 @@ This document describes the current ReadyShell implementation in ReadyOS as it
 exists in the local build, not an aspirational future design.
 
 For command syntax and user-facing behavior, see
-[../src/apps/readyshellpoc/README.md](../src/apps/readyshellpoc/README.md).
+[../src/apps/readyshell/README.md](../src/apps/readyshell/README.md).
 For the generated size and placement inventory, see
 [./readyshell_overlay_inventory.md](./readyshell_overlay_inventory.md).
 

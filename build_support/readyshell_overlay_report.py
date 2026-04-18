@@ -221,10 +221,10 @@ def parse_makefile_scalar(makefile_text: str, var_name: str) -> str | None:
 def expand_make_vars(raw: str) -> str:
     replacements = {
         "$(LIB_DIR)": "src/lib",
-        "$(READYSHELL_DIR)": "src/apps/readyshellpoc",
-        "$(READYSHELL_CORE_DIR)": "src/apps/readyshellpoc/core",
-        "$(READYSHELL_PLATFORM_DIR)": "src/apps/readyshellpoc/platform",
-        "$(READYSHELL_PLATFORM_C64_DIR)": "src/apps/readyshellpoc/platform/c64",
+        "$(READYSHELL_DIR)": "src/apps/readyshell",
+        "$(READYSHELL_CORE_DIR)": "src/apps/readyshell/core",
+        "$(READYSHELL_PLATFORM_DIR)": "src/apps/readyshell/platform",
+        "$(READYSHELL_PLATFORM_C64_DIR)": "src/apps/readyshell/platform/c64",
         "$(OBJ_DIR)": "obj",
     }
     out = raw
@@ -1560,32 +1560,32 @@ def main() -> int:
     parser.add_argument(
         "--cmd-overlay-header",
         type=Path,
-        default=ROOT / "src" / "apps" / "readyshellpoc" / "core" / "rs_cmd_overlay.h",
+        default=ROOT / "src" / "apps" / "readyshell" / "core" / "rs_cmd_overlay.h",
     )
     parser.add_argument(
         "--value-c",
         type=Path,
-        default=ROOT / "src" / "apps" / "readyshellpoc" / "core" / "rs_value.c",
+        default=ROOT / "src" / "apps" / "readyshell" / "core" / "rs_value.c",
     )
     parser.add_argument(
         "--overlay-c",
         type=Path,
-        default=ROOT / "src" / "apps" / "readyshellpoc" / "platform" / "c64" / "rs_overlay_c64.c",
+        default=ROOT / "src" / "apps" / "readyshell" / "platform" / "c64" / "rs_overlay_c64.c",
     )
     parser.add_argument(
         "--shell-c",
         type=Path,
-        default=ROOT / "src" / "apps" / "readyshellpoc" / "readyshellpoc.c",
+        default=ROOT / "src" / "apps" / "readyshell" / "readyshell.c",
     )
     parser.add_argument(
         "--ui-state-h",
         type=Path,
-        default=ROOT / "src" / "apps" / "readyshellpoc" / "core" / "rs_ui_state.h",
+        default=ROOT / "src" / "apps" / "readyshell" / "core" / "rs_ui_state.h",
     )
     parser.add_argument(
         "--registry-c",
         type=Path,
-        default=ROOT / "src" / "apps" / "readyshellpoc" / "core" / "rs_cmd_registry.c",
+        default=ROOT / "src" / "apps" / "readyshell" / "core" / "rs_cmd_registry.c",
     )
     parser.add_argument(
         "--markdown-out",

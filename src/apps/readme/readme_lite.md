@@ -248,7 +248,7 @@ Common examples:
 - `$A = LDV "snap", 9` or `$A = LDV "9:snap"`
 
 For a larger walkthrough with worked examples, see the ReadyShell
-tutorial markdown in `src/apps/readyshellpoc/ReadyShelltutorial.md`.
+tutorial markdown in `src/apps/readyshell/ReadyShelltutorial.md`.
 The ReadyShell serialized value file format used by `STV` and `LDV` is
 documented in `docs/readyshell_rsv1_format.md`.
 

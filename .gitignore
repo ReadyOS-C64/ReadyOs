@@ -16,7 +16,7 @@ privatedocs/
 obj/
 *.o
 *.map
-src/apps/readyshellpoc/*.i
+src/apps/readyshell/*.i
 
 # Emulator / automation outputs
 logs/

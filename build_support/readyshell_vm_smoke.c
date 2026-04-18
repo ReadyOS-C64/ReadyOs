@@ -2,10 +2,10 @@
 #include <string.h>
 
 #include "build_support/readyshell_reu_host.h"
-#include "src/apps/readyshellpoc/core/rs_errors.h"
-#include "src/apps/readyshellpoc/core/rs_ui_state.h"
-#include "src/apps/readyshellpoc/core/rs_vm.h"
-#include "src/apps/readyshellpoc/platform/rs_platform.h"
+#include "src/apps/readyshell/core/rs_errors.h"
+#include "src/apps/readyshell/core/rs_ui_state.h"
+#include "src/apps/readyshell/core/rs_vm.h"
+#include "src/apps/readyshell/platform/rs_platform.h"
 
 #ifndef READYSHELL_VM_SMOKE_OVERLAY
 #define READYSHELL_VM_SMOKE_OVERLAY 0

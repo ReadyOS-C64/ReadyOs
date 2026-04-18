@@ -202,8 +202,8 @@ Real C64 versus emulator key forms:
 
 Notes:
 
-- ReadyShell guide: [src/apps/readyshellpoc/README.md](src/apps/readyshellpoc/README.md)
-- ReadyShell tutorial: [src/apps/readyshellpoc/ReadyShelltutorial.md](src/apps/readyshellpoc/ReadyShelltutorial.md)
+- ReadyShell guide: [src/apps/readyshell/README.md](src/apps/readyshell/README.md)
+- ReadyShell tutorial: [src/apps/readyshell/ReadyShelltutorial.md](src/apps/readyshell/ReadyShelltutorial.md)
 - ReadyShell architecture: [docs/ReadyShellArchitecture.md](docs/ReadyShellArchitecture.md)
 - ReadyShell overlay inventory: [docs/readyshell_overlay_inventory.md](docs/readyshell_overlay_inventory.md)
 - ReadyShell now ships eight overlays allowing language and command functionality that otherwise couldn't fit into the memory of a c64: `rsparser`, `rsvm`, `rsdrvilst`,

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ReadyShell Overlay Inventory Report (v0.2W)</title>
+  <title>ReadyShell Overlay Inventory Report (v0.2D)</title>
   <style>
     :root {
       --bg: #091017;
@@ -232,7 +232,7 @@
 </head>
 <body>
 <header>
-  <h1>ReadyShell Overlay Inventory Report (v0.2W)</h1>
+  <h1>ReadyShell Overlay Inventory Report (v0.2D)</h1>
   <p class="sub">
     Artifact-backed inventory for the current ReadyShell overlay system. This report is generated from the live build
     outputs, the ReadyShell linker map, and the active D71 disk image instead of hand-maintained notes.
@@ -243,7 +243,7 @@
     <h2>Executive Summary</h2>
     <div class="cards">
       <div class="card"><div class="k">Profile</div><div class="v"><code>precog-dual-d71</code></div></div>
-      <div class="card"><div class="k">Disk Source</div><div class="v"><code>releases/0.2/precog-dual-d71/readyos-v0.2w-dual-d71_1.d71</code></div></div>
+      <div class="card"><div class="k">Disk Source</div><div class="v"><code>releases/0.2/precog-dual-d71/readyos-v0.2d-dual-d71_1.d71</code></div></div>
       <div class="card"><div class="k">Overlay Window</div><div class="v"><code>$8E00-$C5FF</code></div></div>
       <div class="card"><div class="k">Window Size</div><div class="v">14336 bytes</div></div>
       <div class="card"><div class="k">Resident Heap</div><div class="v">1274 bytes</div></div>
@@ -388,7 +388,7 @@
       <li><strong>Build PRG:</strong> <code>readyshell.prg</code></li>
       <li><strong>Disk name:</strong> <code>readyshell</code></li>
       <li><strong>Disk footprint:</strong> 30478 bytes, 120 D71 blocks</li>
-      <li><strong>Resident sources:</strong> <code>readyshellpoc.c, rs_token.c, rs_bc.c, rs_errors.c, rs_cmd_registry.c, rs_vm_c64.c, rs_overlay_c64.c, rs_platform_c64.c, tui_nav.c, reu_mgr_dma.c, resume_state_ctx.c, resume_state_core.c</code></li>
+      <li><strong>Resident sources:</strong> <code>readyshell.c, rs_token.c, rs_bc.c, rs_errors.c, rs_cmd_registry.c, rs_vm_c64.c, rs_overlay_c64.c, rs_platform_c64.c, tui_nav.c, reu_mgr_dma.c, resume_state_ctx.c, resume_state_core.c</code></li>
       <li><strong>Resident asm/runtime:</strong> <code>rs_runtime_c64.s</code></li>
       <li><strong>Role:</strong> Resident app shell loop plus vm/overlay runtime. Command tokens resolved here, then dispatched to overlay 2 or command overlays.</li>
       <li><strong>Current resident segments:</strong> <code>CODE $7224</code>, <code>RODATA $041A</code>, <code>DATA $0047</code>, <code>INIT $001C</code>, <code>ONCE $0038</code>, <code>BSS $01F7</code></li>

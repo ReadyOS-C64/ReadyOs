@@ -306,8 +306,8 @@ def main():
                 overlay_start = parse_map_symbol(txt, "__OVERLAYSTART__")
                 overlay_loadaddr = parse_map_symbol(txt, "__OVERLAY_LOADADDR__")
                 himem = parse_map_symbol(txt, "__HIMEM__")
-                rs_src = ROOT / "src" / "apps" / "readyshellpoc" / "readyshellpoc.c"
-                rs_vars_h = ROOT / "src" / "apps" / "readyshellpoc" / "core" / "rs_vars.h"
+                rs_src = ROOT / "src" / "apps" / "readyshell" / "readyshell.c"
+                rs_vars_h = ROOT / "src" / "apps" / "readyshell" / "core" / "rs_vars.h"
                 rs_runtime_addr = parse_define(rs_src, "RS_RUNTIME_ADDR")
                 rs_runtime_limit = parse_define(rs_src, "RS_RUNTIME_LIMIT_ADDR")
                 rs_vars_max = parse_define(rs_vars_h, "RS_VARS_MAX")

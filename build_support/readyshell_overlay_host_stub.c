@@ -1,4 +1,4 @@
-#include "src/apps/readyshellpoc/core/rs_cmd_overlay.h"
+#include "src/apps/readyshell/core/rs_cmd_overlay.h"
 
 #include <string.h>
 

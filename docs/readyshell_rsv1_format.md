@@ -321,9 +321,9 @@ This still uses only the standard serialized tags: `OBJECT`, `ARRAY`, `STR`,
 
 ## Implementation Notes
 
-- Generic serializer/deserializer: `src/apps/readyshellpoc/core/rs_serialize.c`
-- Direct value command path: `src/apps/readyshellpoc/core/rs_cmd_stv_c64.c`
-- Load/validate path: `src/apps/readyshellpoc/core/rs_cmd_ldv_c64.c`
+- Generic serializer/deserializer: `src/apps/readyshell/core/rs_serialize.c`
+- Direct value command path: `src/apps/readyshell/core/rs_cmd_stv_c64.c`
+- Load/validate path: `src/apps/readyshell/core/rs_cmd_ldv_c64.c`
 
 The REU-backed runtime value arena is an internal execution detail. The `RSV1`
 file only stores the flattened value tree needed to rebuild that runtime state.

@@ -1,10 +1,10 @@
-# ReadyShell Overlay Inventory Report (v0.2W)
+# ReadyShell Overlay Inventory Report (v0.2D)
 
 Artifact-backed report generated from the current local ReadyShell build, linker map, and D71 disk image.
 
 ## Executive Summary
 
-- Profile / disk source: `precog-dual-d71` using `releases/0.2/precog-dual-d71/readyos-v0.2w-dual-d71_1.d71` (disk label `readyos`, `80` blocks free).
+- Profile / disk source: `precog-dual-d71` using `releases/0.2/precog-dual-d71/readyos-v0.2d-dual-d71_1.d71` (disk label `readyos`, `59` blocks free).
 - Resident ReadyShell PRG: `readyshell.prg` on disk as `readyshell`, `30478` bytes and `120` D71 blocks.
 - Overlay execution window: `$8E00-$C5FF` for `14336` bytes, with PRG load-address bytes at `$8DFE-$8DFF`.
 - Resident BSS / heap below overlays: BSS `$870C-$8902` (`503` bytes), heap `$8904-$8DFD` (`1274` bytes).
@@ -177,7 +177,7 @@ Resident ReadyShell dispatcher
 - Build PRG: `readyshell.prg`
 - Disk filename: `readyshell`
 - Disk staging comes from the main ReadyShell build artifact, not an overlay copy.
-- Resident sources: `readyshellpoc.c, rs_token.c, rs_bc.c, rs_errors.c, rs_cmd_registry.c, rs_vm_c64.c, rs_overlay_c64.c, rs_platform_c64.c, tui_nav.c, reu_mgr_dma.c, resume_state_ctx.c, resume_state_core.c`
+- Resident sources: `readyshell.c, rs_token.c, rs_bc.c, rs_errors.c, rs_cmd_registry.c, rs_vm_c64.c, rs_overlay_c64.c, rs_platform_c64.c, tui_nav.c, reu_mgr_dma.c, resume_state_ctx.c, resume_state_core.c`
 - Resident asm/runtime support: `rs_runtime_c64.s`
 - Command role: Resident app shell loop plus vm/overlay runtime. Command tokens resolved here, then dispatched to overlay 2 or command overlays.
 - Current linker-visible resident footprint:

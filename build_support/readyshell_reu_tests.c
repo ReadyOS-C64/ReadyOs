@@ -2,11 +2,11 @@
 #include <string.h>
 
 #include "build_support/readyshell_reu_host.h"
-#include "src/apps/readyshellpoc/core/rs_cmd_drive_local.h"
-#include "src/apps/readyshellpoc/core/rs_cmd_ldv_local.h"
-#include "src/apps/readyshellpoc/core/rs_format.h"
-#include "src/apps/readyshellpoc/core/rs_serialize.h"
-#include "src/apps/readyshellpoc/core/rs_value.h"
+#include "src/apps/readyshell/core/rs_cmd_drive_local.h"
+#include "src/apps/readyshell/core/rs_cmd_ldv_local.h"
+#include "src/apps/readyshell/core/rs_format.h"
+#include "src/apps/readyshell/core/rs_serialize.h"
+#include "src/apps/readyshell/core/rs_value.h"
 
 static int expect_true(const char* label, int cond) {
   if (!cond) {
