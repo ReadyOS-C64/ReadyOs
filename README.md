@@ -29,9 +29,12 @@ At a glance:
 - ships multiple SKUs to have D64,D71,D81 disk manages for various kinds of C64 environemnts
 - "instant" app switching with apps suspended in the REU.
 - local artifact filenames may include an extra trailing letter such as
-  `0.2c`; that suffix is an internal build/debug stamp, not a separate public release
 
-Project overview: https://readyos.notion.site/
+Project links:
+
+- GitHub: https://github.com/ReadyOS-C64/ReadyOs
+- Homepage: https://readyos64.com
+- Wiki: https://readyos.notion.site/
 
 ## Getting Started
 
@@ -45,20 +48,14 @@ The canonical release layout is:
 - `releases/<version>/precog-solo-d64-c/`
 - `releases/<version>/precog-solo-d64-d/`
 
-Older checked-in snapshot folders such as `release/` or `Releases/` should be
-treated as historical artifacts, not the current build target.
-
-When a helper script needs a dual-`D71` source image for authoritative `SEQ` /
-`REL` seeding or recovery, it should resolve that from the latest built
-`releases/<version>/precog-dual-d71/manifest.json` and its listed disks, not
-from root-level `readyos.d71` / `readyos_2.d71` files.
-
-Tested targets:
+targets:
 
 - VICE
 - THEC64 Mini / Maxi
 - Commodore 64 Ultimate-family hardware such as C64 Ultimate, Ultimate 64, or
   Ultimate Cart
+
+So far tested in Vice & The Commodore 64 Ultimate
 
 Recommended setup:
 
@@ -76,10 +73,7 @@ Boot sequence:
 - Base release: `0.2`
 - Local builds use the existing rolling suffix flow for artifact filenames only
 - Builds release media per profile
-- Launcher catalog currently contains `16` apps
-- Runtime reserves `24` app slots in REU
-- ReadyOS runs on its own; UltimateBuddy remains an optional companion concept,
-  not a runtime dependency
+- Currently includes `16` apps with `24` app slots reserved in the REU.
 
 ## Release Variants
 
@@ -104,19 +98,6 @@ productivity path that fits on two `D64`s: `editor`, `quicknotes`,
 The solo-D64 variants exist for environments that can mount only one `D64`
 at a time, such as some web emulators and simplified media loaders. The split
 is intentional:
-
-- `editor` stays away from `quicknotes` so the text-editor and note-editor
-  workflows do not compete for the same image.
-- `cal26` stays away from `dizzy`, and `tasklist` stays away from `dizzy`,
-  because the calendar and kanban data files are both REL-backed and should
-  not share a pack with the task list.
-- `readyshell` stays with `simplecells` in the experimental pack so the more
-  demo-oriented tooling is grouped together.
-- `deminer` is included in the solo-D64 set, and the matching support payloads
-  are carried alongside each variant: `SEQ` files for `editor`, `quicknotes`,
-  `tasklist`, and `simplecells`, plus the `REL` files for `cal26` and `dizzy`.
-- Each image keeps some free blocks, so a standalone disk still has room for
-  catalog and user-file growth instead of being packed to the edge.
 
 ## App Catalog
 
@@ -158,7 +139,7 @@ How it works:
   payloads into the REU at startup.
 - `runappfirst` optionally names an app token to auto-launch after boot.
 - Each app record uses `drive:program:label[:slot]` on one line, followed by a
-  human-readable description on the next line.
+  human-readable description on the next line. Used a lot for automated app testing.
 - In `9:editor:editor:1`, `9` is the source drive, `editor` is the PRG token,
   the second `editor` is the launcher label, and the trailing `1` is the
   default hotkey slot. The parser accepts slot values `1..9`; omitting the
@@ -202,21 +183,21 @@ Real C64 versus emulator key forms:
 
 | Drive | Program | Display Name | Current Role |
 | --- | --- | --- | --- |
-| 9 | `editor` | editor | Text editor with clipboard, find, and disk save/open |
+| 9 | `editor` | editor | Text editor with selection abilities, clipboard, find, and disk save/open |
 | 8 | `quicknotes` | quicknotes | Split-pane REU-backed notes with save/open and search |
 | 9 | `calcplus` | calc plus | Expression calculator with history, modes, variables, and clipboard |
 | 9 | `hexview` | hex viewer | Memory browser with PETSCII and screen-code views |
 | 9 | `clipmgr` | clipboard | Multi-item clipboard manager with preview and file import/export |
 | 9 | `reuviewer` | reu viewer | Visual 256-bank REU map |
 | 9 | `tasklist` | task list | Hierarchical outliner with notes, search, and file persistence |
-| 9 | `simplefiles` | simple files | Dual-pane file manager with copy, rename, delete, and SEQ viewing |
+| 9 | `simplefiles` | simple files | Dual-pane file manager with copy, rename, delete, and SEQ previewing |
 | 9 | `simplecells` | simple cells (alpha) | Single-sheet spreadsheet with formulas, formatting, and save/load |
 | 9 | `game2048` | 2048 game | 2048 puzzle game with resume/app switching |
-| 9 | `sidetris` | sidetris | Sideways PETSCII block-drop game with suspend/resume |
-| 8 | `cal26` | calendar 26 | 2026 calendar with month, week, day, upcoming, and REL-backed appointments; task reading is currently broken |
+| 9 | `sidetris` | sidetris | Sideways block-drop game with suspend/resume |
+| 8 | `cal26` | calendar 26 | 2026 calendar with month, week, day, upcoming, and REL-backed appointments |
 | 8 | `dizzy` | dizzy kanban | Kanban board with REL-backed persistence, search, and reorder |
 | 9 | `readme` | read.me | In-system ReadyOS guide viewer |
-| 8 | `readyshell` | ready shell | Overlay-based shell with expressions, pipelines, wildcard directory queries, value save/load, and text/file commands including `cat`, `put`, `add`, `del`, `ren`, and `copy` |
+| 8 | `readyshell` | ready shell | A command line language for the c64, with many file commands, but also a robust object pipeline programing language shell with wildcard directory queries, and text/file commands including `cat`, `put`, `add`, `del`, `ren`, and `copy` |
 | 8 | `deminer` | deminer | Minesweeper-style puzzle with suspend/resume |
 
 Notes:
@@ -225,7 +206,7 @@ Notes:
 - ReadyShell tutorial: [src/apps/readyshellpoc/ReadyShelltutorial.md](src/apps/readyshellpoc/ReadyShelltutorial.md)
 - ReadyShell architecture: [docs/ReadyShellArchitecture.md](docs/ReadyShellArchitecture.md)
 - ReadyShell overlay inventory: [docs/readyshell_overlay_inventory.md](docs/readyshell_overlay_inventory.md)
-- ReadyShell now ships eight overlays: `rsparser`, `rsvm`, `rsdrvilst`,
+- ReadyShell now ships eight overlays allowing language and command functionality that otherwise couldn't fit into the memory of a c64: `rsparser`, `rsvm`, `rsdrvilst`,
   `rsldv`, `rsstv`, `rsfops`, `rscat`, and `rscopy`.
 - ReadyShell preloads and REU-caches all eight overlays at startup. Bank `$40`
   holds overlays `1`, `2`, `3`, and `5`; bank `$41` holds overlays `4`, `6`,
@@ -284,7 +265,8 @@ Requirements:
 
 - `cc65` toolchain: `cl65`, `ca65`, `ld65`
 - VICE tools, especially `x64sc`, `c1541`, and `petcat`
-- `python3`
+- `python3` for building and bash
+- only tested "on my machine" on macOS. The PowerShell build script is likely obsolete.
 
 Main entry points:
 
@@ -390,7 +372,6 @@ Rendered documentation exports in `docs/` currently include:
 - `cfg`: linker configs and catalog inputs
 - `build_support`: local build-chain support, verification, and disk helpers
 - `docs`: public format notes and related documentation
-- `logs`: VICE logs and automation output
 
 ## Notes For Contributors
 
@@ -398,6 +379,8 @@ Rendered documentation exports in `docs/` currently include:
 - Respect the fixed app window and resident shim/system regions.
 - Use `run.sh`, `run.ps1`, `make`, and `make verify` for normal public
   build-and-check workflows.
+- look at existing apps to see the "micromodule layout"
+- Apps should always be compiled with the full OS for now (so we don't have to support backwards compatibility with the ABI, and REU patterns change)
 
 ## License
 
