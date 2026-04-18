@@ -1,11 +1,18 @@
 # ReadyOS
 
 ReadyOS PRECOG is an experimental REU-first environment for a modern
-Commodore 64 setup. It is aimed first at Commodore 64 Ultimate-family
-hardware, but it is also designed to run well in VICE with REU enabled, which
-makes it a practical fit for THEC64 Mini / Maxi style workflows too. PRECOG
+Commodore 64 setup. Its long-term center of gravity is the new Commodore 64
+Ultimate and related Ultimate-family hardware, but it is intended to support a
+wide range of C64 setups that have a reasonably large REU. That includes VICE,
+Ultimate-family hardware, and other practical REU-capable modern paths. PRECOG
 `0.2` is the current public release line.
 
+The current `0.2` release is still comparatively generic rather than being
+explicitly tailored to the new C64 Ultimate. The next release is expected to
+push further in that Ultimate-first direction while still trying to stay usable
+on other REU-capable C64 setups.
+
+## The Concept
 What if a Commodore 64 could feel ready, not just nostalgic? ReadyOS treats
 waiting as the enemy. It is a keyboard-first, full-screen terminal-style
 environment built around instant app switching, suspend/resume, shared
@@ -15,10 +22,12 @@ workflow where READY means responsive, reliable, and repeatable.
 At a glance:
 
 - requires an REU-backed modern C64 path; tested at `16MB` REU
-- primary focus: Commodore 64 Ultimate workflows
-- practical secondary path: VICE with REU enabled
+- main product direction: new Commodore 64 Ultimate and Ultimate-family workflows
+- still intended to support other C64 setups with a decent-sized REU
+- practical secondary path today: VICE with REU enabled
 - tuned to stay usable from `1MHz` up through `48MHz`
-- ships as profile-based media builds with REU-backed app switching
+- ships multiple SKUs to have D64,D71,D81 disk manages for various kinds of C64 environemnts
+- "instant" app switching with apps suspended in the REU.
 - local artifact filenames may include an extra trailing letter such as
   `0.2c`; that suffix is an internal build/debug stamp, not a separate public release
 

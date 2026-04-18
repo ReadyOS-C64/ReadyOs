@@ -23,10 +23,44 @@ ROOT = Path(__file__).resolve().parents[1]
 PROFILES_DIR = ROOT / "cfg" / "profiles"
 RELEASES_DIR = ROOT / "releases"
 LEGACY_RELEASE_DIR = ROOT / "release"
+RELEASE_ROOT_README_TEMPLATE = ROOT / "docs" / "release_root_readme_template.md"
 AUTHORITATIVE_PROFILE_ID = "precog-dual-d71"
 AUTHORITATIVE_DATA_DIR = ROOT / "cfg" / "authoritative"
 SYNCABLE_AUTHORITATIVE_INDEX = AUTHORITATIVE_DATA_DIR / "sync_inventory.json"
 SYNCABLE_PURGE_INDEX = AUTHORITATIVE_DATA_DIR / "sync_purge_inventory.json"
+GITHUB_URL = "https://github.com/ReadyOS-C64/ReadyOs"
+MAIN_SITE_URL = "https://readyos64.com"
+WIKI_URL = "https://readyos.notion.site"
+PUBLIC_VARIANT_ORDER = [
+    "precog-dual-d71",
+    "precog-d81",
+    "precog-dual-d64",
+    "precog-solo-d64-a",
+    "precog-solo-d64-b",
+    "precog-solo-d64-c",
+    "precog-solo-d64-d",
+    "precog-solo-d64-e",
+]
+VARIANT_NOTES = {
+    "dual-d71": "Default full-content profile for two 1571-class drives and the main local verification target.",
+    "d81": "Full-content single-disk profile for 1581 and D81 setups where the whole current app catalog fits on one image.",
+    "dual-d64": "Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media.",
+    "solo-d64-a": "Single-D64 subset focused on editor, reference, and dizzy for one-disk-only environments.",
+    "solo-d64-b": "Single-D64 productivity subset centered on quicknotes, clipboard, calculator, and files.",
+    "solo-d64-c": "Single-D64 planning subset centered on tasklist, calendar, and REU viewer.",
+    "solo-d64-d": "Single-D64 experimental subset for simple cells, calculator, 2048, and deminer.",
+    "solo-d64-e": "Single-D64 shell-focused subset for readyshell and its overlay payloads in one-disk-only environments.",
+}
+VARIANT_BEST_FIT = {
+    "dual-d71": "C64 Ultimate, Ultimate 64, or VICE setups that can keep two 1571-class drives mounted.",
+    "d81": "C64 Ultimate, VICE, or other 1581-capable setups that prefer one full-content image.",
+    "dual-d64": "Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media.",
+    "solo-d64-a": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
+    "solo-d64-b": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
+    "solo-d64-c": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
+    "solo-d64-d": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
+    "solo-d64-e": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
+}
 REL_SEED_D71_CANDIDATES = [
     ROOT / "readyos0-1-5.d71",
     ROOT.parent / "readyos0-1-5.d71",
@@ -315,6 +349,11 @@ def list_profile_ids() -> List[str]:
     return ids
 
 
+def ordered_profile_ids(profile_ids: List[str]) -> List[str]:
+    order = {profile_id: index for index, profile_id in enumerate(PUBLIC_VARIANT_ORDER)}
+    return sorted(profile_ids, key=lambda item: (order.get(item, len(PUBLIC_VARIANT_ORDER)), item))
+
+
 def load_profile(profile_id: str) -> Dict[str, object]:
     path = PROFILES_DIR / f"{profile_id}.json"
     if not path.exists():
@@ -414,6 +453,132 @@ def latest_profile_disk_path(profile_id: str, drive: int = 8) -> Path:
     if not path.is_absolute():
         path = ROOT / path
     return path.resolve()
+
+
+def release_root_readme_path(version_text: str) -> Path:
+    return release_version_dir(version_text) / "README.md"
+
+
+def public_profile_ids() -> List[str]:
+    ids: List[str] = []
+    for profile_id in list_profile_ids():
+        profile = load_profile(profile_id)
+        if readyshell_parse_trace_debug(profile) == 0:
+            ids.append(profile_id)
+    return ordered_profile_ids(ids)
+
+
+def debug_profile_ids() -> List[str]:
+    ids: List[str] = []
+    for profile_id in list_profile_ids():
+        profile = load_profile(profile_id)
+        if readyshell_parse_trace_debug(profile) == 1:
+            ids.append(profile_id)
+    return ordered_profile_ids(ids)
+
+
+def boot_flow_text(preboot_mode: str) -> str:
+    if preboot_mode == "setd71":
+        return "PREBOOT -> SETD71 -> BOOT"
+    return "PREBOOT -> BOOT"
+
+
+def format_drive_list(drives: List[int]) -> str:
+    text = [f"`{drive}`" for drive in drives]
+    if len(text) == 1:
+        return text[0]
+    if len(text) == 2:
+        return f"{text[0]} and {text[1]}"
+    return ", ".join(text[:-1]) + f", and {text[-1]}"
+
+
+def media_summary(resolved: Dict[str, object]) -> str:
+    disks = list(resolved["disks"])
+    drives = [int(disk["drive"]) for disk in disks]
+    image_types = {str(disk["image_type"]).upper() for disk in disks}
+    if len(disks) == 1:
+        image_type = str(disks[0]["image_type"]).upper()
+        return f"1x `{image_type}` on drive {format_drive_list(drives)}"
+    if len(image_types) == 1:
+        image_type = next(iter(image_types))
+        return f"{len(disks)}x `{image_type}` on drives {format_drive_list(drives)}"
+    return f"{len(disks)} disk images on drives {format_drive_list(drives)}"
+
+
+def default_catalog_app_count() -> int:
+    profile = load_profile(default_profile_id())
+    return len(parse_catalog_entries(profile, None))
+
+
+def build_public_variant_matrix(version_text: str) -> str:
+    lines = [
+        "| Folder | Media | Best Fit | Why It Exists | Boot |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for profile_id in public_profile_ids():
+        profile = load_profile(profile_id)
+        resolved = resolve_profile(profile_id, version_text, latest=False)
+        kind = str(profile["kind"])
+        lines.append(
+            f"| `{profile_id}` | {media_summary(resolved)} | "
+            f"{VARIANT_BEST_FIT.get(kind, 'Profile-specific C64 media target.')} | "
+            f"{VARIANT_NOTES.get(kind, 'Profile-specific ReadyOS media layout.')} | "
+            f"`{boot_flow_text(str(resolved['preboot_mode']))}` |"
+        )
+    return "\n".join(lines)
+
+
+def build_release_folder_list(profile_ids: List[str]) -> str:
+    return "\n".join(f"- `{profile_id}/`" for profile_id in profile_ids)
+
+
+def build_debug_variant_note() -> str:
+    ids = debug_profile_ids()
+    if not ids:
+        return "This release line currently has no separate debug-trace variant folders."
+    names = ", ".join(f"`{profile_id}`" for profile_id in ids)
+    return (
+        "This release line also ships debug-trace variants for ReadyShell development: "
+        f"{names}. They are intended for debugging and instrumentation, not as the default end-user choice."
+    )
+
+
+def render_release_root_readme(version_text: str) -> str:
+    if not RELEASE_ROOT_README_TEMPLATE.exists():
+        fail(f"missing release root README template: {RELEASE_ROOT_README_TEMPLATE}")
+
+    template = RELEASE_ROOT_README_TEMPLATE.read_text(encoding="utf-8")
+    public_version = public_release_version(version_text)
+    public_ids = public_profile_ids()
+    replacements = {
+        "PUBLIC_VERSION": public_version,
+        "VERSION_TEXT": version_text,
+        "GITHUB_URL": GITHUB_URL,
+        "MAIN_SITE_URL": MAIN_SITE_URL,
+        "WIKI_URL": WIKI_URL,
+        "CURRENT_APP_COUNT": str(default_catalog_app_count()),
+        "PUBLIC_VARIANT_COUNT": str(len(public_ids)),
+        "PUBLIC_VARIANT_FOLDERS": build_release_folder_list(public_ids),
+        "PUBLIC_VARIANT_MATRIX": build_public_variant_matrix(version_text),
+        "DEBUG_VARIANT_NOTE": build_debug_variant_note(),
+    }
+    content = template
+    for key, value in replacements.items():
+        content = content.replace(f"{{{{{key}}}}}", value)
+
+    unresolved = sorted(set(re.findall(r"\{\{[A-Z0-9_]+\}\}", content)))
+    if unresolved:
+        fail("unresolved release root README template tokens: " + ", ".join(unresolved))
+    return content
+
+
+def write_release_root_readme(version_text: str) -> None:
+    version_dir = release_version_dir(version_text)
+    ensure_dir(version_dir)
+    release_root_readme_path(version_text).write_text(
+        render_release_root_readme(version_text).rstrip() + "\n",
+        encoding="utf-8",
+    )
 
 
 def build_disk_filename(profile: Dict[str, object], disk: Dict[str, object], version_text: str) -> str:
@@ -922,15 +1087,6 @@ def build_help_text(profile: Dict[str, object],
     vice_command = " ".join(vice_parts)
     preboot_mode = str(resolved["preboot_mode"])
     disk_count = len(resolved["disks"])
-    variant_notes = {
-        "dual-d71": "Default full-content profile for two 1571 drives. This is the main local run and verification target.",
-        "d81": "Full-content single-disk profile for 1581/D81 setups where the entire current app set fits on one disk.",
-        "dual-d64": "Reduced-content profile for two 1541 drives. It keeps the core productivity apps that fit on dual D64 media.",
-        "solo-d64-a": "Standalone single-D64 subset focused on editor, reference, and dizzy.",
-        "solo-d64-b": "Standalone single-D64 productivity subset with quicknotes, calculator, clipboard, and files.",
-        "solo-d64-c": "Standalone single-D64 planning subset with tasklist, calendar, and REU viewer.",
-        "solo-d64-d": "Standalone single-D64 experimental subset with readyshell, simple cells, game2048, and deminer.",
-    }
 
     lines = [
         f"# {profile['display_name']}",
@@ -941,7 +1097,7 @@ def build_help_text(profile: Dict[str, object],
         "",
         "## Why This Variant Exists",
         "",
-        f"- {variant_notes.get(str(profile['kind']), 'Profile-specific ReadyOS media layout.')}",
+        f"- {VARIANT_NOTES.get(str(profile['kind']), 'Profile-specific ReadyOS media layout.')}",
         "",
         "## Artifacts",
         "",
@@ -1117,6 +1273,7 @@ def build_release(profile_id: str,
         "apps": entries,
     }
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    write_release_root_readme(version_text)
 
     if previous_manifest:
         for disk in previous_manifest.get("disks", []):
@@ -1196,6 +1353,7 @@ def migrate_legacy_release_tree(version_text: str) -> None:
             for boot_prg in manifest.get("boot_prgs", []):
                 boot_prg["path"] = str(target_dir / Path(str(boot_prg["path"])).name)
             manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    write_release_root_readme(version_text)
 
 
 def main() -> int:
