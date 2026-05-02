@@ -26,6 +26,9 @@ BUILD_SUPPORT_DIR ?= build_support
 VICE_DEBUG_TOOLS_DIR ?= ../agenticdevharness/tools
 PROFILE ?= precog-dual-d71
 PROFILE_CATALOG_SRC = $(shell $(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py catalog-source --profile $(PROFILE))
+READYOS_VERSION_CURRENT = $(shell $(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current)
+READYOS_PUBLIC_VERSION = $(shell $(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current | sed 's/[A-Za-z]$$//')
+EASYFLASH_OUTPUT_DIR = releases/$(READYOS_PUBLIC_VERSION)/precog-easyflash
 
 # Flags for standard C64 programs (load at $0801)
 # Note: -Osir causes cc65 optimizer crashes, disabled for now
@@ -69,6 +72,34 @@ VERSION_ASM_INC = $(GEN_DIR)/msg_version.inc
 VARIANT_ASM_INC = $(GEN_DIR)/msg_variant.inc
 README_DATA_C = $(GEN_DIR)/readme_pages.c
 README_DATA_H = $(GEN_DIR)/readme_pages.h
+EASYFLASH_CATALOG_SRC = $(CFG_DIR)/flavors/readyos_easyflash.ini
+EASYFLASH_LAUNCHER_HEADER = $(GEN_DIR)/launcher_easyflash_catalog.h
+EASYFLASH_LAYOUT_JSON = $(OBJ_DIR)/easyflash_layout.json
+EASYFLASH_LAYOUT_INC = $(GEN_DIR)/easyflash_layout.inc
+LAUNCHER_EASYFLASH = $(BIN_DIR)/launcher_easyflash.prg
+READYSHELL_EASYFLASH = $(BIN_DIR)/readyshell_easyflash.prg
+EASYFLASH_SHIM_BIN = $(BIN_DIR)/easyflash_shim.bin
+BOOT_EASYFLASH_ROML = $(BIN_DIR)/boot_easyflash_roml.bin
+BOOT_EASYFLASH_ROMH = $(BIN_DIR)/boot_easyflash_romh.bin
+EASYFLASH_SMOKE_MON = $(OBJ_DIR)/easyflash_smoke.mon
+EASYFLASH_SMOKE_LOG = $(OBJ_DIR)/easyflash_smoke.log
+EASYFLASH_SMOKE_RUNTIME_CRT = $(OBJ_DIR)/easyflash_smoke.runtime.crt
+EASYFLASH_BOOT_MAP = $(OBJ_DIR)/boot_easyflash_roml.map
+XEFPROBE_DIR = $(APPS_DIR)/xefprobe
+XEFPROBE_HOST = $(BIN_DIR)/xefprobe_host.prg
+XEFPROBE_PAYLOAD = $(BIN_DIR)/xefprobe_payload.prg
+XEFPROBE_STANDALONE = $(BIN_DIR)/xefprobe_standalone.prg
+XEFPROBE_LAYOUT_JSON = $(OBJ_DIR)/xefprobe_layout.json
+XEFPROBE_LAYOUT_INC = $(GEN_DIR)/xefprobe_layout.inc
+XEFPROBE_DATA_BIN = $(OBJ_DIR)/xefprobe_data.bin
+BOOT_EASYFLASH_PROBE_ROML = $(BIN_DIR)/boot_easyflash_probe_roml.bin
+XEFPROBE_OUTPUT_DIR = artifacts/dev_harness/xefprobe
+XEFPROBE_MON = $(OBJ_DIR)/xefprobe_smoke.mon
+XEFPROBE_LOG = $(OBJ_DIR)/xefprobe_smoke.log
+XEFPROBE_STDOUT_LOG = $(OBJ_DIR)/xefprobe_smoke_vice.out
+XEFPROBE_STANDALONE_MON = $(OBJ_DIR)/xefprobe_standalone.mon
+XEFPROBE_STANDALONE_LOG = $(OBJ_DIR)/xefprobe_standalone.log
+XEFPROBE_STANDALONE_SCREEN = $(OBJ_DIR)/xefprobe_standalone.png
 XRELCHK = $(BIN_DIR)/xrelchk.prg
 HARNESS_OUT_DIR = artifacts/dev_harness/xfilechk
 XFILECHK_BOOT = $(HARNESS_OUT_DIR)/xfilechk_boot.prg
@@ -226,11 +257,27 @@ READYSHELL_RESIDENT_SRCS = \
 	$(TUI_NAV_SRC) \
 	$(REU_DMA_SRC) \
 	$(RESUME_STATE_SIMPLE_SRCS)
+READYSHELL_RESIDENT_EASYFLASH_SRCS = \
+	$(READYSHELL_DIR)/readyshell.c \
+	$(READYSHELL_CORE_DIR)/rs_token.c \
+	$(READYSHELL_CORE_DIR)/rs_bc.c \
+	$(READYSHELL_CORE_DIR)/rs_errors.c \
+	$(READYSHELL_CORE_DIR)/rs_cmd_registry.c \
+	$(READYSHELL_CORE_DIR)/rs_vm_c64.c \
+	$(READYSHELL_PLATFORM_C64_DIR)/rs_overlay_c64_easyflash.c \
+	$(READYSHELL_PLATFORM_C64_DIR)/rs_platform_c64.c \
+	$(TUI_NAV_SRC) \
+	$(REU_DMA_SRC) \
+	$(RESUME_STATE_SIMPLE_SRCS)
 READYSHELL_RESIDENT_ASM_SRCS = \
 	$(READYSHELL_PLATFORM_C64_DIR)/rs_runtime_c64.s
 READYSHELL_RESIDENT_C_OBJS = $(patsubst %.c,$(READYSHELL_OBJ_DIR)/resident/%.o,$(READYSHELL_RESIDENT_SRCS))
 READYSHELL_RESIDENT_ASM_OBJS = $(patsubst %.s,$(READYSHELL_OBJ_DIR)/resident/%.o,$(READYSHELL_RESIDENT_ASM_SRCS))
 READYSHELL_RESIDENT_OBJS = $(READYSHELL_RESIDENT_C_OBJS) $(READYSHELL_RESIDENT_ASM_OBJS)
+READYSHELL_EASYFLASH_OBJ_DIR = $(OBJ_DIR)/readyshell_easyflash
+READYSHELL_RESIDENT_EASYFLASH_C_OBJS = $(patsubst %.c,$(READYSHELL_EASYFLASH_OBJ_DIR)/resident/%.o,$(READYSHELL_RESIDENT_EASYFLASH_SRCS))
+READYSHELL_RESIDENT_EASYFLASH_ASM_OBJS = $(patsubst %.s,$(READYSHELL_EASYFLASH_OBJ_DIR)/resident/%.o,$(READYSHELL_RESIDENT_ASM_SRCS))
+READYSHELL_RESIDENT_EASYFLASH_OBJS = $(READYSHELL_RESIDENT_EASYFLASH_C_OBJS) $(READYSHELL_RESIDENT_EASYFLASH_ASM_OBJS)
 READYSHELL_OVERLAY1_OBJS = $(patsubst %.c,$(READYSHELL_OBJ_DIR)/overlay1/%.o,$(READYSHELL_OVERLAY1_SRCS))
 READYSHELL_OVERLAY2_OBJS = $(patsubst %.c,$(READYSHELL_OBJ_DIR)/overlay2/%.o,$(READYSHELL_OVERLAY2_SRCS))
 READYSHELL_OVERLAY3_OBJS = $(patsubst %.c,$(READYSHELL_OBJ_DIR)/overlay3/%.o,$(READYSHELL_OVERLAY3_SRCS))
@@ -279,6 +326,7 @@ LIB_CAL26 = $(TUI_BASE_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(LIB_CL
 LIB_DIZZY = $(TUI_BASE_INPUT_NAV) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SEGMENT_SRCS)
 LIB_README = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_READYSHELL = $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
+EASYFLASH_PAYLOADS = $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READMEAPP) $(READYSHELL_OVL1_PRG) $(READYSHELL_OVL2_PRG) $(READYSHELL_OVL3_PRG) $(READYSHELL_OVL4_PRG) $(READYSHELL_OVL5_PRG) $(READYSHELL_OVL6_PRG) $(READYSHELL_OVL7_PRG) $(READYSHELL_OVL8_PRG)
 
 # Primary binaries shared across profiles
 PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READMEAPP) $(READYSHELL)
@@ -338,6 +386,9 @@ $(CATALOG_SEQ): FORCE $(CATALOG_SRC) $(BUILD_SUPPORT_DIR)/build_apps_catalog_pet
 		$(if $(strip $(READYOS_CONFIG_LOAD_ALL)),--override-load-all $(READYOS_CONFIG_LOAD_ALL),) \
 		$(if $(strip $(READYOS_CONFIG_RUN_FIRST)),--override-run-first $(READYOS_CONFIG_RUN_FIRST),)
 
+$(EASYFLASH_LAUNCHER_HEADER): FORCE $(EASYFLASH_CATALOG_SRC) $(BUILD_SUPPORT_DIR)/readyos_easyflash.py
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_easyflash.py catalog-header --catalog $(EASYFLASH_CATALOG_SRC) --output $@
+
 # Build plain-text lowercase PETASCII SEQ payloads
 $(EDITOR_HELP_SEQ): $(EDITOR_HELP_SRC) $(BUILD_SUPPORT_DIR)/build_petscii_lower_seq.py
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/build_petscii_lower_seq.py --input $(EDITOR_HELP_SRC) --output $@
@@ -370,6 +421,22 @@ $(TEST_REU): $(SRC_DIR)/test_reu.c
 # Launcher app (loads at $1000)
 $(LAUNCHER): $(APPS_DIR)/launcher/launcher.c $(LIB_LAUNCHER) $(VERSION_HEADER)
 	$(CC) $(LAUNCHER_CFLAGS) -m $(OBJ_DIR)/launcher.map -o $@ $(APPS_DIR)/launcher/launcher.c $(LIB_LAUNCHER)
+
+$(LAUNCHER_EASYFLASH): $(APPS_DIR)/launcher/launcher_easyflash.c $(LIB_LAUNCHER) $(VERSION_HEADER) $(EASYFLASH_LAUNCHER_HEADER)
+	$(CC) $(LAUNCHER_CFLAGS) $(EASYFLASH_LAUNCHER_CPPFLAGS) -m $(OBJ_DIR)/launcher_easyflash.map -o $@ $(APPS_DIR)/launcher/launcher_easyflash.c $(LIB_LAUNCHER)
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/patch_easyflash_launcher.py $@
+
+$(XEFPROBE_HOST): $(XEFPROBE_DIR)/xefprobe_host_asm.s $(CFG_DIR)/xefprobe_app_asm.cfg
+	$(AS) -o $(OBJ_DIR)/xefprobe_host.o $(XEFPROBE_DIR)/xefprobe_host_asm.s
+	$(LD) -C $(CFG_DIR)/xefprobe_app_asm.cfg -m $(OBJ_DIR)/xefprobe_host.map -o $@ $(OBJ_DIR)/xefprobe_host.o
+
+$(XEFPROBE_PAYLOAD): $(XEFPROBE_DIR)/xefprobe_payload_asm.s $(CFG_DIR)/xefprobe_app_asm.cfg
+	$(AS) -o $(OBJ_DIR)/xefprobe_payload.o $(XEFPROBE_DIR)/xefprobe_payload_asm.s
+	$(LD) -C $(CFG_DIR)/xefprobe_app_asm.cfg -m $(OBJ_DIR)/xefprobe_payload.map -o $@ $(OBJ_DIR)/xefprobe_payload.o
+
+$(XEFPROBE_STANDALONE): $(XEFPROBE_DIR)/xefprobe_standalone_host_asm.s $(CFG_DIR)/xefprobe_standalone.cfg $(XEFPROBE_PAYLOAD)
+	$(AS) -o $(OBJ_DIR)/xefprobe_standalone.o $(XEFPROBE_DIR)/xefprobe_standalone_host_asm.s
+	$(LD) -C $(CFG_DIR)/xefprobe_standalone.cfg -m $(OBJ_DIR)/xefprobe_standalone.map -o $@ $(OBJ_DIR)/xefprobe_standalone.o
 
 # Editor app (loads at $1000)
 $(EDITOR): $(APPS_DIR)/editor/editor.c $(LIB_EDITOR)
@@ -449,6 +516,14 @@ $(READYSHELL_OBJ_DIR)/resident/%.o: %.s
 	@mkdir -p "$(dir $@)"
 	$(AS) $(READYSHELL_PARSE_TRACE_ASFLAG) -o $@ $<
 
+$(READYSHELL_EASYFLASH_OBJ_DIR)/resident/%.o: %.c
+	@mkdir -p "$(dir $@)"
+	$(CC) $(READYSHELL_CCFLAGS) -c -o $@ $<
+
+$(READYSHELL_EASYFLASH_OBJ_DIR)/resident/%.o: %.s
+	@mkdir -p "$(dir $@)"
+	$(AS) $(READYSHELL_PARSE_TRACE_ASFLAG) -o $@ $<
+
 # ReadyShell overlay objects
 $(READYSHELL_OBJ_DIR)/overlay1/%.o: %.c
 	@mkdir -p "$(dir $@)"
@@ -497,6 +572,35 @@ $(READYSHELL): $(READYSHELL_RESIDENT_OBJS) $(READYSHELL_OVERLAY1_OBJS) $(READYSH
 	cp -f $(READYSHELL_OVL6_PRG) $(READYSHELL_OVL6_DISK)
 	cp -f $(READYSHELL_OVL7_PRG) $(READYSHELL_OVL7_DISK)
 	cp -f $(READYSHELL_OVL8_PRG) $(READYSHELL_OVL8_DISK)
+
+$(READYSHELL_EASYFLASH): $(READYSHELL_RESIDENT_EASYFLASH_OBJS) $(READYSHELL_OVERLAY1_OBJS) $(READYSHELL_OVERLAY2_OBJS) $(READYSHELL_OVERLAY3_OBJS) $(READYSHELL_OVERLAY4_OBJS) $(READYSHELL_OVERLAY5_OBJS) $(READYSHELL_OVERLAY6_OBJS) $(READYSHELL_OVERLAY7_OBJS) $(READYSHELL_OVERLAY8_OBJS) $(CFG_DIR)/ready_app_overlay.cfg
+	$(CC) -t c64 -C $(CFG_DIR)/ready_app_overlay.cfg \
+		-Wl -D,__OVERLAYSIZE__=$(READYSHELL_OVERLAYSIZE) \
+		-Wl -D,__STACKSIZE__=$(READYSHELL_STACKSIZE) \
+		-m $(OBJ_DIR)/readyshell_easyflash.map -o $@ \
+		$(READYSHELL_RESIDENT_EASYFLASH_OBJS) $(READYSHELL_OVERLAY1_OBJS) $(READYSHELL_OVERLAY2_OBJS) $(READYSHELL_OVERLAY3_OBJS) $(READYSHELL_OVERLAY4_OBJS) $(READYSHELL_OVERLAY5_OBJS) $(READYSHELL_OVERLAY6_OBJS) $(READYSHELL_OVERLAY7_OBJS) $(READYSHELL_OVERLAY8_OBJS)
+
+$(EASYFLASH_LAYOUT_JSON) $(EASYFLASH_LAYOUT_INC): FORCE $(EASYFLASH_CATALOG_SRC) $(EASYFLASH_PAYLOADS) $(BUILD_SUPPORT_DIR)/readyos_easyflash.py
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_easyflash.py layout --catalog $(EASYFLASH_CATALOG_SRC) --json-output $(EASYFLASH_LAYOUT_JSON) --asm-output $(EASYFLASH_LAYOUT_INC)
+
+$(EASYFLASH_SHIM_BIN): $(BOOT_DIR)/easyflash_shim.s $(CFG_DIR)/easyflash_shim.cfg
+	$(AS) -o $(OBJ_DIR)/easyflash_shim.o $<
+	$(LD) -C $(CFG_DIR)/easyflash_shim.cfg -o $@ $(OBJ_DIR)/easyflash_shim.o
+
+$(BOOT_EASYFLASH_ROML): $(BOOT_DIR)/boot_easyflash_asm.s $(CFG_DIR)/easyflash_loader.cfg $(EASYFLASH_LAYOUT_INC) $(EASYFLASH_SHIM_BIN)
+	$(AS) -o $(OBJ_DIR)/boot_easyflash_roml.o $<
+	$(LD) -C $(CFG_DIR)/easyflash_loader.cfg -u easyflash_shim_copy_done -u easyflash_preload_verify_done -u easyflash_after_kernal_init -u easyflash_after_launcher_restore -u easyflash_before_launcher_jump -m $(EASYFLASH_BOOT_MAP) -o $@ $(OBJ_DIR)/boot_easyflash_roml.o
+
+$(BOOT_EASYFLASH_ROMH): $(BOOT_DIR)/easyflash_stub.s $(CFG_DIR)/easyflash_stub.cfg
+	$(AS) -o $(OBJ_DIR)/boot_easyflash_stub.o $<
+	$(LD) -C $(CFG_DIR)/easyflash_stub.cfg -o $@ $(OBJ_DIR)/boot_easyflash_stub.o
+
+$(XEFPROBE_LAYOUT_JSON) $(XEFPROBE_LAYOUT_INC) $(XEFPROBE_DATA_BIN): FORCE $(XEFPROBE_HOST) $(XEFPROBE_PAYLOAD) $(BUILD_SUPPORT_DIR)/readyos_easyflash_probe.py
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_easyflash_probe.py layout --host "$(XEFPROBE_HOST)" --payload "$(XEFPROBE_PAYLOAD)" --data-output "$(XEFPROBE_DATA_BIN)" --json-output "$(XEFPROBE_LAYOUT_JSON)" --asm-output "$(XEFPROBE_LAYOUT_INC)"
+
+$(BOOT_EASYFLASH_PROBE_ROML): $(BOOT_DIR)/boot_easyflash_probe_asm.s $(CFG_DIR)/easyflash_loader.cfg $(XEFPROBE_LAYOUT_INC) $(EASYFLASH_SHIM_BIN)
+	$(AS) -o $(OBJ_DIR)/boot_easyflash_probe_roml.o $<
+	$(LD) -C $(CFG_DIR)/easyflash_loader.cfg -o $@ $(OBJ_DIR)/boot_easyflash_probe_roml.o
 
 # Temporary REL diagnostics app (standalone at $0801)
 $(XRELCHK): $(APPS_DIR)/xrelchk/xrelchk.c
@@ -604,6 +708,83 @@ release-all: prepare-version
 audit-profile-assets:
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/audit_release_seq_rel.py --profile "$(PROFILE)"
 
+easyflash: prepare-version programs $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH) $(EASYFLASH_LAYOUT_JSON) $(BOOT_EASYFLASH_ROML) $(BOOT_EASYFLASH_ROMH)
+	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
+	PUBLIC_VERSION="$$VERSION_TEXT"; \
+	case "$$PUBLIC_VERSION" in *[A-Za-z]) PUBLIC_VERSION=$${PUBLIC_VERSION%?} ;; esac; \
+	OUT_DIR="releases/$$PUBLIC_VERSION/precog-easyflash"; \
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_easyflash.py build-release \
+		--catalog "$(EASYFLASH_CATALOG_SRC)" \
+		--layout "$(EASYFLASH_LAYOUT_JSON)" \
+		--roml "$(BOOT_EASYFLASH_ROML)" \
+		--romh "$(BOOT_EASYFLASH_ROMH)" \
+		--version "$$VERSION_TEXT" \
+		--output-dir "$$OUT_DIR"
+
+easyflash-verify: easyflash
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_memory_map.py; \
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_easyflash.py verify-release \
+		--catalog "$(EASYFLASH_CATALOG_SRC)" \
+		--layout "$(EASYFLASH_LAYOUT_JSON)" \
+		--output-dir "$(EASYFLASH_OUTPUT_DIR)"
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py write-monitor --output "$(EASYFLASH_SMOKE_MON)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --boot-map "$(EASYFLASH_BOOT_MAP)" --include-preload
+	cp "$(EASYFLASH_OUTPUT_DIR)/readyos_easyflash.crt" "$(EASYFLASH_SMOKE_RUNTIME_CRT)"
+	rm -f "$(EASYFLASH_SMOKE_LOG)"
+	script -q /dev/null x64sc -console -default +sound -warp -reu -reusize 16384 -cartcrt "$(EASYFLASH_SMOKE_RUNTIME_CRT)" -drive8type 1541 -devicebackend8 0 +busdevice8 -8 "$(EASYFLASH_OUTPUT_DIR)/readyos_data.d64" -moncommands "$(EASYFLASH_SMOKE_MON)" -monlog -monlogname "$(EASYFLASH_SMOKE_LOG)" -initbreak 0xe000 -limitcycles 120000000 || true
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py verify-log --layout "$(EASYFLASH_LAYOUT_JSON)" --output-dir "$(EASYFLASH_OUTPUT_DIR)" --log "$(EASYFLASH_SMOKE_LOG)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --verify-preload
+
+easyflash-smoke: easyflash
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py write-monitor --output "$(EASYFLASH_SMOKE_MON)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --boot-map "$(EASYFLASH_BOOT_MAP)" --include-preload
+	cp "$(EASYFLASH_OUTPUT_DIR)/readyos_easyflash.crt" "$(EASYFLASH_SMOKE_RUNTIME_CRT)"
+	rm -f "$(EASYFLASH_SMOKE_LOG)"
+	script -q /dev/null x64sc -console -default +sound -warp -reu -reusize 16384 -cartcrt "$(EASYFLASH_SMOKE_RUNTIME_CRT)" -drive8type 1541 -devicebackend8 0 +busdevice8 -8 "$(EASYFLASH_OUTPUT_DIR)/readyos_data.d64" -moncommands "$(EASYFLASH_SMOKE_MON)" -monlog -monlogname "$(EASYFLASH_SMOKE_LOG)" -initbreak 0xe000 -limitcycles 120000000 || true
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py verify-log --layout "$(EASYFLASH_LAYOUT_JSON)" --output-dir "$(EASYFLASH_OUTPUT_DIR)" --log "$(EASYFLASH_SMOKE_LOG)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --verify-preload
+
+easyflash-smoke-long: easyflash-smoke
+
+easyflash-preload-verify: easyflash
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py write-monitor --output "$(EASYFLASH_SMOKE_MON)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --boot-map "$(EASYFLASH_BOOT_MAP)" --include-preload
+	cp "$(EASYFLASH_OUTPUT_DIR)/readyos_easyflash.crt" "$(EASYFLASH_SMOKE_RUNTIME_CRT)"
+	rm -f "$(EASYFLASH_SMOKE_LOG)"
+	script -q /dev/null x64sc -console -default +sound -warp -reu -reusize 16384 -cartcrt "$(EASYFLASH_SMOKE_RUNTIME_CRT)" -drive8type 1541 -devicebackend8 0 +busdevice8 -8 "$(EASYFLASH_OUTPUT_DIR)/readyos_data.d64" -moncommands "$(EASYFLASH_SMOKE_MON)" -monlog -monlogname "$(EASYFLASH_SMOKE_LOG)" -initbreak 0xe000 -limitcycles 120000000 || true
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py verify-log --layout "$(EASYFLASH_LAYOUT_JSON)" --output-dir "$(EASYFLASH_OUTPUT_DIR)" --log "$(EASYFLASH_SMOKE_LOG)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --verify-preload --preload-only
+
+easyflash-probe: $(XEFPROBE_HOST) $(XEFPROBE_PAYLOAD) $(XEFPROBE_LAYOUT_JSON) $(BOOT_EASYFLASH_PROBE_ROML) $(BOOT_EASYFLASH_ROMH)
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_easyflash_probe.py build-release \
+		--layout "$(XEFPROBE_LAYOUT_JSON)" \
+		--roml "$(BOOT_EASYFLASH_PROBE_ROML)" \
+		--romh "$(BOOT_EASYFLASH_ROMH)" \
+		--output-dir "$(XEFPROBE_OUTPUT_DIR)"
+
+easyflash-probe-verify: easyflash-probe
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_easyflash_probe.py verify-release --output-dir "$(XEFPROBE_OUTPUT_DIR)"
+	rm -f "$(XEFPROBE_LOG)" "$(XEFPROBE_STDOUT_LOG)"
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_easyflash_probe.py runtime-verify --crt "$(XEFPROBE_OUTPUT_DIR)/xefprobe.crt" --d64 "$(XEFPROBE_OUTPUT_DIR)/xefprobe_data.d64" --host-map "$(OBJ_DIR)/xefprobe_host.map" --payload-map "$(OBJ_DIR)/xefprobe_payload.map" --log "$(XEFPROBE_LOG)" --vice-stdout "$(XEFPROBE_STDOUT_LOG)"
+
+xefprobe-standalone: $(XEFPROBE_PAYLOAD) $(XEFPROBE_STANDALONE)
+
+xefprobe-standalone-verify: xefprobe-standalone
+	rm -f "$(XEFPROBE_STANDALONE_SCREEN)"
+	x64sc -default +sound -warp -reu -reusize 16384 -autostartprgmode 1 -autostart "$(XEFPROBE_STANDALONE)" -drive8type 1541 -devicebackend8 0 +busdevice8 -8 "$(XEFPROBE_OUTPUT_DIR)/xefprobe_data.d64" -limitcycles 4000000 -exitscreenshot "$(XEFPROBE_STANDALONE_SCREEN)" || true
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/temp_xefprobe_standalone.py verify-screenshot --screenshot "$(XEFPROBE_STANDALONE_SCREEN)"
+
+easyflash-clean:
+	rm -f $(EASYFLASH_LAUNCHER_HEADER)
+	rm -f $(EASYFLASH_LAYOUT_JSON) $(EASYFLASH_LAYOUT_INC)
+	rm -f $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH)
+	rm -f $(EASYFLASH_SHIM_BIN) $(BOOT_EASYFLASH_ROML) $(BOOT_EASYFLASH_ROMH)
+	rm -f $(OBJ_DIR)/launcher_easyflash.map $(OBJ_DIR)/readyshell_easyflash.map
+	rm -f $(OBJ_DIR)/easyflash_shim.o $(OBJ_DIR)/boot_easyflash_roml.o $(OBJ_DIR)/boot_easyflash_stub.o $(EASYFLASH_BOOT_MAP)
+	rm -f $(OBJ_DIR)/easyflash_smoke.mon $(OBJ_DIR)/easyflash_smoke.log $(EASYFLASH_SMOKE_RUNTIME_CRT)
+	rm -f $(XEFPROBE_HOST) $(XEFPROBE_PAYLOAD) $(XEFPROBE_LAYOUT_JSON) $(XEFPROBE_LAYOUT_INC) $(XEFPROBE_DATA_BIN)
+	rm -f $(XEFPROBE_STANDALONE)
+	rm -f $(BOOT_EASYFLASH_PROBE_ROML) $(OBJ_DIR)/xefprobe_host.map $(OBJ_DIR)/xefprobe_payload.map
+	rm -f $(OBJ_DIR)/xefprobe_host.o $(OBJ_DIR)/xefprobe_payload.o $(OBJ_DIR)/xefprobe_standalone.o $(OBJ_DIR)/xefprobe_standalone.map
+	rm -f $(OBJ_DIR)/boot_easyflash_probe_roml.o $(XEFPROBE_MON) $(XEFPROBE_LOG) $(XEFPROBE_STDOUT_LOG)
+	rm -f $(XEFPROBE_STANDALONE_MON) $(XEFPROBE_STANDALONE_LOG) $(XEFPROBE_STANDALONE_SCREEN)
+	rm -rf $(XEFPROBE_OUTPUT_DIR)
+	rm -rf $(READYSHELL_EASYFLASH_OBJ_DIR)
+
 audit-release-assets:
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/audit_release_seq_rel.py
 
@@ -634,9 +815,11 @@ clean:
 	rm -f *.d64
 	rm -f *.d71
 	rm -f *.d81
+	rm -f *.crt
 	rm -rf artifacts/dev_harness/xfilechk
 	rm -rf artifacts/dev_harness/xseqchk
 	rm -rf artifacts/dev_harness/xtextchk
+	rm -rf artifacts/dev_harness/xefprobe
 	rm -rf release
 
 # Verify all generated binaries and memory layout constraints
@@ -758,6 +941,10 @@ help:
 	@echo "                Use PROFILE=<id> (default: $(PROFILE))"
 	@echo "  release-all - Build every release profile with one version stamp"
 	@echo "  clean       - Remove built files"
+	@echo "  easyflash   - Build the EasyFlash CRT + runtime data D64 flavor"
+	@echo "  easyflash-verify - Build and verify the EasyFlash flavor"
+	@echo "  easyflash-smoke - Run the VICE EasyFlash smoke check"
+	@echo "  easyflash-clean - Remove EasyFlash-specific generated artifacts"
 	@echo "  verify      - Build and run deep binary verification"
 	@echo "                (includes hard memory-map gate)"
 	@echo "  verify-resume - Run warm-resume contract verification"
@@ -800,6 +987,9 @@ help:
 	@echo "              - Versioned disk images for the selected profile"
 	@echo "  releases/<version>/<profile>/helpme.md"
 	@echo "              - Profile-specific run instructions"
+	@echo "  releases/<version>/precog-easyflash/readyos_easyflash.crt"
+	@echo "  releases/<version>/precog-easyflash/readyos_data.d64"
+	@echo "              - EasyFlash cartridge flavor and runtime-data disk"
 	@echo "  $(XFILECHK_DISK1) - Standalone harness drive 8 disk (boot+harness+src fixture)"
 	@echo "  $(XFILECHK_DISK2) - Standalone harness drive 9 disk (test fixture)"
 
@@ -817,4 +1007,5 @@ probe-rel:
 launcher-verbose:
 	$(MAKE) LAUNCHER_CFG_VERBOSE=1 $(LAUNCHER)
 
-.PHONY: all clean verify verify-resume fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all FORCE
+.PHONY: all clean verify verify-resume fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
+EASYFLASH_LAUNCHER_CPPFLAGS ?=

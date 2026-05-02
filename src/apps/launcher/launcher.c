@@ -6,8 +6,36 @@
  */
 
 #include "../../lib/tui.h"
+#include "../../lib/reu_mgr.h"
 #include "../../lib/resume_state.h"
 #include "../../generated/build_version.h"
+#ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH
+#define READYOS_LAUNCHER_VARIANT_EASYFLASH 0
+#endif
+#ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE
+#define READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE 0
+#endif
+#ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_ENTRY_LIMIT
+#define READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_ENTRY_LIMIT 0
+#endif
+#ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_SET_SHIM_DRIVE
+#define READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_SET_SHIM_DRIVE 1
+#endif
+#ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_SYNC_BITMAP
+#define READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_SYNC_BITMAP 1
+#endif
+#ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_SEED_HOTKEYS
+#define READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_SEED_HOTKEYS 1
+#endif
+#ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_INTERACTIVE
+#define READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_INTERACTIVE 0
+#endif
+#ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_AUTOLAUNCH_INDEX
+#define READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_AUTOLAUNCH_INDEX 0
+#endif
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+#include "../../generated/launcher_easyflash_catalog.h"
+#endif
 #include <c64.h>
 #include <cbm.h>
 #include <conio.h>
@@ -50,6 +78,30 @@
 
 #define REU_CMD_STASH 0x90
 #define REU_CMD_FETCH 0x91
+#define VIC_TEXT_D018 0x14
+#define LAUNCHER_VIC_CTRL1 (*(unsigned char*)0xD011)
+#define LAUNCHER_VIC_CTRL2 (*(unsigned char*)0xD016)
+#define LAUNCHER_VIC_MEM   (*(unsigned char*)0xD018)
+#define LAUNCHER_CIA2_PRA  (*(unsigned char*)0xDD00)
+#define LAUNCHER_CIA2_DDRA (*(unsigned char*)0xDD02)
+#define LAUNCHER_CPU_DDR   (*(unsigned char*)0x0000)
+#define LAUNCHER_CPU_PORT  (*(unsigned char*)0x0001)
+
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+#define LAUNCHER_DBG_RAM_BASE    ((unsigned char*)0xC7A0)
+#define LAUNCHER_DBG_RAM_HEAD    (*(unsigned char*)0xC7DF)
+#define LAUNCHER_DBG_RAM_LEN     0x3Fu
+#define LAUNCHER_DBG_STAGE_BYTE  (*(unsigned char*)0xC7EC)
+#define LAUNCHER_DBG_MARK_BYTE   (*(unsigned char*)0xC7ED)
+#define LAUNCHER_DBG_SCREEN_BASE ((unsigned char*)0x07C0)
+#define LAUNCHER_DBG_COLOR_BASE  ((unsigned char*)0xDBC0)
+#define LAUNCHER_DBG_SCREEN_LEN  40u
+#define LAUNCHER_DBG_REU_HEAD_OFF 0xF000u
+#define LAUNCHER_DBG_REU_DATA_OFF 0xF010u
+#define LAUNCHER_DBG_REU_DATA_LEN 0x0200u
+#define LAUNCHER_STAGE_BORDER (*(unsigned char*)0xD020)
+#define LAUNCHER_STAGE_BG     (*(unsigned char*)0xD021)
+#endif
 
 /*---------------------------------------------------------------------------
  * Constants
@@ -208,6 +260,7 @@ static char launcher_variant_boot_name[VARIANT_MAX_LEN + 1];
 static char launcher_runappfirst_prg[MAX_FILE_LEN + 1];
 static char launcher_notice[LAUNCHER_NOTICE_LEN + 1];
 static unsigned char launcher_notice_color = TUI_COLOR_GRAY3;
+static const unsigned char bit_masks[8] = { 1u, 2u, 4u, 8u, 16u, 32u, 64u, 128u };
 
 /* Menu state */
 static TuiMenu menu;
@@ -233,6 +286,209 @@ static unsigned char validate_slot_contract(unsigned char *detail_a,
                                             unsigned char *detail_c);
 static unsigned char load_all_to_reu_internal(unsigned char interactive);
 static void launch_app(unsigned char index);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+static void launcher_force_text_mode(void);
+static void launcher_dbg_draw_overlay(void);
+static void launcher_easyflash_tui_bootstrap(void);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE
+static void launcher_draw_visual_probe(void);
+#endif
+#endif
+
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+static unsigned char launcher_dbg_reu_byte;
+static unsigned char launcher_dbg_reu_head_buf[2];
+static unsigned int launcher_dbg_reu_pos;
+static unsigned char launcher_dbg_ram_pos;
+static unsigned char launcher_dbg_screen_pos;
+static char launcher_dbg_line0[39];
+static char launcher_dbg_line1[39];
+
+static unsigned char launcher_dbg_screen_code(unsigned char code) {
+    if (code >= 'A' && code <= 'Z') {
+        return (unsigned char)(code - 'A' + 1u);
+    }
+    if (code >= 'a' && code <= 'z') {
+        return (unsigned char)(code - 'a' + 1u);
+    }
+    if (code >= '0' && code <= '9') {
+        return code;
+    }
+    if (code == ' ') {
+        return 0x20u;
+    }
+    if (code == '=') {
+        return 0x3Du;
+    }
+    if (code == ':') {
+        return 0x3Au;
+    }
+    if (code == '-') {
+        return 0x2Du;
+    }
+    return 0x2Eu;
+}
+
+static void launcher_dbg_screen_clear(void) {
+    unsigned char i;
+
+    for (i = 0; i < LAUNCHER_DBG_SCREEN_LEN; ++i) {
+        LAUNCHER_DBG_SCREEN_BASE[i] = 0x20u;
+        LAUNCHER_DBG_COLOR_BASE[i] = TUI_COLOR_YELLOW;
+    }
+    launcher_dbg_screen_pos = 0u;
+}
+
+static void launcher_dbg_screen_put(unsigned char code) {
+    if (launcher_dbg_screen_pos >= LAUNCHER_DBG_SCREEN_LEN) {
+        launcher_dbg_screen_pos = 0u;
+    }
+    LAUNCHER_DBG_SCREEN_BASE[launcher_dbg_screen_pos] = launcher_dbg_screen_code(code);
+    LAUNCHER_DBG_COLOR_BASE[launcher_dbg_screen_pos] = TUI_COLOR_YELLOW;
+    ++launcher_dbg_screen_pos;
+}
+
+static void launcher_dbg_reset(void) {
+    unsigned char i;
+
+    launcher_dbg_reu_pos = 0;
+    launcher_dbg_ram_pos = 0;
+    for (i = 0; i < LAUNCHER_DBG_RAM_LEN; ++i) {
+        LAUNCHER_DBG_RAM_BASE[i] = 0;
+    }
+    LAUNCHER_DBG_RAM_HEAD = 0;
+    LAUNCHER_DBG_STAGE_BYTE = 0;
+    LAUNCHER_DBG_MARK_BYTE = 0;
+    launcher_dbg_screen_clear();
+    launcher_dbg_reu_head_buf[0] = 0;
+    launcher_dbg_reu_head_buf[1] = 0;
+}
+
+static void launcher_dbg_put(unsigned char code) {
+    LAUNCHER_DBG_RAM_BASE[launcher_dbg_ram_pos] = code;
+    LAUNCHER_DBG_MARK_BYTE = code;
+    launcher_dbg_screen_put(code);
+    ++launcher_dbg_ram_pos;
+    if (launcher_dbg_ram_pos >= LAUNCHER_DBG_RAM_LEN) {
+        launcher_dbg_ram_pos = 0;
+    }
+    LAUNCHER_DBG_RAM_HEAD = launcher_dbg_ram_pos;
+}
+
+static void launcher_dbg_kv(unsigned char tag, unsigned char value) {
+    launcher_dbg_put(tag);
+    launcher_dbg_put(value);
+}
+
+static char launcher_dbg_hex(unsigned char value) {
+    value &= 0x0Fu;
+    if (value < 10u) {
+        return (char)('0' + value);
+    }
+    return (char)('a' + (value - 10u));
+}
+
+static void launcher_dbg_draw_overlay(void) {
+    unsigned char i;
+    unsigned char pos = 0;
+    unsigned char cursor;
+    unsigned char src;
+    unsigned char code;
+
+    launcher_dbg_line0[0] = 'D';
+    launcher_dbg_line0[1] = 'B';
+    launcher_dbg_line0[2] = 'G';
+    launcher_dbg_line0[3] = ' ';
+    launcher_dbg_line0[4] = 'H';
+    launcher_dbg_line0[5] = '=';
+    launcher_dbg_line0[6] = launcher_dbg_hex((unsigned char)(LAUNCHER_DBG_RAM_HEAD >> 4));
+    launcher_dbg_line0[7] = launcher_dbg_hex(LAUNCHER_DBG_RAM_HEAD);
+    launcher_dbg_line0[8] = ' ';
+    pos = 9;
+    cursor = LAUNCHER_DBG_RAM_HEAD;
+    for (i = 0; i < 7u && pos < 36u; ++i) {
+        if (cursor == 0u) {
+            src = (unsigned char)(LAUNCHER_DBG_RAM_LEN - 1u);
+        } else {
+            src = (unsigned char)(cursor - 1u);
+        }
+        code = LAUNCHER_DBG_RAM_BASE[src];
+        launcher_dbg_line0[pos++] = launcher_dbg_hex((unsigned char)(code >> 4));
+        launcher_dbg_line0[pos++] = launcher_dbg_hex(code);
+        if (i != 6u) {
+            launcher_dbg_line0[pos++] = ' ';
+        }
+        cursor = src;
+    }
+    while (pos < 38u) {
+        launcher_dbg_line0[pos++] = ' ';
+    }
+    launcher_dbg_line0[38] = 0;
+
+    launcher_dbg_line1[0] = 'A';
+    launcher_dbg_line1[1] = '=';
+    launcher_dbg_line1[2] = launcher_dbg_hex((unsigned char)(app_count >> 4));
+    launcher_dbg_line1[3] = launcher_dbg_hex(app_count);
+    launcher_dbg_line1[4] = ' ';
+    launcher_dbg_line1[5] = 'M';
+    launcher_dbg_line1[6] = '=';
+    launcher_dbg_line1[7] = launcher_dbg_hex((unsigned char)(menu.count >> 4));
+    launcher_dbg_line1[8] = launcher_dbg_hex(menu.count);
+    launcher_dbg_line1[9] = ' ';
+    launcher_dbg_line1[10] = 'S';
+    launcher_dbg_line1[11] = '=';
+    launcher_dbg_line1[12] = launcher_dbg_hex((unsigned char)(menu.selected >> 4));
+    launcher_dbg_line1[13] = launcher_dbg_hex(menu.selected);
+    launcher_dbg_line1[14] = ' ';
+    launcher_dbg_line1[15] = 'R';
+    launcher_dbg_line1[16] = '=';
+    launcher_dbg_line1[17] = launcher_dbg_hex((unsigned char)(resume_ready >> 4));
+    launcher_dbg_line1[18] = launcher_dbg_hex(resume_ready);
+    pos = 19;
+    while (pos < 38u) {
+        launcher_dbg_line1[pos++] = ' ';
+    }
+    launcher_dbg_line1[38] = 0;
+
+    tui_puts_n(1, 23, launcher_dbg_line0, 38, TUI_COLOR_YELLOW);
+    tui_puts_n(1, 24, launcher_dbg_line1, 38, TUI_COLOR_LIGHTGREEN);
+}
+
+static void launcher_dump_hex_byte(char *out, unsigned char value) {
+    out[0] = launcher_dbg_hex((unsigned char)(value >> 4));
+    out[1] = launcher_dbg_hex(value);
+}
+
+static void launcher_force_text_mode(void) {
+    LAUNCHER_CIA2_DDRA = 0x03u;
+    LAUNCHER_CIA2_PRA = (unsigned char)((LAUNCHER_CIA2_PRA & 0xFCu) | 0x03u);
+    LAUNCHER_VIC_CTRL1 = 0x1Bu;
+    LAUNCHER_VIC_CTRL2 = 0x08u;
+    LAUNCHER_VIC_MEM = VIC_TEXT_D018;
+}
+
+static void launcher_set_stage(unsigned char color) {
+    (void)color;
+    LAUNCHER_DBG_STAGE_BYTE = color;
+}
+
+void ef_linit_entry(void) { LAUNCHER_DBG_STAGE_BYTE = 0x21u; }
+void ef_linit_before_bootstrap(void) { LAUNCHER_DBG_STAGE_BYTE = 0x22u; }
+void ef_linit_after_bootstrap(void) { LAUNCHER_DBG_STAGE_BYTE = 0x23u; }
+void ef_linit_before_catalog_defaults(void) { LAUNCHER_DBG_STAGE_BYTE = 0x24u; }
+void ef_linit_after_catalog_defaults(void) { LAUNCHER_DBG_STAGE_BYTE = 0x25u; }
+
+static void launcher_easyflash_tui_bootstrap(void) {
+    launcher_dbg_reset();
+    launcher_dbg_put('0');
+    launcher_set_stage(1u);
+    launcher_force_text_mode();
+    launcher_dbg_put('1');
+    tui_clear(TUI_THEME_BG);
+    launcher_dbg_put('2');
+    launcher_dbg_put('3');
+}
+#endif
 
 /* Launcher does not use F2/F4 global app cycling, but tui_hotkeys.c expects
  * these entry points when linked. Keep tiny local stubs instead of pulling in
@@ -282,31 +538,53 @@ static void sync_from_reu_bitmap(void) {
     unsigned char i;
     unsigned char bank;
     unsigned char last_saved;
+    unsigned char bitmap_lo;
+    unsigned char bitmap_hi;
+    unsigned char bitmap_xhi;
+    unsigned char loaded;
+
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    for (i = 1; i < app_count; ++i) {
+        if (app_banks[i] != 0) {
+            apps_loaded[i] = 1;
+            app_sizes[i] = APP_SAVE_SIZE;
+        } else {
+            apps_loaded[i] = 0;
+            app_sizes[i] = 0;
+        }
+    }
+    *SHIM_LAST_SAVED = 0xFF;
+    return;
+#endif
 
     /* Resilience: if return_to_launcher recorded a saved bank but bitmap
      * wasn't updated (e.g., interrupted path), heal bitmap from last_saved. */
     last_saved = *SHIM_LAST_SAVED;
     if (last_saved < 24) {
         if (last_saved < 8) {
-            *SHIM_REU_BITMAP_LO |= (unsigned char)(1U << last_saved);
+            *SHIM_REU_BITMAP_LO |= bit_masks[last_saved];
         } else if (last_saved < 16) {
-            *SHIM_REU_BITMAP_HI |= (unsigned char)(1U << (last_saved - 8));
+            *SHIM_REU_BITMAP_HI |= bit_masks[(unsigned char)(last_saved - 8)];
         } else {
-            *SHIM_REU_BITMAP_XHI |= (unsigned char)(1U << (last_saved - 16));
+            *SHIM_REU_BITMAP_XHI |= bit_masks[(unsigned char)(last_saved - 16)];
         }
     }
 
+    bitmap_lo = *SHIM_REU_BITMAP_LO;
+    bitmap_hi = *SHIM_REU_BITMAP_HI;
+    bitmap_xhi = *SHIM_REU_BITMAP_XHI;
+
     for (i = 1; i < app_count; ++i) {
         bank = app_banks[i];
-        if (bank != 0) {
-            if (shim_bitmap_has_bank(bank)) {
-                apps_loaded[i] = 1;
-                app_sizes[i] = APP_SAVE_SIZE;
-            } else {
-                apps_loaded[i] = 0;
-                app_sizes[i] = 0;
-            }
+        loaded = 0;
+        if (bank < 8) {
+            loaded = (unsigned char)((bitmap_lo & bit_masks[bank]) != 0u);
+        } else if (bank < 16) {
+            loaded = (unsigned char)((bitmap_hi & bit_masks[(unsigned char)(bank - 8)]) != 0u);
+        } else if (bank < 24) {
+            loaded = (unsigned char)((bitmap_xhi & bit_masks[(unsigned char)(bank - 16)]) != 0u);
         }
+        app_sizes[i] = loaded ? APP_SAVE_SIZE : 0;
     }
 
     /* Clear the last_saved flag - we've synced state */
@@ -567,8 +845,13 @@ static void catalog_init_defaults(void) {
     launcher_notice[0] = 0;
     launcher_notice_color = TUI_COLOR_GRAY3;
     copy_text_limit(launcher_variant_name, sizeof(launcher_variant_name), "readyos");
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    strcpy(app_name_buf[0], "ALL APPS PRELOADED");
+    strcpy(app_desc_buf[0], "EasyFlash preload complete");
+#else
     strcpy(app_name_buf[0], "LOAD ALL TO REU");
     strcpy(app_desc_buf[0], "Load all apps from disk into REU");
+#endif
     app_count = 1;
     cfg_err_phase = 0;
     clear_cfg_diag();
@@ -796,7 +1079,8 @@ static unsigned char parse_catalog_entry_line(char *line,
     return 0;
 }
 
-static unsigned char add_catalog_entry(unsigned char drive,
+static unsigned char add_catalog_entry(unsigned char bank,
+                                       unsigned char drive,
                                        const char *prg,
                                        const char *label,
                                        const char *desc,
@@ -809,7 +1093,7 @@ static unsigned char add_catalog_entry(unsigned char drive,
     }
 
     idx = app_count;
-    app_banks[idx] = idx;
+    app_banks[idx] = bank;
     app_drives[idx] = drive;
     app_default_slots[idx] = default_slot;
 
@@ -825,6 +1109,53 @@ static unsigned char add_catalog_entry(unsigned char drive,
     ++app_count;
     return 0;
 }
+
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+static unsigned char load_catalog_from_embedded(unsigned char *detail_a,
+                                                unsigned char *detail_b,
+                                                unsigned char *detail_c) {
+    unsigned char i;
+    unsigned char err;
+    unsigned char embedded_count = READYOS_EASYFLASH_APP_COUNT;
+
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE && READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_ENTRY_LIMIT > 0
+    if (READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_ENTRY_LIMIT < embedded_count) {
+        embedded_count = READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_ENTRY_LIMIT;
+    }
+#endif
+
+    copy_text_limit(launcher_variant_name, sizeof(launcher_variant_name),
+                    READYOS_EASYFLASH_VARIANT_NAME);
+    copy_text_limit(launcher_variant_boot_name, sizeof(launcher_variant_boot_name),
+                    READYOS_EASYFLASH_VARIANT_BOOT_NAME);
+    if (READYOS_EASYFLASH_RUNAPPFIRST[0] != 0) {
+        copy_text_limit(launcher_runappfirst_prg, sizeof(launcher_runappfirst_prg),
+                        READYOS_EASYFLASH_RUNAPPFIRST);
+    }
+
+    for (i = 0; i < embedded_count; ++i) {
+        err = add_catalog_entry(readyos_easyflash_app_banks[i],
+                                DEFAULT_DRIVE,
+                                readyos_easyflash_prgs[i],
+                                readyos_easyflash_labels[i],
+                                readyos_easyflash_descs[i],
+                                readyos_easyflash_default_slots[i]);
+        if (err != 0) {
+            *detail_a = i;
+            *detail_b = err;
+            *detail_c = app_count;
+            return err;
+        }
+        apps_loaded[(unsigned char)(app_count - 1)] = 1;
+        app_sizes[(unsigned char)(app_count - 1)] = APP_SAVE_SIZE;
+    }
+
+    *detail_a = 0;
+    *detail_b = 0;
+    *detail_c = 0;
+    return 0;
+}
+#endif
 
 static unsigned char load_catalog_from_disk(unsigned char *detail_a,
                                             unsigned char *detail_b,
@@ -940,7 +1271,7 @@ static unsigned char load_catalog_from_disk(unsigned char *detail_a,
             continue;
         }
 
-        err = add_catalog_entry(pending_drive, pending_prg, pending_label, line,
+        err = add_catalog_entry(app_count, pending_drive, pending_prg, pending_label, line,
                                 pending_slot);
         if (err != 0) {
             cbm_close(APP_CFG_LFN);
@@ -1074,6 +1405,14 @@ static void show_slot_contract_error(unsigned char err,
     else if (err == CFG_ERR_HOTKEY) fallback_reason = "HOTKEY SLOT ERROR";
 #endif
 
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('X');
+    launcher_dbg_kv('e', err);
+    launcher_dbg_kv('1', detail_a);
+    launcher_dbg_kv('2', detail_b);
+    launcher_dbg_kv('3', detail_c);
+    launcher_force_text_mode();
+#endif
     tui_clear(TUI_COLOR_BLUE);
     {
         TuiRect title_box = {1, 0, 38, 3};
@@ -1111,6 +1450,9 @@ static void show_slot_contract_error(unsigned char err,
 
     tui_puts(2, 18, CFG_CHECK_TEXT, TUI_COLOR_LIGHTRED);
     tui_puts(2, 22, CFG_PRESS_TEXT, TUI_COLOR_WHITE);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_draw_overlay();
+#endif
     tui_getkey();
 }
 
@@ -1281,6 +1623,11 @@ static unsigned char launcher_find_app_by_prg(const char *prg) {
  * Load all apps to REU
  *---------------------------------------------------------------------------*/
 static unsigned char load_all_to_reu_internal(unsigned char interactive) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    (void)interactive;
+    launcher_set_notice("all apps preloaded", TUI_COLOR_LIGHTGREEN);
+    return 1;
+#else
     unsigned char i;
     unsigned int size;
     unsigned char total_to_load;
@@ -1419,6 +1766,7 @@ static unsigned char load_all_to_reu_internal(unsigned char interactive) {
         tui_getkey();
     }
     return success;
+#endif
 }
 
 static void load_all_to_reu(void) {
@@ -1429,6 +1777,13 @@ static void load_all_to_reu(void) {
  * Load selected app to REU (F3)
  *---------------------------------------------------------------------------*/
 static void load_selected_to_reu(unsigned char index) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    (void)index;
+    tui_clear(TUI_COLOR_BLUE);
+    tui_puts(5, 9, "ALL APPS ALREADY PRELOADED", TUI_COLOR_LIGHTGREEN);
+    tui_puts(11, 13, "PRESS ANY KEY...", TUI_COLOR_WHITE);
+    tui_getkey();
+#else
     unsigned int size;
     unsigned char loaded_ok;
 
@@ -1471,6 +1826,7 @@ static void load_selected_to_reu(unsigned char index) {
 
     tui_puts(4, 10, "PRESS ANY KEY...", TUI_COLOR_WHITE);
     tui_getkey();
+#endif
 }
 
 /*---------------------------------------------------------------------------
@@ -1553,14 +1909,23 @@ static void launch_app(unsigned char index) {
         return;
     }
 
-    /* Bitmap is authoritative for REU presence. */
+    /* Disk launcher rebuilds REU state from the shim bitmap here.
+     * EasyFlash boot is already authoritative about what it preloaded,
+     * so trust the CRT-populated apps_loaded[] state instead. */
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH
     sync_from_reu_bitmap();
+#endif
 
     if (apps_loaded[index]) {
         launch_from_reu(index);
-    } else {
-        launch_from_disk(index);
+        return;
     }
+
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_set_notice("preload missing for selected app", TUI_COLOR_LIGHTRED);
+#else
+    launch_from_disk(index);
+#endif
 }
 
 /*---------------------------------------------------------------------------
@@ -1568,12 +1933,20 @@ static void launch_app(unsigned char index) {
  *---------------------------------------------------------------------------*/
 
 static void draw_header(void) {
-    TuiRect box = {0, 0, 40, 3};
     const char *variant = launcher_resolved_variant_title();
     unsigned char len;
     unsigned char x;
 
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    tui_puts_n(0, 0, "", 40, TUI_COLOR_LIGHTBLUE);
+    tui_puts_n(0, 1, "", 40, TUI_COLOR_BLUE);
+    tui_puts_n(0, 2, "", 40, TUI_COLOR_GRAY3);
+    tui_puts(14, 0, READYOS_TITLE_TEXT, TUI_COLOR_YELLOW);
+    tui_puts_n(0, 2, "----------------------------------------", 40, TUI_COLOR_GRAY3);
+#else
+    TuiRect box = {0, 0, 40, 3};
     tui_window_title(&box, READYOS_TITLE_TEXT, TUI_COLOR_LIGHTBLUE, TUI_COLOR_YELLOW);
+#endif
     len = (unsigned char)strlen(variant);
     if (len > 38) {
         len = 38;
@@ -1583,6 +1956,14 @@ static void draw_header(void) {
 }
 
 static void draw_status(void) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    tui_puts_n(0, STATUS_Y, "----------------------------------------", 40, TUI_COLOR_GRAY3);
+    tui_puts_n(0, STATUS_Y + 1, "", 40, TUI_COLOR_BLUE);
+    tui_puts_n(0, STATUS_Y + 2, "----------------------------------------", 40, TUI_COLOR_GRAY3);
+    tui_puts(2, STATUS_Y + 1, "REU: 16MB", TUI_COLOR_WHITE);
+    tui_putc(20, STATUS_Y + 1, REU_INDICATOR, TUI_COLOR_LIGHTGREEN);
+    tui_puts(22, STATUS_Y + 1, "IN REU", TUI_COLOR_GRAY3);
+#else
     TuiRect box = {0, STATUS_Y, 40, 3};
     tui_window(&box, TUI_COLOR_LIGHTBLUE);
 
@@ -1591,11 +1972,17 @@ static void draw_status(void) {
     /* Legend for REU indicator */
     tui_putc(20, STATUS_Y + 1, REU_INDICATOR, TUI_COLOR_LIGHTGREEN);
     tui_puts(21, STATUS_Y + 1, "=IN REU", TUI_COLOR_GRAY3);
+#endif
 }
 
 static void draw_help(void) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    tui_puts(1, HELP_Y, "RET:LAUNCH F3:STATUS F1:PRELOADED", TUI_COLOR_GRAY3);
+    tui_puts(1, HELP_Y + 1, "F2:NEXT APP  F4:PREV  STOP:QUIT", TUI_COLOR_GRAY3);
+#else
     tui_puts(1, HELP_Y, "RET:LAUNCH F3:LOAD  F1:LOAD ALL", TUI_COLOR_GRAY3);
     tui_puts(1, HELP_Y + 1, "F2:NEXT APP  F4:PREV  STOP:QUIT", TUI_COLOR_GRAY3);
+#endif
 }
 
 static void draw_notice(void) {
@@ -1604,6 +1991,13 @@ static void draw_notice(void) {
 }
 
 static void draw_drive_field(unsigned int screen_offset, unsigned char drive) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    (void)drive;
+    TUI_SCREEN[screen_offset] = 32;
+    TUI_COLOR_RAM[screen_offset] = TUI_COLOR_GRAY2;
+    TUI_SCREEN[screen_offset + 1] = 32;
+    TUI_COLOR_RAM[screen_offset + 1] = TUI_COLOR_GRAY2;
+#else
     unsigned char tens = 32;
     unsigned char ones;
 
@@ -1618,6 +2012,7 @@ static void draw_drive_field(unsigned int screen_offset, unsigned char drive) {
     TUI_COLOR_RAM[screen_offset] = TUI_COLOR_GRAY2;
     TUI_SCREEN[screen_offset + 1] = ones;
     TUI_COLOR_RAM[screen_offset + 1] = TUI_COLOR_GRAY2;
+#endif
 }
 
 static void draw_drive_prefixed_name(unsigned char x,
@@ -1640,9 +2035,18 @@ static void draw_drive_prefixed_name(unsigned char x,
     screen_offset = (unsigned int)y * 40 + x;
     TUI_SCREEN[screen_offset] = 32;
     TUI_COLOR_RAM[screen_offset] = name_color;
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    TUI_SCREEN[screen_offset + 1] = 32;
+    TUI_COLOR_RAM[screen_offset + 1] = name_color;
+    TUI_SCREEN[screen_offset + 2] = 32;
+    TUI_COLOR_RAM[screen_offset + 2] = name_color;
+    TUI_SCREEN[screen_offset + 3] = 32;
+    TUI_COLOR_RAM[screen_offset + 3] = name_color;
+#else
     draw_drive_field(screen_offset + 1, app_drives[index]);
     TUI_SCREEN[screen_offset + 3] = 32;
     TUI_COLOR_RAM[screen_offset + 3] = name_color;
+#endif
     tui_puts_n((unsigned char)(x + 4), y, app_names[index], name_maxlen, name_color);
 }
 
@@ -1731,6 +2135,12 @@ static void draw_menu_item(unsigned char idx) {
     TUI_COLOR_RAM[screen_offset] = color;
     TUI_SCREEN[screen_offset + 1] = 32;
     TUI_COLOR_RAM[screen_offset + 1] = color;
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    TUI_SCREEN[screen_offset + 2] = 32;
+    TUI_COLOR_RAM[screen_offset + 2] = color;
+    TUI_SCREEN[screen_offset + 3] = 32;
+    TUI_COLOR_RAM[screen_offset + 3] = color;
+#else
     if (idx > 0 && idx < app_count && app_banks[idx] != 0) {
         draw_drive_field(screen_offset + 2, app_drives[idx]);
     } else {
@@ -1739,6 +2149,7 @@ static void draw_menu_item(unsigned char idx) {
         TUI_SCREEN[screen_offset + 3] = 32;
         TUI_COLOR_RAM[screen_offset + 3] = color;
     }
+#endif
     TUI_SCREEN[screen_offset + 4] = 32;
     TUI_COLOR_RAM[screen_offset + 4] = color;
 
@@ -1776,6 +2187,11 @@ static void draw_menu(void) {
     unsigned char row;
     unsigned char item_idx;
 
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH && READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE >= 3
+    tui_menu_draw(&menu);
+    return;
+#endif
+
     for (row = 0; row < menu.h; ++row) {
         item_idx = menu.scroll_offset + row;
         if (item_idx < menu.count) {
@@ -1796,9 +2212,18 @@ static void draw_app_desc(void) {
 
         /* Show launch source */
         if (apps_loaded[sel] && app_banks[sel] != 0) {
+            #if READYOS_LAUNCHER_VARIANT_EASYFLASH
+            tui_puts_n(2, APPS_START_Y + APPS_HEIGHT + 1,
+                       "LAUNCH FROM REU (PRELOADED)", 38, TUI_COLOR_LIGHTGREEN);
+            #else
             tui_puts_n(2, APPS_START_Y + APPS_HEIGHT + 1,
                        "LAUNCH FROM REU (INSTANT)", 38, TUI_COLOR_LIGHTGREEN);
+            #endif
         } else if (app_banks[sel] != 0) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+            tui_puts_n(2, APPS_START_Y + APPS_HEIGHT + 1,
+                       "WAITING FOR PRELOAD RECOVERY", 38, TUI_COLOR_LIGHTRED);
+#else
             if (app_drives[sel] == 8) {
                 tui_puts_n(2, APPS_START_Y + APPS_HEIGHT + 1,
                            "LAUNCH FROM DISK", 38, TUI_COLOR_GRAY3);
@@ -1814,6 +2239,7 @@ static void draw_app_desc(void) {
                 }
                 tui_puts_n(2, APPS_START_Y + APPS_HEIGHT + 1, launch_line, 38, TUI_COLOR_GRAY3);
             }
+#endif
         } else {
             tui_puts_n(2, APPS_START_Y + APPS_HEIGHT + 1, "", 38, TUI_COLOR_WHITE);
         }
@@ -1885,6 +2311,9 @@ static void launcher_apply_startup_actions(unsigned char suppress_startup_once) 
     }
 
     if (launcher_cfg_load_all_to_reu) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+        launcher_set_notice("all apps preloaded", TUI_COLOR_LIGHTGREEN);
+#else
         if (!load_all_to_reu_internal(0)) {
             launcher_set_notice("auto preload incomplete", TUI_COLOR_LIGHTRED);
             return;
@@ -1900,6 +2329,7 @@ static void launcher_apply_startup_actions(unsigned char suppress_startup_once) 
             return;
         }
         return;
+#endif
     }
 
     if (launcher_runappfirst_prg[0] != 0) {
@@ -1913,6 +2343,17 @@ static void launcher_apply_startup_actions(unsigned char suppress_startup_once) 
 }
 
 static void launcher_draw(void) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH && READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE && READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE < 3
+    launcher_draw_visual_probe();
+#else
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('D');
+    launcher_dbg_kv('a', app_count);
+    launcher_dbg_kv('m', menu.count);
+    launcher_dbg_kv('s', menu.selected);
+    launcher_set_stage(5u);
+    launcher_force_text_mode();
+#endif
     launcher_sync_visible_window();
     tui_clear(TUI_COLOR_BLUE);
     draw_header();
@@ -1922,13 +2363,105 @@ static void launcher_draw(void) {
     draw_status();
     draw_notice();
     draw_help();
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('R');
+    launcher_set_stage(13u);
+    launcher_dbg_draw_overlay();
+#endif
+#endif
 }
 
 /*---------------------------------------------------------------------------
  * Main
  *---------------------------------------------------------------------------*/
 
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+static void launcher_init_easyflash(void) {
+    unsigned char err;
+    unsigned char detail_a;
+    unsigned char detail_b;
+    unsigned char detail_c;
+
+    ef_linit_entry();
+    launcher_dbg_put('i');
+    ef_linit_before_bootstrap();
+    launcher_easyflash_tui_bootstrap();
+    ef_linit_after_bootstrap();
+    launcher_dbg_put('I');
+    launcher_set_stage(2u);
+    launcher_dbg_put('T');
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE
+    ef_linit_before_catalog_defaults();
+    catalog_init_defaults();
+    catalog_rebind_views();
+    ef_linit_after_catalog_defaults();
+    launcher_dbg_put('C');
+    launcher_set_stage(8u);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE >= 2
+    err = load_catalog_from_embedded(&detail_a, &detail_b, &detail_c);
+    launcher_dbg_put('L');
+    launcher_dbg_kv('e', err);
+    launcher_dbg_kv('a', app_count);
+    if (err != 0) {
+        copy_text_limit(launcher_notice, sizeof(launcher_notice),
+                        "visual probe: embedded catalog failed");
+        launcher_notice_color = TUI_COLOR_LIGHTRED;
+    } else {
+        copy_text_limit(launcher_notice, sizeof(launcher_notice),
+                        "visual probe: embedded catalog ok");
+        launcher_notice_color = TUI_COLOR_LIGHTGREEN;
+    }
+#else
+    copy_text_limit(launcher_notice, sizeof(launcher_notice),
+                    "visual probe: catalog and app list bypassed");
+    launcher_notice_color = TUI_COLOR_YELLOW;
+    app_count = 0;
+#endif
+    running = 1;
+    launcher_dbg_put('P');
+    launcher_set_stage(11u);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE >= 2
+  #if READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE >= 3
+    tui_menu_init(&menu, 2, APPS_START_Y, APP_MENU_WIDTH, APPS_HEIGHT, app_names, app_count);
+    menu.item_color = TUI_COLOR_WHITE;
+    menu.sel_color = TUI_COLOR_CYAN;
+    menu.selected = (unsigned char)(app_count > 1 ? 1 : 0);
+    menu.scroll_offset = 0;
+    launcher_sync_visible_window();
+    launcher_dbg_put('d');
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_SET_SHIM_DRIVE
+    set_shim_drive(8);
+#endif
+    launcher_dbg_put('D');
+    launcher_dbg_put('y');
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_SYNC_BITMAP
+    sync_from_reu_bitmap();
+#endif
+    launcher_dbg_put('Y');
+    launcher_dbg_put('h');
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_SEED_HOTKEYS
+    launcher_seed_default_hotkeys();
+#endif
+    launcher_dbg_put('H');
+  #endif
+    launcher_draw();
+    launcher_dbg_put('K');
+    launcher_set_stage(12u);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_AUTOLAUNCH_INDEX > 0
+    if (READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_AUTOLAUNCH_INDEX < app_count) {
+        launch_app(READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_AUTOLAUNCH_INDEX);
+    }
+#endif
+#endif
+#endif
+}
+#endif
+
 static void launcher_init(void) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_init_easyflash();
+    return;
+#else
     unsigned char i;
     unsigned char saved_selected = 0;
     unsigned char saved_scroll_offset = 0;
@@ -1942,17 +2475,40 @@ static void launcher_init(void) {
 
     tui_init();
     catalog_init_defaults();
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('C');
+    launcher_set_stage(8u);
+#endif
     catalog_rebind_views();
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('W');
+    launcher_set_stage(9u);
+#endif
     resume_ready = 0;
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_kv('a', app_count);
+#endif
 
     resume_init_for_app(REU_BANK_LAUNCHER, REU_BANK_LAUNCHER,
                         LAUNCHER_RESUME_SCHEMA);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('Q');
+    launcher_set_stage(10u);
+#endif
     resume_ready = 1;
     restored_resume = launcher_resume_restore(&saved_selected, &saved_scroll_offset,
                                               &saved_suppress_startup_once);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_kv('r', restored_resume);
+    launcher_set_stage(4u);
+#endif
 
     if (restored_resume) {
         err = validate_slot_contract(&detail_a, &detail_b, &detail_c);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+        launcher_dbg_put('V');
+        launcher_dbg_kv('e', err);
+#endif
         if (err == 0) {
             slot_contract_ok = 1;
             used_cached_catalog = 1;
@@ -1966,7 +2522,20 @@ static void launcher_init(void) {
     }
 
     if (!used_cached_catalog) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+        launcher_dbg_put('L');
+        launcher_set_stage(6u);
+        err = load_catalog_from_embedded(&detail_a, &detail_b, &detail_c);
+#else
         err = load_catalog_from_disk(&detail_a, &detail_b, &detail_c);
+#endif
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+        launcher_dbg_kv('e', err);
+        launcher_dbg_kv('a', app_count);
+        launcher_dbg_kv('1', detail_a);
+        launcher_dbg_kv('2', detail_b);
+        launcher_dbg_kv('3', detail_c);
+#endif
         if (err != 0) {
             slot_contract_ok = 0;
             show_slot_contract_error(err, detail_a, detail_b, detail_c);
@@ -1975,6 +2544,12 @@ static void launcher_init(void) {
         }
 
         err = validate_slot_contract(&detail_a, &detail_b, &detail_c);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+        launcher_dbg_put('S');
+        launcher_dbg_kv('e', err);
+        launcher_dbg_kv('a', app_count);
+        launcher_set_stage(7u);
+#endif
         if (err != 0) {
             slot_contract_ok = 0;
             show_slot_contract_error(err, detail_a, detail_b, detail_c);
@@ -1994,6 +2569,12 @@ static void launcher_init(void) {
     }
     menu.scroll_offset = saved_scroll_offset;
     launcher_sync_visible_window();
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('M');
+    launcher_dbg_kv('m', menu.count);
+    launcher_dbg_kv('s', menu.selected);
+    launcher_set_stage(8u);
+#endif
 
     if (restored_resume && saved_suppress_startup_once) {
         /* Clear the one-shot auto-run suppression marker so it only
@@ -2008,12 +2589,36 @@ static void launcher_init(void) {
         apps_loaded[i] = 0;
         app_sizes[i] = 0;
     }
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('X');
+#endif
     set_shim_drive(8);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('Y');
+#endif
     sync_from_reu_bitmap();
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('Z');
+#endif
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('B');
+    launcher_set_notice("all apps preloaded", TUI_COLOR_LIGHTGREEN);
+    launcher_set_stage(9u);
+#endif
     launcher_seed_default_hotkeys();
 
     running = 1;
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('A');
+    launcher_dbg_kv('o', slot_contract_ok);
+    launcher_set_stage(10u);
+#endif
     launcher_apply_startup_actions(saved_suppress_startup_once);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_dbg_put('U');
+    launcher_set_stage(11u);
+#endif
+#endif
 }
 
 static void launcher_loop(void) {
@@ -2030,8 +2635,26 @@ static void launcher_loop(void) {
 
     launcher_draw();
 
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH && READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE && !READYOS_LAUNCHER_VARIANT_EASYFLASH_PROBE_INTERACTIVE
+    launcher_dbg_put('K');
+    launcher_set_stage(12u);
     while (running) {
+    }
+    return;
+#endif
+
+    while (running) {
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+        launcher_dbg_put('K');
+        launcher_set_stage(12u);
+        __asm__("lda $dc0d");
+        __asm__("lda $dd0d");
+        __asm__("cli");
+#endif
         key = tui_getkey();
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH
+        __asm__("sei");
+#endif
 
         if (key != 2 && key != TUI_KEY_NEXT_APP && key != TUI_KEY_PREV_APP) {
             bank = tui_handle_global_hotkey(key, REU_BANK_LAUNCHER, 0);
@@ -2089,6 +2712,42 @@ static void launcher_loop(void) {
     /* Reset on exit */
     __asm__("jmp $FCE2");
 }
+
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH && READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE
+static void launcher_draw_visual_probe(void) {
+    launcher_dbg_put('D');
+    launcher_set_stage(5u);
+    launcher_force_text_mode();
+    tui_clear(TUI_COLOR_BLUE);
+    draw_header();
+    tui_puts(11, 7, "CRT VISUAL PROBE", TUI_COLOR_YELLOW);
+#if READYOS_LAUNCHER_VARIANT_EASYFLASH_VISUAL_PROBE >= 2
+    tui_puts(4, 9, "EMBEDDED CATALOG LOADED", TUI_COLOR_WHITE);
+    tui_puts(4, 10, "AND VALIDATED", TUI_COLOR_WHITE);
+    tui_puts(2, 12, "APP COUNT:", TUI_COLOR_GRAY3);
+    tui_print_uint(13, 12, app_count, TUI_COLOR_WHITE);
+    if (app_count > 1) {
+        tui_puts_n(2, 13, app_names[1], 30, TUI_COLOR_LIGHTGREEN);
+    }
+    if (app_count > 2) {
+        tui_puts_n(2, 14, app_names[2], 30, TUI_COLOR_LIGHTGREEN);
+    }
+    if (app_count > 3) {
+        tui_puts_n(2, 15, app_names[3], 30, TUI_COLOR_LIGHTGREEN);
+    }
+#else
+    tui_puts(4, 10, "HEADER/FOOTER ONLY", TUI_COLOR_WHITE);
+    tui_puts(2, 12, "CATALOG, MENU, AND REU LAUNCH LOGIC", TUI_COLOR_GRAY3);
+    tui_puts(8, 13, "ARE TEMPORARILY BYPASSED", TUI_COLOR_GRAY3);
+#endif
+    draw_status();
+    draw_notice();
+    draw_help();
+    launcher_dbg_put('R');
+    launcher_set_stage(13u);
+    launcher_dbg_draw_overlay();
+}
+#endif
 
 int main(void) {
     launcher_init();
