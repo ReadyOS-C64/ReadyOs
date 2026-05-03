@@ -5,7 +5,7 @@ verify_resume_contract.py
 Static warm-resume contract checks:
 - resume tail constants
 - app wiring (all switchable apps)
-- shim snapshot window expectation in boot_asm source
+- shim snapshot window expectation in the shared shim source
 """
 
 import os
@@ -67,13 +67,17 @@ def parse_app_hooks(app_name):
 
 
 def parse_boot_snapshot_contract():
-    path = os.path.join(ROOT, "src", "boot", "boot_asm.s")
-    with open(path, "r", encoding="utf-8", errors="replace") as f:
-        src = f.read()
+    boot_path = os.path.join(ROOT, "src", "boot", "boot_asm.s")
+    shim_path = os.path.join(ROOT, "src", "boot", "readyos_shim.inc")
+    with open(boot_path, "r", encoding="utf-8", errors="replace") as f:
+        boot_src = f.read()
+    with open(shim_path, "r", encoding="utf-8", errors="replace") as f:
+        shim_src = f.read()
 
-    has_len_lo = "STA $DF07" in src
-    has_len_hi_b6 = "LDA #$B6" in src and "STA $DF08" in src
-    return path, has_len_lo, has_len_hi_b6
+    includes_shared_shim = '.include "readyos_shim.inc"' in boot_src
+    has_len_lo = "STA $DF07" in shim_src
+    has_len_hi_b6 = "LDA #$B6" in shim_src and "STA $DF08" in shim_src
+    return boot_path, shim_path, includes_shared_shim, has_len_lo, has_len_hi_b6
 
 
 def main():
@@ -116,12 +120,13 @@ def main():
 
     print("\n=== Shim Snapshot Contract ===")
     try:
-        path, has_len_lo, has_len_hi_b6 = parse_boot_snapshot_contract()
+        boot_path, shim_path, includes_shared_shim, has_len_lo, has_len_hi_b6 = parse_boot_snapshot_contract()
     except FileNotFoundError as ex:
-        all_ok &= check("boot_asm.s exists", False, str(ex))
+        all_ok &= check("shared shim sources exist", False, str(ex))
     else:
-        all_ok &= check("boot_asm sets REU length low", has_len_lo, path)
-        all_ok &= check("boot_asm sets REU length high to $B6", has_len_hi_b6, path)
+        all_ok &= check("boot_asm includes shared shim", includes_shared_shim, boot_path)
+        all_ok &= check("shared shim sets REU length low", has_len_lo, shim_path)
+        all_ok &= check("shared shim sets REU length high to $B6", has_len_hi_b6, shim_path)
 
     print()
     if all_ok:

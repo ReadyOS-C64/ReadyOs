@@ -1,0 +1,5 @@
+#ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH
+#define READYOS_LAUNCHER_VARIANT_EASYFLASH 1
+#endif
+
+#include "launcher.c"

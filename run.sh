@@ -76,6 +76,9 @@ XFILECHK_BOOT_PRG="xfilechk_boot.prg"
 XFILECHK_PRG="xfilechk.prg"
 XFILECHK_DISK_FILE_1="xfilechk.d71"
 XFILECHK_DISK_FILE_2="xfilechk_2.d71"
+EASYFLASH_RELEASE_DIR=""
+EASYFLASH_CRT=""
+EASYFLASH_DATA_DISK=""
 
 REMOTE_MON_ADDR="127.0.0.1:6510"
 BINARY_MON_ADDR="127.0.0.1:6502"
@@ -180,6 +183,32 @@ current_public_version_text() {
     esac
 }
 
+public_version_from_text() {
+    local text="$1"
+    case "$text" in
+        *[A-Z]) echo "${text%?}" ;;
+        *) echo "$text" ;;
+    esac
+}
+
+resolve_easyflash_release_dir() {
+    local version_text="$1"
+    local candidate=""
+
+    for candidate in \
+        "releases/$version_text/precog-easyflash" \
+        "Releases/$version_text/precog-easyflash"
+    do
+        if [ -d "$candidate" ]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+
+    echo "releases/$version_text/precog-easyflash"
+    return 0
+}
+
 show_help() {
     echo "ReadyOS Run Script"
     echo ""
@@ -190,6 +219,7 @@ show_help() {
     echo "  test           Run REU test program standalone"
     echo "  debug          Run with VICE monitor breakpoints at shim entry points"
     echo "  warp           Run in warp mode"
+    echo "  easyflash      Run the EasyFlash CRT + runtime data disk flavor"
     echo "  launcher       Run $LAUNCHER_PRG directly"
     echo "  editor         Run $EDITOR_PRG directly"
     echo "  calcplus       Run $CALCPLUS_PRG directly"
@@ -441,6 +471,26 @@ apply_fast_vice_overrides() {
 }
 
 maybe_build() {
+    if [ "${MODE:-}" = "easyflash" ]; then
+        if [ "$SKIP_BUILD" -eq 1 ]; then
+            echo "Skipping build (--skipbuild)."
+            RUN_VERSION_TEXT="$(current_public_version_text)"
+        else
+            if [ "$FOR_RELEASE" -eq 1 ]; then
+                RUN_VERSION_TEXT="$(current_public_version_text)"
+            else
+                RUN_VERSION_TEXT="$(python3 "$VERSION_TOOL" --next)"
+            fi
+            echo "Build version: $RUN_VERSION_TEXT"
+            echo "Building EasyFlash flavor"
+            make -B "BUILD_SUPPORT_DIR=$BUILD_SUPPORT_DIR" "READYOS_VERSION_TEXT=$RUN_VERSION_TEXT" easyflash
+        fi
+        EASYFLASH_RELEASE_DIR="$(resolve_easyflash_release_dir "$(public_version_from_text "$RUN_VERSION_TEXT")")"
+        EASYFLASH_CRT="$EASYFLASH_RELEASE_DIR/readyos_easyflash.crt"
+        EASYFLASH_DATA_DISK="$EASYFLASH_RELEASE_DIR/readyos_data.d64"
+        return
+    fi
+
     if [ "$FORCE_ARTIFACTS_FROM_D71" -eq 1 ]; then
         echo "Force-syncing authoritative support files from latest built precog-dual-d71"
         python3 "$PROFILE_TOOL" sync-authoritative-from-d71
@@ -521,6 +571,17 @@ check_profile_disks() {
     done
 }
 
+check_easyflash_artifacts() {
+    if [ ! -f "$EASYFLASH_CRT" ]; then
+        echo "Error: EasyFlash CRT not found: $EASYFLASH_CRT"
+        exit 1
+    fi
+    if [ ! -f "$EASYFLASH_DATA_DISK" ]; then
+        echo "Error: EasyFlash data disk not found: $EASYFLASH_DATA_DISK"
+        exit 1
+    fi
+}
+
 print_info() {
     local mode="$1"
     local target="$2"
@@ -536,6 +597,21 @@ print_info() {
     done
     echo "Build Support: $BUILD_SUPPORT_DIR"
     echo "ReadyShell parse trace: $(current_parse_trace_label)"
+    if [ "$VICE_FAST" -eq 1 ]; then
+        echo "VICE Fast: on (warp, traps enabled, true drive off)"
+    fi
+    echo ""
+}
+
+print_easyflash_info() {
+    echo "=== Ready OS ==="
+    echo ""
+    echo "Mode: EasyFlash"
+    echo "VICE: $VICE"
+    echo "Target: $EASYFLASH_CRT"
+    echo "Drive 8: $EASYFLASH_DATA_DISK"
+    echo "REU: 16MB"
+    echo "Build Support: $BUILD_SUPPORT_DIR"
     if [ "$VICE_FAST" -eq 1 ]; then
         echo "VICE Fast: on (warp, traps enabled, true drive off)"
     fi
@@ -591,6 +667,13 @@ case "${MODE:-}" in
         check_prg "$PROFILE_AUTOSTART_PRG"
         print_info "Warp Mode" "$PROFILE_AUTOSTART_PRG"
         start_vice -logfile "$VICE_LOG_FILE" -reu -reusize 16384 "${PROFILE_VICE_ATTACH_ARGS[@]}" -warp -autostart "$PROFILE_AUTOSTART_PRG"
+        ;;
+    easyflash)
+        check_easyflash_artifacts
+        print_easyflash_info
+        start_vice -logfile "$VICE_LOG_FILE" -reu -reusize 16384 \
+            -cartcrt "$EASYFLASH_CRT" \
+            -drive8type 1541 -devicebackend8 0 +busdevice8 -8 "$EASYFLASH_DATA_DISK"
         ;;
     launcher)
         check_profile_disks
