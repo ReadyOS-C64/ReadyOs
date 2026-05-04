@@ -67,6 +67,12 @@ BOOT_LINE0        = SCREEN_RAM + (40 * 0)
 BOOT_LINE1        = SCREEN_RAM + (40 * 1)
 BOOT_STATUS_LINE  = SCREEN_RAM + (40 * 3)
 BOOT_DETAIL_LINE  = SCREEN_RAM + (40 * 5)
+BOOT_BG_COLOR     = $06
+BOOT_BORDER_LOADER = $0E
+BOOT_BORDER_SHIM   = $05
+BOOT_BORDER_CART   = $07
+BOOT_BORDER_REU    = $08
+BOOT_BORDER_HANDOFF = $0D
 REU_MAGIC_VALUE   = $A5
 SHIM_STORAGE_DRIVE = $C839
 READYSHELL_OVL_META_VERSION = 2
@@ -127,10 +133,9 @@ start:
     lda #$40
     sta CART_CONTROL_EX
     jsr cart_disable_for_reu
+    jsr set_boot_background
+    jsr set_stage_border_loader
     jsr copy_loader_tail_from_cart
-    lda #$06
-    sta $D020
-    sta $D021
     lda #'S'
     jsr dbg_put
     jsr clear_screen
@@ -164,9 +169,7 @@ easyflash_shim_copy_done:
     lda #'V'
     jsr dbg_put
 easyflash_preload_verify_done:
-    lda #$02
-    sta $D020
-    sta $D021
+    jsr set_stage_border_loader
     jsr cart_disable_for_reu
     lda #$37
     sta $01
@@ -210,12 +213,6 @@ easyflash_preload_verify_done:
 easyflash_after_kernal_init:
     lda #'T'
     jsr dbg_put
-    lda #$05
-    sta $D020
-    sta $D021
-    lda #$0A
-    sta $D020
-    sta $D021
     jsr restore_launcher_ram
 easyflash_after_launcher_restore:
     lda #'J'
@@ -234,15 +231,43 @@ easyflash_after_launcher_restore:
     sta VIC_SPR_EN
     lda #$FF
     sta VIC_IRQ_ACK
-    lda #$0D
-    sta $D020
-    sta $D021
+    jsr set_stage_border_handoff
     ; KERNAL init can leave a CIA interrupt pending; clear the latches so
     ; CLI cannot vector away before the launcher gets its first instruction.
     lda CIA1_ICR
     lda CIA2_ICR
 easyflash_before_launcher_jump:
     jmp APP_LOAD_START
+
+set_boot_background:
+    lda #BOOT_BG_COLOR
+    sta $D021
+    rts
+
+set_stage_border_loader:
+    lda #BOOT_BORDER_LOADER
+    sta $D020
+    rts
+
+set_stage_border_shim:
+    lda #BOOT_BORDER_SHIM
+    sta $D020
+    rts
+
+set_stage_border_cart:
+    lda #BOOT_BORDER_CART
+    sta $D020
+    rts
+
+set_stage_border_reu:
+    lda #BOOT_BORDER_REU
+    sta $D020
+    rts
+
+set_stage_border_handoff:
+    lda #BOOT_BORDER_HANDOFF
+    sta $D020
+    rts
 
 dbg_put:
     ldx DBG_RING_HEAD
@@ -381,6 +406,7 @@ show_status_literal:
     jmp clear_row
 
 show_stage_shim:
+    jsr set_stage_border_shim
     lda #<msg_stage_shim
     sta src_lo
     lda #>msg_stage_shim
@@ -388,6 +414,7 @@ show_stage_shim:
     jmp show_status_literal
 
 show_stage_launcher:
+    jsr set_stage_border_loader
     lda #<msg_stage_launcher
     sta src_lo
     lda #>msg_stage_launcher
@@ -395,6 +422,7 @@ show_stage_launcher:
     jmp show_status_literal
 
 show_stage_overlay_meta:
+    jsr set_stage_border_loader
     lda #<msg_stage_overlay_meta
     sta src_lo
     lda #>msg_stage_overlay_meta
@@ -402,6 +430,7 @@ show_stage_overlay_meta:
     jmp show_status_literal
 
 show_stage_verify:
+    jsr set_stage_border_loader
     lda #<msg_stage_verify
     sta src_lo
     lda #>msg_stage_verify
@@ -409,6 +438,7 @@ show_stage_verify:
     jmp show_status_literal
 
 show_stage_handoff:
+    jsr set_stage_border_handoff
     lda #<msg_stage_handoff
     sta src_lo
     lda #>msg_stage_handoff
@@ -440,6 +470,7 @@ write_two_digits_at:
     rts
 
 show_app_progress:
+    jsr set_stage_border_loader
     lda #<msg_stage_apps
     sta src_lo
     lda #>msg_stage_apps
@@ -467,6 +498,7 @@ show_app_progress:
     jmp write_two_digits_at
 
 show_overlay_progress:
+    jsr set_stage_border_loader
     lda #<msg_stage_overlays
     sta src_lo
     lda #>msg_stage_overlays
@@ -834,6 +866,7 @@ clear_region:
     rts
 
 copy_payload_from_cart:
+    jsr set_stage_border_cart
     jsr cart_enable_for_copy
 @bank_loop:
     lda rem_lo
@@ -931,6 +964,7 @@ copy_chunk:
     rts
 
 reu_stash_window:
+    jsr set_stage_border_reu
     jsr cart_disable_for_reu
     lda $01
     pha
@@ -957,6 +991,7 @@ reu_stash_window:
     rts
 
 reu_fetch_window:
+    jsr set_stage_border_reu
     jsr cart_disable_for_reu
     lda $01
     pha

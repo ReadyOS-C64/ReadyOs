@@ -90,6 +90,31 @@ Each EasyFlash bank is treated as one 16 KiB payload slot, split across:
 
 - `$DF01-$DF08`: REU DMA control registers
 
+## Boot Color Guide
+
+The current EasyFlash loader now uses a stable background plus stage-specific
+border colors so the machine is visibly doing work during the long cold-boot
+preload.
+
+| Visible color | Register | Meaning | Typical time |
+| --- | --- | --- | --- |
+| blue background | `$D021` | baseline boot background | entire boot |
+| light blue border | `$D020` | loader setup and general control flow | early setup, table copy, verify label |
+| green border | `$D020` | shim install and shim-related setup | shim copy and shared-state setup |
+| yellow border | `$D020` | copying payload from cartridge into RAM | launcher, app, and overlay payload reads |
+| orange border | `$D020` | moving staged RAM into REU or restoring from REU | snapshot stash and final launcher restore |
+| light green border | `$D020` | final handoff into the launcher | just before `jmp $1000` |
+
+Important nuance:
+
+- The background intentionally stays blue.
+- The border is the progress indicator.
+- Long yellow or orange periods are normal and mean the machine is actively
+  preloading, not frozen.
+- During the app and overlay loops, the border repeatedly alternates between
+  yellow and orange because each item is copied from cartridge and then stashed
+  to REU.
+
 ## Stage 0: Power-On Cartridge Stub
 
 The first code that runs is the ROMH stub in `src/boot/easyflash_stub.s`.
@@ -165,6 +190,9 @@ Important nuance:
 
 This explains why the user can see a long blue pause with no readable text even though status text is already being written.
 
+At this stage the user-visible progress signal is mainly the border-color
+changes, not the screen text.
+
 ## Stage 4: Historical Shim Install
 
 The loader copies the historical shim byte image into `$C800-$C9FF`.
@@ -197,6 +225,7 @@ Important nuance:
 
 - The shim is not executed directly from cartridge.
 - It is always copied into resident RAM first.
+- The border switches to the shim color for this phase.
 
 ## Stage 5: REU State Init
 
@@ -244,6 +273,7 @@ Important nuance:
 - The payload itself is about `30.2 KiB`.
 - The stash is the full `46 KiB` app window.
 - That means the REU snapshot stores the complete runtime RAM image shape expected by the launcher, not just the compressed-on-cart payload bytes.
+- The border switches to yellow for cart-to-RAM copy, then orange for the REU stash.
 
 ## Stage 8: Preload Application Snapshots
 
@@ -271,6 +301,11 @@ Important nuances:
 
 So the long "blue screen pause" is mostly a batch build of all app snapshots.
 
+During this loop, the border repeatedly alternates:
+
+- yellow while the selected EasyFlash bank is being copied into RAM
+- orange while the completed RAM window is being stashed to REU
+
 ## Stage 9: Preload ReadyShell Overlays
 
 After apps, the loader walks the overlay table.
@@ -297,6 +332,7 @@ Important nuance:
 - Overlays are not executed during boot.
 - They are staged and cached into REU for later ReadyShell runtime use.
 - The loader uses `$1000` as a temporary staging region for this work.
+- The same yellow-then-orange border pattern is used here too.
 
 ## Stage 10: Overlay Metadata Write
 
@@ -365,6 +401,7 @@ Important nuance:
 
 - The launcher is not starting directly from cartridge data.
 - It is starting from a RAM image restored out of REU bank `0`.
+- The border switches to orange for the final restore, then light green for the last handoff into launcher code.
 
 ## What Runs Where
 
@@ -451,6 +488,13 @@ Roughly:
 
 The visible effect is "nothing happening", but the machine is actually building all of the runtime REU state up front.
 
+With the new stage colors, the more accurate user-facing interpretation is:
+
+- blue background plus yellow border: cart payloads are being read
+- blue background plus orange border: snapshots are being pushed into REU
+- brief green border: shim-related setup work
+- brief light green border: launcher handoff is about to happen
+
 ## Why You Usually Do Not See The Boot Messages
 
 Two separate reasons:
@@ -473,4 +517,3 @@ The EasyFlash boot process is a preload-and-snapshot pipeline:
 7. launcher starts in C at `$1000`
 
 The large cold-boot delay is mostly the price of making later launches effectively instant.
-

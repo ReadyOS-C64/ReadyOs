@@ -163,6 +163,21 @@
       grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
+    .chip {
+      display: inline-block;
+      min-width: 7.5em;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-weight: 700;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+    .chip-bg { background: #3557c7; color: #f2f7ff; }
+    .chip-loader { background: #84d3ff; color: #082234; }
+    .chip-shim { background: #6fcc70; color: #08210d; }
+    .chip-cart { background: #f0c865; color: #2f2200; }
+    .chip-reu { background: #f19a55; color: #311400; }
+    .chip-handoff { background: #9deb8d; color: #103000; }
     @media (max-width: 960px) {
       .cards, .grid-2 {
         grid-template-columns: 1fr;
@@ -244,6 +259,26 @@
     </section>
 
     <section>
+      <h2>Boot Color Guide</h2>
+      <table>
+        <thead>
+          <tr><th>Visible Color</th><th>Register</th><th>Meaning</th><th>Typical Time</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="chip chip-bg">blue background</span></td><td><code>$D021</code></td><td>Baseline boot background</td><td>Entire boot</td></tr>
+          <tr><td><span class="chip chip-loader">light blue border</span></td><td><code>$D020</code></td><td>Loader setup and general control flow</td><td>Early setup, table copy, verify label</td></tr>
+          <tr><td><span class="chip chip-shim">green border</span></td><td><code>$D020</code></td><td>Shim install and shim-related setup</td><td>Shim copy and shared-state setup</td></tr>
+          <tr><td><span class="chip chip-cart">yellow border</span></td><td><code>$D020</code></td><td>Copying payload from cartridge into RAM</td><td>Launcher, app, and overlay payload reads</td></tr>
+          <tr><td><span class="chip chip-reu">orange border</span></td><td><code>$D020</code></td><td>Moving staged RAM into REU or restoring from REU</td><td>Snapshot stash and final launcher restore</td></tr>
+          <tr><td><span class="chip chip-handoff">light green border</span></td><td><code>$D020</code></td><td>Final handoff into the launcher</td><td>Just before <code>jmp $1000</code></td></tr>
+        </tbody>
+      </table>
+      <div class="note">
+        The background intentionally stays blue. The border is the progress indicator. Long yellow or orange periods are normal and mean the machine is actively preloading, not frozen.
+      </div>
+    </section>
+
+    <section>
       <h2>Boot Flow</h2>
       <div class="flow">
         <div class="step">
@@ -270,6 +305,7 @@
           <h3>Stage 3: Boot screen prep</h3>
           <p>The loader clears screen RAM at <code>$0400</code>, writes boot text, and updates colors. However,
           the VIC may not yet be pointed at that screen RAM, so messages may exist logically without being visible.</p>
+          <p>The user-visible progress signal at this point is mainly the border-color change, not the screen text.</p>
         </div>
 
         <div class="step">
@@ -282,6 +318,7 @@ $C806  just run $1000
 $C809  preload to REU and return
 $C80C  return to launcher
 $C80F  switch app</pre>
+          <p>The border switches to the shim color for this phase.</p>
         </div>
 
         <div class="step">
@@ -302,6 +339,7 @@ $C80F  switch app</pre>
           full app window <code>$1000-$C5FF</code> is stashed into REU bank <code>0</code>.</p>
           <p>The key nuance is that the cart payload is much smaller than the REU snapshot. The system stores a full
           runtime RAM image shape, not just the raw on-cartridge bytes.</p>
+          <p>The border switches to yellow for cart-to-RAM copy, then orange for the REU stash.</p>
         </div>
 
         <div class="step">
@@ -309,6 +347,7 @@ $C80F  switch app</pre>
           <p>For each app, the loader clears <code>$1000-$C5FF</code>, selects that app's cart bank, copies the app
           payload into RAM, then stashes the full <code>$B600</code>-byte window to the assigned REU bank. It also marks
           the app as present in the shim bitmap at <code>$C836-$C838</code>.</p>
+          <p>During this loop, the border repeatedly alternates between yellow for cart reads and orange for REU stash work.</p>
         </div>
 
         <div class="step">
@@ -316,6 +355,7 @@ $C80F  switch app</pre>
           <p>Overlays are staged through RAM starting at <code>$1000</code>, then stashed as <code>$3800</code>-byte blocks
           into REU banks <code>64</code> and <code>65</code> at fixed offsets. They are cached for later ReadyShell runtime use,
           not executed during boot.</p>
+          <p>The same yellow-then-orange border pattern is used here too.</p>
         </div>
 
         <div class="step">
@@ -341,6 +381,7 @@ $C80F  switch app</pre>
           <h3>Stage 13: Restore launcher and hand off</h3>
           <p>The loader fetches REU bank <code>0</code> back into <code>$1000-$C5FF</code> and finally jumps to
           <code>$1000</code>. That is the handoff from boot asm to the C launcher.</p>
+          <p>The border switches to orange for the final restore, then light green for the last handoff into launcher code.</p>
         </div>
       </div>
     </section>
@@ -396,6 +437,13 @@ repeat until payload length is satisfied</pre>
         <li>about <code>885 KiB</code> of snapshot / staging data stashed to REU</li>
         <li>plus substantial repeated RAM clearing</li>
       </ul>
+      <p>With the new stage colors, the more accurate user-facing interpretation is:</p>
+      <ul>
+        <li>blue background plus yellow border: cart payloads are being read</li>
+        <li>blue background plus orange border: snapshots are being pushed into REU</li>
+        <li>brief green border: shim-related setup work</li>
+        <li>brief light green border: launcher handoff is about to happen</li>
+      </ul>
       <div class="note">
         The user mostly sees a blank blue stage because the boot code writes screen text before VIC screen banking is guaranteed
         to point at <code>$0400</code>, then later KERNAL text init rapidly clears or overwrites what becomes visible.
@@ -418,4 +466,3 @@ repeat until payload length is satisfied</pre>
   </main>
 </body>
 </html>
-
