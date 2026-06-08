@@ -5,9 +5,9 @@ Commodore 64 setup. Its long-term center of gravity is the new Commodore 64
 Ultimate and related Ultimate-family hardware, but it is intended to support a
 wide range of C64 setups that have a reasonably large REU. That includes VICE,
 Ultimate-family hardware, and other practical REU-capable modern paths. PRECOG
-`0.2.4` is the current development line.
+`0.2.5` is the current development line.
 
-The current `0.2.4` development line is still comparatively generic rather
+The current `0.2.5` development line is still comparatively generic rather
 than being explicitly tailored to the new C64 Ultimate. This cycle is expected
 to push further in that Ultimate-first direction while still trying to stay
 usable on other REU-capable C64 setups.
@@ -81,7 +81,7 @@ Boot note:
 
 ## Current Status
 
-- Base release: `0.2.4`
+- Base release: `0.2.5`
 - Local builds use the existing rolling suffix flow for artifact filenames only
 - Builds release media per profile
 - Full-content profiles currently include about `20` launcher-visible entries
@@ -91,9 +91,9 @@ Boot note:
   recorded in logical REU bank `0`; ReadyOS no longer pre-reserves a fixed
   24-bank app-slot gap.
 
-## What's New In 0.2.4
+## What's New In 0.2.5
 
-- Development version bump from the `0.2.3` release-candidate line.
+- Development version bump from the `0.2.4` development line.
 - New `precog-easyflash` cartridge SKU for VICE and Ultimate-family setups.
   It boots from an EasyFlash `CRT`, keeps a companion `D64` on drive `8`, and
   preloads the launcher, app snapshots, and ReadyShell overlays into the REU.

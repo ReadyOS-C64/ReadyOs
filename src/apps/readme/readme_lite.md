@@ -1,16 +1,16 @@
-## ReadyOS PRECOG 0.2.4
+## ReadyOS PRECOG 0.2.5
 
 The goal is **fast app switching** for Commodore 64 Ultimate use,
 tuned to stay usable at both 1MHz and 48MHz while remaining
 C64-class practical.
 
 Current snapshot:
-- Base release: **0.2.4**
+- Base release: **0.2.5**
 - Runtime target: clean behavior from stock-speed C64 use up through
   Ultimate turbo workflows
 - Media layout: profile-based release media under `Releases/<version>/<profile>/` with external `helpme.md`
   instructions for the selected build
-- Development artifacts use the plain **0.2.4** version stamp.
+- Development artifacts use the plain **0.2.5** version stamp.
   Local development builds may still include an internal trailing letter.
 - New since 0.1.5: **quicknotes**, **simple files**, **simple cells**,
   **sidetris**, **deminer**, **system info**, and **EasyFlash**
