@@ -28,6 +28,8 @@ if [ "$QUICKNOTES_OWNED_REU_KEEP_VICE" = "1" ]; then
 fi
 
 cd "$READYOS_ROOT"
+PUBLIC_VERSION_TEXT="$(python3 build_support/update_build_version.py --current)"
+PUBLIC_VERSION="${PUBLIC_VERSION_TEXT%[A-Z]}"
 if [ "${QUICKNOTES_OWNED_REU_SKIP_BUILD:-0}" != "1" ]; then
   RUN_VERSION_TEXT="$(python3 build_support/update_build_version.py --next)"
   make -B \
@@ -37,8 +39,8 @@ if [ "${QUICKNOTES_OWNED_REU_SKIP_BUILD:-0}" != "1" ]; then
     profile
 fi
 
-D81_REL="$(ls -t Releases/0.2.4/precog-d81/*.d81 | head -1)"
-PREBOOT_REL="$(ls -t Releases/0.2.4/precog-d81/*-preboot.prg | head -1)"
+D81_REL="$(ls -t Releases/$PUBLIC_VERSION/precog-d81/*.d81 | head -1)"
+PREBOOT_REL="$(ls -t Releases/$PUBLIC_VERSION/precog-d81/*-preboot.prg | head -1)"
 D81="$D81_REL"
 PREBOOT="$PREBOOT_REL"
 

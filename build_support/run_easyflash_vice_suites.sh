@@ -24,6 +24,8 @@ case "$SCOPE" in
 esac
 
 cd "$READYOS_ROOT"
+PUBLIC_VERSION_TEXT="$(python3 build_support/update_build_version.py --current)"
+PUBLIC_VERSION="${PUBLIC_VERSION_TEXT%[A-Z]}"
 mkdir -p "$OUT_DIR"
 
 RUN_VERSION_TEXT="$(python3 build_support/update_build_version.py --next)"
@@ -35,8 +37,8 @@ make -B \
   profile
 make READYOS_VERSION_TEXT="$RUN_VERSION_TEXT" easyflash
 
-CRT_REL="$(ls -t Releases/0.2.4/precog-easyflash/readyos_easyflash.crt | head -1)"
-D64_REL="$(ls -t Releases/0.2.4/precog-easyflash/readyos_data.d64 | head -1)"
+CRT_REL="$(ls -t Releases/$PUBLIC_VERSION/precog-easyflash/readyos_easyflash.crt | head -1)"
+D64_REL="$(ls -t Releases/$PUBLIC_VERSION/precog-easyflash/readyos_data.d64 | head -1)"
 CRT="$(cd "$(dirname "$CRT_REL")" && pwd)/$(basename "$CRT_REL")"
 TEST_D64="$OUT_DIR/readyos_data.easyflash-vice.d64"
 cp -f "$D64_REL" "$TEST_D64"

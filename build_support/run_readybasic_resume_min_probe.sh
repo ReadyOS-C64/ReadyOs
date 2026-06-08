@@ -35,6 +35,8 @@ PY
 }
 
 cd "$READYOS_ROOT"
+PUBLIC_VERSION_TEXT="$(python3 build_support/update_build_version.py --current)"
+PUBLIC_VERSION="${PUBLIC_VERSION_TEXT%[A-Z]}"
 D81="${READYBASIC_D81:-__READYBASIC_D81__}"
 PREBOOT="${READYBASIC_PREBOOT:-__READYBASIC_PREBOOT__}"
 
@@ -215,10 +217,10 @@ if [ "${READYBASIC_SKIP_BUILD:-0}" != "1" ]; then
 fi
 
 if [ "$D81" = "__READYBASIC_D81__" ]; then
-  D81="$(ls -t Releases/0.2.4/precog-d81/*.d81 | head -1)"
+  D81="$(ls -t Releases/$PUBLIC_VERSION/precog-d81/*.d81 | head -1)"
 fi
 if [ "$PREBOOT" = "__READYBASIC_PREBOOT__" ]; then
-  PREBOOT="$(ls -t Releases/0.2.4/precog-d81/*-preboot.prg | head -1)"
+  PREBOOT="$(ls -t Releases/$PUBLIC_VERSION/precog-d81/*-preboot.prg | head -1)"
 fi
 python3 - "$PLAN" "$D81" "$PREBOOT" <<'PY'
 from pathlib import Path
