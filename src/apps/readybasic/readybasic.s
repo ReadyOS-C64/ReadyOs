@@ -92,7 +92,6 @@ KEYD_BUFFER     = $0277
 COLOR_CODE      = $0286
 KERNAL_MEMTOP   = $0281
 KERNAL_MEMBOT   = $0283
-KERNAL_IRQ_VEC  = $0314
 KERNAL_CHRIN_VEC = $0324
 KERNAL_GETIN_VEC = $032A
 CIA1_PRA        = $DC00
@@ -470,62 +469,37 @@ rb_entry_cpu:   .byte 0
 
         .segment "RESIDENT"
 
-rb_irq:
+rb_chrin:
+        lda #1
+        sta rb_chrin_active
+        jsr rb_call_orig_chrin
         php
         pha
-        txa
-        pha
-        tya
-        pha
-        lda DFLTN
-        bne @done
-        lda rb_hotkey_pending
-        bne @done
-        lda CURLIN+1
-        cmp #$FF
-        bne @done
-        jsr rb_scan_hotkey_buffer
-        bne @candidate
-        jsr rb_scan_hotkey_matrix
-        bne @candidate
-        lda rb_hotkey_suppress
-        beq @done
         lda #0
-        sta rb_hotkey_suppress
-        beq @done
-@candidate:
-        tax
-        lda rb_hotkey_suppress
-        beq @queue
-        txa
-        cmp rb_hotkey_suppress
-        beq @done
-        bne @done
-@queue:
-        jsr rb_queue_hotkey_line
-@done:
-        pla
-        tay
-        pla
-        tax
+        sta rb_chrin_active
+        lda rb_hotkey_pending
+        bne @dispatch
         pla
         plp
-        jmp (rb_orig_irq_lo)
+        rts
+@dispatch:
+        pla
+        plp
+        lda #1
+        sta rb_hotkey_chrin_dispatch
+        jmp rb_dispatch_pending_hotkey
+
+rb_call_orig_chrin:
+        jmp (rb_orig_chrin_lo)
 
         .segment "ENTRY"
 
 rb_queue_hotkey_line:
         stx rb_hotkey_pending
-        lda #4
+        lda #1
         sta KEYD_COUNT
-        lda #'R'
-        sta KEYD_BUFFER
-        lda #'E'
-        sta KEYD_BUFFER+1
-        lda #'M'
-        sta KEYD_BUFFER+2
         lda #13
-        sta KEYD_BUFFER+3
+        sta KEYD_BUFFER
         rts
 
         .segment "RESIDENT"
@@ -533,6 +507,7 @@ rb_queue_hotkey_line:
 rb_clear_hotkey_input_state:
         lda #0
         sta rb_hotkey_pending
+        sta rb_chrin_active
         sta KEYD_COUNT
         ldx #9
 @keyd:
@@ -553,21 +528,6 @@ rb_clear_hotkey_input_state:
         rts
 
         .segment "ENTRY"
-
-rb_scan_hotkey_buffer:
-        lda KEYD_COUNT
-        beq @none
-        lda KEYD_BUFFER
-        cmp #KEY_CTRL_B
-        beq @found
-        cmp #KEY_F2
-        beq @found
-        cmp #KEY_F4
-        beq @found
-@none:
-        lda #0
-@found:
-        rts
 
 rb_scan_hotkey_matrix:
         lda CIA1_PRA
@@ -684,16 +644,25 @@ rb_dispatch_pending_hotkey:
 @next:
         jsr call_hidden_select_next_app
         lda rb_found_kind
-        bne @switch
-        jsr rb_wait_hotkey_release
-        rts
+        bne rb_hotkey_switch
+        jmp rb_hotkey_no_switch
 @prev:
         jsr call_hidden_select_prev_app
         lda rb_found_kind
-        bne @switch
+        bne rb_hotkey_switch
+rb_hotkey_no_switch:
         jsr rb_wait_hotkey_release
+        lda rb_hotkey_chrin_dispatch
+        beq @no_switch_return
+        lda #0
+        sta rb_hotkey_chrin_dispatch
+        ldx #$F8
+        txs
+        cli
+        jmp BASIC_READY
+@no_switch_return:
         rts
-@switch:
+rb_hotkey_switch:
         lda rb_tmp_lo
         sta rb_hotkey_target_bank
         jsr rb_wait_hotkey_release
@@ -1109,6 +1078,16 @@ rb_exit_store_magic:
 
 prepare_shim_yield:
         jsr call_hidden_save_state
+        lda rb_hotkey_chrin_dispatch
+        beq @stack_done
+        lda #0
+        sta rb_hotkey_chrin_dispatch
+        lda RUNTIME_MODE
+        cmp #RB_RESUME_READY
+        bne @stack_done
+        lda #$F8
+        sta RUNTIME_SP
+@stack_done:
         jsr K_CLRCHN
         lda CPU_PORT
         and #RAM_UNDER_BASIC_KEEP_KERNAL
@@ -4157,10 +4136,10 @@ hidden_install_vectors:
         sta rb_orig_execute_lo
         lda $0309
         sta rb_orig_execute_hi
-        lda KERNAL_IRQ_VEC
-        sta rb_orig_irq_lo
-        lda KERNAL_IRQ_VEC+1
-        sta rb_orig_irq_hi
+        lda KERNAL_CHRIN_VEC
+        sta rb_orig_chrin_lo
+        lda KERNAL_CHRIN_VEC+1
+        sta rb_orig_chrin_hi
         lda #1
         sta rb_vectors_saved
 @install:
@@ -4180,10 +4159,10 @@ hidden_install_vectors:
         sta KEYLOG_VEC
         lda #>rb_keylog
         sta KEYLOG_VEC+1
-        lda #<rb_irq
-        sta KERNAL_IRQ_VEC
-        lda #>rb_irq
-        sta KERNAL_IRQ_VEC+1
+        lda #<rb_chrin
+        sta KERNAL_CHRIN_VEC
+        lda #>rb_chrin
+        sta KERNAL_CHRIN_VEC+1
         rts
 
 hidden_select_next_app:
@@ -4370,10 +4349,10 @@ hidden_restore_vectors:
         sta $030A
         lda #>BASIC_EVAL
         sta $030B
-        lda rb_orig_irq_lo
-        sta KERNAL_IRQ_VEC
-        lda rb_orig_irq_hi
-        sta KERNAL_IRQ_VEC+1
+        lda rb_orig_chrin_lo
+        sta KERNAL_CHRIN_VEC
+        lda rb_orig_chrin_hi
+        sta KERNAL_CHRIN_VEC+1
 @done:
         rts
 
@@ -5038,8 +5017,8 @@ rb_orig_keylog_lo:.byte 0
 rb_orig_keylog_hi:.byte 0
 rb_orig_execute_lo:.byte 0
 rb_orig_execute_hi:.byte 0
-rb_orig_irq_lo: .byte 0
-rb_orig_irq_hi: .byte 0
+rb_orig_chrin_lo:.byte 0
+rb_orig_chrin_hi:.byte 0
 rb_peek_lo:     .byte 0
 rb_peek_hi:     .byte 0
 rb_crunch_len:  .byte 0
@@ -5066,7 +5045,7 @@ rb_save_num0_hi:.res 4
 rb_float_save_depth:.byte 0
 rb_save_float0_buf:.res 20
 
-        .segment "BRIDGE"
+        .segment "ENTRY"
 rb_free_lo:     .byte 0
 rb_free_hi:     .byte 0
 rb_tmp_lo:      .byte 0
@@ -5076,6 +5055,7 @@ rb_digit_seen:  .byte 0
 rb_saved_plot_x:.byte 0
 rb_saved_plot_y:.byte 0
 
+        .segment "BRIDGE"
 rb_kw_proc:     .byte "PROC",0
 rb_kw_func:     .byte "FUNC",0
 rb_kw_exec:     .byte "EXEC",0
@@ -5085,11 +5065,12 @@ rb_kw_repeat:   .byte "REPEAT",0
 rb_kw_until:    .byte "UNTIL",0
 rb_kw_label:    .byte "LABEL",0
 rb_kw_jump:     .byte "JUMP",0
-        .segment "BRIDGE"
+        .segment "ENTRY"
 rb_kw_endp:     .byte "ENDP",0
 rb_kw_char:     .byte 0
-
 rb_found_kind:  .byte 0
+
+        .segment "BRIDGE"
 rb_found_line_lo:.byte 0
 rb_found_line_hi:.byte 0
 rb_scan_line_lo:.byte 0
@@ -5131,6 +5112,8 @@ rb_last_line_lo:.byte 0
 rb_last_line_hi:.byte 0
 rb_hotkey_pending:.byte 0
 rb_hotkey_suppress:.byte 0
+rb_chrin_active:.byte 0
+rb_hotkey_chrin_dispatch:.byte 0
 rb_hotkey_release_key:.byte 0
 rb_hotkey_release_start:.byte 0
 
@@ -5169,6 +5152,7 @@ rb_out_ptr_hi:  .byte 0
 rb_out_count_lo:.byte 0
 rb_out_count_hi:.byte 0
 
+        .segment "ENTRY"
 rb_overlay_vec_lo:.byte 0
 rb_overlay_vec_hi:.byte 0
 rb_slot0_cmd:   .byte 0
@@ -5179,6 +5163,8 @@ rb_reu_c64_lo:  .byte 0
 rb_reu_c64_hi:  .byte 0
 rb_reu_off_lo:  .byte 0
 rb_reu_off_hi:  .byte 0
+
+        .segment "BRIDGE"
 rb_reu_bank:    .byte 0
 rb_reu_len_lo:  .byte 0
 rb_reu_len_hi:  .byte 0
@@ -5209,6 +5195,18 @@ install_vectors:
         jmp call_hidden_common
 
 rb_keylog:
+        lda rb_chrin_active
+        beq @orig
+        lda DFLTN
+        bne @orig
+        lda TXTPTR+1
+        cmp #>BASIC_START
+        bcc @prompt
+        bne @orig
+        lda TXTPTR
+        cmp #<BASIC_START
+        bcs @orig
+@prompt:
         lda rb_hotkey_pending
         bne @consume
         lda SFDX

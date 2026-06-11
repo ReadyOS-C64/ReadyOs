@@ -18,9 +18,9 @@
 
 ## 2026-06-10 implementation notes
 
-- ReadyBASIC owns prompt hotkeys only while active, direct, and keyboard-input backed. It now installs CINV `$0314/$0315` plus KEYLOG `$028F/$0290`, not a CHRIN hook.
-- CINV directly scans CIA1 only for Ctrl+B, Shift+F1/F2, and Shift+F3/F4, restores the CIA scan-port state, records `rb_hotkey_pending`, and queues a harmless `REM` line so BASIC reaches the execute hook normally.
-- KEYLOG catches KERNAL-decoded special-key cases, consumes the key state, and preserves the CIA port state.
+- Historical note: this pass used CINV `$0314/$0315` plus KEYLOG `$028F/$0290` and queued a visible `REM` line. The 2026-06-11 keyboard-regression pass below supersedes that design.
+- The earlier CINV path directly scanned CIA1 only for Ctrl+B, Shift+F1/F2, and Shift+F3/F4, restored the CIA scan-port state, recorded `rb_hotkey_pending`, and queued `REM` plus Return so BASIC reached the execute hook normally.
+- KEYLOG caught KERNAL-decoded special-key cases, consumed the key state, and preserved the CIA port state.
 - Every ReadyBASIC yield path clears `rb_hotkey_pending`, `$C6`, `$0277`, `SHFLAG`, `LSTX`, and `SFDX`; typed `EXIT` and Ctrl+B set the launcher suppress-startup flag so run-first configs do not auto-reenter ReadyBASIC.
 - F2/F4 store the selected target bank in `rb_hotkey_target_bank` before `prepare_shim_yield`, then write `$C820` only after hidden save, `CLRCHN`, and vector restore.
 - Double-switch follow-up: cold/warm entry now scans the physical matrix and quarantines any still-held ReadyBASIC hotkey until release. Prompt hotkey yield waits for the selected chord to release with a jiffy-clock timeout, then clears editor/KERNAL key state again.
@@ -30,16 +30,27 @@
 ## 2026-06-10 harness rules
 
 - Cold/first ReadyBASIC entry may wait for the `READYBASIC` title.
-- Warm entries must not rely on the title being present. The chain probe uses a small delay plus `ready.`, then proves the state with `$C834`, ReadyBASIC IRQ/KEYLOG vectors, empty keyboard buffer, and an actual typed `PRINT` sentinel.
+- Warm entries must not rely on the title being present. The chain probe uses a small delay plus `ready.`, then proves the state with `$C834`, ReadyBASIC CHRIN/KEYLOG vectors, empty keyboard buffer, and an actual typed `PRINT` sentinel.
 - The boot screen can contain `ready.` text; do not use `ready.` as the only proof of ReadyBASIC entry.
 - In app context, VICE Binary `input.sequence` for Ctrl+B can drain `$C6` without exercising the app hotkey path. The focused chain uses monitor `keybuf \x02` for app Ctrl+B and normal function-key input for app F2.
 - Host-key mode is useful for manual-like proof but can fail on macOS automation permissions (`osascript is not allowed to send keystrokes`) independent of ReadyBASIC.
 
+## 2026-06-11 keyboard regression implementation notes
+
+- ReadyBASIC now owns prompt hotkeys only while the ROM editor is inside ReadyBASIC's CHRIN hook, input is from the keyboard, and BASIC is at a direct prompt.
+- KEYLOG `$028F/$0290` records Ctrl+B/F2/F4, consumes `SHFLAG`/`SFDX`, and queues only Return. It does not inject command text.
+- CHRIN `$0324/$0325` wraps original CHRIN, preserves ordinary `A` and status flags, then dispatches a pending hotkey before BASIC can store or execute a partial prompt line.
+- The hotkey gate should follow `TXTPTR < BASIC_START`, not `CURLIN`, so partially typed prompt lines stay eligible while RUN-mode input still stays out of scope.
+- The CINV/IRQ matrix scanner is not installed for prompt hotkeys. Ordinary typing, repeat timing, cursor state, and space handling remain owned by the ROM editor.
+- READY-mode hotkey yields force saved `RUNTIME_SP` to `$F8` instead of preserving transient CHRIN/editor stack depth.
+- Entry-time hotkey quarantine and yield-time release waits remain: cold/warm entry clears editor state and suppresses a still-held ReadyOS hotkey until release; accepted Ctrl+B/F2/F4 waits for the selected chord to release before yielding.
+- Focused regression coverage now includes `10`+Ctrl+B and `20`+F2 without storing partial lines, absence of visible `REM`, warp-mode single-space typing, normal typing after reentry, and app liveness after switch. The cartridge regression probe should keep the partial-line F2 case as a first-class check until it passes cleanly on both regular and EasyFlash builds.
+
 ## Current memory/headroom
 
 - `BASIC_START` remains `$2AC1`; empty BASIC free bytes remain `30013`.
-- `ENTRY` is `$1000-$11FC`, `$01FD` / 509B.
-- `RESIDENT` is `$1200-$2ABE`, `$18BF` / 6335B, leaving 1B before the `$2ABF` resident budget end and the `$2AC0` sentinel.
+- `ENTRY` is `$1000-$11F6`, `$01F7` / 503B.
+- `RESIDENT` is `$1200-$2AB8`, `$18B9` / 6329B, leaving 7B before the `$2ABF` resident budget end and the `$2AC0` sentinel.
 - `HIDDEN` is `$A000-$A6C7`, `$06C8` / 1736B, leaving `$0138` / 312B in the 2K common helper area.
 - `BRIDGE` is `$C000-$C1FD`, `$01FE` / 510B, leaving 2B before `$C200`.
 - BASIC RAM contract is unchanged; the added cost is paid in entry/helper/bridge/resident bytes, not by moving BASIC start.
@@ -88,14 +99,14 @@
   - `logs/vice_auto_20260610_205229/manifest.json` - 10-hop cross-app resume.
   - `logs/vice_auto_20260610_205455/manifest.json` - second-entry editor stress.
   - `logs/vice_auto_20260610_205649/manifest.json` - full visual verification.
-- The chain proof now matches the field failure instead of only a cold title wait: first entry may wait for `READYBASIC`, warm entries use capture plus `$C834` app-bank checks, ReadyBASIC IRQ/KEYLOG vector checks, `$C6==0`, and typed `PRINT` sentinels. The boot screen's `READY.` text is not accepted as sufficient proof.
+- The chain proof now matches the field failure instead of only a cold title wait: first entry may wait for `READYBASIC`, warm entries use capture plus `$C834` app-bank checks, ReadyBASIC CHRIN/KEYLOG vector checks, `$C6==0`, and typed `PRINT` sentinels. The boot screen's `READY.` text is not accepted as sufficient proof.
 - The chain proof includes: ReadyBASIC Ctrl+B, explicit reentry, ReadyBASIC Ctrl+B again, REU Viewer launch, REU Viewer F2 to ReadyBASIC, typed ReadyBASIC liveness, ReadyBASIC F2 back to REU Viewer, app vectors restored, REU Viewer Ctrl+B to launcher, ReadyBASIC reentry/liveness, typed `EXIT`, launcher stability/no auto-reenter, and final ReadyBASIC liveness.
 
 ## 2026-06-10 final memory/headroom
 
 - `BASIC_START` remains `$2AC1`; empty BASIC formula free bytes remain `30013`.
-- `ENTRY` is `$1000-$11FC`, `$01FD` / 509B.
-- `RESIDENT` is `$1200-$2ABE`, `$18BF` / 6335B, leaving 1B before `$2ABF` / `$2AC0`.
+- `ENTRY` is `$1000-$11F6`, `$01F7` / 503B.
+- `RESIDENT` is `$1200-$2AB8`, `$18B9` / 6329B, leaving 7B before `$2ABF` / `$2AC0`.
 - `HIDDEN` is `$A000-$A6C7`, `$06C8` / 1736B, leaving `$0138` / 312B in the 2K common helper area.
 - `LOWPACK` is `$A800-$AECD`, `$06CE` / 1742B.
 - `SLOTPACK1` is `$B000-$B23A`, `$023B` / 571B.
@@ -114,3 +125,11 @@
 - EasyFlash produced two pre-app boot/preload flake manifests during the final aggregate (`031604`, `033016`), both stuck before ReadyBASIC at `READYOS EASYFLASH BOOT` / `BOOTER PRELOADING REU SNAPSHOTS`; suite retries passed with the successful manifests above. These did not exercise ReadyBASIC app code.
 - EasyFlash chain generation now keeps the chain launcher-owned, with no `--start-app readybasic` wrapper. The converter adapts only the chain's first launcher navigation to the EasyFlash app order: ReadyBASIC is four cursor-downs from the top, while REU Viewer remains three down from ReadyBASIC.
 - `run_easyflash_vice_suites.sh` now has configurable plan start/retry pauses (`EASYFLASH_PLAN_START_PAUSE_S`, `EASYFLASH_PLAN_RETRY_PAUSE_S`) to reduce VICE/EasyFlash cold-start flakiness without changing boot, launcher, shim, or app code. The default first-attempt pause now matches the proven 20s retry pause.
+
+## 2026-06-11 remaining failure to reproduce
+
+- The newest keyboard regression probe added partial prompt-line coverage that is stricter than the earlier focused hotkey suites.
+- Latest failed run: `logs/vice_auto_20260611_153009`, plan `readybasic_keyboard_regression_probe_easyflash`, failed step `wait_editor_after_partial_f2`.
+- What passed before that failure: ReadyBASIC launch, CHRIN/KEYLOG vector checks, warp-mode `PRINT "A B C"` spacing, partial-line `10` plus Ctrl+B to launcher, no visible or listed `REM`, ReadyBASIC reentry/liveness, Editor launch, and Editor Ctrl+B back to launcher.
+- Remaining unresolved case: after an Editor round trip, type `20` at the ReadyBASIC prompt without Return, then press F2. Expected result is an immediate switch to Editor; latest EasyFlash automation timed out waiting for `editor`.
+- Reproduction details are recorded in `agentworking/readybasic_hotkeys_fix/reproduce_remaining_failure.md`.

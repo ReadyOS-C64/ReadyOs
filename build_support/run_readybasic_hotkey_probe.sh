@@ -124,15 +124,16 @@ YAML
   elif [ "$effective_mode" = "keylog" ]; then
     local keylog_lo
     local keylog_hi
+    local active_lo
+    local active_hi
     local stub_hex
-    local break_addr
     keylog_lo="$(printf '%02X' $((KEYLOG_ADDR_DEC & 255)))"
     keylog_hi="$(printf '%02X' $(((KEYLOG_ADDR_DEC >> 8) & 255)))"
-    stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
-    break_addr="0348"
+    active_lo="$(printf '%02X' $((CHRIN_ACTIVE_DEC & 255)))"
+    active_hi="$(printf '%02X' $(((CHRIN_ACTIVE_DEC >> 8) & 255)))"
+    stub_hex="A9 01 8D $active_lo $active_hi A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi A9 00 8D $active_lo $active_hi 4C 74 A4"
     if [ "$DUPLICATE_KEYLOG" = "1" ] && [ "$target_context" = "readybasic" ]; then
-      stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
-      break_addr="0354"
+      stub_hex="A9 01 8D $active_lo $active_hi A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi A9 00 8D $active_lo $active_hi 4C 74 A4"
     fi
     cat <<YAML
   - id: ${id}_keylog_stub
@@ -144,10 +145,6 @@ YAML
     type: monitor.command
     params:
       command: "raw:delete"
-  - id: ${id}_break_after_keylog
-    type: monitor.command
-    params:
-      command: "raw:break $break_addr"
   - id: $id
     type: monitor.command
     params:
@@ -195,13 +192,13 @@ if [ -z "$PENDING_OFF_HEX" ]; then
   exit 1
 fi
 PENDING_DEC="$((0x1200 + 16#$PENDING_OFF_HEX))"
-IRQ_ADDR_HEX="$(awk '/rb_irq:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_hotkey_probe.lst)"
-if [ -z "$IRQ_ADDR_HEX" ]; then
-  echo "Could not find rb_irq in obj/readybasic_hotkey_probe.lst" >&2
+CHRIN_ADDR_HEX="$(awk '/rb_chrin:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_hotkey_probe.lst)"
+if [ -z "$CHRIN_ADDR_HEX" ]; then
+  echo "Could not find rb_chrin in obj/readybasic_hotkey_probe.lst" >&2
   exit 1
 fi
-IRQ_ADDR_DEC="$((0x1200 + 16#$IRQ_ADDR_HEX))"
-IRQ_VEC_HEX="$(printf '%02X %02X' $((IRQ_ADDR_DEC & 255)) $(((IRQ_ADDR_DEC >> 8) & 255)))"
+CHRIN_ADDR_DEC="$((0x1200 + 16#$CHRIN_ADDR_HEX))"
+CHRIN_VEC_HEX="$(printf '%02X %02X' $((CHRIN_ADDR_DEC & 255)) $(((CHRIN_ADDR_DEC >> 8) & 255)))"
 KEYLOG_ADDR_HEX="$(awk '/rb_keylog:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_hotkey_probe.lst)"
 if [ -z "$KEYLOG_ADDR_HEX" ]; then
   echo "Could not find rb_keylog in obj/readybasic_hotkey_probe.lst" >&2
@@ -209,6 +206,12 @@ if [ -z "$KEYLOG_ADDR_HEX" ]; then
 fi
 KEYLOG_ADDR_DEC="$((0xC000 + 16#$KEYLOG_ADDR_HEX))"
 KEYLOG_VEC_HEX="$(printf '%02X %02X' $((KEYLOG_ADDR_DEC & 255)) $(((KEYLOG_ADDR_DEC >> 8) & 255)))"
+CHRIN_ACTIVE_HEX="$(awk '/rb_chrin_active:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_hotkey_probe.lst)"
+if [ -z "$CHRIN_ACTIVE_HEX" ]; then
+  echo "Could not find rb_chrin_active in obj/readybasic_hotkey_probe.lst" >&2
+  exit 1
+fi
+CHRIN_ACTIVE_DEC="$((0x1200 + 16#$CHRIN_ACTIVE_HEX))"
 if [ "$SCENARIO" = "f2_only" ]; then
 cat >"$PLAN" <<YAML
 version: 1
@@ -252,12 +255,12 @@ steps:
       text: "readybasic"
       wait_timeout_s: 180
       capture_label: readybasic_hotkey_f2_prompt
-  - id: assert_irq_vector_installed
+  - id: assert_chrin_vector_installed
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "$IRQ_VEC_HEX"
+      start: 804
+      end: 805
+      equals_hex: "$CHRIN_VEC_HEX"
   - id: assert_keylog_vector_installed
     type: assert.memory
     params:
@@ -345,12 +348,12 @@ steps:
       text: "readybasic"
       wait_timeout_s: 180
       capture_label: readybasic_hotkey_prompt
-  - id: assert_irq_vector_installed
+  - id: assert_chrin_vector_installed
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "$IRQ_VEC_HEX"
+      start: 804
+      end: 805
+      equals_hex: "$CHRIN_VEC_HEX"
   - id: assert_keylog_vector_installed
     type: assert.memory
     params:
