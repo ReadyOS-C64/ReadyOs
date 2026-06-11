@@ -22,6 +22,8 @@ READYBASIC_BANK_RAW="${READYBASIC_CHAIN_READYBASIC_BANK:-1}"
 REUVIEWER_BANK_RAW="${READYBASIC_CHAIN_REUVIEWER_BANK:-4}"
 RESOURCE_BANKS_RAW="${READYBASIC_CHAIN_RESOURCE_BANKS:-}"
 CONSTRAIN_BITMAP="${READYBASIC_CHAIN_CONSTRAIN_BITMAP:-0}"
+STABILITY_WAIT="${READYBASIC_CHAIN_STABILITY_WAIT:-2.5}"
+DUPLICATE_KEYLOG="${READYBASIC_HOTKEY_DUPLICATE_KEYLOG:-1}"
 VICE_HEADLESS="true"
 VICE_CLOSE="true"
 CLI_CLOSE_ARG="--close-vice"
@@ -69,10 +71,6 @@ esac
 
 READYBASIC_BANK_HEX="$(printf '%02X' "$READYBASIC_BANK")"
 REUVIEWER_BANK_HEX="$(printf '%02X' "$REUVIEWER_BANK")"
-
-if [ -z "$RESOURCE_BANKS_RAW" ] && [ "$READYBASIC_BANK" -eq 1 ] && [ "$REUVIEWER_BANK" -eq 4 ]; then
-  RESOURCE_BANKS_RAW="2,3"
-fi
 
 bitmap_add_bank() {
   local bank="$1"
@@ -195,14 +193,22 @@ YAML
   elif [ "$effective_mode" = "keylog" ]; then
     local keylog_lo
     local keylog_hi
+    local stub_hex
+    local break_addr
     keylog_lo="$(printf '%02X' $((KEYLOG_ADDR_DEC & 255)))"
     keylog_hi="$(printf '%02X' $(((KEYLOG_ADDR_DEC >> 8) & 255)))"
+    stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
+    break_addr="0348"
+    if [ "$DUPLICATE_KEYLOG" = "1" ] && [ "$target_context" = "readybasic" ]; then
+      stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
+      break_addr="0354"
+    fi
     cat <<YAML
   - id: ${id}_keylog_stub
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
+      bytes_hex: "$stub_hex"
   - id: ${id}_clear_keylog_breakpoints
     type: monitor.command
     params:
@@ -210,7 +216,7 @@ YAML
   - id: ${id}_break_after_keylog
     type: monitor.command
     params:
-      command: "raw:break 0348"
+      command: "raw:break $break_addr"
   - id: $id
     type: monitor.command
     params:
@@ -518,6 +524,25 @@ $(emit_wait_readybasic_warm_steps readybasic_after_reuviewer_f2 chain_readybasic
       start: 198
       end: 198
       equals_hex: "00"
+  - id: wait_readybasic_stable_after_reuviewer_f2
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      wait_timeout_s: 30
+      pre_delay_s: $STABILITY_WAIT
+      capture_label: chain_readybasic_stable_after_reuviewer_f2
+  - id: assert_readybasic_bank_stable_after_reuviewer_f2
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "$READYBASIC_BANK_HEX"
+  - id: assert_keyboard_buffer_empty_stable_after_reuviewer_f2
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
   - id: readybasic_type_after_reuviewer_f2
     type: input.sequence
     params:
@@ -561,6 +586,25 @@ $(emit_hotkey_step readybasic_f2_back_to_reuviewer f2 1.2)
       end: 51252
       equals_hex: "$REUVIEWER_BANK_HEX"
   - id: assert_keyboard_buffer_empty_after_readybasic_f2
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
+  - id: wait_reuviewer_stable_after_readybasic_f2
+    type: screen.wait_contains
+    params:
+      text: "REU MEMORY"
+      wait_timeout_s: 30
+      pre_delay_s: $STABILITY_WAIT
+      capture_label: chain_reuviewer_stable_after_readybasic_f2
+  - id: assert_reuviewer_bank_stable_after_readybasic_f2
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "$REUVIEWER_BANK_HEX"
+  - id: assert_keyboard_buffer_empty_stable_after_readybasic_f2
     type: assert.memory
     params:
       start: 198

@@ -80,7 +80,7 @@ steps:
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 04 8D 8D 02 A9 1C 85 CB 20 94 C1 4C CF E5"
+      bytes_hex: "A9 04 8D 8D 02 A9 1C 85 CB 20 94 C1 A9 04 8D 8D 02 A9 1C 85 CB 20 94 C1 4C CF E5"
   - id: ctrl_b_from_readybasic_clear_keylog_breakpoints
     type: monitor.command
     params:
@@ -88,7 +88,7 @@ steps:
   - id: ctrl_b_from_readybasic_break_after_keylog
     type: monitor.command
     params:
-      command: "raw:break 0348"
+      command: "raw:break 0354"
   - id: ctrl_b_from_readybasic
     type: monitor.command
     params:
@@ -166,7 +166,7 @@ steps:
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 01 8D 8D 02 A9 05 85 CB 20 94 C1 4C CF E5"
+      bytes_hex: "A9 01 8D 8D 02 A9 05 85 CB 20 94 C1 A9 01 8D 8D 02 A9 05 85 CB 20 94 C1 4C CF E5"
   - id: f4_to_prev_loaded_app_clear_keylog_breakpoints
     type: monitor.command
     params:
@@ -174,7 +174,7 @@ steps:
   - id: f4_to_prev_loaded_app_break_after_keylog
     type: monitor.command
     params:
-      command: "raw:break 0348"
+      command: "raw:break 0354"
   - id: f4_to_prev_loaded_app
     type: monitor.command
     params:
@@ -186,6 +186,19 @@ steps:
       wait_timeout_s: 60
       capture_label: target_after_readybasic_f4
   - id: assert_keyboard_buffer_empty_after_f4
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
+  - id: wait_target_stable_after_f4
+    type: screen.wait_contains
+    params:
+      text: "CLIPBOARD"
+      wait_timeout_s: 30
+      pre_delay_s: 2.5
+      capture_label: target_stable_after_readybasic_f4
+  - id: assert_keyboard_buffer_empty_stable_after_f4
     type: assert.memory
     params:
       start: 198

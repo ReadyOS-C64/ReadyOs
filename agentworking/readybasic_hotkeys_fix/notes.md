@@ -23,6 +23,7 @@
 - KEYLOG catches KERNAL-decoded special-key cases, consumes the key state, and preserves the CIA port state.
 - Every ReadyBASIC yield path clears `rb_hotkey_pending`, `$C6`, `$0277`, `SHFLAG`, `LSTX`, and `SFDX`; typed `EXIT` and Ctrl+B set the launcher suppress-startup flag so run-first configs do not auto-reenter ReadyBASIC.
 - F2/F4 store the selected target bank in `rb_hotkey_target_bank` before `prepare_shim_yield`, then write `$C820` only after hidden save, `CLRCHN`, and vector restore.
+- Double-switch follow-up: cold/warm entry now scans the physical matrix and quarantines any still-held ReadyBASIC hotkey until release. Prompt hotkey yield waits for the selected chord to release with a jiffy-clock timeout, then clears editor/KERNAL key state again.
 - The loaded-app scan uses the shim bitmap plus the control-bank app registry so ReadyBASIC resource/code banks do not look like app-switch targets.
 - Hidden helper warm restore comes from the assigned ReadyBASIC core bank shadow at `$3000`, not from a visible `$C280` shadow.
 
@@ -37,9 +38,9 @@
 ## Current memory/headroom
 
 - `BASIC_START` remains `$2AC1`; empty BASIC free bytes remain `30013`.
-- `ENTRY` is `$1000-$11EA`, `$01EB` / 491B.
-- `RESIDENT` is `$1200-$2AB6`, `$18B7` / 6327B, leaving 9B before the `$2ABF` resident budget end and the `$2AC0` sentinel.
-- `HIDDEN` is `$A000-$A6A7`, `$06A8` / 1704B, leaving `$0158` / 344B in the 2K common helper area.
+- `ENTRY` is `$1000-$11FC`, `$01FD` / 509B.
+- `RESIDENT` is `$1200-$2ABE`, `$18BF` / 6335B, leaving 1B before the `$2ABF` resident budget end and the `$2AC0` sentinel.
+- `HIDDEN` is `$A000-$A6C7`, `$06C8` / 1736B, leaving `$0138` / 312B in the 2K common helper area.
 - `BRIDGE` is `$C000-$C1FD`, `$01FE` / 510B, leaving 2B before `$C200`.
 - BASIC RAM contract is unchanged; the added cost is paid in entry/helper/bridge/resident bytes, not by moving BASIC start.
 
@@ -93,10 +94,23 @@
 ## 2026-06-10 final memory/headroom
 
 - `BASIC_START` remains `$2AC1`; empty BASIC formula free bytes remain `30013`.
-- `ENTRY` is `$1000-$11EA`, `$01EB` / 491B.
-- `RESIDENT` is `$1200-$2AB6`, `$18B7` / 6327B, leaving 9B before `$2ABF` / `$2AC0`.
-- `HIDDEN` is `$A000-$A6A7`, `$06A8` / 1704B, leaving `$0158` / 344B in the 2K common helper area.
+- `ENTRY` is `$1000-$11FC`, `$01FD` / 509B.
+- `RESIDENT` is `$1200-$2ABE`, `$18BF` / 6335B, leaving 1B before `$2ABF` / `$2AC0`.
+- `HIDDEN` is `$A000-$A6C7`, `$06C8` / 1736B, leaving `$0138` / 312B in the 2K common helper area.
 - `LOWPACK` is `$A800-$AECD`, `$06CE` / 1742B.
 - `SLOTPACK1` is `$B000-$B23A`, `$023B` / 571B.
 - `BRIDGE` is `$C000-$C1FD`, `$01FE` / 510B, leaving 2B before `$C200`.
 - The ReadyOS contract is preserved: no BASIC-start movement, no normal BASIC RAM expansion, no shim/app changes for this fix, and no ReadyBASIC private assumptions in `$C800-$C9FF` beyond the shim ABI.
+
+## 2026-06-11 final proof refresh
+
+- `make readybasic-plugin-static-check readybasic-memory-report`: passed; `verify_readybasic_plugin.py` reported `readybasic plugin static check OK`; `docs/readybasic_memory_diagrams.html` was regenerated from `obj/readybasic.map`.
+- Regular D81 focused chain:
+  - `/bin/bash build_support/run_readybasic_reuviewer_f2_chain_probe.sh` passed, manifest `logs/vice_auto_20260611_002202/manifest.json`.
+  - `READYBASIC_HOTKEY_INPUT_MODE=keylog /bin/bash build_support/run_readybasic_reuviewer_f2_chain_probe.sh` passed, manifest `logs/vice_auto_20260611_002247/manifest.json`.
+- Regular D81 aggregate: `make readybasic-vice-suites` passed. Manifest audit for `002428`, `003503`, `003556`, `003621`, `003719`, `003921`, `004030`, `004045`, `004136`, `004219`, `004254`, `004334`, `004555`, and `004745` found `status=success`, `failed_step=null`, and `degraded_steps=[]` for every manifest.
+- EasyFlash focused chain after launcher-navigation adaptation passed, manifest `logs/vice_auto_20260611_025528/manifest.json`.
+- EasyFlash aggregate: `make easyflash-readybasic-vice-suites` rebuilt the cartridge SKU and completed. Successful final/retry manifests `025643`, `030852`, `031001`, `031041`, `031153`, `031410`, `031535`, `032434`, `032519`, `032701`, `032807`, `032906`, `032948`, `033638`, `033728`, `034003`, and `034208` all have `status=success`, `failed_step=null`, and `degraded_steps=[]`.
+- EasyFlash produced two pre-app boot/preload flake manifests during the final aggregate (`031604`, `033016`), both stuck before ReadyBASIC at `READYOS EASYFLASH BOOT` / `BOOTER PRELOADING REU SNAPSHOTS`; suite retries passed with the successful manifests above. These did not exercise ReadyBASIC app code.
+- EasyFlash chain generation now keeps the chain launcher-owned, with no `--start-app readybasic` wrapper. The converter adapts only the chain's first launcher navigation to the EasyFlash app order: ReadyBASIC is four cursor-downs from the top, while REU Viewer remains three down from ReadyBASIC.
+- `run_easyflash_vice_suites.sh` now has configurable plan start/retry pauses (`EASYFLASH_PLAN_START_PAUSE_S`, `EASYFLASH_PLAN_RETRY_PAUSE_S`) to reduce VICE/EasyFlash cold-start flakiness without changing boot, launcher, shim, or app code. The default first-attempt pause now matches the proven 20s retry pause.

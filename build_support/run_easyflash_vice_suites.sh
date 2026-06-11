@@ -33,7 +33,6 @@ make -B \
   BUILD_SUPPORT_DIR=build_support \
   PROFILE=precog-d81 \
   READYOS_VERSION_TEXT="$RUN_VERSION_TEXT" \
-  READYOS_CONFIG_RUN_FIRST=readybasic \
   profile
 make READYOS_VERSION_TEXT="$RUN_VERSION_TEXT" easyflash
 
@@ -45,11 +44,14 @@ cp -f "$D64_REL" "$TEST_D64"
 D64="$(cd "$(dirname "$TEST_D64")" && pwd)/$(basename "$TEST_D64")"
 
 declare -a RUN_PLANS=()
+PLAN_START_PAUSE_S="${EASYFLASH_PLAN_START_PAUSE_S:-20}"
+PLAN_RETRY_PAUSE_S="${EASYFLASH_PLAN_RETRY_PAUSE_S:-20}"
 
 emit_readybasic_plan() {
   local name="$1"
   local script="$2"
   local plan_var="$3"
+  local start_app="${4-readybasic}"
   local regular_plan="$OUT_DIR/$name.regular.yaml"
   local easyflash_plan="$OUT_DIR/$name.easyflash.yaml"
 
@@ -60,6 +62,7 @@ emit_readybasic_plan() {
     READYBASIC_HOTKEY_EXPECT_F2="${READYBASIC_HOTKEY_EXPECT_F2:-}" \
     READYBASIC_HOTKEY_F4_RETURN_MODE="${READYBASIC_HOTKEY_F4_RETURN_MODE:-}" \
     READYBASIC_HOTKEY_SCENARIO="${READYBASIC_HOTKEY_SCENARIO:-}" \
+    READYBASIC_CHAIN_BOOT_MODE="${READYBASIC_CHAIN_BOOT_MODE:-launcher}" \
     READYBASIC_CHAIN_READYBASIC_BANK="${READYBASIC_CHAIN_READYBASIC_BANK:-}" \
     READYBASIC_CHAIN_REUVIEWER_BANK="${READYBASIC_CHAIN_REUVIEWER_BANK:-}" \
     READYBASIC_CHAIN_RESOURCE_BANKS="${READYBASIC_CHAIN_RESOURCE_BANKS:-}" \
@@ -67,12 +70,16 @@ emit_readybasic_plan() {
     "$plan_var=$regular_plan" \
     "$script"
 
-  python3 build_support/easyflash_plan_from_regular.py \
-    --input "$regular_plan" \
-    --output "$easyflash_plan" \
-    --crt "$CRT" \
-    --disk8 "$D64" \
-    --start-app readybasic
+  local -a convert_args=(
+    --input "$regular_plan"
+    --output "$easyflash_plan"
+    --crt "$CRT"
+    --disk8 "$D64"
+  )
+  if [ -n "$start_app" ]; then
+    convert_args+=(--start-app "$start_app")
+  fi
+  python3 build_support/easyflash_plan_from_regular.py "${convert_args[@]}"
 
   RUN_PLANS+=("$easyflash_plan")
 }
@@ -115,8 +122,8 @@ if [ "$SCOPE" = "all" ] || [ "$SCOPE" = "readybasic" ]; then
     emit_readybasic_plan readybasic_hotkey_f4_probe "$SCRIPT_DIR/run_readybasic_hotkey_probe.sh" READYBASIC_HOTKEY_PLAN
   READYBASIC_HOTKEY_EXPECT_F2="CALENDAR 26" READYBASIC_HOTKEY_SCENARIO="f2_only" \
     emit_readybasic_plan readybasic_hotkey_f2_probe "$SCRIPT_DIR/run_readybasic_hotkey_probe.sh" READYBASIC_HOTKEY_PLAN
-  READYBASIC_CHAIN_READYBASIC_BANK=5 READYBASIC_CHAIN_REUVIEWER_BANK=8 READYBASIC_CHAIN_CONSTRAIN_BITMAP=1 \
-    emit_readybasic_plan readybasic_reuviewer_f2_chain_probe "$SCRIPT_DIR/run_readybasic_reuviewer_f2_chain_probe.sh" READYBASIC_REUVIEWER_CHAIN_PLAN
+  READYBASIC_CHAIN_READYBASIC_BANK=5 READYBASIC_CHAIN_REUVIEWER_BANK=8 READYBASIC_CHAIN_CONSTRAIN_BITMAP=1 READYBASIC_CHAIN_BOOT_MODE=launcher \
+    emit_readybasic_plan readybasic_reuviewer_f2_chain_probe "$SCRIPT_DIR/run_readybasic_reuviewer_f2_chain_probe.sh" READYBASIC_REUVIEWER_CHAIN_PLAN ""
   emit_readybasic_plan readybasic_cross_app_resume_probe "$SCRIPT_DIR/run_readybasic_cross_app_resume_probe.sh" READYBASIC_PLAN
   emit_readybasic_plan readybasic_second_entry_editor_probe "$SCRIPT_DIR/run_readybasic_second_entry_editor_probe.sh" READYBASIC_PLAN
   emit_readybasic_plan readybasic_full_suite_visual_verification "$SCRIPT_DIR/run_readybasic_full_suite_visual_verification.sh" READYBASIC_FULL_PLAN
@@ -160,9 +167,9 @@ for plan in "${RUN_PLANS[@]}"; do
   for attempt in 1 2; do
     if [ "$attempt" -gt 1 ]; then
       echo "==> Retrying EasyFlash VICE plan after cold-start pause: $(basename "$plan")"
-      sleep 15
+      sleep "$PLAN_RETRY_PAUSE_S"
     else
-      sleep 5
+      sleep "$PLAN_START_PAUSE_S"
     fi
     set +e
     dotnet run --project "$PROJECT" -- run-plan --plan "$plan" --close-vice

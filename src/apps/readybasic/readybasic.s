@@ -154,6 +154,8 @@ KEY_MATRIX_F1   = $04
 KEY_MATRIX_F3   = $05
 SHFLAG_SHIFT    = $01
 SHFLAG_CTRL     = $04
+JIFFY_LOW       = $00A2
+RB_HOTKEY_RELEASE_TIMEOUT = 120
 APP_BANK_MIN    = 1
 APP_BANK_MAX_PLUS_ONE = 24
 
@@ -546,6 +548,8 @@ rb_clear_hotkey_input_state:
         lda #$40
         sta LSTX
         sta SFDX
+        jsr rb_scan_hotkey_matrix
+        sta rb_hotkey_suppress
         rts
 
         .segment "ENTRY"
@@ -626,6 +630,39 @@ rb_scan_hotkey_matrix:
         txa
         rts
 
+rb_wait_hotkey_release:
+        lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC_KEEP_KERNAL
+        sta CPU_PORT
+        cli
+        jsr hidden_wait_hotkey_release
+        pla
+        sta CPU_PORT
+        jmp rb_clear_hotkey_input_state
+
+        .segment "HIDDEN"
+
+hidden_wait_hotkey_release:
+        lda rb_hotkey_suppress
+        beq @done
+        sta rb_hotkey_release_key
+        lda JIFFY_LOW
+        sta rb_hotkey_release_start
+@wait:
+        jsr rb_scan_hotkey_matrix
+        cmp rb_hotkey_release_key
+        bne @done
+        lda JIFFY_LOW
+        sec
+        sbc rb_hotkey_release_start
+        cmp #RB_HOTKEY_RELEASE_TIMEOUT
+        bcc @wait
+@done:
+        rts
+
+        .segment "ENTRY"
+
 rb_dispatch_pending_hotkey:
         lda rb_hotkey_pending
         tax
@@ -642,20 +679,24 @@ rb_dispatch_pending_hotkey:
 @done:
         rts
 @launcher:
+        jsr rb_wait_hotkey_release
         jmp rb_hotkey_return_ready
 @next:
         jsr call_hidden_select_next_app
         lda rb_found_kind
         bne @switch
+        jsr rb_wait_hotkey_release
         rts
 @prev:
         jsr call_hidden_select_prev_app
         lda rb_found_kind
-        beq @done
+        bne @switch
+        jsr rb_wait_hotkey_release
+        rts
 @switch:
         lda rb_tmp_lo
         sta rb_hotkey_target_bank
-        jsr rb_clear_hotkey_input_state
+        jsr rb_wait_hotkey_release
         jsr rb_prepare_ready_resume
         jsr prepare_shim_yield
         lda rb_hotkey_target_bank
@@ -696,8 +737,6 @@ rb_cold_start:
         jsr init_basic_workspace
         jsr install_vectors
         jsr rb_clear_hotkey_input_state
-        lda #0
-        sta rb_hotkey_suppress
         lda #1
         sta rb_seed_cold
         jsr call_hidden_seed_plugin_reu
@@ -1060,17 +1099,11 @@ rb_exit_store_magic:
         sta rb_entry_magic2
         sei
         jsr rb_clear_hotkey_input_state
-        jsr rb_set_launcher_suppress
-        jsr prepare_shim_yield
-        jmp SHIM_RETURN
-
-        .segment "ENTRY"
-
-rb_set_launcher_suppress:
         lda SHIM_LAUNCHER_FLAGS
         ora #SHIM_LAUNCHER_FLAG_SUPPRESS_STARTUP
         sta SHIM_LAUNCHER_FLAGS
-        rts
+        jsr prepare_shim_yield
+        jmp SHIM_RETURN
 
         .segment "RESIDENT"
 
@@ -5098,6 +5131,8 @@ rb_last_line_lo:.byte 0
 rb_last_line_hi:.byte 0
 rb_hotkey_pending:.byte 0
 rb_hotkey_suppress:.byte 0
+rb_hotkey_release_key:.byte 0
+rb_hotkey_release_start:.byte 0
 
 rb_func_depth:.byte 0
 rb_form_save_count:.res RB_PROC_DEPTH

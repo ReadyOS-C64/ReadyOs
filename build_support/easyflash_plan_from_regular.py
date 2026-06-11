@@ -62,7 +62,10 @@ def replace_vice_block(text: str, crt: str, disk8: str) -> str:
     return "\n".join(replaced) + "\n"
 
 
-def insert_launcher_start(text: str, start_app: str) -> str:
+def insert_launcher_start(text: str, start_app: str | None) -> str:
+    if not start_app:
+        return text
+
     lines = text.splitlines()
     insert_idx = None
     for i, line in enumerate(lines):
@@ -124,6 +127,25 @@ def adapt_screen_reu_probe(text: str) -> str:
     return text.replace(old, new, 1)
 
 
+def adapt_readybasic_reuviewer_chain(text: str) -> str:
+    if "plan_id: readybasic_reuviewer_f2_chain_probe_easyflash" not in text:
+        return text
+
+    old = """  - id: launch_readybasic_from_launcher
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,17,17,13]
+"""
+    new = """  - id: launch_readybasic_from_launcher
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,13]
+"""
+    if old not in text:
+        raise ValueError("could not locate ReadyBASIC launcher navigation in chain probe")
+    return text.replace(old, new, 1)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, type=Path)
@@ -132,7 +154,6 @@ def main() -> int:
     parser.add_argument("--disk8", required=True)
     parser.add_argument(
         "--start-app",
-        required=True,
         choices=("editor", "readybasic", "readyshell"),
     )
     parser.add_argument("--plan-id-suffix", default="_easyflash")
@@ -143,6 +164,7 @@ def main() -> int:
     text = replace_vice_block(text, args.crt, args.disk8)
     text = insert_launcher_start(text, args.start_app)
     text = adapt_screen_reu_probe(text)
+    text = adapt_readybasic_reuviewer_chain(text)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(text, encoding="utf-8")

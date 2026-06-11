@@ -8,9 +8,10 @@ same ReadyOS and REU discipline.
 
 - `BASIC_START = $2AC1`; BASIC owns `$2AC1-$9FFF`, with `30013` formula empty
   free bytes.
-- `RESIDENT` is `$1200-$2AB6` (`$18B7`, 6327B).
+- `RESIDENT` is `$1200-$2ABE` (`$18BF`, 6335B).
 - `BRIDGE` is `$C000-$C1FD` (`$01FE`, 510B), still below `$C200`.
-- Under BASIC ROM, `$A000-$A7FF` is the common helper area; `$A800-$AFFF`,
+- Under BASIC ROM, `$A000-$A7FF` is the common helper area, currently using
+  `$A000-$A6C7`; `$A800-$AFFF`,
   `$B000-$B7FF`, and `$B800-$BFFF` are three 2KB submodule slots.
 - ReadyBASIC uses two launcher-assigned REU resource banks. The core bank is
   registry/runtime storage; the code bank is built-in and disk-loaded module
@@ -204,9 +205,10 @@ The current design includes resident flow control and error introspection:
   ReadyBASIC runtime error code and line.
 
 Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
-`30013` formula empty free bytes. `RESIDENT` is `$1200-$2AB6` (`6327` bytes),
-`BRIDGE` is `$C000-$C1FD` (`510` bytes), `LOWPACK` is `$06CE` (`1742` bytes),
-and `bin/readybasic.prg` remains `20994` bytes.
+`30013` formula empty free bytes. `ENTRY` is `$1000-$11FC` (`509` bytes),
+`RESIDENT` is `$1200-$2ABE` (`6335` bytes), `HIDDEN` is `$A000-$A6C7`
+(`1736` bytes), `BRIDGE` is `$C000-$C1FD` (`510` bytes), `LOWPACK` is `$06CE`
+(`1742` bytes), and `bin/readybasic.prg` remains `20994` bytes.
 
 ## Current Nested-Term Support
 

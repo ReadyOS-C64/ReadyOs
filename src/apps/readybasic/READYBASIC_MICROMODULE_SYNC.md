@@ -11,8 +11,8 @@ under-ROM command layout:
 |---|---:|
 | `BASIC_START` | `$2AC1` |
 | Formula empty BASIC bytes | `30013` |
-| `RESIDENT` | `$1200-$2AB6`, `$18B7` |
-| Common under-ROM helper | `$A000-$A7FF`, current use `$A000-$A6A7` |
+| `RESIDENT` | `$1200-$2ABE`, `$18BF` |
+| Common under-ROM helper | `$A000-$A7FF`, current use `$A000-$A6C7` |
 | Submodule slot 0 | `$A800-$AFFF`, current module 1 payload `$A800-$AECD` |
 | Submodule slot 1 | `$B000-$B7FF`, current module 2 payload `$B000-$B23A` |
 | Submodule slot 2 | `$B800-$BFFF`, current proof/overlay payloads through `$B814` |
@@ -74,34 +74,33 @@ uppercase name field.
 ## Current ReadyBASIC Memory Snapshot
 
 - `BASIC_START = $2AC1`; BASIC owns `$2AC1-$9FFF`, with `30013` formula empty free bytes.
-- `ENTRY` lives at `$1000-$11EA`, size `$01EB` / 491B.
-- `RESIDENT` lives at `$1200-$2AB6` (`$18B7`, 6327B) and must stay below `$2AC0`; that leaves `$09` / 9B of visible headroom before `$2ABF`.
+- `ENTRY` lives at `$1000-$11FC`, size `$01FD` / 509B.
+- `RESIDENT` lives at `$1200-$2ABE` (`$18BF`, 6335B) and must stay below `$2AC0`; that leaves `$01` / 1B of visible headroom at `$2ABF`.
 - `CMDPACK` load-only seed space is `$2B00-$3FFF`; it is copied to the assigned
   ReadyBASIC code bank on cold entry.
 - `HIDLOAD` load-only helper seed starts at `$4000`.
 - `BRLOAD` load-only bridge seed starts at `$4800`.
 - `REGSEED` load-only registry seed is `$5000-$600F`, size `$1010`.
-- Runtime common under-ROM helper code is `$A000-$A6A7`, size `$06A8` / 1704B, leaving `$0158` / 344B free in `$A000-$A7FF`.
+- Runtime common under-ROM helper code is `$A000-$A6C7`, size `$06C8` / 1736B, leaving `$0138` / 312B free in `$A000-$A7FF`.
 - Runtime submodule slot 0 is `$A800-$AFFF`; current module 1/default payload uses `$A800-$AECD`, size `$06CE` / 1742B.
 - Runtime submodule slot 1 is `$B000-$B7FF`; current module 2 proof/streaming loader payload uses `$B000-$B23A`, size `$023B` / 571B.
 - Runtime submodule slot 2 is `$B800-$BFFF`; current proof/overlay payloads use `$B800-$B814` in 21B slices.
 - Runtime `BRIDGE` is `$C000-$C1FD`, size `$01FE` / 510B; the native `PROC`/`FUNC`
   return stack and flow-control scratch live here and must stay below shared frames at `$C200`.
 
-Hotkey branch delta, measured by linking the pre-change `HEAD` source beside the
-current map:
+Hotkey release branch delta, measured against checkpoint `fe169a8`:
 
 | Segment | Before | After | Delta |
 |---|---:|---:|---:|
-| `ENTRY` | `$00F2` / 242B | `$01EB` / 491B | `+249B` |
-| `RESIDENT` | `$18B1` / 6321B | `$18B7` / 6327B | `+6B` |
-| `HIDDEN` | `$0432` / 1074B | `$06A8` / 1704B | `+630B` |
-| `BRIDGE` | `$01FB` / 507B | `$01FE` / 510B | `+3B` |
+| `ENTRY` | `$01EB` / 491B | `$01FD` / 509B | `+18B` |
+| `RESIDENT` | `$18B7` / 6327B | `$18BF` / 6335B | `+8B` |
+| `HIDDEN` | `$06A8` / 1704B | `$06C8` / 1736B | `+32B` |
+| `BRIDGE` | `$01FE` / 510B | `$01FE` / 510B | `0B` |
 | BASIC free | `30013` | `30013` | `0B` |
 
 The code cost is intentionally paid mostly in entry/setup and the `$A000-$A7FF`
 helper area. BASIC free bytes are unchanged, and the 2K helper area still has
-`$0158` / 344B free for more small ReadyOS/BASIC glue.
+`$0138` / 312B free for more small ReadyOS/BASIC glue.
 
 ## Assigned Core Bank ReadyBASIC Layout
 

@@ -20,6 +20,8 @@ VICE_HEADLESS="true"
 VICE_CLOSE="true"
 CLI_CLOSE_ARG="--close-vice"
 HOTKEY_INPUT_MODE="${READYBASIC_HOTKEY_INPUT_MODE:-}"
+DUPLICATE_KEYLOG="${READYBASIC_HOTKEY_DUPLICATE_KEYLOG:-1}"
+STABILITY_WAIT="${READYBASIC_HOTKEY_STABILITY_WAIT:-2.5}"
 if [ -n "${READYBASIC_HOTKEY_HOST_KEYS+x}" ]; then
   HOST_HOTKEYS="$READYBASIC_HOTKEY_HOST_KEYS"
 else
@@ -122,14 +124,22 @@ YAML
   elif [ "$effective_mode" = "keylog" ]; then
     local keylog_lo
     local keylog_hi
+    local stub_hex
+    local break_addr
     keylog_lo="$(printf '%02X' $((KEYLOG_ADDR_DEC & 255)))"
     keylog_hi="$(printf '%02X' $(((KEYLOG_ADDR_DEC >> 8) & 255)))"
+    stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
+    break_addr="0348"
+    if [ "$DUPLICATE_KEYLOG" = "1" ] && [ "$target_context" = "readybasic" ]; then
+      stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
+      break_addr="0354"
+    fi
     cat <<YAML
   - id: ${id}_keylog_stub
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
+      bytes_hex: "$stub_hex"
   - id: ${id}_clear_keylog_breakpoints
     type: monitor.command
     params:
@@ -137,7 +147,7 @@ YAML
   - id: ${id}_break_after_keylog
     type: monitor.command
     params:
-      command: "raw:break 0348"
+      command: "raw:break $break_addr"
   - id: $id
     type: monitor.command
     params:
@@ -262,6 +272,19 @@ $(emit_hotkey_step f2_to_next_loaded_app f2 1.0)
       wait_timeout_s: 60
       capture_label: target_after_readybasic_f2
   - id: assert_keyboard_buffer_empty_after_f2
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
+  - id: wait_target_stable_after_f2
+    type: screen.wait_contains
+    params:
+      text: "$EXPECT_F2"
+      wait_timeout_s: 30
+      pre_delay_s: $STABILITY_WAIT
+      capture_label: target_stable_after_readybasic_f2
+  - id: assert_keyboard_buffer_empty_stable_after_f2
     type: assert.memory
     params:
       start: 198
@@ -422,6 +445,19 @@ $(emit_hotkey_step f4_to_prev_loaded_app f4 1.0)
       start: 198
       end: 198
       equals_hex: "00"
+  - id: wait_target_stable_after_f4
+    type: screen.wait_contains
+    params:
+      text: "$EXPECT_F4"
+      wait_timeout_s: 30
+      pre_delay_s: $STABILITY_WAIT
+      capture_label: target_stable_after_readybasic_f4
+  - id: assert_keyboard_buffer_empty_stable_after_f4
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
 YAML
 
 if [ "$F4_RETURN_MODE" = "stop_after_f4" ]; then
@@ -503,6 +539,19 @@ $(emit_hotkey_step f2_to_next_loaded_app f2 1.0)
       wait_timeout_s: 60
       capture_label: target_after_readybasic_f2
   - id: assert_keyboard_buffer_empty_after_f2
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
+  - id: wait_target_stable_after_f2
+    type: screen.wait_contains
+    params:
+      text: "$EXPECT_F2"
+      wait_timeout_s: 30
+      pre_delay_s: $STABILITY_WAIT
+      capture_label: target_stable_after_readybasic_f2
+  - id: assert_keyboard_buffer_empty_stable_after_f2
     type: assert.memory
     params:
       start: 198

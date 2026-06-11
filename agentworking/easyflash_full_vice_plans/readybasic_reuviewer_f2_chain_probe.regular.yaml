@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -33,11 +33,23 @@ steps:
     type: vice.launch
     params:
       kill_stale: true
+  - id: wait_launcher_initial
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 180
+      capture_label: chain_launcher_initial
+  - id: launch_readybasic_from_launcher
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,17,17,13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 2.5
   - id: wait_readybasic_initial
     type: screen.wait_contains
     params:
       text: "READYBASIC"
-      wait_timeout_s: 180
+      wait_timeout_s: 120
       capture_label: chain_readybasic_initial
   - id: assert_readybasic_bank_initial
     type: assert.memory
@@ -70,13 +82,13 @@ steps:
   - id: readybasic_ctrl_b_1_set_readybasic_pending_hotkey
     type: memory.write
     params:
-      start: 10828
+      start: 10834
       bytes_hex: "02"
   - id: readybasic_ctrl_b_1_assert_readybasic_pending_hotkey
     type: assert.memory
     params:
-      start: 10828
-      end: 10828
+      start: 10834
+      end: 10834
       equals_hex: "02"
   - id: readybasic_ctrl_b_1_queue_readybasic_hotkey_line
     type: memory.write
@@ -131,13 +143,13 @@ steps:
   - id: readybasic_ctrl_b_2_set_readybasic_pending_hotkey
     type: memory.write
     params:
-      start: 10828
+      start: 10834
       bytes_hex: "02"
   - id: readybasic_ctrl_b_2_assert_readybasic_pending_hotkey
     type: assert.memory
     params:
-      start: 10828
-      end: 10828
+      start: 10834
+      end: 10834
       equals_hex: "02"
   - id: readybasic_ctrl_b_2_queue_readybasic_hotkey_line
     type: memory.write
@@ -214,6 +226,25 @@ steps:
       start: 198
       end: 198
       equals_hex: "00"
+  - id: wait_readybasic_stable_after_reuviewer_f2
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      wait_timeout_s: 30
+      pre_delay_s: 2.5
+      capture_label: chain_readybasic_stable_after_reuviewer_f2
+  - id: assert_readybasic_bank_stable_after_reuviewer_f2
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "05"
+  - id: assert_keyboard_buffer_empty_stable_after_reuviewer_f2
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
   - id: readybasic_type_after_reuviewer_f2
     type: input.sequence
     params:
@@ -227,13 +258,13 @@ steps:
   - id: readybasic_f2_back_to_reuviewer_set_readybasic_pending_hotkey
     type: memory.write
     params:
-      start: 10828
+      start: 10834
       bytes_hex: "89"
   - id: readybasic_f2_back_to_reuviewer_assert_readybasic_pending_hotkey
     type: assert.memory
     params:
-      start: 10828
-      end: 10828
+      start: 10834
+      end: 10834
       equals_hex: "89"
   - id: readybasic_f2_back_to_reuviewer_queue_readybasic_hotkey_line
     type: memory.write
@@ -277,6 +308,25 @@ steps:
       end: 51252
       equals_hex: "08"
   - id: assert_keyboard_buffer_empty_after_readybasic_f2
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
+  - id: wait_reuviewer_stable_after_readybasic_f2
+    type: screen.wait_contains
+    params:
+      text: "REU MEMORY"
+      wait_timeout_s: 30
+      pre_delay_s: 2.5
+      capture_label: chain_reuviewer_stable_after_readybasic_f2
+  - id: assert_reuviewer_bank_stable_after_readybasic_f2
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "08"
+  - id: assert_keyboard_buffer_empty_stable_after_readybasic_f2
     type: assert.memory
     params:
       start: 198

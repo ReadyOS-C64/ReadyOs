@@ -21,13 +21,13 @@ actual C64/ReadyOS evidence trail rather than a pile of confident guesses.
 - A refreshed REU shadow copy of the hidden helper image lives in the
   launcher-assigned ReadyBASIC core bank at offset `$3000`. Warm entry restores
   `$A000` from that shadow before using hidden helpers.
-- The plugin spine keeps visible resident code at `$1200-$2AB6`, command
+- The plugin spine keeps visible resident code at `$1200-$2ABE`, command
   overlays under BASIC ROM, shared frames at `$C200-$C5FF`, and
   launcher-assigned ReadyBASIC core/code REU banks. Older entries below may
   mention `$44/$45`; treat those as historical fixed-bank examples, not the
   current contract.
 - Module/submodule branch update: the current visible resident range is
-  `$1200-$2AB6`, the bridge is `$C000-$C1FD`, and command payloads now use a
+  `$1200-$2ABE`, the bridge is `$C000-$C1FD`, and command payloads now use a
   common under-ROM helper area `$A000-$A7FF` plus three 2KB submodule slots:
   `$A800-$AFFF`, `$B000-$B7FF`, and `$B800-$BFFF`.
 - Current command descriptors are module-aware 32-byte records: command id,
@@ -472,6 +472,15 @@ loaded-bank scan scratch bytes are not a durable handoff register. Before every
 `EXIT`, `CTRL+B`, `F2`, or `F4` yield, ReadyBASIC must also clear its pending
 hotkey byte, `$C6`, `$0277`, `SHFLAG`, `LSTX`, and `SFDX` so the destination app
 does not inherit stale editor state.
+
+A later F2/F4 double-switch failure proved that clearing state alone is not
+enough when the physical key is still held across a ReadyOS app switch. Current
+rule: on cold/warm entry, scan the CIA1 matrix and quarantine any still-held
+ReadyBASIC hotkey until it is released. Before yielding for a prompt hotkey,
+wait for the exact selected chord to release with a bounded jiffy-clock timeout,
+then clear editor/KERNAL key state again. Keep the `REM` line as the known-safe
+deferred-dispatch trigger unless a quieter path proves the same multi-hop
+coverage.
 
 `EXIT`/`exit` remains the explicit ReadyBASIC wedge command for returning to the
 launcher: it restores ReadyBASIC-owned vectors, clears pending keyboard input,

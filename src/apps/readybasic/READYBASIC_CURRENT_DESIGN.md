@@ -36,10 +36,10 @@ Measured from the current `obj/readybasic.map`:
 |---|---:|
 | `BASIC_START` | `$2AC1` |
 | Empty BASIC free bytes | `30013` |
-| `ENTRY` | `$1000-$11EA`, `$01EB` / 491B |
-| `RESIDENT` | `$1200-$2AB6`, `$18B7` / 6327B |
+| `ENTRY` | `$1000-$11FC`, `$01FD` / 509B |
+| `RESIDENT` | `$1200-$2ABE`, `$18BF` / 6335B |
 | BASIC sentinel | `$2AC0` |
-| Common under-ROM helper | `$A000-$A6A7`, `$06A8` / 1704B |
+| Common under-ROM helper | `$A000-$A6C7`, `$06C8` / 1736B |
 | Slot 0 / module 1 | `$A800-$AECD`, `$06CE` / 1742B |
 | Slot 1 / module 2 | `$B000-$B23A`, `$023B` / 571B |
 | Slot 2 / overlays | `$B800-$B83E`, proof slices |
@@ -201,6 +201,13 @@ Return. When BASIC dispatches that line through `$0308/$0309`, the ReadyBASIC
 execute hook sees the pending action and performs the actual save/yield path.
 This keeps the ROM screen editor in charge of ordinary prompt editing and avoids
 depending solely on stale `SHFLAG`/`SFDX` values before KERNAL's own scan has run.
+ReadyBASIC also quarantines any still-held ReadyOS hotkey on cold/warm entry and
+waits, with a jiffy-bounded timeout, for the selected physical chord to be
+released before yielding through `CTRL+B`, `F2`, or `F4`. That release wait is
+what prevents one held function key from being seen by both the outgoing and
+incoming app. The visible `REM` line is deliberately retained as the proven safe
+deferred-dispatch trigger; a bare Return trigger did not reliably dispatch the
+pending action under the BASIC editor.
 Program-line `EXIT` resume and running-program hotkeys remain future work; the
 proven paths are direct prompt `EXIT` and prompt-level navigation keys.
 
@@ -338,7 +345,7 @@ The linker puts packed command bytes in the PRG load image at `CMDPACK`
 | `LOWPACK` | `$06CE` (1.7K, 1742 exact bytes) | Historical segment name for the built-in module 1 slot-0 payload loaded from `CMDPACK` and prestashed to assigned code-bank offset `$0000`. | Fetched on demand into `$A800-$AECD`. |
 | `SLOTPACK1` | `$023B` (571B) | Built-in module 2 proof and streaming `ZMODLD` loader payload, prestashed to assigned code-bank offset `$06CE`. | Fetched on demand into `$B000-$B23A`. |
 | `SLOTPACK2` / `SPANPACK` / `OVL1PACK` / `OVL2PACK` | `$0015` each (21B) | Built-in module 2 slot, span, and overlay proof payloads, prestashed after `SLOTPACK1`. | Fetched into slot 2, slots 1+2, or slot-2 overlay target addresses. |
-| `HIDLOAD` | `$06A8` (1.7K, 1704 exact bytes) | Load-only hidden helper seed starting at `$4000`. | Copied on cold boot into `$A000-$A6A7` and stashed to the assigned core-bank hidden shadow at `$3000`. |
+| `HIDLOAD` | `$06C8` (1.7K, 1736 exact bytes) | Load-only hidden helper seed starting at `$4000`. | Copied on cold boot into `$A000-$A6C7` and stashed to the assigned core-bank hidden shadow at `$3000`. |
 | `BRLOAD` | `$01FE` (510B) | Load-only bridge seed starting at `$4800`. | Copied on cold boot into `$C000-$C1FD`. |
 | `REGSEED` | `$1010` (4.0K, 4112 exact bytes) | Load-only registry header and 128 command descriptors at `$5000-$600F`. | Copied on cold boot into assigned core-bank offsets `$0000` and `$1000`. |
 
@@ -370,22 +377,22 @@ metadata and shim space above that are not general ReadyBASIC scratch.
 
 | Region | Current range | Size | Owner and role |
 |---|---:|---:|---|
-| `ENTRY` | `$1000-$11EA` | `$01EB` (491B) | Tiny entry, cold/warm discriminator, early hidden/bridge copies, and prompt hotkey helpers. |
-| `RESIDENT` | `$1200-$2AB6` | `$18B7` (6.2K, 6327 exact bytes) | Visible parser, vector hooks, BASIC ROM calls, REU DMA wrappers, result commit, bare command dispatch, expression hook, native `PROC`/`FUNC`/`RET`, `REPEAT`/`UNTIL`, `LABEL`/`JUMP`, error introspection, proper nested term state, float helpers, and prompt hotkey dispatch. |
+| `ENTRY` | `$1000-$11FC` | `$01FD` (509B) | Tiny entry, cold/warm discriminator, early hidden/bridge copies, and prompt hotkey helpers. |
+| `RESIDENT` | `$1200-$2ABE` | `$18BF` (6.2K, 6335 exact bytes) | Visible parser, vector hooks, BASIC ROM calls, REU DMA wrappers, result commit, bare command dispatch, expression hook, native `PROC`/`FUNC`/`RET`, `REPEAT`/`UNTIL`, `LABEL`/`JUMP`, error introspection, proper nested term state, float helpers, and prompt hotkey dispatch. |
 | BASIC sentinel | `$2AC0` | 1 byte | Must stay zero before stored-program `RUN`. |
 | BASIC workspace | `$2AC1-$9FFF` | `$753F` region, `30013` formula free bytes (29.3K) | Program text, variables, arrays, string heap. |
 | Command pack load image | `$2B00-$3FFF` | `$1500` (5.25K) file range | Built-in module/submodule payload seed bytes before cold prestash. |
-| Hidden helper load image | `$4000+` | `$06A8` (1.7K, 1704 exact bytes) load-only | Hidden helper seed copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
+| Hidden helper load image | `$4000+` | `$06C8` (1.7K, 1736 exact bytes) load-only | Hidden helper seed copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
 | Bridge load image | `$4800+` | `$01FE` (510B) load-only | Bridge seed copied to `$C000`. |
 | Registry seed load image | `$5000-$600F` | `$1010` (4.0K, 4112 exact bytes) load-only | Header and 128 descriptors copied to the assigned core bank. |
 | Runtime snapshot | Assigned core bank offsets `$0A00-$0BFF` | `$0200` (0.5K) plus bridge metadata | Saved zero page, stack page, SP, resume mode, line-chain guards. |
-| Common under-ROM helper | `$A000-$A6A7` | `$06A8` (1704B) | Helper code run with RAM mapped under BASIC ROM. |
+| Common under-ROM helper | `$A000-$A6C7` | `$06C8` (1736B) | Helper code run with RAM mapped under BASIC ROM. |
 | Slot 0 module payload | `$A800-$AECD` | `$06CE` (1742B) | Module 1 system/default payload fetched from the assigned code bank. |
 | Slot 1 module payload | `$B000-$B23A` | `$023B` (571B) | Module 2 proof and streaming `ZMODLD` loader payload. |
 | Slot 2 proof/overlays | `$B800-$B83E` | `$003F` (63B) | Current slot-2 base and overlay proof slices. |
 | `BRIDGE` | `$C000-$C1FD` | `$01FE` (510B) | Persistent bridge state, saved vectors, overlay variables, current handle scratch, debug bytes, native routine return stack, and flow-control scratch. |
 | Shared frames | `$C200-$C5FF` | `$0400` (1.0K) | Call frame, result frame, descriptor buffer, command-name buffer, page/runtime buffers. |
-| Hidden helper shadow | Assigned core bank `$3000+` | `$06A8` (1704B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
+| Hidden helper shadow | Assigned core bank `$3000+` | `$06C8` (1736B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
 | ReadyOS REU metadata | `$C600-$C7FF` | `$0200` (0.5K) shared | ReadyBASIC only marks REU bank ownership here. |
 | ReadyOS shim ABI | `$C800-$C9FF` | `$0200` (0.5K) shared | ReadyOS jump table and data; not ReadyBASIC RAM. |
 
@@ -663,6 +670,12 @@ loaded-bank scan are not trusted across the yield path. The keyboard path
 deliberately records a pending action and queues a harmless `REM` line first;
 direct jumps from inside the ROM input stack reached ReadyBASIC's hidden branch
 but did not reliably complete the ReadyOS transition.
+Before a prompt hotkey yield, ReadyBASIC waits for the exact physical chord that
+selected the action to be released, then clears editor/KERNAL key state again.
+Cold and warm entry also scan the physical matrix and suppress the same
+still-held ReadyOS hotkey until it has been released. This keeps one F2/F4 press
+from double-switching through the next app and keeps the resumed BASIC editor
+keyboard-live.
 
 On `EXIT`, ReadyBASIC:
 
@@ -706,7 +719,7 @@ ReadyBASIC uses hidden code in two places:
 
 | Code | Range | Purpose |
 |---|---:|---|
-| Hidden helper | `$A000-$A6A7` | REU prestash, save/restore helpers, bank-sensitive work. |
+| Hidden helper | `$A000-$A6C7` | REU prestash, save/restore helpers, bank-sensitive work. |
 | Command slots | `$A800-$BFFF` | Module/submodule payload slots fetched from the assigned code bank. |
 
 Before calling hidden code, ReadyBASIC saves flags, disables interrupts, forces
@@ -747,10 +760,10 @@ Current static layout:
 
 | Segment | Range | Size |
 |---|---:|---:|
-| `ENTRY` | `$1000-$11EA` | `$01EB` (491B) |
-| `RESIDENT` | `$1200-$2AB6` | `$18B7` (6.2K, 6327 exact bytes) |
+| `ENTRY` | `$1000-$11FC` | `$01FD` (509B) |
+| `RESIDENT` | `$1200-$2ABE` | `$18BF` (6.2K, 6335 exact bytes) |
 | `REGSEED` | `$5000-$600F` | `$1010` (4.0K, 4112 exact bytes) |
-| `HIDDEN` | `$A000-$A6A7` | `$06A8` (1704B) |
+| `HIDDEN` | `$A000-$A6C7` | `$06C8` (1736B) |
 | `LOWPACK` / slot 0 payload | `$A800-$AECD` | `$06CE` (1742B) |
 | `SLOTPACK1` / slot 1 payload | `$B000-$B23A` | `$023B` (571B) |
 | slot 2 proof/overlays | `$B800-$B814` | `$0015` (21B) |
@@ -763,9 +776,9 @@ Current measured guardrails:
 | `BASIC_START` | `$2AC1` |
 | Empty BASIC free bytes | `30013` |
 | `bin/readybasic.prg` size | `20994` |
-| `RESIDENT` | `$18B7` / 6327B |
+| `RESIDENT` | `$18BF` / 6335B |
 | `LOWPACK` | `$06CE` / 1742B |
-| `HIDDEN` | `$06A8` / 1704B |
+| `HIDDEN` | `$06C8` / 1736B |
 | `BRIDGE` | `$01FE` / 510B |
 | `REGSEED` | `$1010` / 4112B |
 
