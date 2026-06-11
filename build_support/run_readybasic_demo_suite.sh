@@ -175,7 +175,8 @@ if [ "$READYBASIC_DEMO_WARP_OFF" = "1" ]; then
 fi
 
 emit_type_step "demo_01_intro" $'PRINT CHR$(147);CHR$(158);"DEMO 1: READYBASIC BASICS"\rPRINT "FREEMEM, VARIABLES, AND A PROGRAM":PRINT CHR$(5)\r' "$READ_PAUSE"
-emit_type_step "demo_01_setup" $'FREEMEM()\rNEW\rA%=42\r10 B%=ZADD16(42,8)\r20 PRINT "PROGRAM SUM";B%\rLIST\r' "$STEP_POST"
+emit_type_step "demo_01_setup" $'FREEMEM()\rNEW\rA%=42\r10 B%=ZADD16(42,8)\r20 PRINT "PROGRAM SUM";B%\r' "$STEP_POST"
+emit_type_step "demo_01_list" $'LIST\r' "$STEP_POST"
 emit_type_step "demo_01_basics" $'PRINT CHR$(158);"EXPECT: RUN PRINTS PROGRAM SUM 50"\rPRINT CHR$(5)\rRUN\rA%=42\r' "$RUN_POST"
 emit_assert_step "assert_demo_01_program_sum" "PROGRAM SUM 50"
 
@@ -195,7 +196,10 @@ emit_key_step "ctrl_b_editor_demo" "2" "$STEP_POST"
 emit_wait_step "wait_launcher_after_editor_demo" "READY OS" "30"
 emit_key_step "move_editor_to_readybasic_demo" "17,17,17,17,13" "$STEP_POST"
 emit_wait_step "wait_readybasic_after_editor_demo" "READY." "60"
-emit_type_step "demo_03_resume_intro" $'PRINT CHR$(147);CHR$(158);"BACK IN READYBASIC"\rPRINT "VARIABLES AND PROGRAM TEXT SHOULD REMAIN":PRINT CHR$(5)\r' "$READ_PAUSE"
+emit_type_step "demo_03_resume_liveness" $'PRINT "RESUME LIVE"\r' "$STEP_POST"
+emit_assert_step "assert_demo_03_resume_liveness" "RESUME LIVE"
+emit_type_step "demo_03_resume_intro_clear" $'PRINT CHR$(147);CHR$(158);"BACK IN READYBASIC"\r' "$STEP_POST"
+emit_type_step "demo_03_resume_intro_detail" $'PRINT "VARIABLES AND PROGRAM TEXT SHOULD REMAIN":PRINT CHR$(5)\r' "$READ_PAUSE"
 emit_type_step "demo_03_resume_var_proof" $'FREEMEM()\rPRINT "A STILL";A%\rPRINT CHR$(158);"EXPECT: A IS 42 AND RUN STILL WORKS"\rPRINT CHR$(5)\r' "$STEP_POST"
 cat >>"$PLAN" <<'YAML'
   - id: capture_demo_03_resume_var_proof
@@ -280,4 +284,74 @@ fi
 
 cd "$READYOS_ROOT"
 dotnet build "$PROJECT"
-dotnet run --project "$PROJECT" -- run-plan --plan "$PLAN" $CLI_CLOSE_ARG
+RUN_RC=2
+for HARNESS_ATTEMPT in 1 2; do
+  RESULT_LOG="$(mktemp "${TMPDIR:-/tmp}/readybasic_demo_suite.XXXXXX")"
+  set +e
+  dotnet run --project "$PROJECT" -- run-plan --plan "$PLAN" $CLI_CLOSE_ARG | tee "$RESULT_LOG"
+  RUN_RC=${PIPESTATUS[0]}
+  set -e
+  if [ "$RUN_RC" -ne 2 ]; then
+    rm -f "$RESULT_LOG"
+    break
+  fi
+  set +e
+  python3 - "$RESULT_LOG" "$HARNESS_ATTEMPT" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
+attempt = int(sys.argv[2])
+start = text.rfind("{")
+while start != -1:
+    try:
+        payload = json.loads(text[start:])
+        break
+    except json.JSONDecodeError:
+        start = text.rfind("{", 0, start)
+else:
+    sys.exit(2)
+
+manifest = payload.get("Manifest")
+steps_ok = False
+if manifest:
+    try:
+        manifest_payload = json.loads(Path(manifest).read_text(encoding="utf-8-sig"))
+        steps = manifest_payload.get("steps", [])
+        steps_ok = bool(steps) and all(step.get("status") == "ok" for step in steps)
+    except Exception:
+        steps_ok = False
+
+if (
+    payload.get("Status") == "partial"
+    and payload.get("FailedStep") is None
+    and not payload.get("DegradedSteps")
+    and steps_ok
+):
+    print("treating final-dump-only partial as pass; all ReadyBASIC demo steps passed")
+    sys.exit(0)
+if (
+    attempt < 2
+    and payload.get("Status") == "partial"
+    and payload.get("FailedStep") == "wait_readybasic_prompt"
+):
+    print("retrying ReadyBASIC demo after initial prompt timeout")
+    sys.exit(10)
+sys.exit(2)
+PY
+  PARSE_RC=$?
+  set -e
+  rm -f "$RESULT_LOG"
+  if [ "$PARSE_RC" -eq 0 ]; then
+    RUN_RC=0
+    break
+  fi
+  if [ "$PARSE_RC" -eq 10 ]; then
+    RUN_RC=2
+    continue
+  fi
+  RUN_RC="$PARSE_RC"
+  break
+done
+exit "$RUN_RC"

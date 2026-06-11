@@ -18,16 +18,16 @@ actual C64/ReadyOS evidence trail rather than a pile of confident guesses.
   mode, and line-chain guards live in bridge metadata.
 - Hidden services live under BASIC ROM RAM at `$A000-$BFFF` and visible
   trampolines/state/mailbox live at `$C000-$C5FF`.
-- A refreshed visible shadow copy of the hidden helper image lives at `$C280-$C5F6`,
-  inside the ReadyOS app snapshot window. Warm
-  entry restores `$A000` from that shadow before using hidden helpers.
-- The plugin spine keeps visible resident code at `$1200-$2AB9`, command
+- A refreshed REU shadow copy of the hidden helper image lives in the
+  launcher-assigned ReadyBASIC core bank at offset `$3000`. Warm entry restores
+  `$A000` from that shadow before using hidden helpers.
+- The plugin spine keeps visible resident code at `$1200-$2AB6`, command
   overlays under BASIC ROM, shared frames at `$C200-$C5FF`, and
   launcher-assigned ReadyBASIC core/code REU banks. Older entries below may
   mention `$44/$45`; treat those as historical fixed-bank examples, not the
   current contract.
 - Module/submodule branch update: the current visible resident range is
-  `$1200-$2ABB`, the bridge is `$C000-$C1F6`, and command payloads now use a
+  `$1200-$2AB6`, the bridge is `$C000-$C1FD`, and command payloads now use a
   common under-ROM helper area `$A000-$A7FF` plus three 2KB submodule slots:
   `$A800-$AFFF`, `$B000-$B7FF`, and `$B800-$BFFF`.
 - Current command descriptors are module-aware 32-byte records: command id,
@@ -35,8 +35,8 @@ actual C64/ReadyOS evidence trail rather than a pile of confident guesses.
   overlay id, slot mask, generation/check byte, runtime destination, entry
   offset, signature id, and name.
 - Built-in payload bytes are prestashed into the assigned code bank: module 1 slot 0 at
-  `$0000-$06C6`, module 2 slot 1 at `$06C7-$0807`, slot 2/span/overlay proofs
-  through `$085B`, and disk sample payloads currently starting at `$3000`.
+  `$0000-$06CD`, module 2 slot 1 at `$06CE-$0908`, slot 2/span/overlay proofs
+  through `$095C`, and disk sample payloads currently starting at `$3000`.
 - The current registry has 128 descriptor slots in REU bank `$44` at
   `$1000-$1FFF`. Lookup fetches one 256-byte page at a time into `$C500`, scans
   eight descriptors locally, and copies a match into `$C480`.
@@ -71,6 +71,29 @@ before a dump, so it proves only that the cold boot appeared stalled from the
 UI, not which address or routine was stuck.
 
 ## Proven
+
+### Hidden Helper Calls Need Their Own CPU-Port Save
+
+Proven on 2026-06-09 while debugging the ReadyBASIC hotkey branch. The common
+hidden-call trampoline may run while a LOWPACK command is already executing under
+BASIC ROM. Sharing the same saved CPU-port byte used by the under-ROM payload
+call path can restore the wrong `$01` value after the nested helper returns,
+leaving BASIC ROM/helper visibility confused and causing later parser failures.
+
+Current rule: shared helper trampolines such as `call_hidden_common` must use a
+distinct CPU-port save byte from LOWPACK/under-ROM payload call machinery.
+
+### ReadyBASIC Hotkeys Must Prove The BASIC-Editor Path
+
+Proven on 2026-06-09 after `input.sequence [2]` appeared to test Ctrl+B but only
+fed a byte to the BASIC editor path, where it could render as text and bypass the
+actual key decode logic. ReadyBASIC runs inside the ROM editor, so hotkey tests
+must assert the installed vectors and exercise the ReadyBASIC keylog/IRQ decode
+or a real matrix path, then prove the internal dispatcher reaches the normal
+ReadyOS suspend/switch flow without typed `EXIT`.
+
+Current rule: do not accept a ReadyBASIC hotkey probe that only seeds
+`rb_hotkey_pending`, injects `EXIT`, or feeds KERNAL keyboard-buffer bytes.
 
 ### Lean Plugin Spine Needs Seed-Only Tables Outside Resident RAM
 
@@ -166,9 +189,10 @@ when an app returns to the launcher. ReadyBASIC's hidden helper code under
 `$A000-$BFFF` is not part of that transfer, so warm entry cannot assume it is
 still valid after the launcher or another app has run.
 
-Current rule: keep the hidden helper shadow at `$C280-$C5B6`, refresh it during
-manual prompt `EXIT`, and restore `$A000` from that shadow on every warm entry.
-BASIC top is `$A000`; the old `$9A00-$9FFF` shadow reservation has been reclaimed.
+Current rule: keep the hidden helper shadow in the assigned ReadyBASIC core
+bank at offset `$3000`, refresh it during cold seed and manual prompt `EXIT`,
+and restore `$A000` from that REU shadow on every warm entry. BASIC top is
+`$A000`; the old `$9A00-$9FFF` shadow reservation has been reclaimed.
 
 ### `$0000` DDR Is Part Of The Banking Contract
 
@@ -405,12 +429,53 @@ draw failure, and `../agenticdevharness/logs/vice_auto_20260509_174140/`
 demonstrated visible `RB 2`, visible `RB 3`, mailbox `$C004/$C005 == $000F`,
 and `EXIT` returning to the launcher.
 
-### EXIT Is The Current Supported Launcher Return
+### Prompt Hotkeys Need Direct Matrix Scanning
 
-`CTRL+B`/F-key prompt interception is deferred until the editor-safe keyboard
-hook is proven. `EXIT`/`exit` is now the explicit ReadyBASIC wedge command for
-returning to the launcher: it restores ReadyBASIC-owned vectors, clears pending
-keyboard input, marks the app ready, and jumps to the ReadyOS shim return entry.
+ReadyBASIC now supports prompt-level `CTRL+B`, `F2`, and `F4` by installing a
+small CINV IRQ hook at `$0314/$0315` plus a KEYLOG hook at `$028F/$0290`. The IRQ
+hook must not read `SHFLAG`/`SFDX` at the front of CINV: that samples the
+previous KERNAL scan state before the ROM IRQ handler has scanned the current
+physical key. A field test on 2026-06-09 showed normal BASIC and manual `EXIT`
+working while physical `CTRL+B`/`F2`/`F4` did nothing, disproving that approach.
+
+Current rule: the CINV hook performs a tiny direct CIA1 keyboard-matrix scan
+for only the ReadyOS chords, restores CIA1 `$DC00/$DC02/$DC03`, queues the
+ReadyOS action, and asks the editor to process a harmless `REM` line plus
+Return. The KEYLOG hook catches KERNAL-decoded special keys, consumes the key
+state, and preserves the CIA scan-port state. ReadyBASIC's normal execute hook
+then sees the pending action and performs the state save, vector restore, and
+shim return/switch.
+
+This is deliberately boring in the good way: ordinary keys tail-call the saved
+CINV/KEYLOG paths, no `CHRIN` vector hook is installed, and the ROM screen
+editor still owns cursor blink, logical-line editing, and Return handling.
+
+VICE Binary `input.sequence` writes through the KERNAL keyboard buffer rather
+than driving physical keyboard matrix timing. The ReadyBASIC hotkey probe
+therefore cannot be used as physical-key proof. A valid automated probe must
+separate the claims: assert that CINV/KEYLOG point at ReadyBASIC hooks and that
+the matrix scanner is present, then use pending-byte injection only to verify
+execute-hook dispatch, state save, vector restore, and shim return/switch path.
+Manual or GUI-host key testing is still needed to prove the host-to-matrix path
+in VICE.
+
+The hotkey helper only acts while `TXTPTR < BASIC_START`; running BASIC program
+input is left alone. `CTRL+B` follows the existing `EXIT` yield path. `F2`/`F4`
+scan the shim loaded-bank bitmap at `$C836-$C838`, write the target bank to
+`$C820`, and jump through `$C80F`. If no neighbor app is loaded, the function key
+is consumed so the BASIC editor does not see a stray app-navigation byte.
+
+Multi-hop switching exposed one extra rule: the selected `F2`/`F4` target must
+be copied into bridge state before ReadyBASIC prepares the shim yield, then
+written to `$C820` only after save-state, `CLRCHN`, and vector restore. The
+loaded-bank scan scratch bytes are not a durable handoff register. Before every
+`EXIT`, `CTRL+B`, `F2`, or `F4` yield, ReadyBASIC must also clear its pending
+hotkey byte, `$C6`, `$0277`, `SHFLAG`, `LSTX`, and `SFDX` so the destination app
+does not inherit stale editor state.
+
+`EXIT`/`exit` remains the explicit ReadyBASIC wedge command for returning to the
+launcher: it restores ReadyBASIC-owned vectors, clears pending keyboard input,
+marks the app ready, and jumps to the ReadyOS shim return entry.
 
 Automation caveat: the current harness key helper sends lowercase host ASCII in
 a way that does not match manual C64 lowercase/PETSCII entry. Automated `exit`
@@ -583,7 +648,10 @@ there were independent BASIC/KERNAL vector contract bugs after the app loaded.
 
 Disproven. The ROM screen editor consumes the interactive key stream internally
 and returns the completed logical line. Prompt navigation needs a pre-editor
-keyboard-buffer check or a deeper screen-editor hook.
+physical key check or a deeper screen-editor hook. The working implementation
+uses the CINV IRQ path plus KEYLOG for pre-editor detection, then queues a
+harmless `REM` line so the normal BASIC execute hook can dispatch the pending
+ReadyOS action.
 
 ### Hypothesis: Pre-Editor `CHRIN` Keyboard-Buffer Peek Is Safe
 
@@ -591,7 +659,8 @@ Disproven. The pre-editor peek was changed into a blocking wait for `$C6 != 0`.
 That starved the ROM screen editor before it could manage cursor/input state,
 matching delayed prompts, missing cursor blink, and fragile line entry. The
 stabilization pass removes it and accepts that prompt-level hotkeys need a
-separate, editor-safe design.
+separate, editor-safe design. The implemented design hooks CINV without blocking
+before the ROM screen editor runs.
 
 ### Hypothesis: Tokenizing ReadyBASIC Commands Immediately Is The Best POC Path
 
@@ -658,8 +727,9 @@ contract is fully proven.
 - After relaunching ReadyBASIC from the launcher:
   - existing BASIC text, variables, strings, arrays, screen state, and `NEW`
     state should resume coherently after a manual prompt `exit`.
-- `CTRL+B`/F-key interception remains deferred until the editor-safe hook is
-  implemented and proven.
+- `CTRL+B`, `F2`, and `F4` prompt interception uses the nonblocking CINV IRQ plus
+  synthetic-`EXIT` path and must keep restoring page-3 vectors before every shim
+  yield.
 
 ### Expression Hooks Need Narrow, Purpose-Built Paths
 

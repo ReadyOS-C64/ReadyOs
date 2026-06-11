@@ -1,0 +1,370 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_reuviewer_f2_chain_probe
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 2
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 180
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81-preboot.prg"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_readybasic_initial
+    type: screen.wait_contains
+    params:
+      text: "READYBASIC"
+      wait_timeout_s: 180
+      capture_label: chain_readybasic_initial
+  - id: assert_readybasic_bank_initial
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "05"
+  - id: assert_irq_vector_initial
+    type: assert.memory
+    params:
+      start: 788
+      end: 789
+      equals_hex: "00 12"
+  - id: assert_keylog_vector_initial
+    type: assert.memory
+    params:
+      start: 655
+      end: 656
+      equals_hex: "94 C1"
+  - id: readybasic_first_type
+    type: input.sequence
+    params:
+      keys: [81,37,61,49,48,49,58,80,82,73,78,84,32,34,67,72,65,73,78,49,34,59,81,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_readybasic_first_type
+    type: assert.screen
+    params:
+      contains: "CHAIN1 101"
+  - id: readybasic_ctrl_b_1_set_readybasic_pending_hotkey
+    type: memory.write
+    params:
+      start: 10828
+      bytes_hex: "02"
+  - id: readybasic_ctrl_b_1_assert_readybasic_pending_hotkey
+    type: assert.memory
+    params:
+      start: 10828
+      end: 10828
+      equals_hex: "02"
+  - id: readybasic_ctrl_b_1_queue_readybasic_hotkey_line
+    type: memory.write
+    params:
+      start: 631
+      bytes_hex: "52 45 4D 0D"
+  - id: readybasic_ctrl_b_1
+    type: memory.write
+    params:
+      start: 198
+      bytes_hex: "04"
+  - id: wait_launcher_after_readybasic_ctrl_b_1
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 40
+      pre_delay_s: 1.0
+      capture_label: chain_launcher_after_rb_ctrl_b_1
+  - id: assert_launcher_bank_after_ctrl_b_1
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "00"
+  - id: reenter_readybasic_1
+    type: input.sequence
+    params:
+      keys: [13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 2.0
+  - id: capture_readybasic_reentry_1
+    type: screen.capture
+    params:
+      label: chain_readybasic_reentry_1
+      note: warm ReadyBASIC entry evidence; bank/vector assertions and typed sentinel prove keyboard liveness
+  - id: assert_readybasic_bank_reentry_1
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "05"
+  - id: readybasic_second_type
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,67,72,65,73,78,50,34,59,81,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_readybasic_second_type
+    type: assert.screen
+    params:
+      contains: "CHAIN2 101"
+  - id: readybasic_ctrl_b_2_set_readybasic_pending_hotkey
+    type: memory.write
+    params:
+      start: 10828
+      bytes_hex: "02"
+  - id: readybasic_ctrl_b_2_assert_readybasic_pending_hotkey
+    type: assert.memory
+    params:
+      start: 10828
+      end: 10828
+      equals_hex: "02"
+  - id: readybasic_ctrl_b_2_queue_readybasic_hotkey_line
+    type: memory.write
+    params:
+      start: 631
+      bytes_hex: "52 45 4D 0D"
+  - id: readybasic_ctrl_b_2
+    type: memory.write
+    params:
+      start: 198
+      bytes_hex: "04"
+  - id: wait_launcher_after_readybasic_ctrl_b_2
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 40
+      pre_delay_s: 1.0
+      capture_label: chain_launcher_after_rb_ctrl_b_2
+  - id: launch_reuviewer_from_readybasic_position
+    type: input.sequence
+    params:
+      keys: [17,17,17,13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 2.5
+  - id: wait_reuviewer
+    type: screen.wait_contains
+    params:
+      text: "REU MEMORY"
+      wait_timeout_s: 90
+      capture_label: chain_reuviewer_loaded
+  - id: assert_reuviewer_bank
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "08"
+  - id: constrain_loaded_bitmap_for_readybasic_reuviewer_chain
+    type: memory.write
+    params:
+      start: 51254
+      bytes_hex: "20 01 00"
+  - id: reuviewer_f2_to_readybasic
+    type: input.sequence
+    params:
+      keys: [137]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.2
+  - id: capture_readybasic_after_reuviewer_f2
+    type: screen.capture
+    params:
+      label: chain_readybasic_after_reuviewer_f2
+      note: warm ReadyBASIC entry evidence; bank/vector assertions and typed sentinel prove keyboard liveness
+  - id: assert_readybasic_bank_after_reuviewer_f2
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "05"
+  - id: assert_irq_vector_after_reuviewer_f2
+    type: assert.memory
+    params:
+      start: 788
+      end: 789
+      equals_hex: "00 12"
+  - id: assert_keylog_vector_after_reuviewer_f2
+    type: assert.memory
+    params:
+      start: 655
+      end: 656
+      equals_hex: "94 C1"
+  - id: assert_keyboard_buffer_empty_after_reuviewer_f2
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
+  - id: readybasic_type_after_reuviewer_f2
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,67,72,65,73,78,51,34,59,81,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_readybasic_type_after_reuviewer_f2
+    type: assert.screen
+    params:
+      contains: "CHAIN3 101"
+  - id: readybasic_f2_back_to_reuviewer_set_readybasic_pending_hotkey
+    type: memory.write
+    params:
+      start: 10828
+      bytes_hex: "89"
+  - id: readybasic_f2_back_to_reuviewer_assert_readybasic_pending_hotkey
+    type: assert.memory
+    params:
+      start: 10828
+      end: 10828
+      equals_hex: "89"
+  - id: readybasic_f2_back_to_reuviewer_queue_readybasic_hotkey_line
+    type: memory.write
+    params:
+      start: 631
+      bytes_hex: "52 45 4D 0D"
+  - id: readybasic_f2_back_to_reuviewer
+    type: memory.write
+    params:
+      start: 198
+      bytes_hex: "04"
+  - id: wait_reuviewer_after_readybasic_f2
+    type: screen.wait_contains
+    params:
+      text: "REU MEMORY"
+      wait_timeout_s: 80
+      pre_delay_s: 1.0
+      capture_label: chain_reuviewer_after_readybasic_f2
+  - id: assert_app_keylog_vector_restored_after_readybasic_f2
+    type: assert.memory
+    params:
+      start: 655
+      end: 656
+      equals_hex: "48 EB"
+  - id: assert_app_irq_vector_restored_after_readybasic_f2
+    type: assert.memory
+    params:
+      start: 788
+      end: 789
+      equals_hex: "31 EA"
+  - id: assert_default_input_device_after_readybasic_f2
+    type: assert.memory
+    params:
+      start: 153
+      end: 153
+      equals_hex: "00"
+  - id: assert_reuviewer_bank_after_readybasic_f2
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "08"
+  - id: assert_keyboard_buffer_empty_after_readybasic_f2
+    type: assert.memory
+    params:
+      start: 198
+      end: 198
+      equals_hex: "00"
+  - id: reuviewer_ctrl_b_after_readybasic_f2
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
+  - id: capture_after_reuviewer_ctrl_b_input
+    type: screen.capture
+    params:
+      label: chain_after_reuviewer_ctrl_b_hotkey
+      note: capture after resumed REU Viewer Ctrl+B hotkey
+  - id: wait_launcher_after_reuviewer_ctrl_b
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 40
+      capture_label: chain_launcher_after_reuviewer_ctrl_b
+  - id: assert_launcher_bank_after_reuviewer_ctrl_b
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "00"
+  - id: reenter_readybasic_after_reuviewer_ctrl_b
+    type: input.sequence
+    params:
+      keys: [145,145,145,13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 2.0
+  - id: capture_readybasic_after_reuviewer_ctrl_b_reentry
+    type: screen.capture
+    params:
+      label: chain_readybasic_after_reuviewer_ctrl_b_reentry
+      note: warm ReadyBASIC entry evidence; bank/vector assertions and typed sentinel prove keyboard liveness
+  - id: readybasic_type_after_reuviewer_ctrl_b_reentry
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,67,72,65,73,78,52,34,59,81,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_readybasic_type_after_reuviewer_ctrl_b_reentry
+    type: assert.screen
+    params:
+      contains: "CHAIN4 101"
+  - id: readybasic_exit_after_multi_hop_reentry
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: wait_launcher_stable_after_readybasic_exit
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+      pre_delay_s: 2.0
+      capture_label: chain_launcher_stable_after_readybasic_exit
+  - id: assert_launcher_bank_after_readybasic_exit
+    type: assert.memory
+    params:
+      start: 51252
+      end: 51252
+      equals_hex: "00"
+  - id: assert_readybasic_not_auto_reentered_after_exit
+    type: assert.screen_not_contains
+    params:
+      not_contains: "ready."
+  - id: reenter_readybasic_after_exit_guard
+    type: input.sequence
+    params:
+      keys: [13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 2.0
+  - id: capture_readybasic_after_exit_guard_reentry
+    type: screen.capture
+    params:
+      label: chain_readybasic_after_exit_guard_reentry
+      note: warm ReadyBASIC entry evidence; bank/vector assertions and typed sentinel prove keyboard liveness
+  - id: readybasic_type_after_exit_guard_reentry
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,67,72,65,73,78,53,34,59,81,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_readybasic_type_after_exit_guard_reentry
+    type: assert.screen
+    params:
+      contains: "CHAIN5 101"

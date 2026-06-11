@@ -13,6 +13,8 @@
 
         .setcpu "6502"
 
+        .export rb_hotkey_pending
+
 ; ---------------------------------------------------------------------------
 ; ROM/KERNAL entry points
 ; ---------------------------------------------------------------------------
@@ -69,6 +71,7 @@ CURLIN          = $39
 TXTPTR          = $7A
 DFLTN           = $99
 MSGFLG          = $9D
+KBD_SCREEN_MODE = $D0
 VARPNT          = $47
 SUBFLG          = $10
 DSCPTR          = $64
@@ -77,9 +80,25 @@ FAC_EXP         = $61
 FAC_MANT1       = $62
 FAC_MANT2       = $63
 KEYD_COUNT      = $00C6
+LSTX            = $00C5
+SFDX            = $00CB
+RPTFLG          = $028A
+KOUNT           = $028B
+DELAY           = $028C
+SHFLAG          = $028D
+LSTSHF          = $028E
+KEYLOG_VEC      = $028F
+KEYD_BUFFER     = $0277
 COLOR_CODE      = $0286
 KERNAL_MEMTOP   = $0281
 KERNAL_MEMBOT   = $0283
+KERNAL_IRQ_VEC  = $0314
+KERNAL_CHRIN_VEC = $0324
+KERNAL_GETIN_VEC = $032A
+CIA1_PRA        = $DC00
+CIA1_PRB        = $DC01
+CIA1_DDRA       = $DC02
+CIA1_DDRB       = $DC03
 
 BASIC_START     = $2AC1
 BASIC_SENTINEL  = BASIC_START - 1
@@ -99,7 +118,15 @@ VIC_BORDER      = $D020
 VIC_BG          = $D021
 
 SHIM_RETURN     = $C80C
+SHIM_SWITCH     = $C80F
+SHIM_TARGET_BANK = $C820
+SHIM_CURRENT_BANK = $C834
+SHIM_REU_BITMAP_LO = $C836
+SHIM_REU_BITMAP_HI = $C837
+SHIM_REU_BITMAP_XHI = $C838
 SHIM_REU_BANK_SKIP = $C83B
+SHIM_LAUNCHER_FLAGS = $C83C
+SHIM_LAUNCHER_FLAG_SUPPRESS_STARTUP = $01
 
 ; Scratch pointers outside cc65's reserved zero-page runtime.
 rb_ptr_lo       = $FB
@@ -119,6 +146,16 @@ TOKEN_END       = $80
 TOKEN_REM       = $8F
 TOKEN_PLUS      = $AA
 TOKEN_EQUAL     = $B2
+KEY_CTRL_B      = 2
+KEY_F2          = 137
+KEY_F4          = 138
+KEY_MATRIX_B    = $1C
+KEY_MATRIX_F1   = $04
+KEY_MATRIX_F3   = $05
+SHFLAG_SHIFT    = $01
+SHFLAG_CTRL     = $04
+APP_BANK_MIN    = 1
+APP_BANK_MAX_PLUS_ONE = 24
 
 RAM_UNDER_BASIC = $FD
 RAM_UNDER_BASIC_KEEP_KERNAL = $FE
@@ -201,6 +238,8 @@ RB_REU_TYPE_CODE= 15
 RB_REU_ALLOC_TABLE = $C600
 RB_REU_HEADER_OFF  = $0000
 RB_REUCB_BANK_TYPE_OFF = $0100
+RB_REUCB_APP_REG_OFF = $0300
+RB_REUCB_APP_REG_COUNT = 64
 RB_REU_DESC_OFF    = $1000
 RB_REU_SLOT_STATE_OFF = $2000
 RB_REU_CALL_OFF    = $0400
@@ -427,6 +466,204 @@ rb_entry_magic: .byte 0
 rb_entry_magic2:.byte 0
 rb_entry_cpu:   .byte 0
 
+        .segment "RESIDENT"
+
+rb_irq:
+        php
+        pha
+        txa
+        pha
+        tya
+        pha
+        lda DFLTN
+        bne @done
+        lda rb_hotkey_pending
+        bne @done
+        lda CURLIN+1
+        cmp #$FF
+        bne @done
+        jsr rb_scan_hotkey_buffer
+        bne @candidate
+        jsr rb_scan_hotkey_matrix
+        bne @candidate
+        lda rb_hotkey_suppress
+        beq @done
+        lda #0
+        sta rb_hotkey_suppress
+        beq @done
+@candidate:
+        tax
+        lda rb_hotkey_suppress
+        beq @queue
+        txa
+        cmp rb_hotkey_suppress
+        beq @done
+        bne @done
+@queue:
+        jsr rb_queue_hotkey_line
+@done:
+        pla
+        tay
+        pla
+        tax
+        pla
+        plp
+        jmp (rb_orig_irq_lo)
+
+        .segment "ENTRY"
+
+rb_queue_hotkey_line:
+        stx rb_hotkey_pending
+        lda #4
+        sta KEYD_COUNT
+        lda #'R'
+        sta KEYD_BUFFER
+        lda #'E'
+        sta KEYD_BUFFER+1
+        lda #'M'
+        sta KEYD_BUFFER+2
+        lda #13
+        sta KEYD_BUFFER+3
+        rts
+
+        .segment "RESIDENT"
+
+rb_clear_hotkey_input_state:
+        lda #0
+        sta rb_hotkey_pending
+        sta KEYD_COUNT
+        ldx #9
+@keyd:
+        sta KEYD_BUFFER,x
+        dex
+        bpl @keyd
+        ldx #4
+@scan:
+        sta RPTFLG,x
+        dex
+        bpl @scan
+        sta KBD_SCREEN_MODE
+        lda #$40
+        sta LSTX
+        sta SFDX
+        rts
+
+        .segment "ENTRY"
+
+rb_scan_hotkey_buffer:
+        lda KEYD_COUNT
+        beq @none
+        lda KEYD_BUFFER
+        cmp #KEY_CTRL_B
+        beq @found
+        cmp #KEY_F2
+        beq @found
+        cmp #KEY_F4
+        beq @found
+@none:
+        lda #0
+@found:
+        rts
+
+rb_scan_hotkey_matrix:
+        lda CIA1_PRA
+        pha
+        lda CIA1_DDRA
+        pha
+        lda CIA1_DDRB
+        pha
+        lda #$FF
+        sta CIA1_DDRA
+        lda #0
+        sta CIA1_DDRB
+        lda #$7F
+        sta CIA1_PRA
+        lda CIA1_PRB
+        and #$04
+        bne @function_keys
+        lda #$F7
+        sta CIA1_PRA
+        lda CIA1_PRB
+        and #$10
+        bne @function_keys
+        ldx #KEY_CTRL_B
+        jmp @restore
+@function_keys:
+        lda #$FD
+        sta CIA1_PRA
+        lda CIA1_PRB
+        and #$80
+        beq @shifted
+        lda #$BF
+        sta CIA1_PRA
+        lda CIA1_PRB
+        and #$10
+        bne @none
+@shifted:
+        lda #$FE
+        sta CIA1_PRA
+        lda CIA1_PRB
+        and #$10
+        beq @f2
+        lda CIA1_PRB
+        and #$20
+        beq @f4
+@none:
+        ldx #0
+        jmp @restore
+@f2:
+        ldx #KEY_F2
+        jmp @restore
+@f4:
+        ldx #KEY_F4
+@restore:
+        pla
+        sta CIA1_DDRB
+        pla
+        sta CIA1_DDRA
+        pla
+        sta CIA1_PRA
+        txa
+        rts
+
+rb_dispatch_pending_hotkey:
+        lda rb_hotkey_pending
+        tax
+        lda #0
+        sta rb_hotkey_pending
+        stx rb_hotkey_suppress
+        txa
+        cmp #KEY_CTRL_B
+        beq @launcher
+        cmp #KEY_F2
+        beq @next
+        cmp #KEY_F4
+        beq @prev
+@done:
+        rts
+@launcher:
+        jmp rb_hotkey_return_ready
+@next:
+        jsr call_hidden_select_next_app
+        lda rb_found_kind
+        bne @switch
+        rts
+@prev:
+        jsr call_hidden_select_prev_app
+        lda rb_found_kind
+        beq @done
+@switch:
+        lda rb_tmp_lo
+        sta rb_hotkey_target_bank
+        jsr rb_clear_hotkey_input_state
+        jsr rb_prepare_ready_resume
+        jsr prepare_shim_yield
+        lda rb_hotkey_target_bank
+        sta SHIM_TARGET_BANK
+        jmp SHIM_SWITCH
+
+        .segment "RESIDENT"
+
         .segment "PADLOW"
         .res $0000, 0
 
@@ -458,6 +695,9 @@ rb_cold_start:
         jsr install_basic_chrget
         jsr init_basic_workspace
         jsr install_vectors
+        jsr rb_clear_hotkey_input_state
+        lda #0
+        sta rb_hotkey_suppress
         lda #1
         sta rb_seed_cold
         jsr call_hidden_seed_plugin_reu
@@ -476,6 +716,7 @@ rb_cold_start:
 
 rb_resume_ready:
         jsr install_vectors
+        jsr rb_clear_hotkey_input_state
         lda #0
         sta rb_seed_cold
         jsr call_hidden_seed_plugin_reu
@@ -488,6 +729,7 @@ rb_resume_ready:
 
 rb_resume_running:
         jsr install_vectors
+        jsr rb_clear_hotkey_input_state
         lda #0
         sta rb_seed_cold
         jsr call_hidden_seed_plugin_reu
@@ -498,62 +740,16 @@ rb_resume_running:
         cli
         jmp restore_basic_runtime_state
 
-install_vectors:
-        lda rb_vectors_saved
-        bne @install
-        lda $0304
-        sta rb_orig_crunch_lo
-        lda $0305
-        sta rb_orig_crunch_hi
-        lda $0306
-        sta rb_orig_list_lo
-        lda $0307
-        sta rb_orig_list_hi
-        lda $0308
-        sta rb_orig_execute_lo
-        lda $0309
-        sta rb_orig_execute_hi
-        lda #1
-        sta rb_vectors_saved
-@install:
-        lda #<rb_crunch
-        sta $0304
-        lda #>rb_crunch
-        sta $0305
-        lda #<rb_execute
-        sta $0308
-        lda #>rb_execute
-        sta $0309
-        lda #<rb_eval
-        sta $030A
-        lda #>rb_eval
-        sta $030B
-        rts
-
-restore_vectors:
-        lda rb_vectors_saved
-        beq @done
-        lda rb_orig_crunch_lo
-        sta $0304
-        lda rb_orig_crunch_hi
-        sta $0305
-        lda rb_orig_list_lo
-        sta $0306
-        lda rb_orig_list_hi
-        sta $0307
-        lda rb_orig_execute_lo
-        sta $0308
-        lda rb_orig_execute_hi
-        sta $0309
-        lda #<BASIC_EVAL
-        sta $030A
-        lda #>BASIC_EVAL
-        sta $030B
-@done:
-        rts
-
 rb_execute:
+        lda rb_hotkey_pending
+        beq @peek
+        jmp rb_dispatch_pending_hotkey
+@peek:
         jsr rb_peek_next_nonspace
+        tax
+@normal_tx:
+        txa
+@normal:
         jsr rb_fold_a
         cmp #'J'
         beq @maybe_jump
@@ -846,62 +1042,79 @@ rb_is_name_char:
 cmd_exit:
         lda TXTPTR+1
         cmp #>BASIC_START
-        bcs @running
+        bcs rb_exit_running
+rb_hotkey_return_ready:
         lda #RB_RESUME_READY
         sta RUNTIME_MODE
         lda #RB_MAGIC_READY
-        bne @store
-@running:
+        bne rb_exit_store_magic
+rb_exit_running:
         lda #RB_RESUME_RUN
         sta RUNTIME_MODE
         lda #RB_MAGIC_RUN
-@store:
+rb_exit_store_magic:
         sta rb_magic
         sta rb_entry_magic
         lda #RB_MAGIC2
         sta rb_magic2
         sta rb_entry_magic2
-        jsr call_hidden_save_state
-        jsr restore_vectors
-        lda CPU_DDR
-        ora #$07
-        sta CPU_DDR
-        lda CPU_PORT
-        and #RAM_UNDER_BASIC_KEEP_KERNAL
-        sta CPU_PORT
+        sei
+        jsr rb_clear_hotkey_input_state
+        jsr rb_set_launcher_suppress
+        jsr prepare_shim_yield
         jmp SHIM_RETURN
 
+        .segment "ENTRY"
+
+rb_set_launcher_suppress:
+        lda SHIM_LAUNCHER_FLAGS
+        ora #SHIM_LAUNCHER_FLAG_SUPPRESS_STARTUP
+        sta SHIM_LAUNCHER_FLAGS
+        rts
+
+        .segment "RESIDENT"
+
+prepare_shim_yield:
+        jsr call_hidden_save_state
+        jsr K_CLRCHN
+        lda CPU_PORT
+        and #RAM_UNDER_BASIC_KEEP_KERNAL
+        sta CPU_PORT
+        jsr hidden_restore_vectors
+        rts
+
 call_hidden_save_state:
+        lda #<save_basic_runtime_state
+        sta rb_lookup_index
+        lda #>save_basic_runtime_state
+        sta rb_lookup_slots
+        bne call_hidden_common
+
+call_hidden_seed_plugin_reu:
+        lda #<rb_seed_plugin_reu_hidden
+        sta rb_lookup_index
+        lda #>rb_seed_plugin_reu_hidden
+        sta rb_lookup_slots
+        bne call_hidden_common
+
+call_hidden_common:
         php
         sei
         lda CPU_DDR
         ora #$07
         sta CPU_DDR
         lda CPU_PORT
-        sta rb_saved_cpu
+        sta rb_common_saved_cpu
         and #RAM_UNDER_BASIC_KEEP_KERNAL
         sta CPU_PORT
-        jsr save_basic_runtime_state
-        lda rb_saved_cpu
+        jsr call_hidden_jmp
+        lda rb_common_saved_cpu
         sta CPU_PORT
         plp
         rts
 
-call_hidden_seed_plugin_reu:
-        php
-        sei
-        lda CPU_DDR
-        ora #$07
-        sta CPU_DDR
-        lda CPU_PORT
-        sta rb_saved_cpu
-        and #RAM_UNDER_BASIC_KEEP_KERNAL
-        sta CPU_PORT
-        jsr rb_seed_plugin_reu_hidden
-        lda rb_saved_cpu
-        sta CPU_PORT
-        plp
-        rts
+call_hidden_jmp:
+        jmp (rb_lookup_index)
 
 restore_basic_runtime_state:
         sei
@@ -3826,6 +4039,311 @@ rb_command_descriptors:
 
         .segment "HIDDEN"
 
+hidden_calc_basic_free:
+        sec
+        lda FRETOP
+        sbc STREND
+        sta rb_free_lo
+        lda FRETOP+1
+        sbc STREND+1
+        sta rb_free_hi
+        rts
+
+hidden_print_live_free:
+        jsr hidden_calc_basic_free
+        lda #0
+        sta rb_digit_seen
+        ldx #0
+@place:
+        lda #0
+        sta rb_digit_count
+@sub:
+        sec
+        lda rb_free_lo
+        sbc hidden_decimal_lo,x
+        sta rb_tmp_lo
+        lda rb_free_hi
+        sbc hidden_decimal_hi,x
+        bcc @emit
+        sta rb_free_hi
+        lda rb_tmp_lo
+        sta rb_free_lo
+        inc rb_digit_count
+        jmp @sub
+@emit:
+        lda rb_digit_count
+        bne @print
+        lda rb_digit_seen
+        bne @print
+        cpx #4
+        bne @next
+        lda #0
+@print:
+        ora #'0'
+        jsr K_CHROUT
+        lda #1
+        sta rb_digit_seen
+@next:
+        inx
+        cpx #5
+        bcc @place
+        rts
+
+hidden_decimal_lo:
+        .byte <10000,<1000,<100,<10,<1
+hidden_decimal_hi:
+        .byte >10000,>1000,>100,>10,>1
+
+hidden_prepare_ready_resume:
+        lda #RB_RESUME_READY
+        sta RUNTIME_MODE
+        lda #RB_MAGIC_READY
+        sta rb_magic
+        sta rb_entry_magic
+        lda #RB_MAGIC2
+        sta rb_magic2
+        sta rb_entry_magic2
+        rts
+
+hidden_install_vectors:
+        lda rb_vectors_saved
+        bne @install
+        lda $0304
+        sta rb_orig_crunch_lo
+        lda $0305
+        sta rb_orig_crunch_hi
+        lda $0306
+        sta rb_orig_list_lo
+        lda $0307
+        sta rb_orig_list_hi
+        lda KEYLOG_VEC
+        sta rb_orig_keylog_lo
+        lda KEYLOG_VEC+1
+        sta rb_orig_keylog_hi
+        lda $0308
+        sta rb_orig_execute_lo
+        lda $0309
+        sta rb_orig_execute_hi
+        lda KERNAL_IRQ_VEC
+        sta rb_orig_irq_lo
+        lda KERNAL_IRQ_VEC+1
+        sta rb_orig_irq_hi
+        lda #1
+        sta rb_vectors_saved
+@install:
+        lda #<rb_crunch
+        sta $0304
+        lda #>rb_crunch
+        sta $0305
+        lda #<rb_execute
+        sta $0308
+        lda #>rb_execute
+        sta $0309
+        lda #<rb_eval
+        sta $030A
+        lda #>rb_eval
+        sta $030B
+        lda #<rb_keylog
+        sta KEYLOG_VEC
+        lda #>rb_keylog
+        sta KEYLOG_VEC+1
+        lda #<rb_irq
+        sta KERNAL_IRQ_VEC
+        lda #>rb_irq
+        sta KERNAL_IRQ_VEC+1
+        rts
+
+hidden_select_next_app:
+        jsr hidden_normalize_current_bank
+        sta rb_saved_count_lo
+        sta rb_tmp_lo
+        lda #0
+        sta rb_digit_count
+@loop:
+        inc rb_tmp_lo
+        lda rb_tmp_lo
+        cmp #APP_BANK_MAX_PLUS_ONE
+        bcc :+
+        lda #APP_BANK_MIN
+        sta rb_tmp_lo
+:       jsr hidden_bank_loaded
+        bcs @found
+        inc rb_digit_count
+        lda rb_digit_count
+        cmp #(APP_BANK_MAX_PLUS_ONE - APP_BANK_MIN)
+        bcc @loop
+        clc
+        rts
+@found:
+        sec
+        rts
+
+hidden_select_prev_app:
+        jsr hidden_normalize_current_bank
+        sta rb_saved_count_lo
+        sta rb_tmp_lo
+        lda #0
+        sta rb_digit_count
+@loop:
+        lda rb_tmp_lo
+        cmp #APP_BANK_MIN
+        bne :+
+        lda #APP_BANK_MAX_PLUS_ONE
+        sta rb_tmp_lo
+:       dec rb_tmp_lo
+        jsr hidden_bank_loaded
+        bcs @found
+        inc rb_digit_count
+        lda rb_digit_count
+        cmp #(APP_BANK_MAX_PLUS_ONE - APP_BANK_MIN)
+        bcc @loop
+        clc
+        rts
+@found:
+        sec
+        rts
+
+hidden_select_next_app_store:
+        lda #0
+        sta rb_found_kind
+        jsr hidden_select_next_app
+        bcc @done
+        lda #1
+        sta rb_found_kind
+@done:
+        rts
+
+hidden_select_prev_app_store:
+        lda #0
+        sta rb_found_kind
+        jsr hidden_select_prev_app
+        bcc @done
+        lda #1
+        sta rb_found_kind
+@done:
+        rts
+
+hidden_normalize_current_bank:
+        lda SHIM_CURRENT_BANK
+        cmp #APP_BANK_MIN
+        bcc @default
+        cmp #APP_BANK_MAX_PLUS_ONE
+        bcs @default
+        rts
+@default:
+        lda #APP_BANK_MIN
+        rts
+
+hidden_bank_loaded:
+        lda rb_tmp_lo
+        cmp #APP_BANK_MAX_PLUS_ONE
+        bcs @clear
+        and #$07
+        tax
+        lda hidden_bit_masks,x
+        sta rb_lookup_char
+        lda rb_tmp_lo
+        cmp #8
+        bcc @lo
+        cmp #16
+        bcc @hi
+        lda SHIM_REU_BITMAP_XHI
+        bne @test
+        beq @clear
+@hi:
+        lda SHIM_REU_BITMAP_HI
+        bne @test
+        beq @clear
+@lo:
+        lda SHIM_REU_BITMAP_LO
+@test:
+        and rb_lookup_char
+        beq @clear
+        lda rb_tmp_lo
+        cmp rb_saved_count_lo
+        beq @clear
+        cmp rb_reu_core_bank
+        beq @clear
+        cmp rb_reu_code_bank
+        beq @clear
+        jsr hidden_logical_bank_is_registered_app
+        bcc @clear
+        sec
+        rts
+@clear:
+        clc
+        rts
+
+hidden_logical_bank_is_registered_app:
+        lda rb_tmp_lo
+        sta rb_hidden_next_lo
+        lda #0
+        sta rb_hidden_next_hi
+@scan:
+        lda #<rb_lookup_char
+        sta rb_reu_c64_lo
+        lda #>rb_lookup_char
+        sta rb_reu_c64_hi
+        lda rb_hidden_next_hi
+        clc
+        adc #<RB_REUCB_APP_REG_OFF
+        sta rb_reu_off_lo
+        lda #>RB_REUCB_APP_REG_OFF
+        adc #0
+        sta rb_reu_off_hi
+        lda SHIM_REU_BANK_SKIP
+        sta rb_reu_bank
+        lda #1
+        sta rb_reu_len_lo
+        lda #0
+        sta rb_reu_len_hi
+        jsr rb_reu_fetch
+        lda rb_lookup_char
+        cmp rb_hidden_next_lo
+        beq @found
+        inc rb_hidden_next_hi
+        lda rb_hidden_next_hi
+        cmp #RB_REUCB_APP_REG_COUNT
+        bcc @scan
+        clc
+        rts
+@found:
+        sec
+        rts
+
+hidden_bit_masks:
+        .byte $01,$02,$04,$08,$10,$20,$40,$80
+
+hidden_restore_vectors:
+        lda rb_vectors_saved
+        beq @done
+        lda rb_orig_crunch_lo
+        sta $0304
+        lda rb_orig_crunch_hi
+        sta $0305
+        lda rb_orig_list_lo
+        sta $0306
+        lda rb_orig_list_hi
+        sta $0307
+        lda rb_orig_keylog_lo
+        sta KEYLOG_VEC
+        lda rb_orig_keylog_hi
+        sta KEYLOG_VEC+1
+        lda rb_orig_execute_lo
+        sta $0308
+        lda rb_orig_execute_hi
+        sta $0309
+        lda #<BASIC_EVAL
+        sta $030A
+        lda #>BASIC_EVAL
+        sta $030B
+        lda rb_orig_irq_lo
+        sta KERNAL_IRQ_VEC
+        lda rb_orig_irq_hi
+        sta KERNAL_IRQ_VEC+1
+@done:
+        rts
+
 hidden_restore_basic_runtime_state:
         lda RUNTIME_MAGIC1
         cmp #RB_STATE_MAGIC1
@@ -4370,60 +4888,12 @@ rb_draw_header:
         sta COLOR_CODE
         rts
 
-rb_calc_basic_free:
-        sec
-        lda FRETOP
-        sbc STREND
-        sta rb_free_lo
-        lda FRETOP+1
-        sbc STREND+1
-        sta rb_free_hi
-        rts
-
 rb_print_live_free:
-        jsr rb_calc_basic_free
-        lda #0
-        sta rb_digit_seen
-        ldx #0
-@place:
-        lda #0
-        sta rb_digit_count
-@sub:
-        sec
-        lda rb_free_lo
-        sbc rb_decimal_lo,x
-        sta rb_tmp_lo
-        lda rb_free_hi
-        sbc rb_decimal_hi,x
-        bcc @emit
-        sta rb_free_hi
-        lda rb_tmp_lo
-        sta rb_free_lo
-        inc rb_digit_count
-        jmp @sub
-@emit:
-        lda rb_digit_count
-        bne @print
-        lda rb_digit_seen
-        bne @print
-        cpx #4
-        bne @next
-        lda #0
-@print:
-        ora #'0'
-        jsr K_CHROUT
-        lda #1
-        sta rb_digit_seen
-@next:
-        inx
-        cpx #5
-        bcc @place
-        rts
-
-rb_decimal_lo:
-        .byte <10000,<1000,<100,<10,<1
-rb_decimal_hi:
-        .byte >10000,>1000,>100,>10,>1
+        lda #<hidden_print_live_free
+        sta rb_lookup_index
+        lda #>hidden_print_live_free
+        sta rb_lookup_slots
+        jmp call_hidden_common
 
 rb_update_header_free:
         sec
@@ -4437,16 +4907,12 @@ rb_update_header_free:
         jsr K_PLOT
         lda #13
         sta COLOR_CODE
+        ldx #5
+@blank:
         lda #' '
         jsr K_CHROUT
-        lda #' '
-        jsr K_CHROUT
-        lda #' '
-        jsr K_CHROUT
-        lda #' '
-        jsr K_CHROUT
-        lda #' '
-        jsr K_CHROUT
+        dex
+        bne @blank
 
         clc
         ldx #1
@@ -4463,20 +4929,11 @@ rb_update_header_free:
         rts
 
 call_hidden_draw_default_header:
-        php
-        sei
-        lda CPU_DDR
-        ora #$07
-        sta CPU_DDR
-        lda CPU_PORT
-        sta rb_saved_cpu
-        and #RAM_UNDER_BASIC_KEEP_KERNAL
-        sta CPU_PORT
-        jsr draw_default_header
-        lda rb_saved_cpu
-        sta CPU_PORT
-        plp
-        rts
+        lda #<draw_default_header
+        sta rb_lookup_index
+        lda #>draw_default_header
+        sta rb_lookup_slots
+        jmp call_hidden_common
 
 rb_crunch:
         jsr rb_call_orig_crunch
@@ -4538,13 +4995,18 @@ rb_magic2:      .byte 0
 rb_seed_cold:   .byte 0
 rb_error:       .byte 0
 rb_saved_cpu:   .byte 0
+rb_common_saved_cpu:.byte 0
 rb_vectors_saved:.byte 0
 rb_orig_crunch_lo:.byte 0
 rb_orig_crunch_hi:.byte 0
 rb_orig_list_lo:.byte 0
 rb_orig_list_hi:.byte 0
+rb_orig_keylog_lo:.byte 0
+rb_orig_keylog_hi:.byte 0
 rb_orig_execute_lo:.byte 0
 rb_orig_execute_hi:.byte 0
+rb_orig_irq_lo: .byte 0
+rb_orig_irq_hi: .byte 0
 rb_peek_lo:     .byte 0
 rb_peek_hi:     .byte 0
 rb_crunch_len:  .byte 0
@@ -4575,6 +5037,7 @@ rb_save_float0_buf:.res 20
 rb_free_lo:     .byte 0
 rb_free_hi:     .byte 0
 rb_tmp_lo:      .byte 0
+rb_hotkey_target_bank:.byte 0
 rb_digit_count: .byte 0
 rb_digit_seen:  .byte 0
 rb_saved_plot_x:.byte 0
@@ -4633,6 +5096,8 @@ rb_loop_cur_hi:.res RB_LOOP_DEPTH
 rb_last_error: .byte 0
 rb_last_line_lo:.byte 0
 rb_last_line_hi:.byte 0
+rb_hotkey_pending:.byte 0
+rb_hotkey_suppress:.byte 0
 
 rb_func_depth:.byte 0
 rb_form_save_count:.res RB_PROC_DEPTH
@@ -4700,6 +5165,73 @@ rb_copy_page:   .byte 0
 rb_copy_chunks: .byte 0
 rb_copy_len_lo: .byte 0
 rb_copy_len_hi: .byte 0
+
+install_vectors:
+        lda #<hidden_install_vectors
+        sta rb_lookup_index
+        lda #>hidden_install_vectors
+        sta rb_lookup_slots
+        jmp call_hidden_common
+
+rb_keylog:
+        lda rb_hotkey_pending
+        bne @consume
+        lda SFDX
+        cmp #KEY_MATRIX_B
+        bne @maybe_f2
+        lda SHFLAG
+        and #SHFLAG_CTRL
+        beq @orig
+        ldx #KEY_CTRL_B
+        bne @hotkey
+@maybe_f2:
+        cmp #KEY_MATRIX_F1
+        bne @maybe_f4
+        lda SHFLAG
+        and #SHFLAG_SHIFT
+        beq @orig
+        ldx #KEY_F2
+        bne @hotkey
+@maybe_f4:
+        cmp #KEY_MATRIX_F3
+        bne @orig
+        lda SHFLAG
+        and #SHFLAG_SHIFT
+        beq @orig
+        ldx #KEY_F4
+@hotkey:
+        lda rb_hotkey_suppress
+        bne @consume
+        stx rb_hotkey_suppress
+        jsr rb_queue_hotkey_line
+@consume:
+        lda #$40
+        sta LSTX
+        sta SFDX
+        lda #0
+        sta SHFLAG
+        rts
+@orig:
+        jmp (rb_orig_keylog_lo)
+
+call_hidden_select_next_app:
+        lda #<hidden_select_next_app_store
+        bne call_hidden_select_app
+call_hidden_select_prev_app:
+        lda #<hidden_select_prev_app_store
+call_hidden_select_app:
+        .assert >hidden_select_next_app_store = >hidden_select_prev_app_store, error, "ReadyBASIC selector stubs crossed a hidden page"
+        sta rb_lookup_index
+        lda #>hidden_select_next_app_store
+        sta rb_lookup_slots
+        jmp call_hidden_common
+
+rb_prepare_ready_resume:
+        lda #<hidden_prepare_ready_resume
+        sta rb_lookup_index
+        lda #>hidden_prepare_ready_resume
+        sta rb_lookup_slots
+        jmp call_hidden_common
 
 ; ---------------------------------------------------------------------------
 ; Packed command submodule 0. This 2KB slot image is copied from REU bank $45
@@ -4970,7 +5502,6 @@ cmd_freemem_low:
         jsr rb_print_live_free
         lda #13
         jsr K_CHROUT
-        jsr rb_update_header_free
         lda #0
         sta RF_STATUS
         lda #RB_VAL_NONE

@@ -295,7 +295,13 @@ def render(ctx: dict[str, object]) -> str:
         Block("BASIC sentinel", basic_start - 1, 1, "sentinel", "Must be zero before stored-program RUN."),
         Block("BASIC workspace", basic_start, basic_limit - basic_start, "basic", "Program text, variables, arrays, strings, and reclaimed cold-load seed space."),
         Block("Under BASIC ROM", 0xA000, 0x2000, "underrom", "Common helper plus three 2K command submodule slots."),
-        Block("Bridge and frames", seg["BRIDGE"].start, 0x0600, "bridge", "Bridge through $C1F6, shared frames and buffers through $C5FF."),
+        Block(
+            "Bridge and frames",
+            seg["BRIDGE"].start,
+            0x0600,
+            "bridge",
+            f"Bridge through ${seg['BRIDGE'].end:04X}, shared frames and buffers through $C5FF.",
+        ),
         Block("ReadyOS REU metadata", 0xC600, 0x0200, "readyos", "Allocation table and system metadata; not ReadyBASIC scratch."),
         Block("ReadyOS shim ABI", 0xC800, 0x0200, "shim", "Resident jump table/data."),
         Block("High RAM gap", 0xCA00, 0x0600, "reserved", "Outside app snapshot and below I/O."),
@@ -306,7 +312,7 @@ def render(ctx: dict[str, object]) -> str:
     cold_basic_blocks = [
         Block("Sentinel/pad", basic_start - 1, cmdpack_start - (basic_start - 1), "sentinel", "Cold padding before command seed bytes."),
         Block("CMDPACK seed window", cmdpack_start, cmdpack_size, "seed", "Built-in module payload seed; prestashed into the assigned code bank before BASIC owns this RAM."),
-        Block("HIDLOAD helper seed", hidload_start, seg["HIDDEN"].size, "seed2", "Copied to $A000 and $C280 shadow."),
+        Block("HIDLOAD helper seed", hidload_start, seg["HIDDEN"].size, "seed2", "Copied to $A000 and REU core-bank $3000 shadow."),
         Block("HIDLOAD reserved tail", hidload_start + seg["HIDDEN"].size, hidload_size - seg["HIDDEN"].size, "free", "Reserved load window tail."),
         Block("BRLOAD bridge seed", brload_start, seg["BRIDGE"].size, "bridge", "Copied to $C000 bridge state."),
         Block("BRLOAD reserved tail", brload_start + seg["BRIDGE"].size, brload_size - seg["BRIDGE"].size, "free", "Reserved load window tail."),

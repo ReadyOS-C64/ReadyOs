@@ -23,6 +23,18 @@
 - Never call `run.sh` with a specific app name such as `launcher`, `editor`, or any other single-app mode; those paths are not valid for normal ReadyOS verification.
 - Avoid ad-hoc `make`, direct artifact launches, and single-app run modes so all generated assets and preserved D71 user files are included and restored correctly.
 
+### ReadyOS Launch Cookbook
+
+- `run.sh` is not guaranteed to be executable in this checkout; invoke it as `/bin/bash ./run.sh ...`, not `./run.sh ...`.
+- Interactive regular D81, current built artifacts, fast disk mode: `/bin/bash ./run.sh --profile precog-d81 --vice-fast --skipbuild`.
+- Interactive regular D81 with rebuild first: `/bin/bash ./run.sh --profile precog-d81 --vice-fast`.
+- Interactive default profile, current artifacts: `/bin/bash ./run.sh --skipbuild`; add `--vice-fast` for fast disk mode.
+- Do **not** use `kff2-fast` unless the user explicitly asks for the Kung Fu Flash 2 D81 SKU; it is not the regular D81 build.
+- To leave a visible VICE window open from Codex, run the interactive command in a long-running background shell/session and do not run any VICE cleanup or harness prelaunch cleanup afterward.
+- Headless ReadyBASIC regular automation: `make readybasic-vice-suites`; focused hotkey probe: `/bin/bash build_support/run_readybasic_hotkey_probe.sh`.
+- Headless ReadyBASIC cartridge automation: `make easyflash-readybasic-vice-suites`.
+- Harness scripts close VICE by default; only use their `KEEP_VICE`/non-headless options when deliberately debugging automation, not for normal interactive launch.
+
 ## CAL26 REL Debugging Discipline
 
 - Use `xrelchk` first; prove behavior in harness before porting to `cal26`.

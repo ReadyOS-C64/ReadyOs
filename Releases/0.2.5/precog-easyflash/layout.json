@@ -5,8 +5,8 @@
     "start_bank": 1,
     "bank_span": 2,
     "load_addr": 4096,
-    "payload_len": 26920,
-    "checksum16": 42582
+    "payload_len": 26921,
+    "checksum16": 43439
   },
   "apps": [
     {
@@ -70,7 +70,7 @@
       "bank_span": 2,
       "load_addr": 4096,
       "payload_len": 20992,
-      "checksum16": 1518,
+      "checksum16": 1478,
       "default_slot": 3,
       "resource_set": 2
     },
@@ -83,7 +83,7 @@
       "bank_span": 2,
       "load_addr": 4096,
       "payload_len": 32705,
-      "checksum16": 47474,
+      "checksum16": 47484,
       "default_slot": 0,
       "resource_set": 0
     },
@@ -226,7 +226,7 @@
       "bank_span": 3,
       "load_addr": 4096,
       "payload_len": 38431,
-      "checksum16": 35242,
+      "checksum16": 35252,
       "default_slot": 0,
       "resource_set": 0
     },

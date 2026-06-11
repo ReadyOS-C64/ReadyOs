@@ -11,12 +11,12 @@ under-ROM command layout:
 |---|---:|
 | `BASIC_START` | `$2AC1` |
 | Formula empty BASIC bytes | `30013` |
-| `RESIDENT` | `$1200-$2ABB`, `$18BC` |
-| Common under-ROM helper | `$A000-$A7FF`, current use `$A000-$A364` |
-| Submodule slot 0 | `$A800-$AFFF`, current module 1 payload `$A800-$AEC6` |
-| Submodule slot 1 | `$B000-$B7FF`, current module 2 payload `$B000-$B140` |
-| Submodule slot 2 | `$B800-$BFFF`, current proof/overlay payloads through `$B83E` |
-| `BRIDGE` | `$C000-$C1F6`, `$01F7` |
+| `RESIDENT` | `$1200-$2AB6`, `$18B7` |
+| Common under-ROM helper | `$A000-$A7FF`, current use `$A000-$A6A7` |
+| Submodule slot 0 | `$A800-$AFFF`, current module 1 payload `$A800-$AECD` |
+| Submodule slot 1 | `$B000-$B7FF`, current module 2 payload `$B000-$B23A` |
+| Submodule slot 2 | `$B800-$BFFF`, current proof/overlay payloads through `$B814` |
+| `BRIDGE` | `$C000-$C1FD`, `$01FE` |
 | Shared frames | `$C200-$C5FF` |
 
 Descriptor byte 1 is now module id, not a `LOW`/`HIDDEN` flag. Descriptor bytes
@@ -63,8 +63,9 @@ uppercase name field.
 
 - ReadyBASIC still uses:
   - `SHIM_RETURN = $C80C`
-  - bridge state at `$C000-$C1F3`
-  - shared frames and visible helper shadow at `$C200-$C5FF`
+  - bridge state at `$C000-$C1FD`
+  - shared frames at `$C200-$C5FF`
+  - hidden-helper warm-resume shadow in the assigned core bank at `$3000`
   - app runtime zero-page/stack save in the assigned core bank offsets
     `$0A00/$0B00`
 - Do not place ReadyBasic state in `$C800-$C9FF`; that remains shim ABI territory.
@@ -73,19 +74,34 @@ uppercase name field.
 ## Current ReadyBASIC Memory Snapshot
 
 - `BASIC_START = $2AC1`; BASIC owns `$2AC1-$9FFF`, with `30013` formula empty free bytes.
-- `ENTRY` lives at `$1000-$1102`.
-- `RESIDENT` lives at `$1200-$2ABB` (`$18BC`, 6332B) and must stay below `$2AC0`.
+- `ENTRY` lives at `$1000-$11EA`, size `$01EB` / 491B.
+- `RESIDENT` lives at `$1200-$2AB6` (`$18B7`, 6327B) and must stay below `$2AC0`; that leaves `$09` / 9B of visible headroom before `$2ABF`.
 - `CMDPACK` load-only seed space is `$2B00-$3FFF`; it is copied to the assigned
   ReadyBASIC code bank on cold entry.
 - `HIDLOAD` load-only helper seed starts at `$4000`.
 - `BRLOAD` load-only bridge seed starts at `$4800`.
 - `REGSEED` load-only registry seed is `$5000-$600F`, size `$1010`.
-- Runtime common under-ROM helper code is `$A000-$A364`, size `$0365` / 869B.
-- Runtime submodule slot 0 is `$A800-$AFFF`; current module 1/default payload uses `$A800-$AEC6`, size `$06C7` / 1735B.
-- Runtime submodule slot 1 is `$B000-$B7FF`; current module 2 proof/streaming loader payload uses `$B000-$B238`, size `$0239` / 569B.
-- Runtime submodule slot 2 is `$B800-$BFFF`; current proof/overlay payloads use `$B800-$B83E` in 21B slices.
-- Runtime `BRIDGE` is `$C000-$C1F8`, size `$01F9` / 505B; the native `PROC`/`FUNC`
+- Runtime common under-ROM helper code is `$A000-$A6A7`, size `$06A8` / 1704B, leaving `$0158` / 344B free in `$A000-$A7FF`.
+- Runtime submodule slot 0 is `$A800-$AFFF`; current module 1/default payload uses `$A800-$AECD`, size `$06CE` / 1742B.
+- Runtime submodule slot 1 is `$B000-$B7FF`; current module 2 proof/streaming loader payload uses `$B000-$B23A`, size `$023B` / 571B.
+- Runtime submodule slot 2 is `$B800-$BFFF`; current proof/overlay payloads use `$B800-$B814` in 21B slices.
+- Runtime `BRIDGE` is `$C000-$C1FD`, size `$01FE` / 510B; the native `PROC`/`FUNC`
   return stack and flow-control scratch live here and must stay below shared frames at `$C200`.
+
+Hotkey branch delta, measured by linking the pre-change `HEAD` source beside the
+current map:
+
+| Segment | Before | After | Delta |
+|---|---:|---:|---:|
+| `ENTRY` | `$00F2` / 242B | `$01EB` / 491B | `+249B` |
+| `RESIDENT` | `$18B1` / 6321B | `$18B7` / 6327B | `+6B` |
+| `HIDDEN` | `$0432` / 1074B | `$06A8` / 1704B | `+630B` |
+| `BRIDGE` | `$01FB` / 507B | `$01FE` / 510B | `+3B` |
+| BASIC free | `30013` | `30013` | `0B` |
+
+The code cost is intentionally paid mostly in entry/setup and the `$A000-$A7FF`
+helper area. BASIC free bytes are unchanged, and the 2K helper area still has
+`$0158` / 344B free for more small ReadyOS/BASIC glue.
 
 ## Assigned Core Bank ReadyBASIC Layout
 
@@ -99,6 +115,7 @@ uppercase name field.
 - `$0C00-$0CFF`: heap page bitmap, 192 pages tracked in REU.
 - `$1000-$1FFF`: 128 command descriptor slots, 32 bytes each. Slots 1-16 are current front commands, slots 17-127 are filler, and slot 128 is `SCRPUT`.
 - `$2000-$3FFF`: reserved common/system expansion space.
+- `$3000`: current hidden-helper warm-resume shadow (`$06A8` bytes).
 - `$4000-$FFFF`: typed handle heap, 48KB.
 
 Command lookup fetches one 256-byte descriptor page at a time into `$C500`,
@@ -107,12 +124,12 @@ scans eight descriptors locally, and copies the matched descriptor into
 
 ## Assigned Code Bank Command Code Layout
 
-- `$0000-$06C6`: built-in module 1/default slot-0 payload, fetched to `$A800-$AEC6`.
-- `$06C7-$08FF`: built-in module 2 slot-1 proof and streaming `ZMODLD` loader payload, fetched to `$B000-$B238`.
-- `$0900-$0914`: built-in module 2 slot-2 proof payload, fetched to `$B800-$B814`.
-- `$0915-$0929`: built-in two-slot span proof payload, fetched to `$B000-$B014`.
-- `$092A-$093E`: built-in slot-2 overlay proof 1, fetched to `$B815-$B829`.
-- `$093F-$0953`: built-in slot-2 overlay proof 2, fetched to `$B82A-$B83E`.
+- `$0000-$06CD`: built-in module 1/default slot-0 payload, fetched to `$A800-$AECD`.
+- `$06CE-$0908`: built-in module 2 slot-1 proof and streaming `ZMODLD` loader payload, fetched to `$B000-$B23A`.
+- `$0909-$091D`: built-in module 2 slot-2 proof payload, fetched to `$B800-$B814`.
+- `$091E-$0932`: built-in two-slot span proof payload, fetched to `$B000-$B014`.
+- `$0933-$0947`: built-in slot-2 overlay proof 1, fetched to `$B815-$B829`.
+- `$0948-$095C`: built-in slot-2 overlay proof 2, fetched to `$B82A-$B83E`.
 - `$1500-$151F`: `rbm.sample1` disk-module descriptor sample for `ZDM1`.
 - `$1600-$165F`: `rbm.sample2` disk-module descriptor samples for `ZDM2S`, `ZDOV1`, and `ZDOV2`.
 - `$1700-$1ABF`: `rbm.sample3` disk-module descriptors for `ZSAA`-`ZUEB`.

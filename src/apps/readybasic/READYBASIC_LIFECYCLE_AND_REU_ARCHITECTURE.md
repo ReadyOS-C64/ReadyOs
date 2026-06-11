@@ -53,13 +53,12 @@ being mistaken for the latest slot layout:
 
 | Segment | Runtime range | Size | Role |
 |---|---:|---:|---|
-| `ENTRY` | `$1000-$1102` | `$0103` (259B) | App entry, cold/warm discriminator, early copies. |
-| `RESIDENT` | `$1200-$2AB9` | `$18BA` (6.2K, 6330 exact bytes) | Visible parser, ROM calls, REU DMA wrappers, result commit, bare command dispatch, eval hook, native `PROC`/`FUNC`/`RET`, `REPEAT`/`UNTIL`, `LABEL`/`JUMP`, error introspection, proper nested term state, and float helpers. |
+| `ENTRY` | `$1000-$11EA` | `$01EB` (491B) | App entry, cold/warm discriminator, early copies, and small visible trampolines. |
+| `RESIDENT` | `$1200-$2AB6` | `$18B7` (6.2K, 6327 exact bytes) | Visible parser, ROM calls, REU DMA wrappers, result commit, bare command dispatch, eval hook, native `PROC`/`FUNC`/`RET`, `REPEAT`/`UNTIL`, `LABEL`/`JUMP`, error introspection, proper nested term state, float helpers, and prompt navigation hooks. |
 | `REGSEED` | `$5000-$600F` | `$1010` (4.0K, 4112 exact bytes) | Load-only registry header and 128 command descriptors used on cold seed. |
-| `HIDDEN` | `$A000-$A376` | `$0377` (0.9K, 887 exact bytes) | Hidden helper routines under BASIC ROM. |
-| `HIDDENPACK` | `$A800-$A84C` | `$004D` (77B) | Hidden worker overlay image, loaded to the assigned ReadyBASIC code bank. |
-| `LOWPACK` | `$A900-$AF3C` | `$063D` (1.6K, 1597 exact bytes) | Banked low overlay image under BASIC ROM, loaded from the assigned ReadyBASIC code bank. |
-| `BRIDGE` | `$C000-$C1F3` | `$01F4` (500B) | Persistent bridge/state bytes plus the four-entry native routine return stack and flow-control scratch. |
+| `HIDDEN` | `$A000-$A6A7` | `$06A8` (1.7K, 1704 exact bytes) | Hidden helper routines under BASIC ROM. |
+| `LOWPACK` | `$A800-$AECD` | `$06CE` (1.7K, 1742 exact bytes) | Banked low overlay image under BASIC ROM, loaded from the assigned ReadyBASIC code bank. |
+| `BRIDGE` | `$C000-$C1FD` | `$01FE` (510B) | Persistent bridge/state bytes plus the four-entry native routine return stack and flow-control scratch. |
 
 Module/submodule update: the table above is preserved as the detailed
 pre-module plugin-spine snapshot. The current post-BASIC runtime map is:
@@ -68,26 +67,26 @@ pre-module plugin-spine snapshot. The current post-BASIC runtime map is:
 |---|---|---|
 | `$0000-$00FF` | C64/BASIC/KERNAL zero page | Saved to assigned core bank offset `$0A00` on suspend/resume. |
 | `$0100-$01FF` | Hardware stack | Saved to assigned core bank offset `$0B00`. |
-| `$0200-$03FF` | BASIC/KERNAL vectors and buffers | ReadyBASIC hooks `$0308` and `$030A` while active. |
+| `$0200-$03FF` | BASIC/KERNAL vectors and buffers | ReadyBASIC hooks execute/eval plus KEYLOG and CINV while active. |
 | `$0400-$07E7` | Screen RAM | Can be captured by `SCRCAP`. |
 | `$0800-$0FFF` | Low BASIC/system RAM | Outside ReadyBASIC app-owned region. |
-| `$1000-$1102` | ReadyBASIC entry | Cold/warm discriminator and handoff. |
-| `$1200-$2ABB` | ReadyBASIC resident | Parser, ROM calls, dispatch, commit, native language runtime. |
+| `$1000-$11EA` | ReadyBASIC entry | Cold/warm discriminator, handoff, and small visible trampolines. |
+| `$1200-$2AB6` | ReadyBASIC resident | Parser, ROM calls, dispatch, commit, native language runtime. |
 | `$2AC0` | Sentinel | Must remain zero before stored-program `RUN`. |
 | `$2AC1-$9FFF` | BASIC workspace | Program text, variables, arrays, strings, and reclaimed seed space. |
-| `$A000-$A7FF` | RAM behind BASIC ROM | Common helper, current use `$A000-$A364`. |
+| `$A000-$A7FF` | RAM behind BASIC ROM | Common helper, current use `$A000-$A6A7`; `$0158` / 344B remain free. |
 | `$A800-$AFFF` | RAM behind BASIC ROM | Submodule slot 0, current module 1/system payload. |
 | `$B000-$B7FF` | RAM behind BASIC ROM | Submodule slot 1, current module 2 proof/loader payload. |
 | `$B800-$BFFF` | RAM behind BASIC ROM | Submodule slot 2 and overlay target. |
-| `$C000-$C1F6` | ReadyBASIC bridge | Small state below shared frames. |
+| `$C000-$C1FD` | ReadyBASIC bridge | Small state below shared frames. |
 | `$C200-$C5FF` | ReadyBASIC frames/buffers | Call frame, result frame, descriptor/name/page buffers, disk-module load page. |
 | `$C600-$C7FF` | ReadyOS REU metadata | Not ReadyBASIC scratch; ReadyBASIC may only observe/re-mark assigned bank ownership through the defined ReadyOS type-table contract. |
 | `$C800-$C9FF` | ReadyOS shim ABI | Not ReadyBASIC scratch. |
 | `$D000-$DFFF` | I/O or character ROM | REU registers are in I/O space. |
 | `$E000-$FFFF` | KERNAL ROM normally visible | KERNAL calls remain available after normal banking is restored. |
 
-Current measured values are `BASIC_START=$2AC1`, `RESIDENT=$18BC`,
-`BRIDGE=$01F7`, common helper `$0365`, slot 0 `$06C7`, slot 1 `$0141`, and
+Current measured values are `BASIC_START=$2AC1`, `RESIDENT=$18B7`,
+`BRIDGE=$01FE`, common helper `$06A8`, slot 0 `$06CE`, slot 1 `$023B`, and
 formula empty BASIC free bytes `30013`.
 
 The older low/hidden command overlay vocabulary is now implemented as a
@@ -140,19 +139,19 @@ live inside that contract while also hosting BASIC.
 
 ```mermaid
 flowchart TB
-  A["$1000-$1102 ENTRY<br/>load entry and cold/warm cookie"]
-  B["$1200-$2ABB RESIDENT<br/>visible parser, vector hooks, REU DMA, commit, PROC/FUNC/RET, flow control, float terms"]
+  A["$1000-$11EA ENTRY<br/>load entry and cold/warm cookie"]
+  B["$1200-$2AB6 RESIDENT<br/>visible parser, vector hooks, REU DMA, commit, PROC/FUNC/RET, flow control, float terms"]
   C["$2AC0 SENTINEL<br/>must be zero for BASIC RUN"]
   D["$2AC1-$9FFF BASIC WORKSPACE<br/>30013 formula free bytes / 29.3K"]
   E["$2B00-$3FFF CMDPACK LOAD IMAGE<br/>module/submodule payload seed bytes before cold prestash"]
   F["Assigned core bank $0A00-$0BFF RUNTIME SNAPSHOT<br/>zero page and stack / 0.5K"]
   G["$C200-$C5FF SHARED FRAMES<br/>call/result/descriptor/name/page buffers / 1.0K"]
-  I["$C280 HIDDEN SHADOW<br/>refreshed on EXIT"]
-  J["$A000-$A364 COMMON HELPER<br/>runs under BASIC ROM RAM"]
-  K["$A800-$AEC6 SLOT 0 PAYLOAD<br/>module 1 system/default payload"]
-  O["$B000-$B140 SLOT 1 PAYLOAD<br/>module 2 proof and ZMODLD loader"]
+  I["Assigned core bank $3000 HIDDEN SHADOW<br/>refreshed on EXIT"]
+  J["$A000-$A6A7 COMMON HELPER<br/>runs under BASIC ROM RAM"]
+  K["$A800-$AECD SLOT 0 PAYLOAD<br/>module 1 system/default payload"]
+  O["$B000-$B23A SLOT 1 PAYLOAD<br/>module 2 proof and ZMODLD loader"]
   P["$B800-$B83E SLOT 2 / OVERLAYS<br/>proof and overlay slices"]
-  L["$C000-$C1F6 BRIDGE STATE<br/>magic, saved vectors, overlay vars, handle scratch, PROC/FUNC stack"]
+  L["$C000-$C1FD BRIDGE STATE<br/>magic, saved vectors, overlay vars, handle scratch, PROC/FUNC stack"]
   M["$C600-$C7FF READYOS REU METADATA<br/>hot bank table/system metadata, not app scratch"]
   N["$C800-$C9FF SHIM ABI<br/>ReadyOS jump table/data, not app RAM"]
 
@@ -168,10 +167,10 @@ runtime-visible resident core:
 | Load-time range | Purpose |
 |---:|---|
 | `$1000-$11FF` | Entry image, including entry-local warm cookie. |
-| `$1200-$2ABF` | Resident core image budget. Current linked core ends at `$2AB9`. |
+| `$1200-$2ABF` | Resident core image budget. Current linked core ends at `$2AB6`. |
 | `$2AC0-$2AFF` | Sentinel plus cold padding gap before command-pack seed bytes. |
 | `$2B00-$3FFF` | Command pack seed bytes, copied to the assigned code bank only on cold entry. |
-| `$4000+` | Hidden helper seed bytes, copied to `$A000` and the visible `$C280` shadow. |
+| `$4000+` | Hidden helper seed bytes, copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
 | `$4800+` | Bridge seed bytes, copied to `$C000`. |
 | `$5000-$600F` | Registry seed bytes, copied to the assigned core bank only on cold entry. |
 
@@ -229,11 +228,11 @@ the raw `$2AC0-$9FFF` cold-load span:
 | `$6200-$9FFF` | Future BASIC bytes after `REGSEED`. | `$3E00` | 15.5K | 15872 |
 
 Inside `CMDPACK`, the current packed built-in content is slot 0 payload
-`$2B00-$31C6` (`$06C7`, 1735B), slot 1 payload `$31C7-$33FF`
-(`$0239`, 569B), slot 2 base payload `$3400-$3414` (`$0015`, 21B), span
-payload `$3415-$3429` (`$0015`, 21B), overlay 1 `$342A-$343E`
-(`$0015`, 21B), overlay 2 `$343F-$3453` (`$0015`, 21B), and reserved room
-`$3454-$3FFF` (`$0BAC`, 2.9K, 2988 exact bytes).
+`$2B00-$31CD` (`$06CE`, 1742B), slot 1 payload `$31CE-$3408`
+(`$023B`, 571B), slot 2 base payload `$3409-$341D` (`$0015`, 21B), span
+payload `$341E-$3432` (`$0015`, 21B), overlay 1 `$3433-$3447`
+(`$0015`, 21B), overlay 2 `$3448-$345C` (`$0015`, 21B), and reserved room
+`$345D-$3FFF` (`$0BA3`, 2.9K, 2979 exact bytes).
 
 ## REU Layout
 
@@ -313,9 +312,9 @@ byte buffer, and type `2` is a screen text+color buffer.
 
 ```mermaid
 flowchart LR
-  S0["$0000-$06C6 Slot 0 payload<br/>copied into $A800-$AEC6"]
-  S1["$06C7-$0807 Slot 1 payload<br/>copied into $B000-$B140"]
-  S2["$0808-$085B Slot 2/span/overlay proofs<br/>copied into $B800/$B000 as needed"]
+  S0["$0000-$06CD Slot 0 payload<br/>copied into $A800-$AECD"]
+  S1["$06CE-$0908 Slot 1 payload<br/>copied into $B000-$B23A"]
+  S2["$0909-$095C Slot 2/span/overlay proofs<br/>copied into $B800/$B000 as needed"]
   D1["$1500/$1600 Disk module descriptors"]
   DP["$3000+ Disk module proof payloads"]
   S0 --> S1 --> S2 --> D1 --> DP
@@ -330,10 +329,10 @@ Exact assigned code-bank suballocation sizes:
 
 | Offset range | Role | Hex size | Display size | Exact bytes |
 |---|---|---:|---:|---:|
-| `$0000-$06C6` | Built-in module 1 slot-0 payload fetched into `$A800-$AEC6`. | `$06C7` | 1.7K | 1735 |
-| `$06C7-$08FF` | Built-in module 2 slot-1 proof and streaming `ZMODLD` loader payload fetched into `$B000-$B238`. | `$0239` | 569B | 569 |
-| `$0900-$0953` | Built-in slot-2, span, and overlay proof slices. | `$0054` | 84B | 84 |
-| `$0954-$14FF` | Free gap before current disk-module descriptor proof offsets. | `$0BAC` | 2.9K | 2988 |
+| `$0000-$06CD` | Built-in module 1 slot-0 payload fetched into `$A800-$AECD`. | `$06CE` | 1.7K | 1742 |
+| `$06CE-$0908` | Built-in module 2 slot-1 proof and streaming `ZMODLD` loader payload fetched into `$B000-$B23A`. | `$023B` | 571B | 571 |
+| `$0909-$095C` | Built-in slot-2, span, and overlay proof slices. | `$0054` | 84B | 84 |
+| `$095D-$14FF` | Free gap before current disk-module descriptor proof offsets. | `$0BA3` | 2.9K | 2979 |
 | `$1500-$151F` | `rbm.sample1` descriptor proof for `ZDM1`. | `$0020` | 32B | 32 |
 | `$1600-$165F` | `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`; submodule 5 appears twice because those entries are overlays 1 and 2. | `$0060` | 96B | 96 |
 | `$1700-$1ABF` | `rbm.sample3` descriptors for `ZSAA`-`ZUEB`. | `$03C0` | 960B | 960 |
@@ -373,7 +372,7 @@ flowchart TD
   C["Cold path"]
   H1["Map RAM under BASIC ROM"]
   H2["Copy hidden helper seed $4000 -> $A000"]
-  H3["Copy hidden helper seed -> $C280 shadow"]
+  H3["Stash hidden helper -> assigned core bank $3000"]
   B1["Copy bridge seed $4800 -> $C000"]
   RB["Jump to rb_boot"]
   V["Reset KERNAL/BASIC vectors"]
@@ -389,8 +388,8 @@ flowchart TD
 The cold setup performs these important operations:
 
 1. It copies hidden helper code before BASIC owns `$2AC1+`.
-2. It stores a visible shadow copy at `$C280` because `$A000` code cannot be trusted
-   after a ReadyOS app switch.
+2. It stores a REU shadow copy at assigned core-bank offset `$3000` because
+   `$A000` code cannot be trusted after a ReadyOS app switch.
 3. It copies bridge state to `$C000`.
 4. It resets KERNAL and BASIC vectors, then installs the execute vector hook at
    `$0308/$0309` and the eval hook at `$030A/$030B`.
@@ -411,7 +410,7 @@ flowchart TD
   R0["ReadyOS restores app window and jumps to $1000"]
   E["ENTRY sees entry-local warm magic"]
   RH["Map RAM under BASIC ROM"]
-  RS["Copy $C280 shadow -> $A000 hidden helper"]
+  RS["Fetch assigned core bank $3000 shadow -> $A000 hidden helper"]
   RB["Jump to rb_boot"]
   M["Bridge magic says READY or RUN"]
   IV["Install $0308 execute hook"]
@@ -431,7 +430,7 @@ flowchart TD
 
 Warm resume is intentionally different from cold boot:
 
-- It restores the hidden helper from `$C280`, not from the old load image.
+- It restores the hidden helper from the assigned core-bank `$3000` shadow, not from the old load image.
 - It reinstalls ReadyBASIC-owned vectors.
 - It re-marks REU ownership for the assigned ReadyBASIC core/code banks.
 - It does **not** rebuild the registry/code banks from load-only RAM.
@@ -443,8 +442,16 @@ Warm resume is intentionally different from cold boot:
 
 ## EXIT And Suspend Management
 
-The supported V1 return path is manual prompt `EXIT`. The execute hook detects
-`EXIT` before falling back to ROM BASIC.
+The supported prompt navigation paths are manual prompt `EXIT`, prompt-level
+`CTRL+B`, and prompt-level `F2`/`F4`. The execute hook detects `EXIT` before
+falling back to ROM BASIC. Physical keyboard hotkeys are detected by a saved
+CINV IRQ hook at `$0314/$0315`, which scans the CIA1 keyboard matrix for only
+the ReadyOS chords, restores CIA state, records the requested action, and
+queues a harmless `REM` line plus Return. The KEYLOG preprocessing hook at
+`$028F/$0290` catches the KERNAL-decoded special-key cases and consumes their
+keyboard state before print. BASIC dispatches the queued line through the normal
+execute hook, where the pending action performs the save/yield. Ordinary line
+editing stays owned by the ROM screen editor.
 
 ```mermaid
 flowchart TD
@@ -462,10 +469,22 @@ flowchart TD
   X --> D --> M --> S --> Z --> ST --> META --> V --> SHIM --> L
 ```
 
+`F2`/`F4` perform the same save/vector-restore setup, then scan the shim loaded
+app bitmap `$C836-$C838`, copy the selected target bank into bridge state, and
+only write `$C820` after hidden save, `CLRCHN`, and vector restore have
+completed. This keeps the switch target independent of scratch bytes used by
+the loaded-bank scan. If no other loaded app is available, the key is consumed
+and the BASIC editor keeps waiting.
+
 The vector restore is not optional. Page-3 vectors are global machine state, not
 ReadyOS app-private RAM. If ReadyBASIC yielded with `$0308` still pointing into
 its resident core, the launcher or another app could dispatch through stale
 ReadyBASIC state.
+
+ReadyBASIC also clears its pending hotkey byte, the KERNAL keyboard buffer
+count, the first keyboard-buffer byte, `SHFLAG`, `LSTX`, and `SFDX` before every
+ReadyOS yield. `prepare_shim_yield` calls `CLRCHN` so destination apps do not
+inherit an open BASIC logical channel from the ROM editor.
 
 The runtime snapshot lives here:
 
@@ -474,7 +493,7 @@ The runtime snapshot lives here:
 | Assigned core bank `$0A00-$0AFF` | Saved zero page. |
 | Assigned core bank `$0B00-$0BFF` | Saved hardware stack page. |
 | Bridge metadata | Runtime magic, saved SP, resume mode, line-chain validation. |
-| `$C280-$C5B6` | Hidden helper shadow, refreshed during `EXIT`. |
+| Assigned core bank `$3000+` | Hidden helper shadow, refreshed during `EXIT` and cold seed. |
 
 ## Bare Command And Routine Dispatch
 
@@ -607,18 +626,18 @@ BASIC's string heap.
 | `ZHIDDENRAM(S$,OUT%)` / `ZHIDDENRAM(S$)` | Module 1 slot 0 under-ROM worker | small slice | string variable or literal, output/expression int | Sums uppercase bytes. |
 | `ZSUMNUMARRAY(A%(0),COUNT,OUT%)` / `ZSUMNUMARRAY(A%(0),COUNT)` | Module 1 slot 0 payload | small slice | integer array base/count, output/expression int | Sums integer array values. |
 | `ZRANGENUMARRAY(START,COUNT,A%(0))` | Module 1 slot 0 payload | small slice | start/count, output array | Stages consecutive integers. |
-| `BUFNEW(LEN,H%)` / `BUFNEW(LEN)` | Module 1 slot 0 payload | `$06C7` (1.7K) | length, output/expression handle | Allocates persistent buffer pages in the assigned core bank. |
-| `BUFFILL(H%,BYTE)` | Module 1 slot 0 payload | `$06C7` (1.7K) | buffer handle, byte | Fills buffer handle pages using `$C500` page buffer. |
-| `BUFFREE(H%)` | Module 1 slot 0 payload | `$06C7` (1.7K) | handle | Frees any valid handle type and clears metadata. |
-| `ZTEMPSCRATCH(LEN,OUT%)` / `ZTEMPSCRATCH(LEN)` | Module 1 slot 0 payload | `$06C7` (1.7K) | length, output/expression int | Allocates then frees pages, returns page count. |
+| `BUFNEW(LEN,H%)` / `BUFNEW(LEN)` | Module 1 slot 0 payload | `$06CE` (1.7K) | length, output/expression handle | Allocates persistent buffer pages in the assigned core bank. |
+| `BUFFILL(H%,BYTE)` | Module 1 slot 0 payload | `$06CE` (1.7K) | buffer handle, byte | Fills buffer handle pages using `$C500` page buffer. |
+| `BUFFREE(H%)` | Module 1 slot 0 payload | `$06CE` (1.7K) | handle | Frees any valid handle type and clears metadata. |
+| `ZTEMPSCRATCH(LEN,OUT%)` / `ZTEMPSCRATCH(LEN)` | Module 1 slot 0 payload | `$06CE` (1.7K) | length, output/expression int | Allocates then frees pages, returns page count. |
 | `ZFAIL(CODE,OUT%)` | Module 1 slot 0 payload | small slice | code, output int | Clears output first, then returns `?RB ERROR code`. |
-| `FREEMEM()` | Module 1 slot 0 payload | small slice | none | Prints live free BASIC bytes and refreshes the header. |
-| `SCRCAP(H%)` / `SCRCAP()` | Slot 14; module 1 slot 0 payload | `$06C7` (1.7K) | output/expression screen handle | Captures screen text and color RAM into a type-2 handle. |
+| `FREEMEM()` | Module 1 slot 0 payload | small slice | none | Prints live free BASIC bytes. |
+| `SCRCAP(H%)` / `SCRCAP()` | Slot 14; module 1 slot 0 payload | `$06CE` (1.7K) | output/expression screen handle | Captures screen text and color RAM into a type-2 handle. |
 | `ERRCODE(OUT%)` / `ERRCODE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | 0 copied on current path | output int or expression int | Returns the last ReadyBASIC runtime error code. |
 | `ERRLINE(OUT%)` / `ERRLINE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | 0 copied on current path | output int or expression int | Returns the last ReadyBASIC runtime error line, or 0 in direct mode. |
-| `SCRPUT(H%)` | Slot 128; module 1 slot 0 payload | `$06C7` (1.7K) | screen handle | Restores screen text and color RAM after type validation. |
+| `SCRPUT(H%)` | Slot 128; module 1 slot 0 payload | `$06CE` (1.7K) | screen handle | Restores screen text and color RAM after type validation. |
 
-The heap-oriented commands copy the full `$06C7` slot-0 payload because allocator,
+The heap-oriented commands copy the full `$06CE` slot-0 payload because allocator,
 REU descriptor, bitmap, and screen-copy helpers live in the same module payload.
 That is an implementation choice to keep resident RAM lean; a later pass could
 split a smaller allocator resident helper or use finer overlay slices.
@@ -657,8 +676,8 @@ extra banks while keeping the same small BASIC-visible handle.
 
 ReadyBASIC uses two kinds of hidden code:
 
-- Hidden helper at `$A000-$A336`.
-- Hidden worker overlay at `$A800-$A84C`.
+- Hidden helper at `$A000-$A6A7`.
+- Command/module payload slots at `$A800-$BFFF`.
 
 Before calling hidden code, ReadyBASIC:
 
@@ -693,13 +712,15 @@ older dated measurements remain in `READYBASIC_PLUGIN_PROGRESS.md`.
 
 | Segment | Range | Size |
 |---|---:|---:|
-| `RESIDENT` | `$1200-$2AB9` | `$18BA` / 6330B |
+| `ENTRY` | `$1000-$11EA` | `$01EB` / 491B |
+| `RESIDENT` | `$1200-$2AB6` | `$18B7` / 6327B |
 | `PADLOW` | `$2AC0-$2AFF` | `$0040` / 64B |
 | `REGSEED` | `$5000-$600F` | `$1010` / 4112B |
-| `HIDDEN` | `$A000-$A376` | `$0377` / 887B |
-| `HIDDENPACK` | `$A800-$A84C` | `$004D` / 77B |
-| `LOWPACK` | `$A900-$AF3C` | `$063D` / 1597B |
-| `BRIDGE` | `$C000-$C1F3` | `$01F4` / 500B |
+| `HIDDEN` | `$A000-$A6A7` | `$06A8` / 1704B |
+| `LOWPACK` | `$A800-$AECD` | `$06CE` / 1742B |
+| `SLOTPACK1` | `$B000-$B23A` | `$023B` / 571B |
+| `SLOTPACK2` | `$B800-$B814` | `$0015` / 21B |
+| `BRIDGE` | `$C000-$C1FD` | `$01FE` / 510B |
 
 Formula empty BASIC free bytes are `30013`, a `1728` byte reduction from the
 expression-style `$2401` layout. Command overlays grow to `$063D` and the REU
@@ -709,7 +730,7 @@ descriptor layout remains fixed.
 - `BRIDGE` stays below `$C200`, leaving `$C200-$C5FF` for shared frames.
 - `$C600-$C7FF` is ReadyOS REU metadata, not ReadyBASIC scratch.
 - `$C800-$C9FF` remains shim ABI.
-- Warm resume must restore `$A000` from `$C280` before hidden helper calls.
+- Warm resume must restore `$A000` from the assigned-core-bank hidden-helper shadow before hidden helper calls.
 - Warm resume must not reset `FRETOP`, `VARTAB`, `ARYTAB`, or `STREND`.
 - ReadyBASIC-owned vectors must be restored before yielding to ReadyOS.
 - Non-ReadyBASIC BASIC statements must tail-call the original `$0308` vector

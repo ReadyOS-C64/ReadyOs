@@ -56,6 +56,14 @@ emit_readybasic_plan() {
   env \
     READYBASIC_SKIP_BUILD=1 \
     READYBASIC_GENERATE_PLAN_ONLY=1 \
+    READYBASIC_HOTKEY_EXPECT_F4="${READYBASIC_HOTKEY_EXPECT_F4:-}" \
+    READYBASIC_HOTKEY_EXPECT_F2="${READYBASIC_HOTKEY_EXPECT_F2:-}" \
+    READYBASIC_HOTKEY_F4_RETURN_MODE="${READYBASIC_HOTKEY_F4_RETURN_MODE:-}" \
+    READYBASIC_HOTKEY_SCENARIO="${READYBASIC_HOTKEY_SCENARIO:-}" \
+    READYBASIC_CHAIN_READYBASIC_BANK="${READYBASIC_CHAIN_READYBASIC_BANK:-}" \
+    READYBASIC_CHAIN_REUVIEWER_BANK="${READYBASIC_CHAIN_REUVIEWER_BANK:-}" \
+    READYBASIC_CHAIN_RESOURCE_BANKS="${READYBASIC_CHAIN_RESOURCE_BANKS:-}" \
+    READYBASIC_CHAIN_CONSTRAIN_BITMAP="${READYBASIC_CHAIN_CONSTRAIN_BITMAP:-}" \
     "$plan_var=$regular_plan" \
     "$script"
 
@@ -103,6 +111,12 @@ if [ "$SCOPE" = "all" ] || [ "$SCOPE" = "readybasic" ]; then
   emit_readybasic_plan readybasic_screen_reu_temp_probe "$SCRIPT_DIR/run_readybasic_screen_reu_temp_probe.sh" READYBASIC_SCRREU_PLAN
   emit_readybasic_plan readybasic_state_probe "$SCRIPT_DIR/run_readybasic_state_probe.sh" READYBASIC_PLAN
   emit_readybasic_plan readybasic_large_vars_probe "$SCRIPT_DIR/run_readybasic_large_vars_probe.sh" READYBASIC_PLAN
+  READYBASIC_HOTKEY_EXPECT_F4="CLIPBOARD" READYBASIC_HOTKEY_F4_RETURN_MODE="stop_after_f4" \
+    emit_readybasic_plan readybasic_hotkey_f4_probe "$SCRIPT_DIR/run_readybasic_hotkey_probe.sh" READYBASIC_HOTKEY_PLAN
+  READYBASIC_HOTKEY_EXPECT_F2="CALENDAR 26" READYBASIC_HOTKEY_SCENARIO="f2_only" \
+    emit_readybasic_plan readybasic_hotkey_f2_probe "$SCRIPT_DIR/run_readybasic_hotkey_probe.sh" READYBASIC_HOTKEY_PLAN
+  READYBASIC_CHAIN_READYBASIC_BANK=5 READYBASIC_CHAIN_REUVIEWER_BANK=8 READYBASIC_CHAIN_CONSTRAIN_BITMAP=1 \
+    emit_readybasic_plan readybasic_reuviewer_f2_chain_probe "$SCRIPT_DIR/run_readybasic_reuviewer_f2_chain_probe.sh" READYBASIC_REUVIEWER_CHAIN_PLAN
   emit_readybasic_plan readybasic_cross_app_resume_probe "$SCRIPT_DIR/run_readybasic_cross_app_resume_probe.sh" READYBASIC_PLAN
   emit_readybasic_plan readybasic_second_entry_editor_probe "$SCRIPT_DIR/run_readybasic_second_entry_editor_probe.sh" READYBASIC_PLAN
   emit_readybasic_plan readybasic_full_suite_visual_verification "$SCRIPT_DIR/run_readybasic_full_suite_visual_verification.sh" READYBASIC_FULL_PLAN

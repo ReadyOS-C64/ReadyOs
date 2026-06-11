@@ -19,14 +19,14 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.4/precog-d81/readyos-v0.2.4h-d81.d81"
-    disk9: "Releases/0.2.4/precog-d81/readyos-v0.2.4h-d81.d81"
-    autostart_prg: "Releases/0.2.4/precog-d81/readyos-v0.2.4h-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
     close_vice: true
-    headless: true
+    headless: false
     speed_percent: 100
 steps:
   - id: launch_preboot
@@ -39,6 +39,11 @@ steps:
       text: "FREE:"
       wait_timeout_s: 180
       capture_label: demo_readybasic_prompt
+  - id: warp_off_for_visible_demo
+    type: warp.set
+    params:
+      enabled: false
+      capture_after: false
   - id: demo_01_intro
     type: input.sequence
     params:
@@ -48,7 +53,13 @@ steps:
   - id: demo_01_setup
     type: input.sequence
     params:
-      keys: [70,82,69,69,77,69,77,40,41,13,78,69,87,13,65,37,61,52,50,13,49,48,32,66,37,61,90,65,68,68,49,54,40,52,50,44,56,41,13,50,48,32,80,82,73,78,84,32,34,80,82,79,71,82,65,77,32,83,85,77,34,59,66,37,13,76,73,83,84,13]
+      keys: [70,82,69,69,77,69,77,40,41,13,78,69,87,13,65,37,61,52,50,13,49,48,32,66,37,61,90,65,68,68,49,54,40,52,50,44,56,41,13,50,48,32,80,82,73,78,84,32,34,80,82,79,71,82,65,77,32,83,85,77,34,59,66,37,13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 3.5
+  - id: demo_01_list
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
       inter_key_delay_s: 0.08
       post_delay_s: 3.5
   - id: demo_01_basics
@@ -121,10 +132,26 @@ steps:
     params:
       text: "READY."
       wait_timeout_s: 60
-  - id: demo_03_resume_intro
+  - id: demo_03_resume_liveness
     type: input.sequence
     params:
-      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,59,67,72,82,36,40,49,53,56,41,59,34,66,65,67,75,32,73,78,32,82,69,65,68,89,66,65,83,73,67,34,13,80,82,73,78,84,32,34,86,65,82,73,65,66,76,69,83,32,65,78,68,32,80,82,79,71,82,65,77,32,84,69,88,84,32,83,72,79,85,76,68,32,82,69,77,65,73,78,34,58,80,82,73,78,84,32,67,72,82,36,40,53,41,13]
+      keys: [80,82,73,78,84,32,34,82,69,83,85,77,69,32,76,73,86,69,34,13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 3.5
+  - id: assert_demo_03_resume_liveness
+    type: assert.screen
+    params:
+      contains: "RESUME LIVE"
+  - id: demo_03_resume_intro_clear
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,59,67,72,82,36,40,49,53,56,41,59,34,66,65,67,75,32,73,78,32,82,69,65,68,89,66,65,83,73,67,34,13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 3.5
+  - id: demo_03_resume_intro_detail
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,86,65,82,73,65,66,76,69,83,32,65,78,68,32,80,82,79,71,82,65,77,32,84,69,88,84,32,83,72,79,85,76,68,32,82,69,77,65,73,78,34,58,80,82,73,78,84,32,67,72,82,36,40,53,41,13]
       inter_key_delay_s: 0.08
       post_delay_s: 3.5
   - id: demo_03_resume_var_proof

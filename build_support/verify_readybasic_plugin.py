@@ -105,8 +105,8 @@ def main() -> None:
         fail(f"RESIDENT grew past command-module slot budget $18C0, got ${resident[2]:04X}")
     if lowpack[0] != 0xA800 or lowpack[1] > 0xAFFF:
         fail(f"command slot 0 must fit under BASIC ROM at $A800-$AFFF, got ${lowpack[0]:04X}-${lowpack[1]:04X}")
-    if lowpack[2] != 0x06D1:
-        fail(f"command slot 0 size changed from measured $06D1, got ${lowpack[2]:04X}")
+    if lowpack[2] != 0x06CE:
+        fail(f"command slot 0 size changed from measured $06CE, got ${lowpack[2]:04X}")
     if slotpack1[0] != 0xB000 or slotpack1[1] > 0xB7FF:
         fail(f"command slot 1 must fit under BASIC ROM at $B000-$B7FF, got ${slotpack1[0]:04X}-${slotpack1[1]:04X}")
     if slotpack1[2] != 0x023B:

@@ -8,8 +8,8 @@ same ReadyOS and REU discipline.
 
 - `BASIC_START = $2AC1`; BASIC owns `$2AC1-$9FFF`, with `30013` formula empty
   free bytes.
-- `RESIDENT` is `$1200-$2ABE` (`$18BF`, 6335B).
-- `BRIDGE` is `$C000-$C1F8` (`$01F9`, 505B), still below `$C200`.
+- `RESIDENT` is `$1200-$2AB6` (`$18B7`, 6327B).
+- `BRIDGE` is `$C000-$C1FD` (`$01FE`, 510B), still below `$C200`.
 - Under BASIC ROM, `$A000-$A7FF` is the common helper area; `$A800-$AFFF`,
   `$B000-$B7FF`, and `$B800-$BFFF` are three 2KB submodule slots.
 - ReadyBASIC uses two launcher-assigned REU resource banks. The core bank is
@@ -34,7 +34,7 @@ same ReadyOS and REU discipline.
 - `$C200-$C5FF`: fixed call frame, result frame, descriptor buffer, command-name buffer, page buffer, and warm-resume staging (`$0400`, 1.0K).
 - `$A000-$A376`: hidden helper code (`$0377`, 887B), restored from the visible `$C280` shadow.
 - `$A800-$A84C`: hidden worker overlay slot (`$004D`, 77B) used by `ZHIDDENRAM`.
-- `$C000-$C1F3`: bridge state plus native routine return stack and flow-control scratch (`$01F4`, 500B); the implementation stays below `$C200`.
+- `$C000-$C1FD`: bridge state plus native routine return stack and flow-control scratch (`$01FE`, 510B); the implementation stays below `$C200`.
 
 ## REU Banks
 
@@ -69,15 +69,15 @@ same ReadyOS and REU discipline.
 
 ## Assigned Code Bank Regions
 
-- `$0000-$06C6`: built-in module 1 slot-0 payload, fetched into
-  `$A800-$AEC6` (`$06C7`, 1735B). The linker symbol is still named
+- `$0000-$06CD`: built-in module 1 slot-0 payload, fetched into
+  `$A800-$AECD` (`$06CE`, 1742B). The linker symbol is still named
   `LOWPACK` for compatibility, but the current runtime slot base is `$A800`.
-- `$06C7-$08FF`: built-in module 2 slot-1 proof and streaming `ZMODLD` loader
-  payload, fetched into `$B000-$B238` (`$0239`, 569B).
-- `$0900-$0953`: built-in slot-2, span, and overlay proof slices (`$0054`,
+- `$06CE-$0908`: built-in module 2 slot-1 proof and streaming `ZMODLD` loader
+  payload, fetched into `$B000-$B23A` (`$023B`, 571B).
+- `$0909-$095C`: built-in slot-2, span, and overlay proof slices (`$0054`,
   84B total). Each proof slice is 21B.
-- `$0954-$14FF`: free gap before the current disk-module proof offsets
-  (`$0BAC`, 2988B).
+- `$095D-$14FF`: free gap before the current disk-module proof offsets
+  (`$0BA3`, 2979B).
 - `$1500-$151F`: `rbm.sample1` descriptor proof for `ZDM1`.
 - `$1600-$165F`: `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`;
   submodule 5 appears twice because those entries are overlays 1 and 2.
@@ -140,7 +140,7 @@ Each descriptor is 32 bytes:
 - `BUFFREE(H%)`: module 1 slot 0 payload, frees any valid handle type.
 - `ZTEMPSCRATCH(LEN,OUT%)` / `ZTEMPSCRATCH(LEN)`: module 1 slot 0 payload, allocates and frees temporary pages, returning page count.
 - `ZFAIL(CODE,OUT%)`: module 1 slot 0 payload, exercises the error path after output clearing.
-- `FREEMEM()`: module 1 slot 0 payload, prints the current live BASIC free-byte count and refreshes the header.
+- `FREEMEM()`: module 1 slot 0 payload, prints the current live BASIC free-byte count.
 - `SCRCAP(H%)` / `SCRCAP()`: module 1 slot 0 payload, captures screen text plus color RAM into a typed screen handle.
 - `FADD(A,B,OUT)` / `FADD(A,B)`: resident-computed demo command, returns a plain C64 BASIC float.
 - `ZPAUSE(TICKS)`: module 1 slot 0 payload, waits for a number of jiffies.
@@ -204,8 +204,8 @@ The current design includes resident flow control and error introspection:
   ReadyBASIC runtime error code and line.
 
 Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
-`30013` formula empty free bytes. `RESIDENT` is `$1200-$2ABB` (`6332` bytes),
-`BRIDGE` is `$C000-$C1F6` (`503` bytes), `LOWPACK` is `$06C7` (`1735` bytes),
+`30013` formula empty free bytes. `RESIDENT` is `$1200-$2AB6` (`6327` bytes),
+`BRIDGE` is `$C000-$C1FD` (`510` bytes), `LOWPACK` is `$06CE` (`1742` bytes),
 and `bin/readybasic.prg` remains `20994` bytes.
 
 ## Current Nested-Term Support
