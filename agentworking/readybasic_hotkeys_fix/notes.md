@@ -49,10 +49,10 @@
 ## Current memory/headroom
 
 - `BASIC_START` remains `$2AC1`; empty BASIC free bytes remain `30013`.
-- `ENTRY` is `$1000-$11F6`, `$01F7` / 503B.
-- `RESIDENT` is `$1200-$2AB8`, `$18B9` / 6329B, leaving 7B before the `$2ABF` resident budget end and the `$2AC0` sentinel.
-- `HIDDEN` is `$A000-$A6C7`, `$06C8` / 1736B, leaving `$0138` / 312B in the 2K common helper area.
-- `BRIDGE` is `$C000-$C1FD`, `$01FE` / 510B, leaving 2B before `$C200`.
+- `ENTRY` is `$1000-$11FF`, `$0200` / 512B.
+- `RESIDENT` is `$1200-$2ABD`, `$18BE` / 6334B, leaving 2B before the `$2ABF` resident budget end and the `$2AC0` sentinel.
+- `HIDDEN` is `$A000-$A6E9`, `$06EA` / 1770B, leaving `$0116` / 278B in the 2K common helper area.
+- `BRIDGE` is `$C000-$C1FE`, `$01FF` / 511B, leaving 1B before `$C200`.
 - BASIC RAM contract is unchanged; the added cost is paid in entry/helper/bridge/resident bytes, not by moving BASIC start.
 
 ## Proof run log
@@ -133,3 +133,56 @@
 - What passed before that failure: ReadyBASIC launch, CHRIN/KEYLOG vector checks, warp-mode `PRINT "A B C"` spacing, partial-line `10` plus Ctrl+B to launcher, no visible or listed `REM`, ReadyBASIC reentry/liveness, Editor launch, and Editor Ctrl+B back to launcher.
 - Remaining unresolved case: after an Editor round trip, type `20` at the ReadyBASIC prompt without Return, then press F2. Expected result is an immediate switch to Editor; latest EasyFlash automation timed out waiting for `editor`.
 - Reproduction details are recorded in `agentworking/readybasic_hotkeys_fix/reproduce_remaining_failure.md`.
+
+## 2026-06-12 launcher-owned Editor/REU Viewer proof refresh
+
+- Supersedes the 2026-06-11 remaining-failure note for the regular D81 path. The root cause was prompt detection after `RUN`: BASIC could be visibly at `READY.` while `CURLIN/TXTPTR` still pointed into the just-run program, so KEYLOG rejected Ctrl+B/F2/F4. ReadyBASIC now hooks IMAIN `$0302/$0303` to mark the direct prompt active and clears that flag at execute entry.
+- The focused launcher-cycle probe now uses only launcher-owned app loading and exactly these companion apps: Editor, REU Viewer, and ReadyBASIC. It does not preload ReadyBASIC and does not use ReadyShell.
+- Test shape:
+  - Boot regular D81 to the launcher.
+  - Select Editor and press F3 to load it to REU.
+  - Return to launcher, select REU Viewer, and press F3 to load it to REU.
+  - Return to launcher, select ReadyBASIC, and launch it.
+  - Enter a one-line BASIC program, `LIST`, then run two full F2 cycles: ReadyBASIC -> Editor -> REU Viewer -> ReadyBASIC, twice, with `$C834`, `$C6`, screen text, capture, and post-delay stability assertions at every hop.
+  - Run two full F4 cycles: ReadyBASIC -> REU Viewer -> Editor -> ReadyBASIC, twice, with the same assertions.
+  - Return to ReadyBASIC, `LIST`, `RUN`, Ctrl+B to launcher, explicitly re-enter ReadyBASIC, `LIST`, `RUN`, then typed `EXIT`; assert the launcher remains stable and does not auto-reenter an app.
+- Focused regular D81 result: `READYBASIC_HOTKEY_BOOT_MODE=launcher READYBASIC_HOTKEY_SCENARIO=launcher_cycle /bin/bash build_support/run_readybasic_hotkey_probe.sh` passed, manifest `logs/vice_auto_20260612_001111/manifest.json`, `status=success`, `failed_step=null`, `degraded_steps=[]`.
+- Fresh focused regular D81 rerun for the Editor + REU Viewer acceptance path passed all 161 steps after a launcher-mode rebuild, manifest `logs/vice_auto_20260612_005705/manifest.json`, `status=success`, `failed_step=null`, `degraded_steps=[]`.
+- Keyboard regression result: `READYBASIC_SKIP_BUILD=1 READYBASIC_KEYBOARD_BOOT_MODE=launcher /bin/bash build_support/run_readybasic_keyboard_regression_probe.sh` passed, manifest `logs/vice_auto_20260612_001321/manifest.json`, `status=success`, `failed_step=null`, `degraded_steps=[]`. This includes warp-mode single-space typing, `10`+Ctrl+B, `20`+F2, no `REM`, normal typing after reentry, and app liveness after switch.
+- REU Viewer chain result after removing stale harness assumptions: `READYBASIC_SKIP_BUILD=1 /bin/bash build_support/run_readybasic_reuviewer_f2_chain_probe.sh` passed, manifest `logs/vice_auto_20260612_003840/manifest.json`.
+- Remaining regular ReadyBASIC suite targets after the harness correction also passed: cross-app resume `logs/vice_auto_20260612_003938/manifest.json`, second-entry editor `logs/vice_auto_20260612_004200/manifest.json`, and full visual verification `logs/vice_auto_20260612_004350/manifest.json`.
+- Static/memory guardrails: `make readybasic-plugin-static-check readybasic-memory-report` passed. Current map: `BASIC_START=$2AC1`, empty BASIC free bytes `30013`, `ENTRY=$1000-$11FF` / `$0200`, `RESIDENT=$1200-$2ABD` / `$18BE`, `HIDDEN=$A000-$A6E9` / `$06EA`, `LOWPACK=$A800-$AECD` / `$06CE`, `SLOTPACK1=$B000-$B23A` / `$023B`, `BRIDGE=$C000-$C1FE` / `$01FF`.
+- Scope stayed within ReadyBASIC source, ReadyBASIC harness/docs/notes, and generated artifacts. No shim, boot, launcher, or other app source change was required for this fix.
+
+## 2026-06-12 should be done working checkpoint
+
+- Status: should be done working. This branch now has the ReadyBASIC prompt hotkeys implemented, documented, and proved by the regular and EasyFlash ReadyBASIC VICE suites.
+- Final regular proof: `make readybasic-vice-suites` passed with 15 ReadyBASIC manifests, all `status=success`, `failed_step=null`, and `degraded_steps=[]`.
+- Final EasyFlash proof: `make easyflash-readybasic-vice-suites` passed with 18 final ReadyBASIC manifests, all `status=success`, `failed_step=null`, and `degraded_steps=[]`.
+- Final focused hotkey proof includes the launcher-owned Editor + REU Viewer + ReadyBASIC path, not ReadyShell and not a single preloaded ReadyBASIC shortcut. It loads Editor and REU Viewer, launches ReadyBASIC from the launcher, writes/lists/runs a one-line BASIC program, cycles F2 through ReadyBASIC -> Editor -> REU Viewer -> ReadyBASIC twice, cycles F4 the other direction twice, proves `$C834`, `$C6`, screen text, screenshots/captures, and delayed stability at each hop, then checks Ctrl+B, explicit reentry, `LIST`, `RUN`, and typed `EXIT` launcher stability.
+- The REU Viewer chain proof covers the original manual failure family: ReadyBASIC Ctrl+B, ReadyBASIC reentry, Ctrl+B again, REU Viewer launch, REU Viewer F2 back into ReadyBASIC, ReadyBASIC keyboard liveness, ReadyBASIC F2 back to REU Viewer, REU Viewer Ctrl+B to launcher, ReadyBASIC reentry/liveness, and `EXIT` not auto-reentering ReadyBASIC.
+
+### Regressions and false fixes that mattered
+
+- Waiting for the word `READY.` alone was not a proof of ReadyBASIC readiness because boot screens and transitional screens can contain `READY.`. First entry may use the ReadyBASIC title, but warm entries and EasyFlash conversion must prove readiness with the BASIC prompt plus app-bank/vector/keyboard liveness checks.
+- Waiting for the ReadyBASIC title in EasyFlash was also wrong: the title can be visible while free bytes still show `MMMM BASIC BYTES` and BASIC is not ready for typed input. The EasyFlash converted plans now wait for the actual `READY.` prompt before entering BASIC text.
+- The visible `REM` deferred-dispatch path was a bad design. It could appear on screen, become part of a partial prompt line such as `10`, and lock or store unintended BASIC text. The final path queues only Return and dispatches from the CHRIN hook before BASIC stores or executes the partial line.
+- A prompt-level CINV/IRQ matrix scanner was too invasive. It disturbed normal ROM-editor ownership of repeat timing and could make VICE fast/warp typing produce repeated spaces. The final design leaves ordinary key scanning/repeat/cursor editing to the ROM editor and accepts hotkeys through KEYLOG plus CHRIN only at the direct prompt.
+- Treating F2/F4 as just another typed character was insufficient. F-keys and Ctrl+B live in the C64 keyboard matrix/KERNAL preprocessing path, not the normal BASIC line text stream. The final tests exercise the ReadyBASIC KEYLOG/CHRIN hotkey path through monitor/keylog stubs and app keyboard input, not by poking `rb_hotkey_pending` or typing `EXIT`.
+- The selected F2/F4 target bank must survive suspend/yield preparation. The fix stores the selected bank immediately after the loaded-app scan and writes the shim switch target after `prepare_shim_yield`, instead of relying on scratch bytes that hidden save logic can reuse.
+- A single F2/F4 must not be observed twice. Entry-time hotkey quarantine and yield-time release waits are required so a held key does not switch ReadyBASIC to the next app and then immediately switch again. The focused probes now assert delayed stability and `$C6==0` after every hotkey switch.
+- Prompt state cannot be inferred only from `CURLIN`. After `RUN`, BASIC may visually be at `READY.` while interpreter pointers still make the prompt look like program context. The final implementation uses the IMAIN vector to mark direct-prompt readiness and clears that flag at execute entry.
+- Ctrl+B/F2/F4 must be ignored while BASIC is running. The final gate is keyboard-device and direct-prompt aware, so file/device input and RUN-mode BASIC execution do not become ReadyOS navigation.
+- Every ReadyBASIC yield path must scrub editor/KERNAL state: `rb_hotkey_pending`, `$C6`, `$0277`, `SHFLAG`, `LSTX`, and `SFDX`. Typed `EXIT`, Ctrl+B, F2, and F4 all need the same cleanup discipline.
+- ReadyBASIC must restore global page-3 vectors before yielding to ReadyOS. Those vectors are not part of the app snapshot, so leaving CHRIN/KEYLOG/execute/crunch hooks installed can break the launcher or next app.
+- Cartridge/EasyFlash app order is different from the regular D81 focused set. The cartridge F2/F4 tests should walk a few apps forward and back and assert actual screens/banks, not assume a small two- or three-app universe or try to cycle the entire preloaded cartridge list.
+- EasyFlash cold preload can occasionally stall before the launcher at `READYOS EASYFLASH BOOT` / `BOOTER PRELOADING REU SNAPSHOTS`. That is a harness/VICE cold-start issue before ReadyBASIC code runs. The suite now gives launcher waits and wrapper timeouts enough budget and retries whole plans after a cold-start pause.
+
+### Final design rules for future BASIC extensions
+
+- For prompt hotkeys, do not inject command text. Consume the physical/editor hotkey, queue Return only, and make the CHRIN hook discard the editor-returned character before BASIC can store or execute a partial line.
+- Keep ROM editor behavior intact. Do not install an IRQ scanner for ordinary prompt handling unless a future test proves there is no other option and then proves normal repeat/space/cursor behavior under warp.
+- Treat partial prompt lines as first-class acceptance cases. `10`+Ctrl+B and `20`+F2/F4 must not create program lines, show `REM`, lock the prompt, or leave the destination app keyboard-dead.
+- Prove app switching with launcher-owned multi-app journeys. Load companion apps through the launcher, switch both directions more than once, and assert no double-hop after a single F2/F4.
+- For ReadyBASIC specifically, every hotkey test must prove all of: app bank `$C834`, vector ownership/restoration, empty keyboard buffer `$C6`, screen identity, delayed stability, and typed input liveness after reentry.
+- Keep the memory contract visible in every final proof: `BASIC_START=$2AC1`, empty BASIC free bytes `30013`, bridge below `$C200`, no private use of `$C800-$C9FF`, and no shim/launcher/other-app changes unless a focused repro proves a contract bug outside ReadyBASIC.

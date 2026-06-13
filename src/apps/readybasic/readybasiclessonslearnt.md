@@ -21,13 +21,13 @@ actual C64/ReadyOS evidence trail rather than a pile of confident guesses.
 - A refreshed REU shadow copy of the hidden helper image lives in the
   launcher-assigned ReadyBASIC core bank at offset `$3000`. Warm entry restores
   `$A000` from that shadow before using hidden helpers.
-- The plugin spine keeps visible resident code at `$1200-$2ABE`, command
+- The plugin spine keeps visible resident code at `$1200-$2AB8`, command
   overlays under BASIC ROM, shared frames at `$C200-$C5FF`, and
   launcher-assigned ReadyBASIC core/code REU banks. Older entries below may
   mention `$44/$45`; treat those as historical fixed-bank examples, not the
   current contract.
 - Module/submodule branch update: the current visible resident range is
-  `$1200-$2ABE`, the bridge is `$C000-$C1FD`, and command payloads now use a
+  `$1200-$2AB8`, the bridge is `$C000-$C1FD`, and command payloads now use a
   common under-ROM helper area `$A000-$A7FF` plus three 2KB submodule slots:
   `$A800-$AFFF`, `$B000-$B7FF`, and `$B800-$BFFF`.
 - Current command descriptors are module-aware 32-byte records: command id,
@@ -429,41 +429,46 @@ draw failure, and `../agenticdevharness/logs/vice_auto_20260509_174140/`
 demonstrated visible `RB 2`, visible `RB 3`, mailbox `$C004/$C005 == $000F`,
 and `EXIT` returning to the launcher.
 
-### Prompt Hotkeys Need Direct Matrix Scanning
+### Prompt Hotkeys Need A CHRIN-Safe Abort Path
 
-ReadyBASIC now supports prompt-level `CTRL+B`, `F2`, and `F4` by installing a
-small CINV IRQ hook at `$0314/$0315` plus a KEYLOG hook at `$028F/$0290`. The IRQ
-hook must not read `SHFLAG`/`SFDX` at the front of CINV: that samples the
-previous KERNAL scan state before the ROM IRQ handler has scanned the current
-physical key. A field test on 2026-06-09 showed normal BASIC and manual `EXIT`
-working while physical `CTRL+B`/`F2`/`F4` did nothing, disproving that approach.
+ReadyBASIC now supports prompt-level `CTRL+B`, `F2`, and `F4` with KEYLOG at
+`$028F/$0290` plus a CHRIN wrapper at `$0324/$0325`. KEYLOG is allowed to act
+only while the CHRIN wrapper has entered the ROM editor, the default input
+device is the keyboard, and BASIC is at a direct prompt. It records the pending
+ReadyOS action, consumes the decoded key state, and queues only Return.
 
-Current rule: the CINV hook performs a tiny direct CIA1 keyboard-matrix scan
-for only the ReadyOS chords, restores CIA1 `$DC00/$DC02/$DC03`, queues the
-ReadyOS action, and asks the editor to process a harmless `REM` line plus
-Return. The KEYLOG hook catches KERNAL-decoded special keys, consumes the key
-state, and preserves the CIA scan-port state. ReadyBASIC's normal execute hook
-then sees the pending action and performs the state save, vector restore, and
-shim return/switch.
+The CHRIN wrapper calls the original CHRIN first and preserves ordinary return
+semantics, including the status flags. If a pending prompt hotkey exists after
+the editor unwinds, it discards the returned character and dispatches the
+ReadyOS action before BASIC can store or execute the partial line. This
+supersedes the earlier CINV-plus-`REM` defer path, which visibly inserted text,
+could combine with partial prompt lines, and disturbed ordinary typing in VICE
+fast/warp mode.
 
-This is deliberately boring in the good way: ordinary keys tail-call the saved
-CINV/KEYLOG paths, no `CHRIN` vector hook is installed, and the ROM screen
-editor still owns cursor blink, logical-line editing, and Return handling.
+Ordinary keys stay inside the ROM editor path. ReadyBASIC does not install a
+CINV IRQ scanner for prompt hotkeys; cursor blink, logical-line editing, key
+repeat, and space handling remain KERNAL/BASIC-owned. The older field finding
+still stands: reading `SHFLAG`/`SFDX` before KERNAL's scan samples stale state
+and is not a valid prompt-hotkey detector.
 
 VICE Binary `input.sequence` writes through the KERNAL keyboard buffer rather
 than driving physical keyboard matrix timing. The ReadyBASIC hotkey probe
 therefore cannot be used as physical-key proof. A valid automated probe must
-separate the claims: assert that CINV/KEYLOG point at ReadyBASIC hooks and that
-the matrix scanner is present, then use pending-byte injection only to verify
-execute-hook dispatch, state save, vector restore, and shim return/switch path.
-Manual or GUI-host key testing is still needed to prove the host-to-matrix path
-in VICE.
+separate the claims: assert that KEYLOG/CHRIN/IMAIN point at ReadyBASIC hooks,
+drive the KEYLOG path while ReadyBASIC has marked the direct prompt active, and
+prove that Return-only unwind dispatches without storing partial lines or
+printing `REM`. Manual or GUI-host key testing is still useful to prove the
+host-to-matrix path in VICE.
 
-The hotkey helper only acts while `TXTPTR < BASIC_START`; running BASIC program
-input is left alone. `CTRL+B` follows the existing `EXIT` yield path. `F2`/`F4`
-scan the shim loaded-bank bitmap at `$C836-$C838`, write the target bank to
-`$C820`, and jump through `$C80F`. If no neighbor app is loaded, the function key
-is consumed so the BASIC editor does not see a stray app-navigation byte.
+The hotkey helper acts only at a ReadyBASIC direct prompt. Do not use
+`CURLIN`/`TXTPTR` alone as that proof: after `RUN` completes, BASIC may visibly
+be at `READY.` while those pointers still describe the just-run program line.
+ReadyBASIC therefore marks prompt ownership through the IMAIN vector and clears
+that flag in the execute hook. Running BASIC program input is left alone.
+`CTRL+B` follows the existing `EXIT` yield path. `F2`/`F4` scan the shim
+loaded-bank bitmap at `$C836-$C838`, write the target bank to `$C820`, and jump
+through `$C80F`. If no neighbor app is loaded, the function key is consumed so
+the BASIC editor does not see a stray app-navigation byte.
 
 Multi-hop switching exposed one extra rule: the selected `F2`/`F4` target must
 be copied into bridge state before ReadyBASIC prepares the shim yield, then
@@ -478,9 +483,9 @@ enough when the physical key is still held across a ReadyOS app switch. Current
 rule: on cold/warm entry, scan the CIA1 matrix and quarantine any still-held
 ReadyBASIC hotkey until it is released. Before yielding for a prompt hotkey,
 wait for the exact selected chord to release with a bounded jiffy-clock timeout,
-then clear editor/KERNAL key state again. Keep the `REM` line as the known-safe
-deferred-dispatch trigger unless a quieter path proves the same multi-hop
-coverage.
+then clear editor/KERNAL key state again. The accepted quiet path is now
+Return-only plus CHRIN abort dispatch; visible `REM` injection is no longer part
+of the design.
 
 `EXIT`/`exit` remains the explicit ReadyBASIC wedge command for returning to the
 launcher: it restores ReadyBASIC-owned vectors, clears pending keyboard input,
@@ -655,12 +660,12 @@ there were independent BASIC/KERNAL vector contract bugs after the app loaded.
 
 ### Hypothesis: Hooking `CHRIN` After Original Return Is Enough For Prompt Hotkeys
 
-Disproven. The ROM screen editor consumes the interactive key stream internally
-and returns the completed logical line. Prompt navigation needs a pre-editor
-physical key check or a deeper screen-editor hook. The working implementation
-uses the CINV IRQ path plus KEYLOG for pre-editor detection, then queues a
-harmless `REM` line so the normal BASIC execute hook can dispatch the pending
-ReadyOS action.
+Revised. The ROM screen editor consumes the interactive key stream internally
+and returns the completed logical line, so CHRIN alone is not enough. KEYLOG
+runs inside that editor path before print, though, so the working design uses
+KEYLOG to accept the hotkey, queues Return only, and lets the CHRIN wrapper
+dispatch the pending action after the editor unwinds but before BASIC stores or
+executes the partial prompt line.
 
 ### Hypothesis: Pre-Editor `CHRIN` Keyboard-Buffer Peek Is Safe
 
@@ -668,8 +673,9 @@ Disproven. The pre-editor peek was changed into a blocking wait for `$C6 != 0`.
 That starved the ROM screen editor before it could manage cursor/input state,
 matching delayed prompts, missing cursor blink, and fragile line entry. The
 stabilization pass removes it and accepts that prompt-level hotkeys need a
-separate, editor-safe design. The implemented design hooks CINV without blocking
-before the ROM screen editor runs.
+separate, editor-safe design. The implemented design lets the ROM editor run,
+uses KEYLOG only during the CHRIN-owned editor call, and dispatches from CHRIN
+after Return unwinds the editor.
 
 ### Hypothesis: Tokenizing ReadyBASIC Commands Immediately Is The Best POC Path
 
@@ -719,7 +725,7 @@ contract is fully proven.
 - For cross-app churn after `EXIT`, use:
   `bash build_support/run_readybasic_cross_app_resume_probe.sh`
   It builds the same larger BASIC/string/array case, then repeats:
-  `EXIT -> launcher -> ReadyShell -> CTRL+B -> launcher -> ReadyBASIC -> LIST
+  `EXIT -> launcher -> another app -> CTRL+B -> launcher -> ReadyBASIC -> LIST
   and one-at-a-time PRINT checks`. On 2026-05-11, 10 full cycles passed: all 206
   plan steps were `ok`; the run was marked `partial` only because the harness
   final automatic REU debug-ring fetch returned short after the successful plan.
@@ -736,9 +742,9 @@ contract is fully proven.
 - After relaunching ReadyBASIC from the launcher:
   - existing BASIC text, variables, strings, arrays, screen state, and `NEW`
     state should resume coherently after a manual prompt `exit`.
-- `CTRL+B`, `F2`, and `F4` prompt interception uses the nonblocking CINV IRQ plus
-  synthetic-`EXIT` path and must keep restoring page-3 vectors before every shim
-  yield.
+- `CTRL+B`, `F2`, and `F4` prompt interception uses KEYLOG plus the CHRIN
+  Return-only abort path and must keep restoring page-3 vectors before every
+  shim yield.
 
 ### Expression Hooks Need Narrow, Purpose-Built Paths
 
@@ -788,13 +794,83 @@ Editor, assembler command groups, `PROC`/`FUNC`, array/float/string parameters,
 REU handles, expected syntax/runtime errors, and nested expression forms. The
 same script keeps `READYBASIC_DEMO_FAST=1` for tight development runs.
 
+### Prompt Hotkeys Must Abort Through The Editor, Not Type Commands
+
+Proven on 2026-06-12 in `readybasic-hotkeys-experiment`. ReadyBASIC hotkeys
+run inside the C64 BASIC screen editor, so they cannot be treated like normal
+ReadyOS C app hotkeys and they cannot be faked by injecting command text.
+Branch status at checkpoint: should be done working.
+
+Failed approaches and regressions:
+
+- Injecting visible `REM` plus Return as a deferred dispatch marker was unsafe.
+  It could appear on screen, combine with a partial prompt line such as `10`,
+  store unintended BASIC text, or lock the prompt.
+- Installing a prompt CINV/IRQ matrix scanner was too invasive. It competed
+  with the ROM editor and produced normal-typing regressions, including repeated
+  spaces in VICE fast/warp mode.
+- Accepting a hotkey without a release/quarantine rule let one physical F2/F4
+  act twice, producing double app switches.
+- Treating the ReadyBASIC title or any `READY.` text as sufficient automation
+  proof was weak. Boot and cartridge preload screens can contain misleading
+  text before the BASIC prompt is actually keyboard-live.
+- Preserving the transient CHRIN/editor stack depth for a ReadyOS yield was
+  wrong. READY-mode hotkey yields need a known BASIC-ready resume stack state.
+
+Current rule: prompt hotkeys are accepted only at the direct keyboard prompt.
+KEYLOG records Ctrl+B/F2/F4, consumes the hotkey state, and queues only Return.
+The CHRIN hook then discards the editor-returned character and dispatches the
+pending ReadyOS return/switch before BASIC can store or execute a partial line.
+Do not inject visible command text for navigation.
+
+Current rule: the ROM editor owns ordinary typing, cursor editing, and repeat
+timing. ReadyBASIC does not install an IRQ scanner for normal prompt hotkeys.
+Future keyboard extensions must prove single-space behavior under VICE warp,
+cursor/delete behavior, and ordinary `PRINT`/`LIST`/`RUN` input after repeated
+app reentry.
+
+Current rule: every accepted Ctrl+B/F2/F4 yield must clear `rb_hotkey_pending`,
+`KEYD_COUNT/$C6`, `KEYD_BUFFER/$0277`, `SHFLAG`, `LSTX`, and `SFDX`; wait for
+the selected physical chord to release with a bounded timeout; restore owned
+page-3 vectors; then call the ReadyOS shim. Cold/warm entry also quarantines a
+still-held hotkey until release.
+
+Current rule: F2/F4 target selection must persist across suspend preparation.
+Store the selected target bank immediately after the loaded-app scan and write
+the shim switch target only after `prepare_shim_yield`; do not depend on scratch
+bytes that hidden save logic can reuse.
+
+Current rule: prompt readiness is explicit state, not a visual guess. The IMAIN
+hook marks the direct prompt active and execute entry clears it. Ctrl+B/F2/F4
+remain ignored while a BASIC program is running or while input is not from the
+keyboard.
+
+Acceptance tests for future BASIC-editor work must include:
+
+- partial-line `10`+Ctrl+B and `20`+F2/F4 with no stored line, no `REM`, no
+  lockup, and keyboard-live reentry;
+- a single F2/F4 followed by a delayed stability check proving no double-hop;
+- launcher-owned multi-app cycling through at least ReadyBASIC, Editor, and REU
+  Viewer in both F2 and F4 directions;
+- app-bank `$C834`, vector, keyboard-buffer `$C6`, screen, screenshot/capture,
+  and typed-input assertions after every switch;
+- typed `EXIT` after hotkey journeys, proving the launcher stays stable and
+  does not auto-reenter ReadyBASIC.
+
+Cartridge/EasyFlash tests need their own app-order expectations. The cartridge
+preloads a wider set of apps, so hotkey tests should walk a few known apps
+forward/back and verify each destination rather than assuming the regular D81
+three-app set or cycling the entire cartridge list. Cartridge automation should
+also wait for the real BASIC `READY.` prompt, not only the ReadyBASIC title, and
+allow for occasional EasyFlash cold preload retries before the launcher.
+
 ## Open Questions
 
 - Deferred hypothesis: ReadyBASIC may leave KERNAL `MSGFLG` (`$009D`) nonzero
-  when returning to ReadyOS, which would make later shim/ReadyShell `LOAD` calls
+  when returning to ReadyOS, which would make later shim/app `LOAD` calls
   print `SEARCHING FOR` / `LOADING` chatter that normally stays hidden. Prove
   later by dumping `$009D` before ReadyBASIC, after direct BASIC use, after
-  `exit`, and immediately before launcher/shim/ReadyShell loads. Likely fix, if
+  `exit`, and immediately before launcher/shim/app loads. Likely fix, if
   proven: save/restore or clear `MSGFLG` around ReadyBASIC yield, and consider
   defensive `SETMSG 0` around shim/overlay loads.
 - Should the prompt hotkey handler eventually hook the screen editor more

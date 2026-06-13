@@ -15,7 +15,7 @@ PROJECT="$VICE_TOOL_ROOT/src/ViceTasks.Binary/ViceTasks.Binary.csproj"
 PLAN="${READYBASIC_REUVIEWER_CHAIN_PLAN:-$SCRIPT_DIR/readybasic_reuviewer_f2_chain_probe.generated.yaml}"
 READYBASIC_VISIBLE="${READYBASIC_VISIBLE:-0}"
 READYBASIC_KEEP_VICE="${READYBASIC_KEEP_VICE:-0}"
-HOTKEY_INPUT_MODE="${READYBASIC_HOTKEY_INPUT_MODE:-pending}"
+HOTKEY_INPUT_MODE="${READYBASIC_HOTKEY_INPUT_MODE:-keylog}"
 HOTKEY_DEBUG="${READYBASIC_HOTKEY_DEBUG:-0}"
 BOOT_MODE="${READYBASIC_CHAIN_BOOT_MODE:-runfirst}"
 READYBASIC_BANK_RAW="${READYBASIC_CHAIN_READYBASIC_BANK:-1}"
@@ -194,14 +194,11 @@ YAML
     local keylog_lo
     local keylog_hi
     local stub_hex
-    local break_addr
     keylog_lo="$(printf '%02X' $((KEYLOG_ADDR_DEC & 255)))"
     keylog_hi="$(printf '%02X' $(((KEYLOG_ADDR_DEC >> 8) & 255)))"
-    stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
-    break_addr="0348"
+    stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C 74 A4"
     if [ "$DUPLICATE_KEYLOG" = "1" ] && [ "$target_context" = "readybasic" ]; then
-      stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C CF E5"
-      break_addr="0354"
+      stub_hex="A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C 74 A4"
     fi
     cat <<YAML
   - id: ${id}_keylog_stub
@@ -213,10 +210,6 @@ YAML
     type: monitor.command
     params:
       command: "raw:delete"
-  - id: ${id}_break_after_keylog
-    type: monitor.command
-    params:
-      command: "raw:break $break_addr"
   - id: $id
     type: monitor.command
     params:
@@ -242,30 +235,30 @@ YAML
       start: $PENDING_DEC
       end: $PENDING_DEC
       equals_hex: "$key_hex"
-  - id: ${id}_queue_readybasic_hotkey_line
+  - id: ${id}_queue_readybasic_hotkey_return
     type: memory.write
     params:
       start: 631
-      bytes_hex: "52 45 4D 0D"
+      bytes_hex: "0D"
   - id: $id
     type: memory.write
     params:
       start: 198
-      bytes_hex: "04"
+      bytes_hex: "01"
 YAML
     if [ "$HOTKEY_DEBUG" = "1" ]; then
       cat <<YAML
-  - id: ${id}_capture_after_readybasic_hotkey_line
+  - id: ${id}_capture_after_readybasic_hotkey_return
     type: screen.capture
     params:
-      label: ${id}_after_readybasic_hotkey_line
-  - id: ${id}_assert_pending_cleared_after_hotkey_line
+      label: ${id}_after_readybasic_hotkey_return
+  - id: ${id}_assert_pending_cleared_after_hotkey_return
     type: assert.memory
     params:
       start: $PENDING_DEC
       end: $PENDING_DEC
       equals_hex: "00"
-  - id: ${id}_registers_after_hotkey_line
+  - id: ${id}_registers_after_hotkey_return
     type: monitor.command
     params:
       command: "raw:r"
@@ -354,20 +347,20 @@ D81="$D81_REL"
 PREBOOT="$PREBOOT_REL"
 
 ca65 -l obj/readybasic_reuviewer_f2_chain_probe.lst -o obj/readybasic_reuviewer_f2_chain_probe_list.o src/apps/readybasic/readybasic.s
-IRQ_ADDR_HEX="$(awk '/rb_irq:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_reuviewer_f2_chain_probe.lst)"
+CHRIN_ADDR_HEX="$(awk '/rb_chrin:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_reuviewer_f2_chain_probe.lst)"
 KEYLOG_ADDR_HEX="$(awk '/rb_keylog:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_reuviewer_f2_chain_probe.lst)"
 PENDING_OFF_HEX="$(awk '/rb_hotkey_pending:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_reuviewer_f2_chain_probe.lst)"
-if [ -z "$IRQ_ADDR_HEX" ] || [ -z "$KEYLOG_ADDR_HEX" ] || [ -z "$PENDING_OFF_HEX" ]; then
+if [ -z "$CHRIN_ADDR_HEX" ] || [ -z "$KEYLOG_ADDR_HEX" ] || [ -z "$PENDING_OFF_HEX" ]; then
   echo "Could not find ReadyBASIC hotkey symbols in list file" >&2
   exit 1
 fi
-IRQ_ADDR_DEC="$((0x1200 + 16#$IRQ_ADDR_HEX))"
-IRQ_VEC_HEX="$(printf '%02X %02X' $((IRQ_ADDR_DEC & 255)) $(((IRQ_ADDR_DEC >> 8) & 255)))"
+CHRIN_ADDR_DEC="$((0x1200 + 16#$CHRIN_ADDR_HEX))"
+CHRIN_VEC_HEX="$(printf '%02X %02X' $((CHRIN_ADDR_DEC & 255)) $(((CHRIN_ADDR_DEC >> 8) & 255)))"
 KEYLOG_ADDR_DEC="$((0xC000 + 16#$KEYLOG_ADDR_HEX))"
 KEYLOG_VEC_HEX="$(printf '%02X %02X' $((KEYLOG_ADDR_DEC & 255)) $(((KEYLOG_ADDR_DEC >> 8) & 255)))"
 PENDING_DEC="$((0x1200 + 16#$PENDING_OFF_HEX))"
 KERNAL_KEYLOG_VEC_HEX="48 EB"
-KERNAL_IRQ_VEC_HEX="31 EA"
+KERNAL_CHRIN_VEC_HEX="57 F1"
 
 cat >"$PLAN" <<YAML
 version: 1
@@ -412,12 +405,12 @@ $(emit_initial_entry_steps)
       start: 51252
       end: 51252
       equals_hex: "$READYBASIC_BANK_HEX"
-  - id: assert_irq_vector_initial
+  - id: assert_chrin_vector_initial
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "$IRQ_VEC_HEX"
+      start: 804
+      end: 805
+      equals_hex: "$CHRIN_VEC_HEX"
   - id: assert_keylog_vector_initial
     type: assert.memory
     params:
@@ -506,12 +499,12 @@ $(emit_wait_readybasic_warm_steps readybasic_after_reuviewer_f2 chain_readybasic
       start: 51252
       end: 51252
       equals_hex: "$READYBASIC_BANK_HEX"
-  - id: assert_irq_vector_after_reuviewer_f2
+  - id: assert_chrin_vector_after_reuviewer_f2
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "$IRQ_VEC_HEX"
+      start: 804
+      end: 805
+      equals_hex: "$CHRIN_VEC_HEX"
   - id: assert_keylog_vector_after_reuviewer_f2
     type: assert.memory
     params:
@@ -567,12 +560,12 @@ $(emit_hotkey_step readybasic_f2_back_to_reuviewer f2 1.2)
       start: 655
       end: 656
       equals_hex: "$KERNAL_KEYLOG_VEC_HEX"
-  - id: assert_app_irq_vector_restored_after_readybasic_f2
+  - id: assert_app_chrin_vector_restored_after_readybasic_f2
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "$KERNAL_IRQ_VEC_HEX"
+      start: 804
+      end: 805
+      equals_hex: "$KERNAL_CHRIN_VEC_HEX"
   - id: assert_default_input_device_after_readybasic_f2
     type: assert.memory
     params:

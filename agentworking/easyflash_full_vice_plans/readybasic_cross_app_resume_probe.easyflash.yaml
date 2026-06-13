@@ -40,7 +40,7 @@ steps:
       text: "READY OS"
       pre_delay_s: 4
       poll_s: 0.5
-      wait_timeout_s: 240
+      wait_timeout_s: 420
       capture_label: easyflash_readybasic_launcher
   - id: easyflash_start_readybasic
     type: input.sequence

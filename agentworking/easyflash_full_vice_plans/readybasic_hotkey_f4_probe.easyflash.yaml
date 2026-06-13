@@ -40,7 +40,7 @@ steps:
       text: "READY OS"
       pre_delay_s: 4
       poll_s: 0.5
-      wait_timeout_s: 240
+      wait_timeout_s: 420
       capture_label: easyflash_readybasic_launcher
   - id: easyflash_start_readybasic
     type: input.sequence
@@ -51,27 +51,32 @@ steps:
   - id: wait_readybasic_prompt
     type: screen.wait_contains
     params:
-      text: "readybasic"
+      text: "READY."
       wait_timeout_s: 180
       capture_label: readybasic_hotkey_prompt
-  - id: assert_irq_vector_installed
+  - id: assert_chrin_vector_installed
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "00 12"
+      start: 804
+      end: 805
+      equals_hex: "08 12"
   - id: assert_keylog_vector_installed
     type: assert.memory
     params:
       start: 655
       end: 656
-      equals_hex: "94 C1"
+      equals_hex: "7E C1"
   - id: seed_readybasic_state
     type: input.sequence
     params:
       keys: [86,37,61,51,50,49,58,86,83,36,61,34,72,79,84,34,13,80,82,73,78,84,32,34,72,79,84,83,69,69,68,34,59,86,37,59,34,58,34,59,86,83,36,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
+  - id: seed_readybasic_state_capture
+    type: screen.capture
+    params:
+      label: seed_readybasic_state
+      note: after seeding ReadyBASIC state before hotkey tests
   - id: assert_seed_state
     type: assert.screen
     params:
@@ -80,19 +85,20 @@ steps:
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 04 8D 8D 02 A9 1C 85 CB 20 94 C1 A9 04 8D 8D 02 A9 1C 85 CB 20 94 C1 4C CF E5"
+      bytes_hex: "A9 04 8D 8D 02 A9 1C 85 CB 20 7E C1 A9 04 8D 8D 02 A9 1C 85 CB 20 7E C1 4C 74 A4"
   - id: ctrl_b_from_readybasic_clear_keylog_breakpoints
     type: monitor.command
     params:
       command: "raw:delete"
-  - id: ctrl_b_from_readybasic_break_after_keylog
-    type: monitor.command
-    params:
-      command: "raw:break 0354"
   - id: ctrl_b_from_readybasic
     type: monitor.command
     params:
       command: "raw:g 033c"
+  - id: ctrl_b_from_readybasic_capture
+    type: screen.capture
+    params:
+      label: readybasic_hotkey_ctrl_b_from_readybasic_after_input
+      note: after Ctrl+B input before launcher wait
   - id: wait_launcher_after_ctrl_b
     type: screen.wait_contains
     params:
@@ -111,6 +117,11 @@ steps:
       keys: [145,145,145,145,13]
       inter_key_delay_s: 0.08
       post_delay_s: 2.0
+  - id: move_readybasic_to_editor_capture
+    type: screen.capture
+    params:
+      label: readybasic_hotkey_readybasic_to_editor_menu
+      note: after navigating to editor from launcher
   - id: wait_editor_loaded
     type: screen.wait_contains
     params:
@@ -118,11 +129,14 @@ steps:
       wait_timeout_s: 60
       capture_label: editor_loaded_for_hotkey_probe
   - id: ctrl_b_from_editor
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      command: "keybuf \\x02"
+  - id: ctrl_b_from_editor_capture
+    type: screen.capture
+    params:
+      label: readybasic_hotkey_ctrl_b_from_editor_after_input
+      note: after Ctrl+B input from editor before launcher wait
   - id: wait_launcher_after_editor
     type: screen.wait_contains
     params:
@@ -134,6 +148,11 @@ steps:
       keys: [17,17,17,17,13]
       inter_key_delay_s: 0.08
       post_delay_s: 2.0
+  - id: move_editor_to_readybasic_for_f4_capture
+    type: screen.capture
+    params:
+      label: readybasic_hotkey_editor_to_readybasic_menu
+      note: after navigating back to ReadyBASIC before F4 test
   - id: wait_readybasic_resume_for_f4
     type: screen.wait_contains
     params:
@@ -146,6 +165,11 @@ steps:
       keys: [80,82,73,78,84,32,34,72,79,84,83,84,65,84,69,34,59,86,37,59,34,58,34,59,86,83,36,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
+  - id: assert_readybasic_state_after_ctrl_b_capture
+    type: screen.capture
+    params:
+      label: readybasic_hotkey_state_after_ctrl_b
+      note: after typing HOTSTATE verification command
   - id: assert_hot_state_after_ctrl_b
     type: assert.screen
     params:
@@ -156,6 +180,11 @@ steps:
       keys: [49,48,32,80,82,73,78,84,32,34,72,79,84,76,73,83,84,49,34,13,50,48,32,80,82,73,78,84,32,34,72,79,84,76,73,83,84,50,34,13,51,48,32,80,82,73,78,84,32,34,72,79,84,76,73,83,84,51,34,13,76,73,83,84,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.2
+  - id: build_list_timing_program_capture
+    type: screen.capture
+    params:
+      label: readybasic_hotkey_list_before_f4
+      note: after building LIST program before F4
   - id: wait_list_visible_before_f4
     type: screen.wait_contains
     params:
@@ -166,15 +195,11 @@ steps:
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 01 8D 8D 02 A9 05 85 CB 20 94 C1 A9 01 8D 8D 02 A9 05 85 CB 20 94 C1 4C CF E5"
+      bytes_hex: "A9 01 8D 8D 02 A9 05 85 CB 20 7E C1 A9 01 8D 8D 02 A9 05 85 CB 20 7E C1 4C 74 A4"
   - id: f4_to_prev_loaded_app_clear_keylog_breakpoints
     type: monitor.command
     params:
       command: "raw:delete"
-  - id: f4_to_prev_loaded_app_break_after_keylog
-    type: monitor.command
-    params:
-      command: "raw:break 0354"
   - id: f4_to_prev_loaded_app
     type: monitor.command
     params:

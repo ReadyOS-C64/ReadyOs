@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5l-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5l-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5l-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -39,31 +39,27 @@ steps:
       text: "readybasic"
       wait_timeout_s: 180
       capture_label: readybasic_hotkey_f2_prompt
-  - id: assert_irq_vector_installed
+  - id: assert_chrin_vector_installed
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "00 12"
+      start: 804
+      end: 805
+      equals_hex: "08 12"
   - id: assert_keylog_vector_installed
     type: assert.memory
     params:
       start: 655
       end: 656
-      equals_hex: "94 C1"
+      equals_hex: "7E C1"
   - id: f2_to_next_loaded_app_keylog_stub
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 01 8D 8D 02 A9 04 85 CB 20 94 C1 A9 01 8D 8D 02 A9 04 85 CB 20 94 C1 4C CF E5"
+      bytes_hex: "A9 01 8D 8D 02 A9 04 85 CB 20 7E C1 A9 01 8D 8D 02 A9 04 85 CB 20 7E C1 4C 74 A4"
   - id: f2_to_next_loaded_app_clear_keylog_breakpoints
     type: monitor.command
     params:
       command: "raw:delete"
-  - id: f2_to_next_loaded_app_break_after_keylog
-    type: monitor.command
-    params:
-      command: "raw:break 0354"
   - id: f2_to_next_loaded_app
     type: monitor.command
     params:

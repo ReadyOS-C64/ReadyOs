@@ -46,6 +46,37 @@ D64="$(cd "$(dirname "$TEST_D64")" && pwd)/$(basename "$TEST_D64")"
 declare -a RUN_PLANS=()
 PLAN_START_PAUSE_S="${EASYFLASH_PLAN_START_PAUSE_S:-20}"
 PLAN_RETRY_PAUSE_S="${EASYFLASH_PLAN_RETRY_PAUSE_S:-20}"
+PLAN_TIMEOUT_S="${EASYFLASH_PLAN_TIMEOUT_S:-1200}"
+SHORT_PLAN_TIMEOUT_S="${EASYFLASH_SHORT_PLAN_TIMEOUT_S:-900}"
+DEMO_PLAN_TIMEOUT_S="${EASYFLASH_DEMO_PLAN_TIMEOUT_S:-1800}"
+PLUGIN_PLAN_TIMEOUT_S="${EASYFLASH_PLUGIN_PLAN_TIMEOUT_S:-1800}"
+VISUAL_PLAN_TIMEOUT_S="${EASYFLASH_VISUAL_PLAN_TIMEOUT_S:-1800}"
+
+run_vice_plan_with_timeout() {
+  local plan="$1"
+  local timeout_s="$2"
+  python3 - "$PROJECT" "$plan" "$timeout_s" <<'PY'
+import os
+import signal
+import subprocess
+import sys
+
+project, plan, timeout_s = sys.argv[1], sys.argv[2], int(sys.argv[3])
+cmd = ["dotnet", "run", "--project", project, "--", "run-plan", "--plan", plan, "--close-vice"]
+proc = subprocess.Popen(cmd, start_new_session=True)
+try:
+    raise SystemExit(proc.wait(timeout=timeout_s))
+except subprocess.TimeoutExpired:
+    print(f"[timeout] VICE plan exceeded {timeout_s}s: {plan}", flush=True)
+    os.killpg(proc.pid, signal.SIGTERM)
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        os.killpg(proc.pid, signal.SIGKILL)
+        proc.wait()
+    raise SystemExit(124)
+PY
+}
 
 emit_readybasic_plan() {
   local name="$1"
@@ -122,6 +153,8 @@ if [ "$SCOPE" = "all" ] || [ "$SCOPE" = "readybasic" ]; then
     emit_readybasic_plan readybasic_hotkey_f4_probe "$SCRIPT_DIR/run_readybasic_hotkey_probe.sh" READYBASIC_HOTKEY_PLAN
   READYBASIC_HOTKEY_EXPECT_F2="CALENDAR 26" READYBASIC_HOTKEY_SCENARIO="f2_only" \
     emit_readybasic_plan readybasic_hotkey_f2_probe "$SCRIPT_DIR/run_readybasic_hotkey_probe.sh" READYBASIC_HOTKEY_PLAN
+  READYBASIC_KEYBOARD_BOOT_MODE=launcher READYBASIC_KEYBOARD_READYBASIC_BANK=5 READYBASIC_KEYBOARD_LAUNCH_KEYS="17,17,17,17,13" READYBASIC_KEYBOARD_PARTIAL_F2_EXPECT="CALENDAR 26" \
+    emit_readybasic_plan readybasic_keyboard_regression_probe "$SCRIPT_DIR/run_readybasic_keyboard_regression_probe.sh" READYBASIC_KEYBOARD_REGRESSION_PLAN ""
   READYBASIC_CHAIN_READYBASIC_BANK=5 READYBASIC_CHAIN_REUVIEWER_BANK=8 READYBASIC_CHAIN_CONSTRAIN_BITMAP=1 READYBASIC_CHAIN_BOOT_MODE=launcher \
     emit_readybasic_plan readybasic_reuviewer_f2_chain_probe "$SCRIPT_DIR/run_readybasic_reuviewer_f2_chain_probe.sh" READYBASIC_REUVIEWER_CHAIN_PLAN ""
   emit_readybasic_plan readybasic_cross_app_resume_probe "$SCRIPT_DIR/run_readybasic_cross_app_resume_probe.sh" READYBASIC_PLAN
@@ -163,6 +196,14 @@ dotnet build "$PROJECT"
 
 for plan in "${RUN_PLANS[@]}"; do
   echo "==> EasyFlash VICE plan: $(basename "$plan")"
+  plan_timeout_s="$PLAN_TIMEOUT_S"
+  case "$(basename "$plan")" in
+    readybasic_demo_suite.*) plan_timeout_s="$DEMO_PLAN_TIMEOUT_S" ;;
+    readybasic_plugin_command_probe.*) plan_timeout_s="$PLUGIN_PLAN_TIMEOUT_S" ;;
+    readybasic_reuviewer_f2_chain_probe.*) plan_timeout_s="$PLUGIN_PLAN_TIMEOUT_S" ;;
+    readybasic_full_suite_visual_verification.*) plan_timeout_s="$VISUAL_PLAN_TIMEOUT_S" ;;
+    *) plan_timeout_s="$SHORT_PLAN_TIMEOUT_S" ;;
+  esac
   plan_rc=1
   for attempt in 1 2; do
     if [ "$attempt" -gt 1 ]; then
@@ -172,7 +213,7 @@ for plan in "${RUN_PLANS[@]}"; do
       sleep "$PLAN_START_PAUSE_S"
     fi
     set +e
-    dotnet run --project "$PROJECT" -- run-plan --plan "$plan" --close-vice
+    run_vice_plan_with_timeout "$plan" "$plan_timeout_s"
     plan_rc=$?
     set -e
     if [ "$plan_rc" -eq 0 ]; then

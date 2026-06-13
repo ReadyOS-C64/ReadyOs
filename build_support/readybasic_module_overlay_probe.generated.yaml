@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5u-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5u-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5u-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false

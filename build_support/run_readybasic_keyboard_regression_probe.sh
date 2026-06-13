@@ -17,6 +17,7 @@ HOTKEY_INPUT_MODE="${READYBASIC_HOTKEY_INPUT_MODE:-keylog}"
 BOOT_MODE="${READYBASIC_KEYBOARD_BOOT_MODE:-runfirst}"
 READYBASIC_BANK_RAW="${READYBASIC_KEYBOARD_READYBASIC_BANK:-1}"
 READYBASIC_LAUNCH_KEYS="${READYBASIC_KEYBOARD_LAUNCH_KEYS:-17,17,17,17,17,17,13}"
+PARTIAL_F2_EXPECT="${READYBASIC_KEYBOARD_PARTIAL_F2_EXPECT:-editor}"
 READYBASIC_VISIBLE="${READYBASIC_VISIBLE:-0}"
 READYBASIC_KEEP_VICE="${READYBASIC_KEEP_VICE:-0}"
 VICE_HEADLESS="true"
@@ -142,18 +143,14 @@ YAML
   elif [ "$effective_mode" = "keylog" ]; then
     local keylog_lo
     local keylog_hi
-    local active_lo
-    local active_hi
     keylog_lo="$(printf '%02X' $((KEYLOG_ADDR_DEC & 255)))"
     keylog_hi="$(printf '%02X' $(((KEYLOG_ADDR_DEC >> 8) & 255)))"
-    active_lo="$(printf '%02X' $((CHRIN_ACTIVE_DEC & 255)))"
-    active_hi="$(printf '%02X' $(((CHRIN_ACTIVE_DEC >> 8) & 255)))"
     cat <<YAML
   - id: ${id}_keylog_stub
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 01 8D $active_lo $active_hi A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi A9 00 8D $active_lo $active_hi 4C 74 A4"
+      bytes_hex: "A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C 74 A4"
   - id: ${id}_clear_keylog_breakpoints
     type: monitor.command
     params:
@@ -207,8 +204,7 @@ PREBOOT="$PREBOOT_REL"
 ca65 -l obj/readybasic_keyboard_regression_probe.lst -o obj/readybasic_keyboard_regression_probe_list.o src/apps/readybasic/readybasic.s
 CHRIN_ADDR_HEX="$(awk '/rb_chrin:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_keyboard_regression_probe.lst)"
 KEYLOG_ADDR_HEX="$(awk '/rb_keylog:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_keyboard_regression_probe.lst)"
-CHRIN_ACTIVE_HEX="$(awk '/rb_chrin_active:/ { sub(/r.*/, "", $1); sub(/.*:/, "", $1); print $1; exit }' obj/readybasic_keyboard_regression_probe.lst)"
-if [ -z "$CHRIN_ADDR_HEX" ] || [ -z "$KEYLOG_ADDR_HEX" ] || [ -z "$CHRIN_ACTIVE_HEX" ]; then
+if [ -z "$CHRIN_ADDR_HEX" ] || [ -z "$KEYLOG_ADDR_HEX" ]; then
   echo "Could not find ReadyBASIC keyboard regression symbols in list file" >&2
   exit 1
 fi
@@ -216,7 +212,6 @@ CHRIN_ADDR_DEC="$((0x1200 + 16#$CHRIN_ADDR_HEX))"
 CHRIN_VEC_HEX="$(printf '%02X %02X' $((CHRIN_ADDR_DEC & 255)) $(((CHRIN_ADDR_DEC >> 8) & 255)))"
 KEYLOG_ADDR_DEC="$((0xC000 + 16#$KEYLOG_ADDR_HEX))"
 KEYLOG_VEC_HEX="$(printf '%02X %02X' $((KEYLOG_ADDR_DEC & 255)) $(((KEYLOG_ADDR_DEC >> 8) & 255)))"
-CHRIN_ACTIVE_DEC="$((0x1200 + 16#$CHRIN_ACTIVE_HEX))"
 READYBASIC_BANK_HEX="$(printf '%02X' "$((READYBASIC_BANK_RAW))")"
 KERNAL_KEYLOG_VEC_HEX="48 EB"
 KERNAL_CHRIN_VEC_HEX="57 F1"
@@ -398,7 +393,7 @@ $(emit_hotkey_step partial_line_f2 f2 1.0)
   - id: wait_editor_after_partial_f2
     type: screen.wait_contains
     params:
-      text: "editor"
+      text: "$PARTIAL_F2_EXPECT"
       wait_timeout_s: 60
       capture_label: keyboard_regression_editor_after_partial_f2
   - id: assert_no_rem_after_partial_f2

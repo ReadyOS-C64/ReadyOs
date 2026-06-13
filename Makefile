@@ -85,6 +85,7 @@ READYBASIC_VICE_SCRIPTS = \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_demo_suite.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_full_suite_visual_verification.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_hotkey_probe.sh \
+	$(BUILD_SUPPORT_DIR)/run_readybasic_keyboard_regression_probe.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_reuviewer_f2_chain_probe.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_cross_app_resume_probe.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_large_vars_probe.sh \
@@ -667,7 +668,10 @@ readybasic-full-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_full_suite_visual_veri
 	$(BUILD_SUPPORT_DIR)/run_readybasic_full_suite_visual_verification.sh
 
 readybasic-hotkey-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_hotkey_probe.sh
-	$(BUILD_SUPPORT_DIR)/run_readybasic_hotkey_probe.sh
+	READYBASIC_HOTKEY_BOOT_MODE=launcher READYBASIC_HOTKEY_SCENARIO=launcher_cycle $(BUILD_SUPPORT_DIR)/run_readybasic_hotkey_probe.sh
+
+readybasic-keyboard-regression-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_keyboard_regression_probe.sh
+	$(BUILD_SUPPORT_DIR)/run_readybasic_keyboard_regression_probe.sh
 
 readybasic-reuviewer-f2-chain-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_reuviewer_f2_chain_probe.sh
 	$(BUILD_SUPPORT_DIR)/run_readybasic_reuviewer_f2_chain_probe.sh
@@ -713,7 +717,7 @@ readybasic-vice-plans: $(READYBASIC_VICE_SCRIPTS)
 		READYBASIC_SKIP_BUILD=1 READYBASIC_GENERATE_PLAN_ONLY=1 "$$script"; \
 	done
 
-readybasic-vice-suites: readybasic-demo-vice readybasic-repeat-label-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-state-vice readybasic-large-vars-vice readybasic-hotkey-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-second-entry-editor-vice readybasic-full-vice
+readybasic-vice-suites: readybasic-demo-vice readybasic-repeat-label-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-state-vice readybasic-large-vars-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-second-entry-editor-vice readybasic-full-vice
 
 readybasic-memory-report: $(READYBASIC) $(BUILD_SUPPORT_DIR)/readybasic_memory_report.py
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/readybasic_memory_report.py --html-out docs/readybasic_memory_diagrams.html
@@ -1297,5 +1301,5 @@ probe-rel:
 launcher-verbose:
 	$(MAKE) LAUNCHER_CFG_VERBOSE=1 $(LAUNCHER)
 
-.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
+.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
 EASYFLASH_LAUNCHER_CPPFLAGS ?=

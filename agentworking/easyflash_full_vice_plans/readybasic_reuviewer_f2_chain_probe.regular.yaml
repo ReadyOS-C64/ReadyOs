@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5l-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5l-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5l-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -57,18 +57,18 @@ steps:
       start: 51252
       end: 51252
       equals_hex: "05"
-  - id: assert_irq_vector_initial
+  - id: assert_chrin_vector_initial
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "00 12"
+      start: 804
+      end: 805
+      equals_hex: "08 12"
   - id: assert_keylog_vector_initial
     type: assert.memory
     params:
       start: 655
       end: 656
-      equals_hex: "94 C1"
+      equals_hex: "7E C1"
   - id: readybasic_first_type
     type: input.sequence
     params:
@@ -79,27 +79,19 @@ steps:
     type: assert.screen
     params:
       contains: "CHAIN1 101"
-  - id: readybasic_ctrl_b_1_set_readybasic_pending_hotkey
+  - id: readybasic_ctrl_b_1_keylog_stub
     type: memory.write
     params:
-      start: 10834
-      bytes_hex: "02"
-  - id: readybasic_ctrl_b_1_assert_readybasic_pending_hotkey
-    type: assert.memory
+      start: 828
+      bytes_hex: "A9 04 8D 8D 02 A9 1C 85 CB 20 7E C1 A9 04 8D 8D 02 A9 1C 85 CB 20 7E C1 4C 74 A4"
+  - id: readybasic_ctrl_b_1_clear_keylog_breakpoints
+    type: monitor.command
     params:
-      start: 10834
-      end: 10834
-      equals_hex: "02"
-  - id: readybasic_ctrl_b_1_queue_readybasic_hotkey_line
-    type: memory.write
-    params:
-      start: 631
-      bytes_hex: "52 45 4D 0D"
+      command: "raw:delete"
   - id: readybasic_ctrl_b_1
-    type: memory.write
+    type: monitor.command
     params:
-      start: 198
-      bytes_hex: "04"
+      command: "raw:g 033c"
   - id: wait_launcher_after_readybasic_ctrl_b_1
     type: screen.wait_contains
     params:
@@ -140,27 +132,19 @@ steps:
     type: assert.screen
     params:
       contains: "CHAIN2 101"
-  - id: readybasic_ctrl_b_2_set_readybasic_pending_hotkey
+  - id: readybasic_ctrl_b_2_keylog_stub
     type: memory.write
     params:
-      start: 10834
-      bytes_hex: "02"
-  - id: readybasic_ctrl_b_2_assert_readybasic_pending_hotkey
-    type: assert.memory
+      start: 828
+      bytes_hex: "A9 04 8D 8D 02 A9 1C 85 CB 20 7E C1 A9 04 8D 8D 02 A9 1C 85 CB 20 7E C1 4C 74 A4"
+  - id: readybasic_ctrl_b_2_clear_keylog_breakpoints
+    type: monitor.command
     params:
-      start: 10834
-      end: 10834
-      equals_hex: "02"
-  - id: readybasic_ctrl_b_2_queue_readybasic_hotkey_line
-    type: memory.write
-    params:
-      start: 631
-      bytes_hex: "52 45 4D 0D"
+      command: "raw:delete"
   - id: readybasic_ctrl_b_2
-    type: memory.write
+    type: monitor.command
     params:
-      start: 198
-      bytes_hex: "04"
+      command: "raw:g 033c"
   - id: wait_launcher_after_readybasic_ctrl_b_2
     type: screen.wait_contains
     params:
@@ -208,18 +192,18 @@ steps:
       start: 51252
       end: 51252
       equals_hex: "05"
-  - id: assert_irq_vector_after_reuviewer_f2
+  - id: assert_chrin_vector_after_reuviewer_f2
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "00 12"
+      start: 804
+      end: 805
+      equals_hex: "08 12"
   - id: assert_keylog_vector_after_reuviewer_f2
     type: assert.memory
     params:
       start: 655
       end: 656
-      equals_hex: "94 C1"
+      equals_hex: "7E C1"
   - id: assert_keyboard_buffer_empty_after_reuviewer_f2
     type: assert.memory
     params:
@@ -255,27 +239,19 @@ steps:
     type: assert.screen
     params:
       contains: "CHAIN3 101"
-  - id: readybasic_f2_back_to_reuviewer_set_readybasic_pending_hotkey
+  - id: readybasic_f2_back_to_reuviewer_keylog_stub
     type: memory.write
     params:
-      start: 10834
-      bytes_hex: "89"
-  - id: readybasic_f2_back_to_reuviewer_assert_readybasic_pending_hotkey
-    type: assert.memory
+      start: 828
+      bytes_hex: "A9 01 8D 8D 02 A9 04 85 CB 20 7E C1 A9 01 8D 8D 02 A9 04 85 CB 20 7E C1 4C 74 A4"
+  - id: readybasic_f2_back_to_reuviewer_clear_keylog_breakpoints
+    type: monitor.command
     params:
-      start: 10834
-      end: 10834
-      equals_hex: "89"
-  - id: readybasic_f2_back_to_reuviewer_queue_readybasic_hotkey_line
-    type: memory.write
-    params:
-      start: 631
-      bytes_hex: "52 45 4D 0D"
+      command: "raw:delete"
   - id: readybasic_f2_back_to_reuviewer
-    type: memory.write
+    type: monitor.command
     params:
-      start: 198
-      bytes_hex: "04"
+      command: "raw:g 033c"
   - id: wait_reuviewer_after_readybasic_f2
     type: screen.wait_contains
     params:
@@ -289,12 +265,12 @@ steps:
       start: 655
       end: 656
       equals_hex: "48 EB"
-  - id: assert_app_irq_vector_restored_after_readybasic_f2
+  - id: assert_app_chrin_vector_restored_after_readybasic_f2
     type: assert.memory
     params:
-      start: 788
-      end: 789
-      equals_hex: "31 EA"
+      start: 804
+      end: 805
+      equals_hex: "57 F1"
   - id: assert_default_input_device_after_readybasic_f2
     type: assert.memory
     params:

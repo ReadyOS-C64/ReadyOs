@@ -92,6 +92,7 @@ KEYD_BUFFER     = $0277
 COLOR_CODE      = $0286
 KERNAL_MEMTOP   = $0281
 KERNAL_MEMBOT   = $0283
+IMAIN_VEC       = $0302
 KERNAL_CHRIN_VEC = $0324
 KERNAL_GETIN_VEC = $032A
 CIA1_PRA        = $DC00
@@ -469,14 +470,16 @@ rb_entry_cpu:   .byte 0
 
         .segment "RESIDENT"
 
-rb_chrin:
+rb_imain:
         lda #1
-        sta rb_chrin_active
+        sta rb_prompt_active
+        jmp (rb_orig_imain_lo)
+
+rb_chrin:
         jsr rb_call_orig_chrin
         php
         pha
         lda #0
-        sta rb_chrin_active
         lda rb_hotkey_pending
         bne @dispatch
         pla
@@ -507,7 +510,7 @@ rb_queue_hotkey_line:
 rb_clear_hotkey_input_state:
         lda #0
         sta rb_hotkey_pending
-        sta rb_chrin_active
+        sta rb_prompt_active
         sta KEYD_COUNT
         ldx #9
 @keyd:
@@ -749,6 +752,8 @@ rb_resume_running:
         jmp restore_basic_runtime_state
 
 rb_execute:
+        lda #0
+        sta rb_prompt_active
         lda rb_hotkey_pending
         beq @peek
         jmp rb_dispatch_pending_hotkey
@@ -4120,6 +4125,10 @@ hidden_prepare_ready_resume:
 hidden_install_vectors:
         lda rb_vectors_saved
         bne @install
+        lda IMAIN_VEC
+        sta rb_orig_imain_lo
+        lda IMAIN_VEC+1
+        sta rb_orig_imain_hi
         lda $0304
         sta rb_orig_crunch_lo
         lda $0305
@@ -4143,6 +4152,10 @@ hidden_install_vectors:
         lda #1
         sta rb_vectors_saved
 @install:
+        lda #<rb_imain
+        sta IMAIN_VEC
+        lda #>rb_imain
+        sta IMAIN_VEC+1
         lda #<rb_crunch
         sta $0304
         lda #>rb_crunch
@@ -4329,6 +4342,10 @@ hidden_bit_masks:
 hidden_restore_vectors:
         lda rb_vectors_saved
         beq @done
+        lda rb_orig_imain_lo
+        sta IMAIN_VEC
+        lda rb_orig_imain_hi
+        sta IMAIN_VEC+1
         lda rb_orig_crunch_lo
         sta $0304
         lda rb_orig_crunch_hi
@@ -5009,6 +5026,8 @@ rb_error:       .byte 0
 rb_saved_cpu:   .byte 0
 rb_common_saved_cpu:.byte 0
 rb_vectors_saved:.byte 0
+rb_orig_imain_lo:.byte 0
+rb_orig_imain_hi:.byte 0
 rb_orig_crunch_lo:.byte 0
 rb_orig_crunch_hi:.byte 0
 rb_orig_list_lo:.byte 0
@@ -5112,7 +5131,7 @@ rb_last_line_lo:.byte 0
 rb_last_line_hi:.byte 0
 rb_hotkey_pending:.byte 0
 rb_hotkey_suppress:.byte 0
-rb_chrin_active:.byte 0
+rb_prompt_active:.byte 0
 rb_hotkey_chrin_dispatch:.byte 0
 rb_hotkey_release_key:.byte 0
 rb_hotkey_release_start:.byte 0
@@ -5195,10 +5214,10 @@ install_vectors:
         jmp call_hidden_common
 
 rb_keylog:
-        lda rb_chrin_active
-        beq @orig
         lda DFLTN
         bne @orig
+        lda rb_prompt_active
+        bne @prompt
         lda TXTPTR+1
         cmp #>BASIC_START
         bcc @prompt
@@ -5233,8 +5252,8 @@ rb_keylog:
         beq @orig
         ldx #KEY_F4
 @hotkey:
-        lda rb_hotkey_suppress
-        bne @consume
+        cpx rb_hotkey_suppress
+        beq @consume
         stx rb_hotkey_suppress
         jsr rb_queue_hotkey_line
 @consume:

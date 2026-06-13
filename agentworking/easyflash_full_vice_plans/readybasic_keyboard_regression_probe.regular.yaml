@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5m-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5m-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5m-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5l-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5l-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5l-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -62,13 +62,13 @@ steps:
     params:
       start: 804
       end: 805
-      equals_hex: "00 12"
+      equals_hex: "08 12"
   - id: assert_keylog_vector_initial
     type: assert.memory
     params:
       start: 655
       end: 656
-      equals_hex: "7C C1"
+      equals_hex: "7E C1"
   - id: assert_warp_enabled
     type: warp.set
     params:
@@ -100,7 +100,7 @@ steps:
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 01 8D 4C 2A A9 04 8D 8D 02 A9 1C 85 CB 20 7C C1 A9 00 8D 4C 2A 4C 74 A4"
+      bytes_hex: "A9 04 8D 8D 02 A9 1C 85 CB 20 7E C1 4C 74 A4"
   - id: partial_line_ctrl_b_clear_keylog_breakpoints
     type: monitor.command
     params:
@@ -161,7 +161,7 @@ steps:
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 01 8D 4C 2A A9 04 8D 8D 02 A9 1C 85 CB 20 7C C1 A9 00 8D 4C 2A 4C 74 A4"
+      bytes_hex: "A9 04 8D 8D 02 A9 1C 85 CB 20 7E C1 4C 74 A4"
   - id: clean_ctrl_b_to_launcher_clear_keylog_breakpoints
     type: monitor.command
     params:
@@ -218,7 +218,7 @@ steps:
     type: memory.write
     params:
       start: 828
-      bytes_hex: "A9 01 8D 4C 2A A9 01 8D 8D 02 A9 04 85 CB 20 7C C1 A9 00 8D 4C 2A 4C 74 A4"
+      bytes_hex: "A9 01 8D 8D 02 A9 04 85 CB 20 7E C1 4C 74 A4"
   - id: partial_line_f2_clear_keylog_breakpoints
     type: monitor.command
     params:
@@ -230,7 +230,7 @@ steps:
   - id: wait_editor_after_partial_f2
     type: screen.wait_contains
     params:
-      text: "editor"
+      text: "CALENDAR 26"
       wait_timeout_s: 60
       capture_label: keyboard_regression_editor_after_partial_f2
   - id: assert_no_rem_after_partial_f2

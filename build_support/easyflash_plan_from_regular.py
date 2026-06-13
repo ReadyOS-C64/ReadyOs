@@ -146,6 +146,40 @@ def adapt_readybasic_reuviewer_chain(text: str) -> str:
     return text.replace(old, new, 1)
 
 
+def harden_readybasic_prompt_waits(text: str) -> str:
+    """Avoid matching the ReadyBASIC title before the BASIC prompt is ready."""
+    lines = text.splitlines()
+    in_readybasic_wait = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if line.startswith("  - id: "):
+            step_id = line.split(":", 1)[1].strip()
+            in_readybasic_wait = "wait_readybasic" in step_id or step_id == "wait_first_readybasic_prompt"
+            continue
+        if in_readybasic_wait and stripped in ('text: "readybasic"', 'text: "READYBASIC"'):
+            lines[i] = line[: len(line) - len(line.lstrip())] + 'text: "READY."'
+            in_readybasic_wait = False
+    return "\n".join(lines) + "\n"
+
+
+def harden_easyflash_launcher_waits(text: str) -> str:
+    """Give cartridge preload enough time to reach the launcher."""
+    lines = text.splitlines()
+    in_launcher_wait = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if line.startswith("  - id: "):
+            step_id = line.split(":", 1)[1].strip()
+            in_launcher_wait = step_id in ("easyflash_wait_launcher", "wait_launcher_initial")
+            continue
+        if in_launcher_wait and stripped.startswith("wait_timeout_s: "):
+            indent = line[: len(line) - len(line.lstrip())]
+            current = int(stripped.split(":", 1)[1].strip())
+            lines[i] = f"{indent}wait_timeout_s: {max(current, 420)}"
+            in_launcher_wait = False
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, type=Path)
@@ -165,6 +199,8 @@ def main() -> int:
     text = insert_launcher_start(text, args.start_app)
     text = adapt_screen_reu_probe(text)
     text = adapt_readybasic_reuviewer_chain(text)
+    text = harden_readybasic_prompt_waits(text)
+    text = harden_easyflash_launcher_waits(text)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(text, encoding="utf-8")

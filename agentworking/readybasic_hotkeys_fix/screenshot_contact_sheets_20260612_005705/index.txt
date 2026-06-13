@@ -1,0 +1,67 @@
+[01_launch_preload_readybasic]
+01 row 1 col 1: logs/vice_auto_20260612_005705/screens/boot_initial.png
+02 row 1 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_initial.png
+03 row 1 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_editor_selected.png
+04 row 2 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_editor_preloaded.png
+05 row 2 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_editor_preload_done.png
+06 row 2 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_after_editor_preload.png
+07 row 3 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_reuviewer_selected.png
+08 row 3 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_reuviewer_preloaded.png
+09 row 3 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_reuviewer_preload_done.png
+10 row 4 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_after_reuviewer_preload.png
+11 row 4 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_after_readybasic_nav.png
+12 row 4 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_prompt.png
+13 row 5 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_seed_list_program.png
+
+[02_f2_cycles]
+01 row 1 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round1_editor_after_input.png
+02 row 1 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round1_editor.png
+03 row 1 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round1_editor_stable.png
+04 row 2 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round1_reuviewer_after_input.png
+05 row 2 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round1_reuviewer.png
+06 row 2 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round1_reuviewer_stable.png
+07 row 3 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round1_readybasic_after_input.png
+08 row 3 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round1_readybasic.png
+09 row 3 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round1_readybasic_stable.png
+10 row 4 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round2_editor_after_input.png
+11 row 4 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round2_editor.png
+12 row 4 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round2_editor_stable.png
+13 row 5 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round2_reuviewer_after_input.png
+14 row 5 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round2_reuviewer.png
+15 row 5 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round2_reuviewer_stable.png
+16 row 6 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round2_readybasic_after_input.png
+17 row 6 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round2_readybasic.png
+18 row 6 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f2_round2_readybasic_stable.png
+
+[03_f4_cycles]
+01 row 1 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round1_reuviewer_after_input.png
+02 row 1 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round1_reuviewer.png
+03 row 1 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round1_reuviewer_stable.png
+04 row 2 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round1_editor_after_input.png
+05 row 2 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round1_editor.png
+06 row 2 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round1_editor_stable.png
+07 row 3 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round1_readybasic_after_input.png
+08 row 3 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round1_readybasic.png
+09 row 3 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round1_readybasic_stable.png
+10 row 4 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round2_reuviewer_after_input.png
+11 row 4 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round2_reuviewer.png
+12 row 4 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round2_reuviewer_stable.png
+13 row 5 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round2_editor_after_input.png
+14 row 5 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round2_editor.png
+15 row 5 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round2_editor_stable.png
+16 row 6 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round2_readybasic_after_input.png
+17 row 6 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round2_readybasic.png
+18 row 6 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_f4_round2_readybasic_stable.png
+
+[04_ctrlb_exit_final]
+01 row 1 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_list_after_cycles_before_ctrl_b.png
+02 row 1 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_run_after_cycles_before_ctrl_b.png
+03 row 1 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_ctrl_b_after_cycles.png
+04 row 2 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_after_readybasic_ctrl_b.png
+05 row 2 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_reenter_after_ctrl_b.png
+06 row 2 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_readybasic_after_ctrl_b.png
+07 row 3 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_final_list_after_reentry.png
+08 row 3 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_final_run_after_reentry.png
+09 row 3 col 3: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_exit_after_final_run.png
+10 row 4 col 1: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_after_exit.png
+11 row 4 col 2: logs/vice_auto_20260612_005705/screens/readybasic_hotkey_launcher_stable_after_exit.png
