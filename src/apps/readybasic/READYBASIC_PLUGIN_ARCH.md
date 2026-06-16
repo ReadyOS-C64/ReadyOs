@@ -79,13 +79,13 @@ same ReadyOS and REU discipline.
   `LOWPACK` for compatibility, but the current runtime slot base is `$A800`.
 - `$06FD-$0B71`: built-in module 2 slot-1 proof, streaming `ZMODLD` loader,
   and Phase 1 `GFXCORE`, fetched into `$B000-$B474` (`$0475`, 1141B).
-- `$0B72-$0ED4`: built-in slot-2 proof and Phase 1 `GFXPRIM`, fetched into
-  `$B800-$BB62` (`$0363`, 867B).
-- `$0ED5-$0EE9`: two-slot span proof payload (`$0015`, 21B).
-- `$0EEA-$10AB`: Phase 1 `GFXSPR` slot-2 overlay (`$01C2`, 450B).
-- `$10AC-$1118`: Phase 1 `INPUTEV` slot-2 overlay (`$006D`, 109B).
-- `$1119-$14FF`: free gap before the current disk-module proof offsets
-  (`$03E7`, 999B).
+- `$0B72-$1086`: built-in slot-2 proof plus Phase 1/2 `GFXPRIM`, fetched into
+  `$B800-$BD14` (`$0515`, 1301B).
+- `$1087-$109B`: two-slot span proof payload (`$0015`, 21B).
+- `$109C-$130D`: Phase 1/2 `GFXSPR` slot-2 overlay (`$0272`, 626B).
+- `$130E-$137A`: Phase 1 `INPUTEV` slot-2 overlay (`$006D`, 109B).
+- `$137B-$14FF`: free gap before the current disk-module proof offsets
+  (`$0185`, 389B).
 - `$1500-$151F`: `rbm.sample1` descriptor proof for `ZDM1`.
 - `$1600-$165F`: `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`;
   submodule 5 appears twice because those entries are overlays 1 and 2.
@@ -168,11 +168,14 @@ Each descriptor is 32 bytes:
   commands. They allocate/validate typed handle `3`; full REU drawing/blitting
   is future work.
 - `PLOT(X,Y,C)`, `POINT(X,Y,OUT%)` / `PNT(X,Y,OUT%)`, `LINE(X1,Y1,X2,Y2,C)`,
-  `RECT(X1,Y1,X2,Y2,C)`, and `FRECT(X1,Y1,X2,Y2,C)`: module 3 `GFXPRIM`
-  immediate primitive commands.
-- `SPRSET(N,ON,COLOR,PATTERN)`, `SPRMOVE(N,X,Y)`, `SPRCOLOR(N,COLOR)`,
-  `SPRROW(N,ROW,B1,B2,B3)`, `SPRSCAN()`, and `SPRCOLL(N,OUT%)`: module 3
-  `GFXSPR` overlay commands.
+  `RECT(X1,Y1,X2,Y2,C)`, `FRECT(X1,Y1,X2,Y2,C)`, `CIRCLE(X,Y,R,C)`,
+  `FCIRCLE(X,Y,R,C)`, `TILE(X,Y,CH,C)`, and `CHARAT(X,Y,CH,C)`: module 3
+  `GFXPRIM` immediate primitive/cell commands.
+- `SPRSET(N,ON,COLOR,PATTERN)`, `SPRMOVE(N,X,Y)`, `SPRCOLOR(N,COLOR)` /
+  `SPRCOL(N,COLOR)`, `SPRROW(N,ROW,B1,B2,B3)`, `SPREXPAND(N,XON,YON)` /
+  `SPRSIZE(N,XON,YON)`, `SPRPRI(N,BEHIND)`, `SPRMULTI(N,ON)` / `SPRMUL(N,ON)`,
+  `SPRMCOLOR(C1,C2)` / `SPRMCO(C1,C2)`, `SPRSCAN()`, and `SPRCOLL(N,OUT%)`:
+  module 3 `GFXSPR` overlay commands.
 - `JOY(PORT,OUT%)`, `KEYP(OUT%)`, `KEYSCAN()`, and `KEYLAST(OUT%)`: module 3
   `INPUTEV` polling input commands.
 
@@ -231,7 +234,8 @@ Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
 `30013` formula empty free bytes. `ENTRY` is `$1000-$11FF` (`512` bytes),
 `RESIDENT` is `$1200-$2ABA` (`6331` bytes), `HIDDEN` is `$A000-$A790`
 (`1937` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$06FD`
-(`1789` bytes), and `bin/readybasic.prg` remains `20994` bytes.
+(`1789` bytes), `SLOTPACK2` is `$0515` (`1301` bytes), `OVL1PACK` is `$0272`
+(`626` bytes), and `bin/readybasic.prg` remains `20994` bytes.
 
 ## Current Nested-Term Support
 

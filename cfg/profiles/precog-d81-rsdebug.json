@@ -69,6 +69,9 @@
         { "artifact": "obj/rbgfx11_input.prg", "name": "rbgfx11", "type": "prg" },
         { "artifact": "obj/rbgfx12_showcase.prg", "name": "rbgfx12", "type": "prg" },
         { "artifact": "obj/rbgfx13_sprite_steps.prg", "name": "rbgfx13", "type": "prg" },
+        { "artifact": "obj/rbgfx14_phase2_prims.prg", "name": "rbgfx14", "type": "prg" },
+        { "artifact": "obj/rbgfx15_phase2_tiles.prg", "name": "rbgfx15", "type": "prg" },
+        { "artifact": "obj/rbgfx16_phase2_sprite_ctrl.prg", "name": "rbgfx16", "type": "prg" },
         { "artifact": "obj/apps_cfg_petscii.seq", "name": "apps.cfg", "type": "seq" },
         { "artifact": "obj/app_sidetris.seq", "name": "app.sidetris", "type": "seq" }
       ],

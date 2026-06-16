@@ -17,10 +17,10 @@ Current status:
 - Twelve `rbgfx*.bas` demos exist and compile to `$2AC1` PRGs.
 - Static checker validates graphics modules, Bank D guardrails, and flexible
   pack budgets while preserving the hard ReadyBASIC memory guards.
-- Current map: `RESIDENT` `$1200-$2ABA`, `HIDDEN` `$A000-$A790`,
-  `LOWPACK` `$A800-$AEFC`, `SLOTPACK1` `$B000-$B452`,
-  `SLOTPACK2` `$B800-$BB62`, `OVL1PACK` `$BB63-$BCBA`, and
-  `OVL2PACK` `$BCBB-$BD27`.
+- Current post-Phase-2 map: `RESIDENT` `$1200-$2ABA`, `HIDDEN`
+  `$A000-$A790`, `LOWPACK` `$A800-$AEFC`, `SLOTPACK1` `$B000-$B474`,
+  `SLOTPACK2` `$B800-$BD14`, `OVL1PACK` `$0272` bytes, and `OVL2PACK`
+  `$006D` bytes.
 
 Known limits:
 

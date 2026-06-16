@@ -125,6 +125,8 @@ VIC_SPR_MCOLOR  = $D01C
 VIC_SPR_EXP_X   = $D01D
 VIC_SPR_COLL    = $D01E
 VIC_BG_COLL     = $D01F
+VIC_SPR_MCOLOR0 = $D025
+VIC_SPR_MCOLOR1 = $D026
 VIC_SPR_COLOR0  = $D027
 VIC_BORDER      = $D020
 VIC_BG          = $D021
@@ -389,6 +391,19 @@ CMD_KEYSCAN     = 52
 CMD_KEYLAST     = 53
 CMD_PNT         = 54
 CMD_SPRROW      = 55
+CMD_CIRCLE      = 56
+CMD_FCIRCLE     = 57
+CMD_TILE        = 58
+CMD_CHARAT      = 59
+CMD_SPREXPAND   = 60
+CMD_SPRPRI      = 61
+CMD_SPRMULTI    = 62
+CMD_SPRMCOLOR   = 63
+CMD_SPRSIZE     = 64
+CMD_SPRCOL      = 65
+CMD_SPRMCLR     = 66
+CMD_SPRMUL      = 67
+CMD_SPRMCO      = 68
 
 ; REU registers.
 REU_CMD         = $DF01
@@ -4286,17 +4301,30 @@ rb_command_descriptors:
         CMD_GFXPRIM CMD_LINE, SIG_LINE, cmd_line, "LINE"
         CMD_GFXPRIM CMD_RECT, SIG_LINE, cmd_rect, "RECT"
         CMD_GFXPRIM CMD_FRECT, SIG_LINE, cmd_frect, "FRECT"
+        CMD_GFXPRIM CMD_CIRCLE, SIG_SPRSET, cmd_circle, "CIRCLE"
+        CMD_GFXPRIM CMD_FCIRCLE, SIG_SPRSET, cmd_fcircle, "FCIRCLE"
+        CMD_GFXPRIM CMD_TILE, SIG_SPRSET, cmd_tile, "TILE"
+        CMD_GFXPRIM CMD_CHARAT, SIG_SPRSET, cmd_tile, "CHARAT"
         CMD_GFXSPR CMD_SPRSET, SIG_SPRSET, cmd_sprset, "SPRSET"
         CMD_GFXSPR CMD_SPRMOVE, SIG_PLOT, cmd_sprmove, "SPRMOVE"
         CMD_GFXSPR CMD_SPRCOLOR, SIG_BUFFILL, cmd_sprcolor, "SPRCOLOR"
         CMD_GFXSPR CMD_SPRROW, SIG_LINE, cmd_sprrow, "SPRROW"
+        CMD_GFXSPR CMD_SPREXPAND, SIG_PLOT, cmd_sprexpand, "SPREXPAND"
+        CMD_GFXSPR CMD_SPRSIZE, SIG_PLOT, cmd_sprexpand, "SPRSIZE"
+        CMD_GFXSPR CMD_SPRPRI, SIG_BUFFILL, cmd_sprpri, "SPRPRI"
+        CMD_GFXSPR CMD_SPRMULTI, SIG_BUFFILL, cmd_sprmulti, "SPRMULTI"
+        CMD_GFXSPR CMD_SPRMUL, SIG_BUFFILL, cmd_sprmulti, "SPRMUL"
+        CMD_GFXSPR CMD_SPRMCOLOR, SIG_BUFFILL, cmd_sprmcolor, "SPRMCOLOR"
+        CMD_GFXSPR CMD_SPRCOL, SIG_BUFFILL, cmd_sprcolor, "SPRCOL"
+        CMD_GFXSPR CMD_SPRMCLR, SIG_BUFFILL, cmd_sprmcolor, "SPRMCLR"
+        CMD_GFXSPR CMD_SPRMCO, SIG_BUFFILL, cmd_sprmcolor, "SPRMCO"
         CMD_GFXSPR CMD_SPRSCAN, SIG_FREEMEM, cmd_sprscan, "SPRSCAN"
         CMD_GFXSPR CMD_SPRCOLL, SIG_ZFAIL, cmd_sprcoll, "SPRCOLL"
         CMD_INPUTEV CMD_JOY, SIG_ZFAIL, cmd_joy, "JOY"
         CMD_INPUTEV CMD_KEYP, SIG_SCRCAP, cmd_keyp, "KEYP"
         CMD_INPUTEV CMD_KEYSCAN, SIG_KEYNONE, cmd_keyscan, "KEYSCAN"
         CMD_INPUTEV CMD_KEYLAST, SIG_SCRCAP, cmd_keylast, "KEYLAST"
-        .res (RB_CMD_DESC_COUNT - 51) * RB_CMD_DESC_SIZE, 0
+        .res (RB_CMD_DESC_COUNT - 64) * RB_CMD_DESC_SIZE, 0
         CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"
 
 ; ---------------------------------------------------------------------------
@@ -7186,6 +7214,203 @@ cmd_frect:
 @done:
         jmp gfxprim_ok_none
 
+cmd_circle:
+        jsr gfx_save_circle_args
+        jsr gfx_circle_left_center_to_top
+        jsr gfx_circle_top_to_right_center
+        jsr gfx_circle_right_center_to_bottom
+        jsr gfx_circle_bottom_to_left_center
+        jmp gfxprim_ok_none
+
+cmd_fcircle:
+        jsr gfx_save_circle_args
+        jsr gfx_circle_bbox_to_rect_args
+        jmp cmd_frect
+
+gfx_circle_left_center_to_top:
+        jsr gfx_circle_left_center_start
+        jmp gfx_circle_top_end_line
+
+gfx_circle_top_to_right_center:
+        jsr gfx_circle_top_start
+        jmp gfx_circle_right_center_end_line
+
+gfx_circle_right_center_to_bottom:
+        jsr gfx_circle_right_center_start
+        jmp gfx_circle_bottom_end_line
+
+gfx_circle_bottom_to_left_center:
+        jsr gfx_circle_bottom_start
+        jmp gfx_circle_left_center_end_line
+
+gfx_circle_left_center_start:
+        lda RF_RECT_BUF
+        sec
+        sbc RF_RECT_BUF+4
+        sta CF_NUM0_LO
+        lda #0
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+2
+        sta CF_NUM1_LO
+        rts
+
+gfx_circle_top_start:
+        lda RF_RECT_BUF
+        sta CF_NUM0_LO
+        lda #0
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+2
+        sec
+        sbc RF_RECT_BUF+4
+        sta CF_NUM1_LO
+        rts
+
+gfx_circle_right_center_start:
+        lda RF_RECT_BUF
+        clc
+        adc RF_RECT_BUF+4
+        sta CF_NUM0_LO
+        lda #0
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+2
+        sta CF_NUM1_LO
+        rts
+
+gfx_circle_bottom_start:
+        lda RF_RECT_BUF
+        sta CF_NUM0_LO
+        lda #0
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+2
+        clc
+        adc RF_RECT_BUF+4
+        sta CF_NUM1_LO
+        rts
+
+gfx_circle_top_end_line:
+        lda RF_RECT_BUF
+        sta CF_NUM2_LO
+        lda #0
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+2
+        sec
+        sbc RF_RECT_BUF+4
+        sta CF_NUM3_LO
+        jmp gfx_circle_finish_line
+
+gfx_circle_right_center_end_line:
+        lda RF_RECT_BUF
+        clc
+        adc RF_RECT_BUF+4
+        sta CF_NUM2_LO
+        lda #0
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+2
+        sta CF_NUM3_LO
+        jmp gfx_circle_finish_line
+
+gfx_circle_bottom_end_line:
+        lda RF_RECT_BUF
+        sta CF_NUM2_LO
+        lda #0
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+2
+        clc
+        adc RF_RECT_BUF+4
+        sta CF_NUM3_LO
+        jmp gfx_circle_finish_line
+
+gfx_circle_left_center_end_line:
+        lda RF_RECT_BUF
+        sec
+        sbc RF_RECT_BUF+4
+        sta CF_NUM2_LO
+        lda #0
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+2
+        sta CF_NUM3_LO
+        jmp gfx_circle_finish_line
+
+gfx_circle_finish_line:
+        lda #0
+        sta CF_NUM1_HI
+        sta CF_NUM3_HI
+        lda RF_RECT_BUF+8
+        sta CF_NUM4_LO
+        lda #0
+        sta CF_NUM4_HI
+        jmp cmd_line
+
+gfx_circle_bbox_to_rect_args:
+        lda RF_RECT_BUF
+        sec
+        sbc RF_RECT_BUF+4
+        sta CF_NUM0_LO
+        lda #0
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+2
+        sec
+        sbc RF_RECT_BUF+4
+        sta CF_NUM1_LO
+        lda RF_RECT_BUF
+        clc
+        adc RF_RECT_BUF+4
+        sta CF_NUM2_LO
+        lda #0
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+2
+        clc
+        adc RF_RECT_BUF+4
+        sta CF_NUM3_LO
+        lda RF_RECT_BUF+8
+        sta CF_NUM4_LO
+        lda #0
+        sta CF_NUM1_HI
+        sta CF_NUM3_HI
+        sta CF_NUM4_HI
+        rts
+
+cmd_tile:
+        jsr gfx_get_mode_prim
+        cmp #RB_GFX_MODE_TEXT
+        beq @text
+        jsr gfx_calc_tile_addr
+        ldy #0
+        lda CF_NUM2_LO
+        sta (rb_ptr_lo),y
+        jsr gfx_screen_ptr_to_color
+        lda CF_NUM3_LO
+        and #$0F
+        sta (rb_ptr_lo),y
+        jmp gfxprim_ok_none
+@text:
+        jsr gfx_calc_tile_addr
+        lda rb_ptr_hi
+        sec
+        sbc #>RB_GFX_SCREEN
+        clc
+        adc #>SCREEN
+        sta rb_ptr_hi
+        ldy #0
+        lda CF_NUM2_LO
+        sta (rb_ptr_lo),y
+        jsr gfx_text_ptr_to_color
+        lda CF_NUM3_LO
+        and #$0F
+        sta (rb_ptr_lo),y
+        jmp gfxprim_ok_none
+
+gfx_save_circle_args:
+        lda CF_NUM0_LO
+        sta RF_RECT_BUF
+        lda CF_NUM1_LO
+        sta RF_RECT_BUF+2
+        lda CF_NUM2_LO
+        sta RF_RECT_BUF+4
+        lda CF_NUM3_LO
+        sta RF_RECT_BUF+8
+        rts
+
 gfxprim_ok_none:
         lda #0
         sta RF_STATUS
@@ -7414,11 +7639,28 @@ gfx_plot_tile:
         and #$3F
         ora #$40
         sta (rb_ptr_lo),y
-        lda #>RB_GFX_COLOR
-        sta rb_ptr_hi
+        jsr gfx_screen_ptr_to_color
         lda CF_NUM2_LO
         and #$0F
         sta (rb_ptr_lo),y
+        rts
+
+gfx_screen_ptr_to_color:
+        lda rb_ptr_hi
+        sec
+        sbc #>RB_GFX_SCREEN
+        clc
+        adc #>RB_GFX_COLOR
+        sta rb_ptr_hi
+        rts
+
+gfx_text_ptr_to_color:
+        lda rb_ptr_hi
+        sec
+        sbc #>SCREEN
+        clc
+        adc #>COLOR_RAM
+        sta rb_ptr_hi
         rts
 
 gfx_calc_tile_addr:
@@ -7628,6 +7870,84 @@ cmd_sprcolor:
         lda #RB_VAL_NONE
         sta RF_TAG
         rts
+
+cmd_sprexpand:
+        lda CF_NUM0_LO
+        and #7
+        tax
+        lda gfx_sprite_bits,x
+        sta rb_saved_plot_x
+        lda CF_NUM1_LO
+        beq @xoff
+        lda rb_saved_plot_x
+        ora VIC_SPR_EXP_X
+        sta VIC_SPR_EXP_X
+        jmp @y
+@xoff:
+        lda rb_saved_plot_x
+        eor #$FF
+        and VIC_SPR_EXP_X
+        sta VIC_SPR_EXP_X
+@y:
+        lda CF_NUM2_LO
+        beq @yoff
+        lda rb_saved_plot_x
+        ora VIC_SPR_EXP_Y
+        sta VIC_SPR_EXP_Y
+        jmp gfx_ok_none_ovl1
+@yoff:
+        lda rb_saved_plot_x
+        eor #$FF
+        and VIC_SPR_EXP_Y
+        sta VIC_SPR_EXP_Y
+        jmp gfx_ok_none_ovl1
+
+cmd_sprpri:
+        lda CF_NUM0_LO
+        and #7
+        tax
+        lda gfx_sprite_bits,x
+        sta rb_saved_plot_x
+        lda CF_NUM1_LO
+        beq @front
+        lda rb_saved_plot_x
+        ora VIC_SPR_PRIORITY
+        sta VIC_SPR_PRIORITY
+        jmp gfx_ok_none_ovl1
+@front:
+        lda rb_saved_plot_x
+        eor #$FF
+        and VIC_SPR_PRIORITY
+        sta VIC_SPR_PRIORITY
+        jmp gfx_ok_none_ovl1
+
+cmd_sprmulti:
+        lda CF_NUM0_LO
+        and #7
+        tax
+        lda gfx_sprite_bits,x
+        sta rb_saved_plot_x
+        lda CF_NUM1_LO
+        beq @single
+        lda rb_saved_plot_x
+        ora VIC_SPR_MCOLOR
+        sta VIC_SPR_MCOLOR
+        jmp gfx_ok_none_ovl1
+@single:
+        lda rb_saved_plot_x
+        eor #$FF
+        and VIC_SPR_MCOLOR
+        sta VIC_SPR_MCOLOR
+        jmp gfx_ok_none_ovl1
+
+cmd_sprmcolor:
+        lda CF_NUM0_LO
+        and #$0F
+        sta VIC_SPR_MCOLOR0
+        lda CF_NUM1_LO
+        and #$0F
+        sta VIC_SPR_MCOLOR1
+        jmp gfx_ok_none_ovl1
 
 cmd_sprrow:
         lda CF_NUM1_LO

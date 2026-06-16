@@ -127,8 +127,8 @@ Built-in graphics payloads are prestashed in the ReadyBASIC code bank:
 | Family | Module/submodule | Runtime area | Commands |
 |---|---:|---:|---|
 | `GFXCORE` | module `3`, submodule `16` | slot 1 `$B000-$B7FF` | `GFXMODE`, `GFXTEXT`, `GFXCLEAR`, `GFXTARGET`, `GFXSYNC` |
-| `GFXPRIM` | module `3`, submodule `17` | slot 2 `$B800-$BFFF` | `PLOT`, `POINT`, `LINE`, `RECT`, `FRECT` |
-| `GFXSPR` | module `3`, submodule `18` | slot-2 overlay 1 | `SPRSET`, `SPRMOVE`, `SPRCOLOR`, `SPRROW`, `SPRSCAN`, `SPRCOLL` |
+| `GFXPRIM` | module `3`, submodule `17` | slot 2 `$B800-$BFFF` | `PLOT`, `POINT`, `LINE`, `RECT`, `FRECT`; Phase 2 also adds `CIRCLE`, `FCIRCLE`, `TILE`, `CHARAT` |
+| `GFXSPR` | module `3`, submodule `18` | slot-2 overlay 1 | `SPRSET`, `SPRMOVE`, `SPRCOLOR`, `SPRROW`, `SPRSCAN`, `SPRCOLL`; Phase 2 also adds size/priority/multicolor controls |
 | `INPUTEV` | module `3`, submodule `19` | slot-2 overlay 2 | `JOY`, `KEYP`, `KEYSCAN`, `KEYLAST` |
 | Surface handle stubs | system slot 0 | slot 0 `$A800-$AFFF` | `GFXSURF`, `GFXBLIT` |
 
@@ -157,10 +157,22 @@ PNT(X,Y,P%)            : rem short readback alias used by demos
 LINE(X1,Y1,X2,Y2,C)
 RECT(X1,Y1,X2,Y2,C)
 FRECT(X1,Y1,X2,Y2,C)
+CIRCLE(X,Y,R,C)
+FCIRCLE(X,Y,R,C)
+TILE(X,Y,CH,C)
+CHARAT(X,Y,CH,C)
 SPRSET(N,ON,COLOR,PATTERN)
 SPRMOVE(N,X,Y)
 SPRCOLOR(N,COLOR)
+SPRCOL(N,COLOR)       : rem token-safe alias for demos
 SPRROW(N,ROW,B1,B2,B3)
+SPREXPAND(N,XON,YON)
+SPRSIZE(N,XON,YON)    : rem token-safe alias for demos
+SPRPRI(N,BEHIND)
+SPRMULTI(N,ON)
+SPRMUL(N,ON)          : rem token-safe alias for demos
+SPRMCOLOR(C1,C2)
+SPRMCO(C1,C2)         : rem token-safe alias for demos
 SPRSCAN()
 SPRCOLL(N,C%)
 JOY(PORT,J%)
@@ -210,6 +222,37 @@ Known Phase 1 limits:
 - `KEYP()`, `KEYSCAN()`, and `KEYLAST()` read the ROM keyboard buffer
   opportunistically. They do not reserve resident RAM or install a background
   event queue.
+
+## Implemented Phase 2 Snapshot
+
+Phase 2 is also command-only. It does not add any ReadyBASIC syntax or control
+flow. The implementation adds visible, demoable primitives and sprite controls
+inside the existing built-in graphics module structure:
+
+| Command | Module | Current behavior |
+|---|---|---|
+| `CIRCLE(X,Y,R,C)` | `GFXPRIM` | Draws a compact outline circle/diamond approximation by reusing the existing `LINE` worker. |
+| `FCIRCLE(X,Y,R,C)` | `GFXPRIM` | Draws a filled circular placeholder as the bounding filled rectangle. This proves the command path and mode targeting; a true midpoint/disk fill is still future work. |
+| `TILE(X,Y,CH,C)` | `GFXPRIM` | Writes a character/color cell in Bank D tile modes, and also writes ordinary `$0400` text cells after `GFXTEXT()` so demos can show ROM charset output. |
+| `CHARAT(X,Y,CH,C)` | `GFXPRIM` | Alias for `TILE`; intended for text-cell style programs. |
+| `SPREXPAND(N,XON,YON)` / `SPRSIZE(N,XON,YON)` | `GFXSPR` | Controls VIC sprite X/Y expansion bits. `SPRSIZE` avoids PETCAT splitting `EXP` inside the command name. |
+| `SPRPRI(N,BEHIND)` | `GFXSPR` | Controls the VIC sprite-background priority bit. |
+| `SPRMULTI(N,ON)` / `SPRMUL(N,ON)` | `GFXSPR` | Controls VIC sprite multicolor enable bits. `SPRMUL` is the token-safe demo spelling. |
+| `SPRMCOLOR(C1,C2)` / `SPRMCO(C1,C2)` | `GFXSPR` | Sets the two shared sprite multicolor registers. `SPRMCO` avoids PETCAT splitting `CLR`/`COLOR`-like names. |
+| `SPRCOL(N,C)` | `GFXSPR` | Token-safe alias for `SPRCOLOR(N,C)`. |
+
+Phase 2 demo programs:
+
+- `rbgfx14_phase2_prims.bas`: `CIRCLE`, `FCIRCLE`, `RECT`, and `LINE`.
+- `rbgfx15_phase2_tiles.bas`: `TILE` and `CHARAT` in visible text cells.
+- `rbgfx16_phase2_sprite_ctrl.bas`: explicit `SPRROW` sprite pixels, movement,
+  expansion, priority, multicolor, and recolor stages.
+
+Phase 2 deliberately does not yet implement retained REU display lists,
+sprite-sheet loaders, true REU offscreen drawing, dirty-rect `GFXSYNC`, polygon
+fill, or true circular fill. `SCROLL` was also deferred because the current
+slot-2 command pack budget is tight and the first implementation pushed the
+payload over the 2KB slot limit.
 
 ## Command Families
 
@@ -613,13 +656,15 @@ This gives useful graphics without display-list complexity or IRQ hooks.
 
 ### Phase 2: REU Resources
 
-- `TILESET`, `TILEDEF`, `TILE`, `TILEMAP`, `TILEDRAW`
-- `SPRDEF`, `SPRLOAD`, sprite-sheet handles
-- `GFXSYNC` dirty-rect blits
-- `CIRCLE`, `FCIRCLE`, `POLY`, `FPOLY`, `FILL`
+- Implemented now: `TILE`, `CHARAT`, `CIRCLE`, `FCIRCLE`, sprite expansion,
+  sprite priority, sprite multicolor enable, and shared sprite multicolor
+  registers.
+- Deferred: `TILESET`, `TILEDEF`, `TILEMAP`, `TILEDRAW`, `SPRDEF`, `SPRLOAD`,
+  sprite-sheet handles, `GFXSYNC` dirty-rect blits, `POLY`, `FPOLY`, and `FILL`.
 
-This phase makes REU handles central and starts using overlay-heavy primitive
-workers.
+This phase starts using overlay-heavy primitive and sprite workers while keeping
+REU resource/rendering work out of resident RAM. Full REU-backed tilemaps,
+sprite sheets, and retained resources remain a later phase.
 
 ### Phase 3: Retained Scene System
 

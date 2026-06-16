@@ -1,0 +1,162 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_gfx_phase2_demo
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 180
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5k-d81-preboot.prg"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_readyos_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_readybasic_loaded_by_readyos
+    type: screen.wait_contains
+    params:
+      text: "FREE:"
+      wait_timeout_s: 180
+      capture_on_success: true
+      capture_label: readybasic_gfx_phase2_prompt
+  - id: clear_for_phase2_prims
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx14
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,49,52,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: list_rbgfx14
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: capture_list_rbgfx14
+    type: screen.capture
+    params:
+      label: readybasic_gfx_phase2_list_rbgfx14
+      note: "RBGFX14 listed inside ReadyBASIC under ReadyOS"
+  - id: assert_list_rbgfx14
+    type: assert.screen
+    params:
+      contains: "PHASE2 PRIMS DONE"
+  - id: clear_run_rbgfx14
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_primitives
+    type: screen.capture
+    params:
+      label: readybasic_gfx_phase2_primitives
+      note: "CIRCLE and FCIRCLE visible primitive demo"
+  - id: finish_rbgfx14
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.0
+  - id: wait_prims_done
+    type: screen.wait_contains
+    params:
+      text: "PHASE2 PRIMS DONE"
+      wait_timeout_s: 60
+      capture_on_success: true
+      capture_label: readybasic_gfx_phase2_prims_done
+  - id: load_rbgfx15
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,49,53,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.8
+  - id: capture_tiles
+    type: screen.capture
+    params:
+      label: readybasic_gfx_phase2_tiles
+      note: "TILE and CHARAT visible tile demo"
+  - id: finish_rbgfx15
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.0
+  - id: wait_tiles_done
+    type: screen.wait_contains
+    params:
+      text: "PHASE2 TILES DONE"
+      wait_timeout_s: 60
+      capture_on_success: true
+      capture_label: readybasic_gfx_phase2_tiles_done
+  - id: load_rbgfx16
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,49,54,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.8
+  - id: capture_sprite_normal
+    type: screen.capture
+    params:
+      label: readybasic_gfx_phase2_sprite_normal
+      note: "Sprite control baseline before expansion"
+  - id: continue_sprite_expand
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.3
+  - id: capture_sprite_expanded
+    type: screen.capture
+    params:
+      label: readybasic_gfx_phase2_sprite_expanded
+      note: "SPREXPAND visible sprite enlargement"
+  - id: continue_sprite_multi_priority
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.3
+  - id: capture_sprite_multi_priority
+    type: screen.capture
+    params:
+      label: readybasic_gfx_phase2_sprite_multi_priority
+      note: "SPRMULTI, SPRMCOLOR, SPRPRI, and SPRCOLOR stage"
+  - id: finish_rbgfx16
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.0
+  - id: wait_sprites_done
+    type: screen.wait_contains
+    params:
+      text: "PHASE2 SPRITES DONE"
+      wait_timeout_s: 60
+      capture_on_success: true
+      capture_label: readybasic_gfx_phase2_sprites_done
+  - id: assert_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
