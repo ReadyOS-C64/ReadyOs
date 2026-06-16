@@ -280,6 +280,8 @@ RB_REU_RUNTIME_STACK_OFF = $0B00
 RB_REU_HIDDEN_SHADOW_OFF = $3000
 RB_REU_COMMON_LIMIT= $4000
 RB_REU_DATA_OFF    = $4000
+RB_CODE_GFXSPR_OFF = $5000
+RB_CODE_INPUTEV_OFF= $5800
 
 RB_CMD_DESC_SIZE   = 32
 RB_CMD_DESC_COUNT  = 128
@@ -4172,14 +4174,14 @@ rb_reu_header_end:
 
 .macro CMD_OVL1 id, sig, label, name
         .byte id, 2
-        .word __OVL1PACK_LOAD__ - __LOWPACK_LOAD__
+        .word RB_CODE_GFXSPR_OFF
         .word __OVL1PACK_SIZE__
         .byte RB_SUBMOD_PROOF_OVERLAY
         .byte 1
         .byte RB_SLOT_PROOF_2
         .byte 1
-        .word __OVL1PACK_RUN__ - __SLOTPACK2_RUN__
-        .word label - __SLOTPACK2_RUN__
+        .word 0
+        .word label - __OVL1PACK_RUN__
         .byte sig, .strlen(name)
         .byte name
         .res 16 - .strlen(name), 0
@@ -4187,14 +4189,14 @@ rb_reu_header_end:
 
 .macro CMD_OVL2 id, sig, label, name
         .byte id, 2
-        .word __OVL2PACK_LOAD__ - __LOWPACK_LOAD__
+        .word RB_CODE_INPUTEV_OFF
         .word __OVL2PACK_SIZE__
         .byte RB_SUBMOD_PROOF_OVERLAY
         .byte 2
         .byte RB_SLOT_PROOF_2
         .byte 1
-        .word __OVL2PACK_RUN__ - __SLOTPACK2_RUN__
-        .word label - __SLOTPACK2_RUN__
+        .word 0
+        .word label - __OVL2PACK_RUN__
         .byte sig, .strlen(name)
         .byte name
         .res 16 - .strlen(name), 0
@@ -4232,14 +4234,14 @@ rb_reu_header_end:
 
 .macro CMD_GFXSPR id, sig, label, name
         .byte id, RB_MODULE_GFX
-        .word __OVL1PACK_LOAD__ - __LOWPACK_LOAD__
+        .word RB_CODE_GFXSPR_OFF
         .word __OVL1PACK_SIZE__
         .byte RB_SUBMOD_GFXSPR
         .byte 1
         .byte RB_SLOT_PROOF_2
         .byte 1
-        .word __OVL1PACK_RUN__ - __SLOTPACK2_RUN__
-        .word label - __SLOTPACK2_RUN__
+        .word 0
+        .word label - __OVL1PACK_RUN__
         .byte sig, .strlen(name)
         .byte name
         .res 16 - .strlen(name), 0
@@ -4247,14 +4249,14 @@ rb_reu_header_end:
 
 .macro CMD_INPUTEV id, sig, label, name
         .byte id, RB_MODULE_GFX
-        .word __OVL2PACK_LOAD__ - __LOWPACK_LOAD__
+        .word RB_CODE_INPUTEV_OFF
         .word __OVL2PACK_SIZE__
         .byte RB_SUBMOD_INPUTEV
         .byte 2
         .byte RB_SLOT_PROOF_2
         .byte 1
-        .word __OVL2PACK_RUN__ - __SLOTPACK2_RUN__
-        .word label - __SLOTPACK2_RUN__
+        .word 0
+        .word label - __OVL2PACK_RUN__
         .byte sig, .strlen(name)
         .byte name
         .res 16 - .strlen(name), 0
@@ -4936,9 +4938,41 @@ rb_seed_plugin_reu_hidden:
         sta rb_reu_off_hi
         lda rb_reu_code_bank
         sta rb_reu_bank
-        lda #<((__OVL2PACK_LOAD__ - __LOWPACK_LOAD__) + __OVL2PACK_SIZE__)
+        lda #<((__SPANPACK_LOAD__ - __LOWPACK_LOAD__) + __SPANPACK_SIZE__)
         sta rb_reu_len_lo
-        lda #>((__OVL2PACK_LOAD__ - __LOWPACK_LOAD__) + __OVL2PACK_SIZE__)
+        lda #>((__SPANPACK_LOAD__ - __LOWPACK_LOAD__) + __SPANPACK_SIZE__)
+        sta rb_reu_len_hi
+        jsr rb_reu_stash
+
+        lda #<__OVL1PACK_LOAD__
+        sta rb_reu_c64_lo
+        lda #>__OVL1PACK_LOAD__
+        sta rb_reu_c64_hi
+        lda #<RB_CODE_GFXSPR_OFF
+        sta rb_reu_off_lo
+        lda #>RB_CODE_GFXSPR_OFF
+        sta rb_reu_off_hi
+        lda rb_reu_code_bank
+        sta rb_reu_bank
+        lda #<__OVL1PACK_SIZE__
+        sta rb_reu_len_lo
+        lda #>__OVL1PACK_SIZE__
+        sta rb_reu_len_hi
+        jsr rb_reu_stash
+
+        lda #<__OVL2PACK_LOAD__
+        sta rb_reu_c64_lo
+        lda #>__OVL2PACK_LOAD__
+        sta rb_reu_c64_hi
+        lda #<RB_CODE_INPUTEV_OFF
+        sta rb_reu_off_lo
+        lda #>RB_CODE_INPUTEV_OFF
+        sta rb_reu_off_hi
+        lda rb_reu_code_bank
+        sta rb_reu_bank
+        lda #<__OVL2PACK_SIZE__
+        sta rb_reu_len_lo
+        lda #>__OVL2PACK_SIZE__
         sta rb_reu_len_hi
         jsr rb_reu_stash
 

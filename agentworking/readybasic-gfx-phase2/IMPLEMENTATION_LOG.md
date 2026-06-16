@@ -18,3 +18,9 @@
   ReadyBASIC, captures staged screenshots, and asserts no BASIC error.
 - Updated graphics/current/plugin architecture docs with implemented Phase 2
   commands, aliases, payload sizes, and deferred work.
+- Added `CMDPACK2` at `$6200-$7FFF` and changed `GFXSPR`/`INPUTEV` into true
+  slot-2 replacement overlays. They are stored in the assigned command-code REU
+  bank at `$5000` and `$5800`, respectively, then fetched into `$B800` when
+  called.
+- Updated static guardrails and the HTML memory report generator for sparse
+  built-in overlay storage.

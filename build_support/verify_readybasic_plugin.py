@@ -169,6 +169,10 @@ def main() -> None:
     require(r"^RUNTIME_STACK_BUF\s*=\s*\$C500\b", asm, "RUNTIME_STACK_BUF must be $C500")
     require(r"^RB_REU_HIDDEN_SHADOW_OFF\s*=\s*\$3000\b",
             asm, "hidden helper shadow must live in ReadyBASIC core REU offset $3000")
+    require(r"^RB_CODE_GFXSPR_OFF\s*=\s*\$5000\b",
+            asm, "built-in GFXSPR overlay must be stashed at REU code offset $5000")
+    require(r"^RB_CODE_INPUTEV_OFF\s*=\s*\$5800\b",
+            asm, "built-in INPUTEV overlay must be stashed at REU code offset $5800")
     if re.search(r"^HIDDEN_SHADOW\s*=", asm, re.MULTILINE):
         fail("ReadyBASIC hidden helper shadow must not consume C64 RAM")
     hidden_shadow_end = 0x3000 + hidden[2] - 1
@@ -176,12 +180,20 @@ def main() -> None:
         fail(f"HIDDEN shadow copy must stay inside REU common area, got $3000-${hidden_shadow_end:04X}")
     if regseed[0] != 0x5000 or regseed[2] > 0x1200:
         fail(f"REGSEED must stay within cold seed $5000-$61FF, got ${regseed[0]:04X} size ${regseed[2]:04X}")
-    expected_payload = 0x6200 - 0x1000
+    if ovl1pack[0] != 0xB800:
+        fail(f"overlay 1 must run as a replacement slot-2 overlay at $B800, got ${ovl1pack[0]:04X}")
+    if ovl2pack[0] != 0xB800:
+        fail(f"overlay 2 must run as a replacement slot-2 overlay at $B800, got ${ovl2pack[0]:04X}")
+    if 0x5000 + ovl1pack[2] > 0x5800:
+        fail(f"GFXSPR built-in overlay overflowed its reserved 2KB REU code range, size ${ovl1pack[2]:04X}")
+    if 0x5800 + ovl2pack[2] > 0x6000:
+        fail(f"INPUTEV built-in overlay overflowed its reserved 2KB REU code range, size ${ovl2pack[2]:04X}")
+    expected_payload = 0x8000 - 0x1000
     actual_payload = PRG.stat().st_size - 2
     if actual_payload < expected_payload:
         fail(
             "PRG payload does not cover the load-image seed span "
-            f"$1000-$61FF: got ${actual_payload:04X}, need ${expected_payload:04X}"
+            f"$1000-$7FFF: got ${actual_payload:04X}, need ${expected_payload:04X}"
         )
 
     for module_name in ("rbm.sample1.seq", "rbm.sample2.seq", "rbm.sample3.seq"):

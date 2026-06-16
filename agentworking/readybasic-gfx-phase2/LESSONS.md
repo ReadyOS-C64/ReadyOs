@@ -10,5 +10,11 @@
 - Slot-2 payload budget is now tighter. `GFXPRIM` is `$0515` bytes and the
   `GFXSPR` overlay is `$0272` bytes; larger commands should either replace
   approximations carefully or move into a separate overlay.
+- Do not pack unrelated slot-2 families sequentially in one runtime strip.
+  `GFXPRIM`, `GFXSPR`, and `INPUTEV` should be replacement overlays that each
+  get their own 2KB execution-image budget.
+- Cold-load seed room and runtime execution room are separate constraints.
+  `CMDPACK2` adds storage/stash capacity, but each command family still has to
+  fit in the runtime slot or overlay it is fetched into.
 - ReadyOS-context screenshots are the real proof for graphics work. Direct PRG
   loads are not representative of ReadyBASIC running under ReadyOS.

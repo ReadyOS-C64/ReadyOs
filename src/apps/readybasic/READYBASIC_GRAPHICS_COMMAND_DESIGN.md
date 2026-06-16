@@ -127,9 +127,9 @@ Built-in graphics payloads are prestashed in the ReadyBASIC code bank:
 | Family | Module/submodule | Runtime area | Commands |
 |---|---:|---:|---|
 | `GFXCORE` | module `3`, submodule `16` | slot 1 `$B000-$B7FF` | `GFXMODE`, `GFXTEXT`, `GFXCLEAR`, `GFXTARGET`, `GFXSYNC` |
-| `GFXPRIM` | module `3`, submodule `17` | slot 2 `$B800-$BFFF` | `PLOT`, `POINT`, `LINE`, `RECT`, `FRECT`; Phase 2 also adds `CIRCLE`, `FCIRCLE`, `TILE`, `CHARAT` |
-| `GFXSPR` | module `3`, submodule `18` | slot-2 overlay 1 | `SPRSET`, `SPRMOVE`, `SPRCOLOR`, `SPRROW`, `SPRSCAN`, `SPRCOLL`; Phase 2 also adds size/priority/multicolor controls |
-| `INPUTEV` | module `3`, submodule `19` | slot-2 overlay 2 | `JOY`, `KEYP`, `KEYSCAN`, `KEYLAST` |
+| `GFXPRIM` | module `3`, submodule `17` | slot 2 `$B800-$BD14` | `PLOT`, `POINT`, `LINE`, `RECT`, `FRECT`; Phase 2 also adds `CIRCLE`, `FCIRCLE`, `TILE`, `CHARAT` |
+| `GFXSPR` | module `3`, submodule `18` | slot-2 replacement overlay at `$B800-$BA71`, stored at REU code offset `$5000` | `SPRSET`, `SPRMOVE`, `SPRCOLOR`, `SPRROW`, `SPRSCAN`, `SPRCOLL`; Phase 2 also adds size/priority/multicolor controls |
+| `INPUTEV` | module `3`, submodule `19` | slot-2 replacement overlay at `$B800-$B86C`, stored at REU code offset `$5800` | `JOY`, `KEYP`, `KEYSCAN`, `KEYLAST` |
 | Surface handle stubs | system slot 0 | slot 0 `$A800-$AFFF` | `GFXSURF`, `GFXBLIT` |
 
 The surface handle commands use the existing typed REU handle allocator and
@@ -250,9 +250,10 @@ Phase 2 demo programs:
 
 Phase 2 deliberately does not yet implement retained REU display lists,
 sprite-sheet loaders, true REU offscreen drawing, dirty-rect `GFXSYNC`, polygon
-fill, or true circular fill. `SCROLL` was also deferred because the current
-slot-2 command pack budget is tight and the first implementation pushed the
-payload over the 2KB slot limit.
+commands (`POLY`/`FPOLY`), or true circular fill. `SCROLL` was also deferred.
+After the `CMDPACK2`/replacement-overlay rework, `GFXSPR` and `INPUTEV` no
+longer consume `GFXPRIM`'s slot-2 runtime headroom, but every individual
+overlay still has a hard 2KB execution-image budget.
 
 ## Command Families
 

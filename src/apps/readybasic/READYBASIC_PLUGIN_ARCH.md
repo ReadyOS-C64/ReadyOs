@@ -11,7 +11,7 @@ same ReadyOS and REU discipline.
 - `RESIDENT` is `$1200-$2ABA` (`$18BB`, 6331B).
 - `BRIDGE` is `$C000-$C1FE` (`$01FF`, 511B), still below `$C200`.
 - Under BASIC ROM, `$A000-$A7FF` is the common helper area, currently using
-  `$A000-$A790`; `$A800-$AFFF`,
+  `$A000-$A7DE`; `$A800-$AFFF`,
   `$B000-$B7FF`, and `$B800-$BFFF` are three 2KB submodule slots.
 - ReadyBASIC uses two launcher-assigned REU resource banks. The core bank is
   registry/runtime storage; the code bank is built-in and disk-loaded module
@@ -23,9 +23,11 @@ same ReadyOS and REU discipline.
 - The disk-loader proof command is `ZMODLD(name$)` in module 2/slot 1. It opens
   ReadyBasicModule SEQ packages named `rbm.<name>` and streams them into REU.
   Sample packages add `ZDM1`, `ZDM2S`, `ZDOV1`, `ZDOV2`, and `ZSAA`-`ZUEB`.
-- Phase 1 graphics commands are built-in module id `3`: `GFXCORE` submodule
-  `16` in slot 1, `GFXPRIM` submodule `17` in slot 2, `GFXSPR` submodule `18`
-  as slot-2 overlay 1, and `INPUTEV` submodule `19` as slot-2 overlay 2.
+- Graphics commands are built-in module id `3`: `GFXCORE` submodule `16` in
+  slot 1, `GFXPRIM` submodule `17` in the base slot-2 image, `GFXSPR`
+  submodule `18` as a slot-2 replacement overlay prestashed at code-bank offset
+  `$5000`, and `INPUTEV` submodule `19` as a slot-2 replacement overlay
+  prestashed at code-bank offset `$5800`.
 
 ## Pre-Module V1 Layout Snapshot
 
@@ -38,7 +40,8 @@ same ReadyOS and REU discipline.
 - `$C200-$C5FF`: fixed call frame, result frame, descriptor buffer, command-name buffer, page buffer, and warm-resume staging (`$0400`, 1.0K).
 - `$A000-$A376`: hidden helper code (`$0377`, 887B), restored from the visible `$C280` shadow.
 - `$A800-$A84C`: hidden worker overlay slot (`$004D`, 77B) used by `ZHIDDENRAM`.
-- `$C000-$C1FD`: bridge state plus native routine return stack and flow-control scratch (`$01FE`, 510B); the implementation stays below `$C200`.
+- `$C000` bridge state plus native routine return stack and flow-control
+  scratch; this pre-module snapshot also stayed below `$C200`.
 
 ## REU Banks
 
@@ -82,10 +85,8 @@ same ReadyOS and REU discipline.
 - `$0B72-$1086`: built-in slot-2 proof plus Phase 1/2 `GFXPRIM`, fetched into
   `$B800-$BD14` (`$0515`, 1301B).
 - `$1087-$109B`: two-slot span proof payload (`$0015`, 21B).
-- `$109C-$130D`: Phase 1/2 `GFXSPR` slot-2 overlay (`$0272`, 626B).
-- `$130E-$137A`: Phase 1 `INPUTEV` slot-2 overlay (`$006D`, 109B).
-- `$137B-$14FF`: free gap before the current disk-module proof offsets
-  (`$0185`, 389B).
+- `$109C-$14FF`: free gap before the current disk-module proof offsets
+  (`$0464`, 1124B).
 - `$1500-$151F`: `rbm.sample1` descriptor proof for `ZDM1`.
 - `$1600-$165F`: `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`;
   submodule 5 appears twice because those entries are overlays 1 and 2.
@@ -93,6 +94,11 @@ same ReadyOS and REU discipline.
 - `$3000-$3014`, `$3200-$3214`, `$3300-$3314`, `$3400-$3414`: small
   disk-loaded module payload proofs.
 - `$3800-$463C`: `rbm.sample3` payload records for `ZSAA`-`ZUEB`.
+- `$5000-$5271`: built-in `GFXSPR` replacement overlay, loaded from cold-only
+  `CMDPACK2` and fetched into `$B800-$BA71` when sprite commands run.
+- `$5272-$57FF`: reserved `GFXSPR` growth headroom inside the assigned code bank.
+- `$5800-$586C`: built-in `INPUTEV` replacement overlay, loaded from cold-only
+  `CMDPACK2` and fetched into `$B800-$B86C` when input commands run.
 
 Descriptors store payload offsets, payload sizes, slot masks, runtime
 destinations, and entry offsets. Heap and screen commands currently fetch the
@@ -232,10 +238,12 @@ The current design includes resident flow control and error introspection:
 
 Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
 `30013` formula empty free bytes. `ENTRY` is `$1000-$11FF` (`512` bytes),
-`RESIDENT` is `$1200-$2ABA` (`6331` bytes), `HIDDEN` is `$A000-$A790`
-(`1937` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$06FD`
+`RESIDENT` is `$1200-$2ABA` (`6331` bytes), `HIDDEN` is `$A000-$A7DE`
+(`2015` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$06FD`
 (`1789` bytes), `SLOTPACK2` is `$0515` (`1301` bytes), `OVL1PACK` is `$0272`
-(`626` bytes), and `bin/readybasic.prg` remains `20994` bytes.
+(`626` bytes), and `bin/readybasic.prg` is `28674` bytes because `CMDPACK2`
+extends the cold-load seed image through `$7FFF`. BASIC free bytes remain
+unchanged because the seed image is reclaimed before BASIC initialization.
 
 ## Current Nested-Term Support
 

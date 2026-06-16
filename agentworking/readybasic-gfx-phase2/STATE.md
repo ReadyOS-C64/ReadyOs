@@ -17,8 +17,13 @@ Current status:
   `rbgfx16_phase2_sprite_ctrl.bas`.
 - New VICE automation: `build_support/run_readybasic_gfx_phase2_demo.sh` and
   `make readybasic-gfx-phase2-vice`.
-- Current map: `BASIC_START` remains `$2AC1`, formula free bytes remain
-  `30013`, and `bin/readybasic.prg` remains `20994` bytes.
+- Current map after the replacement-overlay rework: `BASIC_START` remains
+  `$2AC1`, formula free bytes remain `30013`, `RESIDENT` remains `$18BB`
+  / 6331B, and `bin/readybasic.prg` is `28674` bytes because `CMDPACK2`
+  extends the cold-load seed image through `$7FFF`.
+- Runtime slot headroom: slot 0 has 259B free, slot 1 has 907B free,
+  `GFXPRIM` has 747B free, `GFXSPR` has 1422B free, and `INPUTEV` has
+  1939B free.
 
 Known limits:
 
@@ -27,5 +32,5 @@ Known limits:
 - Full REU-backed offscreen drawing/blitting, dirty-rect `GFXSYNC`, retained
   display lists, sprite-sheet handles, polygon fill, and true circular fill are
   deferred.
-- `SCROLL` was deferred because the first pass overflowed the slot-2 payload
-  budget.
+- `POLY`/`FPOLY` and `SCROLL` are not implemented commands yet, so the Phase 2
+  screenshot automation does not include polygon screenshots.

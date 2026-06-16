@@ -119,7 +119,7 @@ def parse_memory_config(path: Path) -> dict[str, tuple[int, int]]:
     out: dict[str, tuple[int, int]] = {}
     for name, start_s, size_s in mem_re.findall(src):
         out[name] = (int(start_s, 16), int(size_s, 16))
-    required = {"ENTRY", "RESIDENT", "SLOT0", "SLOT1", "SLOT2", "CMDPACK", "HIDLOAD", "BRLOAD", "REGSEED"}
+    required = {"ENTRY", "RESIDENT", "SLOT0", "SLOT1", "SLOT2", "CMDPACK", "CMDPACK2", "HIDLOAD", "BRLOAD", "REGSEED"}
     missing = sorted(required - set(out))
     if missing:
         raise SystemExit(f"{path}: missing MEMORY regions: {', '.join(missing)}")
@@ -230,6 +230,10 @@ def command_groups(commands: list[tuple[str, str]]) -> dict[str, tuple[str, ...]
         "slot2": [],
         "span": [],
         "overlay": [],
+        "gfxcore": [],
+        "gfxprim": [],
+        "gfxspr": [],
+        "inputev": [],
         "end": [],
     }
     for macro, name in commands:
@@ -245,6 +249,14 @@ def command_groups(commands: list[tuple[str, str]]) -> dict[str, tuple[str, ...]
             groups["span"].append(name)
         elif macro in ("CMD_OVL1", "CMD_OVL2"):
             groups["overlay"].append(name)
+        elif macro == "CMD_GFXCORE":
+            groups["gfxcore"].append(name)
+        elif macro == "CMD_GFXPRIM":
+            groups["gfxprim"].append(name)
+        elif macro == "CMD_GFXSPR":
+            groups["gfxspr"].append(name)
+        elif macro == "CMD_INPUTEV":
+            groups["inputev"].append(name)
     return {k: tuple(v) for k, v in groups.items()}
 
 
@@ -281,10 +293,14 @@ def render(ctx: dict[str, object]) -> str:
     app_window = 0xB600
     slot_size = 0x0800
     cmdpack_start, cmdpack_size = cfg["CMDPACK"]
+    cmdpack2_start, cmdpack2_size = cfg["CMDPACK2"]
     hidload_start, hidload_size = cfg["HIDLOAD"]
     brload_start, brload_size = cfg["BRLOAD"]
     regseed_start, regseed_size = cfg["REGSEED"]
-    built_in_payload_size = (sym["__OVL2PACK_LOAD__"] - sym["__LOWPACK_LOAD__"]) + seg["OVL2PACK"].size
+    base_builtin_size = (sym["__SPANPACK_LOAD__"] - sym["__LOWPACK_LOAD__"]) + seg["SPANPACK"].size
+    built_in_payload_size = base_builtin_size + seg["OVL1PACK"].size + seg["OVL2PACK"].size
+    gfxspr_off = const["RB_CODE_GFXSPR_OFF"]
+    inputev_off = const["RB_CODE_INPUTEV_OFF"]
 
     ram_blocks = [
         Block("Zero page", 0x0000, 0x0100, "system", "C64/BASIC/KERNAL zero page; cc65 ZP is not stomped."),
@@ -318,17 +334,21 @@ def render(ctx: dict[str, object]) -> str:
         Block("BRLOAD reserved tail", brload_start + seg["BRIDGE"].size, brload_size - seg["BRIDGE"].size, "free", "Reserved load window tail."),
         Block("REGSEED registry", regseed_start, seg["REGSEED"].size, "registry", "Header plus 128 command descriptors; prestashed into the assigned core bank."),
         Block("REGSEED reserved tail", regseed_start + seg["REGSEED"].size, regseed_size - seg["REGSEED"].size, "free", "Reserved load window tail."),
-        Block("Future BASIC bytes", regseed_start + regseed_size, basic_limit - (regseed_start + regseed_size), "basic", "Also reclaimed by BASIC after cold setup."),
+        Block("CMDPACK2 overlay seed window", cmdpack2_start, cmdpack2_size, "seed", "Additional built-in overlay payload seed; prestashed into sparse assigned code-bank offsets."),
+        Block("Future BASIC bytes", cmdpack2_start + cmdpack2_size, basic_limit - (cmdpack2_start + cmdpack2_size), "basic", "Also reclaimed by BASIC after cold setup."),
     ]
 
     cmdpack_blocks = [
         Block("Slot 0 payload seed", sym["__LOWPACK_LOAD__"], seg["LOWPACK"].size, "module-a", f"Module 1 system/default payload; runtime {fmt_range(seg['LOWPACK'].start, seg['LOWPACK'].end)}.", groups["slot0"] + groups["end"]),
-        Block("Slot 1 payload seed", sym["__SLOTPACK1_LOAD__"], seg["SLOTPACK1"].size, "module-b", f"Module 2 proof and loader payload; runtime {fmt_range(seg['SLOTPACK1'].start, seg['SLOTPACK1'].end)}.", groups["slot1"]),
-        Block("Slot 2 base seed", sym["__SLOTPACK2_LOAD__"], seg["SLOTPACK2"].size, "module-c", f"Module 2 slot-2 proof payload; runtime {fmt_range(seg['SLOTPACK2'].start, seg['SLOTPACK2'].end)}.", groups["slot2"]),
+        Block("Slot 1 payload seed", sym["__SLOTPACK1_LOAD__"], seg["SLOTPACK1"].size, "module-b", f"Module 2 proof, loader, and GFXCORE payload; runtime {fmt_range(seg['SLOTPACK1'].start, seg['SLOTPACK1'].end)}.", groups["slot1"] + groups["gfxcore"]),
+        Block("Slot 2 base seed", sym["__SLOTPACK2_LOAD__"], seg["SLOTPACK2"].size, "module-c", f"Module 2 slot-2 proof plus GFXPRIM payload; runtime {fmt_range(seg['SLOTPACK2'].start, seg['SLOTPACK2'].end)}.", groups["slot2"] + groups["gfxprim"]),
         Block("Span seed", sym["__SPANPACK_LOAD__"], seg["SPANPACK"].size, "span", f"Two-slot proof payload; runtime {fmt_range(seg['SPANPACK'].start, seg['SPANPACK'].end)}.", groups["span"]),
-        Block("Overlay 1 seed", sym["__OVL1PACK_LOAD__"], seg["OVL1PACK"].size, "overlay", f"Slot-2 overlay proof payload; runtime {fmt_range(seg['OVL1PACK'].start, seg['OVL1PACK'].end)}.", ("ZOVL1",)),
-        Block("Overlay 2 seed", sym["__OVL2PACK_LOAD__"], seg["OVL2PACK"].size, "overlay", f"Slot-2 overlay proof payload; runtime {fmt_range(seg['OVL2PACK'].start, seg['OVL2PACK'].end)}.", ("ZOVL2",)),
-        Block("CMDPACK free seed room", sym["__OVL2PACK_LOAD__"] + seg["OVL2PACK"].size, (cmdpack_start + cmdpack_size) - (sym["__OVL2PACK_LOAD__"] + seg["OVL2PACK"].size), "free", "Unused cold-load seed capacity."),
+        Block("CMDPACK free seed room", sym["__SPANPACK_LOAD__"] + seg["SPANPACK"].size, (cmdpack_start + cmdpack_size) - (sym["__SPANPACK_LOAD__"] + seg["SPANPACK"].size), "free", "Unused cold-load seed capacity."),
+    ]
+    cmdpack2_blocks = [
+        Block("Overlay 1 seed", sym["__OVL1PACK_LOAD__"], seg["OVL1PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL1PACK'].start, seg['OVL1PACK'].end)}; REU code offset {fmt_hex(gfxspr_off)}.", ("ZOVL1",)),
+        Block("Overlay 2 seed", sym["__OVL2PACK_LOAD__"], seg["OVL2PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL2PACK'].start, seg['OVL2PACK'].end)}; REU code offset {fmt_hex(inputev_off)}.", ("ZOVL2",)),
+        Block("CMDPACK2 free seed room", sym["__OVL2PACK_LOAD__"] + seg["OVL2PACK"].size, (cmdpack2_start + cmdpack2_size) - (sym["__OVL2PACK_LOAD__"] + seg["OVL2PACK"].size), "free", "Unused cold-load seed capacity."),
     ]
 
     post_blocks = [
@@ -340,14 +360,17 @@ def render(ctx: dict[str, object]) -> str:
 
     slot0_used = seg["LOWPACK"].size
     slot1_used = seg["SLOTPACK1"].size
-    slot2_used = seg["OVL2PACK"].end - seg["SLOTPACK2"].start + 1
     slot_blocks = [
         Block("Slot 0 current", 0xA800, slot0_used, "module-a", "Module 1 system/default payload.", groups["slot0"] + groups["end"]),
         Block("Slot 0 free", 0xA800 + slot0_used, slot_size - slot0_used, "free", f"{fmt_size(slot_size - slot0_used)} free inside slot 0."),
-        Block("Slot 1 current", 0xB000, slot1_used, "module-b", "Module 2 proof plus ZMODLD.", groups["slot1"]),
+        Block("Slot 1 current", 0xB000, slot1_used, "module-b", "Module 2 proof, ZMODLD, and GFXCORE.", groups["slot1"] + groups["gfxcore"]),
         Block("Slot 1 free", 0xB000 + slot1_used, slot_size - slot1_used, "free", f"{fmt_size(slot_size - slot1_used)} free inside slot 1."),
-        Block("Slot 2 current front", 0xB800, slot2_used, "module-c", "Base proof plus two overlay proof slices in the slot-2 address space.", groups["slot2"] + groups["overlay"]),
-        Block("Slot 2 free", 0xB800 + slot2_used, slot_size - slot2_used, "free", f"{fmt_size(slot_size - slot2_used)} free inside slot 2."),
+        Block("Slot 2 GFXPRIM current", 0xB800, seg["SLOTPACK2"].size, "module-c", "Base proof plus GFXPRIM; replacement overlays load over this when called.", groups["slot2"] + groups["gfxprim"]),
+        Block("Slot 2 GFXPRIM free", 0xB800 + seg["SLOTPACK2"].size, slot_size - seg["SLOTPACK2"].size, "free", f"{fmt_size(slot_size - seg['SLOTPACK2'].size)} free in the GFXPRIM slot image."),
+        Block("Slot 2 GFXSPR overlay", 0xB800, seg["OVL1PACK"].size, "overlay", "Replacement overlay for sprite commands.", groups["overlay"][:1] + groups["gfxspr"]),
+        Block("Slot 2 GFXSPR free", 0xB800 + seg["OVL1PACK"].size, slot_size - seg["OVL1PACK"].size, "free", f"{fmt_size(slot_size - seg['OVL1PACK'].size)} free in the GFXSPR overlay image."),
+        Block("Slot 2 INPUTEV overlay", 0xB800, seg["OVL2PACK"].size, "overlay", "Replacement overlay for polling input commands.", groups["overlay"][1:] + groups["inputev"]),
+        Block("Slot 2 INPUTEV free", 0xB800 + seg["OVL2PACK"].size, slot_size - seg["OVL2PACK"].size, "free", f"{fmt_size(slot_size - seg['OVL2PACK'].size)} free in the INPUTEV overlay image."),
     ]
 
     reu44_blocks = [
@@ -366,12 +389,16 @@ def render(ctx: dict[str, object]) -> str:
 
     disk_blocks = disk_module_blocks()
     reu45_blocks = [
-        Block("Built-in payloads", 0x0000, built_in_payload_size, "module-a", "Current built-in module/submodule payload blob prestashed from CMDPACK."),
-        Block("Built-in free gap", built_in_payload_size, 0x1500 - built_in_payload_size, "free", "Free before current disk-module descriptor samples."),
+        Block("Built-in base payloads", 0x0000, base_builtin_size, "module-a", "LOWPACK, SLOTPACK1, SLOTPACK2, and SPANPACK prestashed from CMDPACK."),
+        Block("Built-in base free gap", base_builtin_size, 0x1500 - base_builtin_size, "free", "Free before current disk-module descriptor samples."),
         *disk_blocks[:2],
         Block("Free gap", 0x1660, 0x3000 - 0x1660, "free", "Available packed-code space before sample payloads."),
         *disk_blocks[2:],
-        Block("Payload bank free tail", 0x463D, 0x10000 - 0x463D, "free", "Remaining space in the current single ReadyBASIC code bank."),
+        Block("Free gap before built-in overlays", 0x463D, gfxspr_off - 0x463D, "free", "Available packed-code space before fixed built-in overlay offsets."),
+        Block("Built-in GFXSPR overlay", gfxspr_off, seg["OVL1PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when sprite commands run.", groups["overlay"][:1] + groups["gfxspr"]),
+        Block("GFXSPR reserved headroom", gfxspr_off + seg["OVL1PACK"].size, 0x0800 - seg["OVL1PACK"].size, "free", "Reserved so the overlay can grow toward a full 2K slot without moving INPUTEV."),
+        Block("Built-in INPUTEV overlay", inputev_off, seg["OVL2PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when input commands run.", groups["inputev"]),
+        Block("Payload bank free tail", inputev_off + seg["OVL2PACK"].size, 0x10000 - (inputev_off + seg["OVL2PACK"].size), "free", "Remaining space in the current single ReadyBASIC code bank."),
     ]
 
     reu_overview_blocks = [
@@ -551,8 +578,11 @@ def render(ctx: dict[str, object]) -> str:
       </div>
     </div>
     <h3>Inside The Cold CMDPACK Seed Window</h3>
-    <p>This is the built-in command/module payload portion that is prestashed contiguously into the loader-assigned ReadyBASIC payload bank.</p>
+    <p>This is the original built-in command/module payload portion that is prestashed into the loader-assigned ReadyBASIC payload bank.</p>
     {stacked_map(cmdpack_blocks, cmdpack_size, cls="short")}
+    <h3>Inside The Cold CMDPACK2 Overlay Seed Window</h3>
+    <p>This second cold-only seed window carries built-in replacement overlays and is stashed into sparse, fixed REU code offsets before BASIC owns the memory.</p>
+    {stacked_map(cmdpack2_blocks, cmdpack2_size, cls="short")}
   </section>
 
   <section id="slots">
@@ -601,11 +631,11 @@ def render(ctx: dict[str, object]) -> str:
         Block("RESIDENT", seg["RESIDENT"].start, seg["RESIDENT"].size, "resident", "Visible ReadyBASIC core."),
         Block("HIDDEN", seg["HIDDEN"].start, seg["HIDDEN"].size, "underrom", "Common under-ROM helper."),
         Block("LOWPACK", seg["LOWPACK"].start, seg["LOWPACK"].size, "module-a", "Slot 0 built-in payload.", groups["slot0"] + groups["end"]),
-        Block("SLOTPACK1", seg["SLOTPACK1"].start, seg["SLOTPACK1"].size, "module-b", "Slot 1 proof/loader payload.", groups["slot1"]),
-        Block("SLOTPACK2", seg["SLOTPACK2"].start, seg["SLOTPACK2"].size, "module-c", "Slot 2 proof payload.", groups["slot2"]),
+        Block("SLOTPACK1", seg["SLOTPACK1"].start, seg["SLOTPACK1"].size, "module-b", "Slot 1 proof/loader/GFXCORE payload.", groups["slot1"] + groups["gfxcore"]),
+        Block("SLOTPACK2", seg["SLOTPACK2"].start, seg["SLOTPACK2"].size, "module-c", "Slot 2 proof/GFXPRIM payload.", groups["slot2"] + groups["gfxprim"]),
         Block("SPANPACK", seg["SPANPACK"].start, seg["SPANPACK"].size, "span", "Two-slot proof payload.", groups["span"]),
-        Block("OVL1PACK", seg["OVL1PACK"].start, seg["OVL1PACK"].size, "overlay", "Slot 2 overlay proof.", ("ZOVL1",)),
-        Block("OVL2PACK", seg["OVL2PACK"].start, seg["OVL2PACK"].size, "overlay", "Slot 2 overlay proof.", ("ZOVL2",)),
+        Block("OVL1PACK", seg["OVL1PACK"].start, seg["OVL1PACK"].size, "overlay", "Slot 2 replacement overlay for GFXSPR.", groups["overlay"][:1] + groups["gfxspr"]),
+        Block("OVL2PACK", seg["OVL2PACK"].start, seg["OVL2PACK"].size, "overlay", "Slot 2 replacement overlay for INPUTEV.", groups["overlay"][1:] + groups["inputev"]),
         Block("BRIDGE", seg["BRIDGE"].start, seg["BRIDGE"].size, "bridge", "Persistent bridge state."),
         Block("REGSEED", seg["REGSEED"].start, seg["REGSEED"].size, "registry", "Load-only registry seed."),
       ])}

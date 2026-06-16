@@ -39,12 +39,12 @@ Measured from the current `obj/readybasic.map`:
 | `ENTRY` | `$1000-$11FF`, `$0200` / 512B |
 | `RESIDENT` | `$1200-$2ABA`, `$18BB` / 6331B |
 | BASIC sentinel | `$2AC0` |
-| Common under-ROM helper | `$A000-$A790`, `$0791` / 1937B |
+| Common under-ROM helper | `$A000-$A7DE`, `$07DF` / 2015B |
 | Slot 0 / module 1 | `$A800-$AEFC`, `$06FD` / 1789B |
 | Slot 1 / module 2/GFXCORE | `$B000-$B474`, `$0475` / 1141B |
 | Slot 2 / GFXPRIM | `$B800-$BD14`, `$0515` / 1301B |
-| Slot 2 overlay 1 / GFXSPR | slot-2 overlay, `$0272` / 626B |
-| Slot 2 overlay 2 / INPUTEV | slot-2 overlay, `$006D` / 109B |
+| Slot 2 overlay 1 / GFXSPR | `$B800-$BA71` replacement overlay, `$0272` / 626B |
+| Slot 2 overlay 2 / INPUTEV | `$B800-$B86C` replacement overlay, `$006D` / 109B |
 | `BRIDGE` | `$C000-$C1FE`, `$01FF` / 511B |
 | Shared frames/buffers | `$C200-$C5FF` |
 | `REGSEED` load-only registry | `$5000-$600F`, `$1010` / 4112B |
@@ -84,6 +84,12 @@ submodule `18` as slot-2 overlay 1, and `INPUTEV` submodule `19` as slot-2
 overlay 2. The surface handle entry points `GFXSURF` and `GFXBLIT` use the
 existing system slot allocator path so typed REU graphics handles can share the
 same handle directory as `BUFNEW` and `SCRCAP`.
+
+`GFXSPR` and `INPUTEV` are now true slot-2 replacement overlays. They are
+loaded from the second cold-only command seed window (`CMDPACK2`) into fixed
+assigned code-bank offsets `$5000` and `$5800`, then fetched into `$B800` only
+when their commands run. This removes the old slot-2 packing mismatch where
+`GFXPRIM`, `GFXSPR`, and `INPUTEV` consumed one nearly-full 2K runtime strip.
 
 The graphics Bank D layout intentionally avoids ReadyBASIC/ReadyOS state:
 screen RAM is `$CC00-$CFFF`, sprite data is `$CA00-$CBFF`, bitmap/charset RAM
@@ -385,7 +391,8 @@ inside that one PRG load image:
 | `READYBASIC_MAKING_COMMAND_GUIDE.md` / `readybasic_making_command_guide.html` | Walkthrough for adding commands using the current demo, string, array, hidden, and REU-handle examples. |
 
 The linker puts packed command bytes in the PRG load image at `CMDPACK`
-`$2B00-$3FFF`, but their runtime addresses are different:
+`$2B00-$3FFF` and `CMDPACK2` `$6200-$7FFF`, but their runtime addresses are
+different:
 
 | Segment | Size | Load/source role | Runtime role |
 |---|---:|---|---|
@@ -393,15 +400,15 @@ The linker puts packed command bytes in the PRG load image at `CMDPACK`
 | `SLOTPACK1` | `$0475` (1.1K, 1141 exact bytes) | Built-in module 2 proof, streaming `ZMODLD` loader, and `GFXCORE` payload, prestashed to assigned code-bank offset `$06FD`. | Fetched on demand into `$B000-$B474`. |
 | `SLOTPACK2` | `$0515` (1.3K, 1301 exact bytes) | Built-in module 2 slot proof plus `GFXPRIM`, prestashed to assigned code-bank offset `$0B72`. | Fetched on demand into `$B800-$BD14`. |
 | `SPANPACK` | `$0015` (21B) | Built-in two-slot span proof payload. | Fetched into slots 1+2 at `$B000-$B014`. |
-| `OVL1PACK` | `$0272` (626B) | Built-in slot-2 overlay proof plus `GFXSPR`. | Fetched into the slot-2 overlay address range. |
-| `OVL2PACK` | `$006D` (109B) | Built-in slot-2 overlay proof plus `INPUTEV`. | Fetched into the slot-2 overlay address range. |
-| `HIDLOAD` | `$0791` (1.9K, 1937 exact bytes) | Load-only hidden helper seed starting at `$4000`. | Copied on cold boot into `$A000-$A790` and stashed to the assigned core-bank hidden shadow at `$3000`. |
+| `OVL1PACK` | `$0272` (626B) | Built-in slot-2 overlay proof plus `GFXSPR`, loaded from `CMDPACK2` `$6200` and prestashed to assigned code-bank offset `$5000`. | Fetched as a replacement overlay into `$B800-$BA71`. |
+| `OVL2PACK` | `$006D` (109B) | Built-in slot-2 overlay proof plus `INPUTEV`, loaded from `CMDPACK2` `$6472` and prestashed to assigned code-bank offset `$5800`. | Fetched as a replacement overlay into `$B800-$B86C`. |
+| `HIDLOAD` | `$07DF` (2.0K, 2015 exact bytes) | Load-only hidden helper seed starting at `$4000`. | Copied on cold boot into `$A000-$A7DE` and stashed to the assigned core-bank hidden shadow at `$3000`. |
 | `BRLOAD` | `$01FF` (511B) | Load-only bridge seed starting at `$4800`. | Copied on cold boot into `$C000-$C1FE`. |
 | `REGSEED` | `$1010` (4.0K, 4112 exact bytes) | Load-only registry header and 128 command descriptors at `$5000-$600F`. | Copied on cold boot into assigned core-bank offsets `$0000` and `$1000`. |
 
 Cold boot is the only time the load-image command pack and `REGSEED` are trusted.
 The hidden helper copies the registry/header to the assigned core bank and
-copies the built-in module/submodule payloads from `CMDPACK` to the assigned code bank. After
+copies the built-in module/submodule payloads from `CMDPACK` and `CMDPACK2` to the assigned code bank. After
 that, BASIC may own the former load-image addresses, so warm resume reuses the
 REU copies and does not reseed from `$2B00+`, `$4000+`, `$4800+`, or `$5000+`.
 
@@ -432,17 +439,20 @@ metadata and shim space above that are not general ReadyBASIC scratch.
 | BASIC sentinel | `$2AC0` | 1 byte | Must stay zero before stored-program `RUN`. |
 | BASIC workspace | `$2AC1-$9FFF` | `$753F` region, `30013` formula free bytes (29.3K) | Program text, variables, arrays, string heap. |
 | Command pack load image | `$2B00-$3FFF` | `$1500` (5.25K) file range | Built-in module/submodule payload seed bytes before cold prestash. |
-| Hidden helper load image | `$4000+` | `$0791` (1.9K, 1937 exact bytes) load-only | Hidden helper seed copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
+| Hidden helper load image | `$4000+` | `$07DF` (2.0K, 2015 exact bytes) load-only | Hidden helper seed copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
 | Bridge load image | `$4800+` | `$01FF` (511B) load-only | Bridge seed copied to `$C000`. |
 | Registry seed load image | `$5000-$600F` | `$1010` (4.0K, 4112 exact bytes) load-only | Header and 128 descriptors copied to the assigned core bank. |
+| Command pack 2 load image | `$6200-$7FFF` | `$1E00` (7.5K) file range | Built-in replacement overlay seed bytes before cold prestash. |
 | Runtime snapshot | Assigned core bank offsets `$0A00-$0BFF` | `$0200` (0.5K) plus bridge metadata | Saved zero page, stack page, SP, resume mode, line-chain guards. |
-| Common under-ROM helper | `$A000-$A790` | `$0791` (1937B) | Helper code run with RAM mapped under BASIC ROM. |
+| Common under-ROM helper | `$A000-$A7DE` | `$07DF` (2015B) | Helper code run with RAM mapped under BASIC ROM. |
 | Slot 0 module payload | `$A800-$AEFC` | `$06FD` (1789B) | Module 1 system/default payload fetched from the assigned code bank. |
 | Slot 1 module payload | `$B000-$B474` | `$0475` (1141B) | Module 2 proof, streaming `ZMODLD` loader, and `GFXCORE` payload. |
-| Slot 2 payloads/overlays | `$B800-$BFF3` | `$07F4` combined front (2036B) | Current slot-2 base, `GFXPRIM`, `GFXSPR`, and `INPUTEV` slices in the slot-2 address space. |
+| Slot 2 `GFXPRIM` image | `$B800-$BD14` | `$0515` (1301B) | Slot-2 base/proof plus `GFXPRIM`; replacement overlays load over this when called. |
+| Slot 2 `GFXSPR` overlay image | `$B800-$BA71` | `$0272` (626B) | Replacement overlay for sprite commands. |
+| Slot 2 `INPUTEV` overlay image | `$B800-$B86C` | `$006D` (109B) | Replacement overlay for polling input commands. |
 | `BRIDGE` | `$C000-$C1FE` | `$01FF` (511B) | Persistent bridge state, saved vectors, overlay variables, current handle scratch, debug bytes, native routine return stack, and flow-control scratch. |
 | Shared frames | `$C200-$C5FF` | `$0400` (1.0K) | Call frame, result frame, descriptor buffer, command-name buffer, page/runtime buffers. |
-| Hidden helper shadow | Assigned core bank `$3000+` | `$0791` (1937B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
+| Hidden helper shadow | Assigned core bank `$3000+` | `$07DF` (2015B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
 | ReadyOS REU metadata | `$C600-$C7FF` | `$0200` (0.5K) shared | ReadyBASIC only marks REU bank ownership here. |
 | ReadyOS shim ABI | `$C800-$C9FF` | `$0200` (0.5K) shared | ReadyOS jump table and data; not ReadyBASIC RAM. |
 
@@ -460,10 +470,10 @@ not a contradiction; it is a time-of-use distinction.
 
 | Stage | C64 RAM ownership | BASIC-visible effect |
 |---|---|---|
-| PRG load / cold seed | `CMDPACK` is loaded at `$2B00-$3FFF`, `HIDLOAD` at `$4000+`, `BRLOAD` at `$4800+`, and `REGSEED` at `$5000-$600F`. These ranges are inside the future BASIC workspace but BASIC is not live there yet. | No user BASIC program or variables exist yet, so the load image can safely occupy this space temporarily. |
-| End of cold seed | Built-in module/submodule payloads have been copied from `CMDPACK` to the assigned code bank; the registry has been copied to the assigned core bank; hidden and bridge live copies are in their runtime homes. | `$2AC1-$9FFF` becomes the BASIC workspace. The former load-image bytes are now disposable. |
-| Ready prompt / running BASIC | BASIC owns `$2AC1-$9FFF`, including the old `$2B00-$600F` load ranges. Command code is fetched from REU into `$A800`, `$B000`, and/or `$B800` under BASIC ROM only while a command runs. | Empty BASIC free space is `30013` formula bytes. Warm resume never trusts the old load-image addresses. |
-| Future command growth | The current `CMDPACK` reservation is `$1500` (5.25K). Today it carries `$095D` / 2.3K of built-in module/submodule payloads. | The remaining reserved `CMDPACK` capacity can absorb `$0BA3` / 2.9K more built-in payload seed bytes without reducing steady-state BASIC free bytes. Growing beyond the reserved load-only area may increase PRG size or require another cold-only seed range, but it should still be reclaimed before BASIC owns the workspace. |
+| PRG load / cold seed | `CMDPACK` is loaded at `$2B00-$3FFF`, `HIDLOAD` at `$4000+`, `BRLOAD` at `$4800+`, `REGSEED` at `$5000-$600F`, and `CMDPACK2` at `$6200-$7FFF`. These ranges are inside the future BASIC workspace but BASIC is not live there yet. | No user BASIC program or variables exist yet, so the load image can safely occupy this space temporarily. |
+| End of cold seed | Built-in module/submodule payloads have been copied from `CMDPACK` and `CMDPACK2` to the assigned code bank; the registry has been copied to the assigned core bank; hidden and bridge live copies are in their runtime homes. | `$2AC1-$9FFF` becomes the BASIC workspace. The former load-image bytes are now disposable. |
+| Ready prompt / running BASIC | BASIC owns `$2AC1-$9FFF`, including the old `$2B00-$7FFF` load ranges. Command code is fetched from REU into `$A800`, `$B000`, and/or `$B800` under BASIC ROM only while a command runs. | Empty BASIC free space is `30013` formula bytes. Warm resume never trusts the old load-image addresses. |
+| Future command growth | `CMDPACK` carries `$109C` / 4252B of base built-ins and has `$0464` / 1124B free. `CMDPACK2` carries `$02DF` / 735B of overlay built-ins and has `$1B21` / 6945B free. | Both cold-load windows are reclaimed before BASIC owns the workspace, so growing within them does not reduce steady-state BASIC free bytes. Runtime growth is still bounded by each 2K execution image. |
 
 The visual way to read this: `CMDPACK` looks like it overlaps BASIC RAM in the
 link/load map because it really does during cold loading. It does not reduce the
@@ -681,13 +691,17 @@ banks and keep the same small handle model.
 | `$06FD-$0B71` | Built-in module 2 slot-1 proof, streaming `ZMODLD` loader, and `GFXCORE` payload copied into `$B000-$B474` (`$0475`, 1141B). |
 | `$0B72-$1086` | Built-in slot-2 proof plus `GFXPRIM` copied into `$B800-$BD14` (`$0515`, 1301B). |
 | `$1087-$109B` | Built-in two-slot span proof payload (`$0015`, 21B). |
-| `$109C-$130D` | Built-in slot-2 overlay plus `GFXSPR` (`$0272`, 626B). |
-| `$130E-$137A` | Built-in slot-2 overlay plus `INPUTEV` (`$006D`, 109B). |
-| `$137B-$14FF` | Free gap before current disk-module descriptor proof offsets (`$0185`, 389B). |
+| `$109C-$14FF` | Free gap before current disk-module descriptor proof offsets (`$0464`, 1124B). |
 | `$1500-$151F` | `rbm.sample1` descriptor for `ZDM1`. |
 | `$1600-$165F` | `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`. |
 | `$1700-$1ABF` | `rbm.sample3` descriptors for `ZSAA`-`ZUEB`. |
 | `$3000-$3014`, `$3200-$3214`, `$3300-$3314`, `$3400-$3414` | Small sample disk-loaded payload proofs. |
+| `$3800-$463C` | `rbm.sample3` payload records for `ZSAA`-`ZUEB`, stored on `$100`-byte strides. |
+| `$463D-$4FFF` | Free gap before fixed built-in replacement overlay offsets (`$09C3`, 2499B). |
+| `$5000-$5271` | Built-in slot-2 replacement overlay plus `GFXSPR` (`$0272`, 626B). |
+| `$5272-$57FF` | Reserved `GFXSPR` overlay growth headroom (`$058E`, 1422B). |
+| `$5800-$586C` | Built-in slot-2 replacement overlay plus `INPUTEV` (`$006D`, 109B). |
+| `$586D-$FFFF` | Free tail (`$A793`, 42899B). |
 | `$3800-$463C` | `rbm.sample3` payload records for `ZSAA`-`ZUEB`, stored on `$100`-byte strides. |
 
 Descriptors point into these packed bytes with payload offset, payload size,
@@ -818,10 +832,12 @@ Current static layout:
 | `ENTRY` | `$1000-$11FF` | `$0200` (512B) |
 | `RESIDENT` | `$1200-$2ABA` | `$18BB` (6.2K, 6331 exact bytes) |
 | `REGSEED` | `$5000-$600F` | `$1010` (4.0K, 4112 exact bytes) |
-| `HIDDEN` | `$A000-$A790` | `$0791` (1937B) |
+| `HIDDEN` | `$A000-$A7DE` | `$07DF` (2015B) |
 | `LOWPACK` / slot 0 payload | `$A800-$AEFC` | `$06FD` (1789B) |
 | `SLOTPACK1` / slot 1 payload | `$B000-$B474` | `$0475` (1141B) |
-| slot 2 proof/overlays | `$B800-$BFF3` | `$07F4` combined front (2036B) |
+| `SLOTPACK2` / GFXPRIM | `$B800-$BD14` | `$0515` (1301B) |
+| `OVL1PACK` / GFXSPR | `$B800-$BA71` | `$0272` (626B) |
+| `OVL2PACK` / INPUTEV | `$B800-$B86C` | `$006D` (109B) |
 | `BRIDGE` | `$C000-$C1FE` | `$01FF` (511B) |
 
 Current measured guardrails:
@@ -830,10 +846,10 @@ Current measured guardrails:
 |---|---:|
 | `BASIC_START` | `$2AC1` |
 | Empty BASIC free bytes | `30013` |
-| `bin/readybasic.prg` size | `20994` |
+| `bin/readybasic.prg` size | `28674` |
 | `RESIDENT` | `$18BB` / 6331B |
 | `LOWPACK` | `$06FD` / 1789B |
-| `HIDDEN` | `$0791` / 1937B |
+| `HIDDEN` | `$07DF` / 2015B |
 | `BRIDGE` | `$01FF` / 511B |
 | `REGSEED` | `$1010` / 4112B |
 
