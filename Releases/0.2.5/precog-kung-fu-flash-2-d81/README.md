@@ -1,7 +1,7 @@
 # precog (kung fu flash 2 d81)
 
 - Release Line: `0.2.5`
-- Artifact Build: `0.2.5`
+- Artifact Build: `0.2.5O`
 - Kind: `kung-fu-flash-2-d81`
 
 ## Why This Variant Exists
@@ -10,9 +10,9 @@
 
 ## Artifacts
 
-- Drive 8: `readyos-v0.2.5-kung-fu-flash-2-d81.d81`
-- Host-Side Boot PRG: `readyos-v0.2.5-kung-fu-flash-2-d81-preboot.prg`
-- Host-Side Boot PRG: `readyos-v0.2.5-kung-fu-flash-2-d81-boot.prg`
+- Drive 8: `readyos-v0.2.5o-kung-fu-flash-2-d81.d81`
+- Host-Side Boot PRG: `readyos-v0.2.5o-kung-fu-flash-2-d81-preboot.prg`
+- Host-Side Boot PRG: `readyos-v0.2.5o-kung-fu-flash-2-d81-boot.prg`
 
 ## Included Apps
 
@@ -41,14 +41,14 @@
 
 - Enable REU with at least `1MB`; this SKU targets KFF2's 1MB REU mode.
 - The host-side boot PRGs are convenience autostart files. The disk copy of `PREBOOT` is still the normal disk-side bootstrap.
-- Configure drive 8 as `1581` and attach `readyos-v0.2.5-kung-fu-flash-2-d81.d81`.
+- Configure drive 8 as `1581` and attach `readyos-v0.2.5o-kung-fu-flash-2-d81.d81`.
 
 ### VICE Command Example
 
-- Autostart target: `readyos-v0.2.5-kung-fu-flash-2-d81-preboot.prg`
+- Autostart target: `readyos-v0.2.5o-kung-fu-flash-2-d81-preboot.prg`
 
 ```sh
-x64sc -reu -reusize 1024 -drive8type 1581 -devicebackend8 0 +busdevice8 -8 readyos-v0.2.5-kung-fu-flash-2-d81.d81 -autostart readyos-v0.2.5-kung-fu-flash-2-d81-preboot.prg
+x64sc -reu -reusize 1024 -drive8type 1581 -devicebackend8 0 +busdevice8 -8 readyos-v0.2.5o-kung-fu-flash-2-d81.d81 -autostart readyos-v0.2.5o-kung-fu-flash-2-d81-preboot.prg
 ```
 
 ## 1MB REU Budget
@@ -67,7 +67,7 @@ x64sc -reu -reusize 1024 -drive8type 1581 -devicebackend8 0 +busdevice8 -8 ready
 
 - This profile uses the direct boot chain `PREBOOT -> BOOT`.
 - There is no `SETD71` stage for this variant.
-- Attach the single disk on drive `8`, then autostart `readyos-v0.2.5-kung-fu-flash-2-d81-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
+- Attach the single disk on drive `8`, then autostart `readyos-v0.2.5o-kung-fu-flash-2-d81-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
 
 ## C64 Ultimate
 
