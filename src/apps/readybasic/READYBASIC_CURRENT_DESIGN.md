@@ -37,12 +37,14 @@ Measured from the current `obj/readybasic.map`:
 | `BASIC_START` | `$2AC1` |
 | Empty BASIC free bytes | `30013` |
 | `ENTRY` | `$1000-$11FF`, `$0200` / 512B |
-| `RESIDENT` | `$1200-$2ABD`, `$18BE` / 6334B |
+| `RESIDENT` | `$1200-$2ABA`, `$18BB` / 6331B |
 | BASIC sentinel | `$2AC0` |
-| Common under-ROM helper | `$A000-$A6E9`, `$06EA` / 1770B |
-| Slot 0 / module 1 | `$A800-$AECD`, `$06CE` / 1742B |
-| Slot 1 / module 2 | `$B000-$B23A`, `$023B` / 571B |
-| Slot 2 / overlays | `$B800-$B83E`, proof slices |
+| Common under-ROM helper | `$A000-$A790`, `$0791` / 1937B |
+| Slot 0 / module 1 | `$A800-$AEFC`, `$06FD` / 1789B |
+| Slot 1 / module 2/GFXCORE | `$B000-$B474`, `$0475` / 1141B |
+| Slot 2 / GFXPRIM | `$B800-$BB62`, `$0363` / 867B |
+| Slot 2 overlay 1 / GFXSPR | `$BB63-$BD24`, `$01C2` / 450B |
+| Slot 2 overlay 2 / INPUTEV | `$BD25-$BD91`, `$006D` / 109B |
 | `BRIDGE` | `$C000-$C1FE`, `$01FF` / 511B |
 | Shared frames/buffers | `$C200-$C5FF` |
 | `REGSEED` load-only registry | `$5000-$600F`, `$1010` / 4112B |
@@ -74,6 +76,19 @@ loader proof is `ZMODLD(name$)` in module 2/slot 1. It opens ReadyBasicModule
 SEQ packages named `rbm.<name>` and streams them through the `$C500` page buffer
 into REU, rather than loading them as PRG files. Current sample packages are
 `rbm.sample1`, `rbm.sample2`, and `rbm.sample3`.
+
+Phase 1 graphics commands are also built in and prestashed to the assigned code
+bank; they do not require `ZMODLD`. They use module id `3`: `GFXCORE`
+submodule `16` in slot 1, `GFXPRIM` submodule `17` in slot 2, `GFXSPR`
+submodule `18` as slot-2 overlay 1, and `INPUTEV` submodule `19` as slot-2
+overlay 2. The surface handle entry points `GFXSURF` and `GFXBLIT` use the
+existing system slot allocator path so typed REU graphics handles can share the
+same handle directory as `BUFNEW` and `SCRCAP`.
+
+The graphics Bank D layout intentionally avoids ReadyBASIC/ReadyOS state:
+screen RAM is `$CC00-$CFFF`, sprite data is `$CA00-$CBFF`, bitmap/charset RAM
+is `$E000-$FFFF`, and color RAM is `$D800-$DBE7`. `$C000-$C9FF` remains owned
+by ReadyBASIC bridge/shared frames, ReadyOS REU metadata, and shim ABI.
 
 The naming nuance matters. A module is the logical command family identified by
 module id. A module package/container is the disk SEQ file that carries
@@ -213,6 +228,28 @@ what prevents one held function key from being seen by both the outgoing and
 incoming app.
 Program-line `EXIT` resume and running-program hotkeys remain future work; the
 proven paths are direct prompt `EXIT` and prompt-level navigation keys.
+
+## Phase 1 Graphics Commands
+
+The current command catalog includes the command-only Phase 1 graphics surface:
+
+| Command | Form | Notes |
+|---|---|---|
+| `GFXMODE` | `GFXMODE("HIRES")`, `M%=GFXMODE()` | Supports `TEXT`, `HIRES`, `MBITMAP`, `TILE`, and `MTILE`. |
+| `GFXTEXT` | `GFXTEXT()` | Restores ordinary text mode. |
+| `GFXCLEAR` | `GFXCLEAR(C)` | Clears Bank D screen/color RAM and bitmap RAM for bitmap modes. |
+| `GFXSURF` | `H%=GFXSURF("HIRES")` | Allocates typed graphics-surface handle `3` in the REU heap. |
+| `GFXTARGET` | `GFXTARGET(0)` | Phase 1 visible-target selector; REU target drawing is future work. |
+| `GFXBLIT` | `GFXBLIT(H%)` | Phase 1 handle validation for typed graphics surfaces. |
+| `GFXSYNC` | `GFXSYNC()` | No pending dirty-rect queue in Phase 1. |
+| `PLOT` / `POINT` / `PNT` | `PLOT(X,Y,C)`, `PNT(X,Y,P%)` | Bitmap bit plot/read or tile cell write/read, depending on mode; `POINT` remains registered as the long form. |
+| `LINE` / `RECT` / `FRECT` | five numeric args | Immediate primitive workers in `GFXPRIM`. |
+| `SPRSET` / `SPRMOVE` / `SPRCOLOR` / `SPRROW` | sprite config/move/color/pixels | Uses eight 64-byte Bank D sprite definitions at `$CA00`; `SPRROW` writes explicit 24-bit sprite rows. |
+| `SPRSCAN` / `SPRCOLL` | `SPRSCAN()`, `SPRCOLL(N,C%)` | Polls VIC collision latches; no IRQ sampler. |
+| `JOY` / `KEYP` / `KEYSCAN` / `KEYLAST` | output/polling forms | Polling only, no resident input event queue. |
+
+See `READYBASIC_GRAPHICS_COMMAND_DESIGN.md` for mode tradeoffs, memory layout,
+and Phase 1 limits.
 
 ## Native Flow Control And Error Introspection
 
@@ -427,8 +464,8 @@ store a BASIC program.
 command-code capacity of the architecture. The current descriptor format points
 into the assigned code bank with 16-bit offsets and sizes, so the current single code
 bank can hold up to `$10000` bytes (64.0K) of packed command bodies. The built-in
-payloads currently use `$085C` (2.1K, 2140 exact bytes), leaving `$F7A4`
-(61.9K, 63396 exact bytes) available in the assigned code bank. To actually seed beyond the current 5.25K
+payloads currently use `$1119` (4.3K, 4377 exact bytes), leaving `$EEE7`
+(59.7K, 61159 exact bytes) available in the assigned code bank. To actually seed beyond the current 5.25K
 `CMDPACK` linker window, the cold-load layout would need a larger or additional
 load-only seed range, copied to REU before BASIC owns `$2AC1-$9FFF`. Going
 beyond one 64K code bank would require a descriptor/loader extension for

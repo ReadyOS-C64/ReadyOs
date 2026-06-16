@@ -1,0 +1,92 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_gfx_phase1_probe
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 90
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5v-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5v-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5v-d81-preboot.prg"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_readybasic_prompt
+    type: screen.wait_contains
+    params:
+      text: "readybasic"
+      wait_timeout_s: 180
+      capture_label: readybasic_gfx_prompt
+
+  - id: bitmap_program
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,78,69,87,13,49,48,32,71,70,88,77,79,68,69,40,34,72,73,82,69,83,34,41,58,71,70,88,67,76,69,65,82,40,48,41,58,80,76,79,84,40,52,48,44,52,48,44,49,41,13,50,48,32,80,78,84,40,52,48,44,52,48,44,65,37,41,13,51,48,32,80,78,84,40,52,49,44,52,48,44,66,37,41,13,52,48,32,72,37,61,71,70,88,83,85,82,70,40,34,72,73,82,69,83,34,41,58,71,70,88,66,76,73,84,40,72,37,41,13,53,48,32,71,70,88,84,69,88,84,40,41,13,54,48,32,80,82,73,78,84,32,34,71,70,88,80,65,83,83,34,59,65,37,59,66,37,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_bitmap_program
+    type: screen.capture
+    params:
+      label: readybasic_gfx_bitmap_program
+  - id: assert_bitmap_program
+    type: assert.screen
+    params:
+      contains: "GFXPASS"
+
+  - id: tile_sprite_input_program
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,78,69,87,13,49,48,32,71,70,88,77,79,68,69,40,34,84,73,76,69,34,41,58,71,70,88,67,76,69,65,82,40,48,41,58,80,76,79,84,40,51,44,51,44,53,41,13,50,48,32,80,78,84,40,51,44,51,44,65,37,41,13,51,48,32,83,80,82,83,69,84,40,48,44,49,44,50,44,48,41,58,83,80,82,77,79,86,69,40,48,44,56,48,44,57,48,41,58,83,80,82,67,79,76,79,82,40,48,44,52,41,13,52,48,32,74,79,89,40,50,44,74,37,41,58,75,69,89,80,40,75,37,41,58,75,69,89,83,67,65,78,40,41,58,75,69,89,76,65,83,84,40,76,37,41,13,53,48,32,71,70,88,84,69,88,84,40,41,13,54,48,32,80,82,73,78,84,32,34,71,70,88,73,79,34,59,65,37,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_tile_sprite_input_program
+    type: screen.capture
+    params:
+      label: readybasic_gfx_tile_sprite_input_program
+  - id: assert_tile_sprite_input_program
+    type: assert.screen
+    params:
+      contains: "READY."
+  - id: assert_tile_sprite_input_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+
+  - id: load_demo
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,76,79,65,68,32,34,82,66,71,70,88,48,49,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.5
+  - id: list_demo
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: assert_demo_lists
+    type: assert.screen
+    params:
+      contains: "RBGFX01 MODES"

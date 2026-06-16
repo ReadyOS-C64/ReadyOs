@@ -73,6 +73,33 @@ def main() -> None:
     require(r"^SIG_SCRPUT\s*=\s*15\b", asm, "SCRPUT signature must be registered")
     require(r"^SIG_FADD\s*=\s*16\b", asm, "FADD signature must be registered")
     require(r"^SIG_ZPAUSE\s*=\s*SIG_BUFFREE\b", asm, "ZPAUSE must reuse the one-integer parser signature")
+    require(r"^RB_MODULE_GFX\s*=\s*3\b", asm, "graphics commands must use module id 3")
+    require(r"^RB_SUBMOD_GFXCORE\s*=\s*16\b", asm, "GFXCORE submodule must be registered")
+    require(r"^RB_SUBMOD_GFXPRIM\s*=\s*17\b", asm, "GFXPRIM submodule must be registered")
+    require(r"^RB_SUBMOD_GFXSPR\s*=\s*18\b", asm, "GFXSPR submodule must be registered")
+    require(r"^RB_SUBMOD_INPUTEV\s*=\s*19\b", asm, "INPUTEV submodule must be registered")
+    require(r"^SIG_GFXMODE\s*=\s*19\b", asm, "GFXMODE signature must be registered")
+    require(r"^SIG_GFXSURF\s*=\s*20\b", asm, "GFXSURF signature must be registered")
+    require(r"^SIG_PLOT\s*=\s*21\b", asm, "PLOT signature must be registered")
+    require(r"^SIG_LINE\s*=\s*22\b", asm, "LINE signature must be registered")
+    require(r"^SIG_SPRSET\s*=\s*23\b", asm, "SPRSET signature must be registered")
+    require(r"^SIG_KEYNONE\s*=\s*24\b", asm, "zero-argument input signature must be registered")
+    require(r"^RB_HANDLE_TYPE_GFXSURF\s*=\s*3\b", asm, "graphics surfaces must use typed handle 3")
+    require(r"^RB_GFX_SCREEN\s*=\s*\$CC00\b", asm, "Bank D graphics screen RAM must start at $CC00")
+    require(r"^RB_GFX_SPRITES\s*=\s*\$CA00\b", asm, "Bank D sprite data must start at $CA00")
+    require(r"^RB_GFX_BITMAP\s*=\s*\$E000\b", asm, "Bank D bitmap RAM must start at $E000")
+    require(r"^RB_GFX_COLOR\s*=\s*\$D800\b", asm, "graphics color RAM must be $D800")
+    require(r"^RB_GFX_SPR_PTRS\s*=\s*\$CFF8\b", asm, "sprite pointer table must stay in the $CC00 screen page")
+    require(r"CMD_GFXCORE\s+CMD_GFXMODE,\s+SIG_GFXMODE,\s+cmd_gfxmode,\s+\"GFXMODE\"", asm,
+            "GFXMODE must be a built-in GFXCORE command")
+    require(r"CMD_GFXPRIM\s+CMD_PLOT,\s+SIG_PLOT,\s+cmd_plot,\s+\"PLOT\"", asm,
+            "PLOT must be a built-in GFXPRIM command")
+    require(r"CMD_GFXSPR\s+CMD_SPRSET,\s+SIG_SPRSET,\s+cmd_sprset,\s+\"SPRSET\"", asm,
+            "SPRSET must be a built-in GFXSPR overlay command")
+    require(r"CMD_INPUTEV\s+CMD_JOY,\s+SIG_ZFAIL,\s+cmd_joy,\s+\"JOY\"", asm,
+            "JOY must be a built-in INPUTEV overlay command")
+    if re.search(r"^\s*RB_GFX_[A-Za-z0-9_]+\s*=\s*\$C[6-9][0-9A-Fa-f]{2}\b", asm, re.MULTILINE):
+        fail("graphics-owned Bank D state must not live in the $C600-$C9FF forbidden range")
     require(r"^CMD_ZMODLOAD\s*=\s*28\b", asm, "ZMODLOAD loader command id must stay stable")
     require(r"CMD_SLOT1\s+CMD_ZMODLOAD,\s+SIG_ZHIDDENRAM,\s+cmd_zmodload,\s+\"ZMODLD\"", asm, "ZMODLD loader command must live in module 2 slot 1")
     require(r"^K_OPEN\s*=\s*\$FFC0\b", asm, "ZMODLD must use streamed KERNAL file I/O")
@@ -105,22 +132,22 @@ def main() -> None:
         fail(f"RESIDENT grew past command-module slot budget $18C0, got ${resident[2]:04X}")
     if lowpack[0] != 0xA800 or lowpack[1] > 0xAFFF:
         fail(f"command slot 0 must fit under BASIC ROM at $A800-$AFFF, got ${lowpack[0]:04X}-${lowpack[1]:04X}")
-    if lowpack[2] != 0x06CE:
-        fail(f"command slot 0 size changed from measured $06CE, got ${lowpack[2]:04X}")
+    if lowpack[2] > 0x0800:
+        fail(f"command slot 0 grew past 2KB budget, got ${lowpack[2]:04X}")
     if slotpack1[0] != 0xB000 or slotpack1[1] > 0xB7FF:
         fail(f"command slot 1 must fit under BASIC ROM at $B000-$B7FF, got ${slotpack1[0]:04X}-${slotpack1[1]:04X}")
-    if slotpack1[2] != 0x023B:
-        fail(f"command slot 1 size changed from measured $023B, got ${slotpack1[2]:04X}")
+    if slotpack1[2] > 0x0800:
+        fail(f"command slot 1 grew past 2KB budget, got ${slotpack1[2]:04X}")
     if slotpack2[0] != 0xB800 or slotpack2[1] > 0xBFFF:
         fail(f"command slot 2 must fit under BASIC ROM at $B800-$BFFF, got ${slotpack2[0]:04X}-${slotpack2[1]:04X}")
-    if slotpack2[2] != 0x0015:
-        fail(f"command slot 2 size changed from measured $0015, got ${slotpack2[2]:04X}")
-    if spanpack[0] != 0xB000 or spanpack[1] > 0xBFFF or spanpack[2] != 0x0015:
-        fail(f"two-slot proof payload must fit at $B000-$BFFF with measured size $0015, got ${spanpack[0]:04X}-${spanpack[1]:04X} size ${spanpack[2]:04X}")
-    if ovl1pack[0] < 0xB800 or ovl1pack[1] > 0xBFFF or ovl1pack[2] != 0x0015:
-        fail(f"overlay 1 proof payload must fit in slot 2 with measured size $0015, got ${ovl1pack[0]:04X}-${ovl1pack[1]:04X} size ${ovl1pack[2]:04X}")
-    if ovl2pack[0] < 0xB800 or ovl2pack[1] > 0xBFFF or ovl2pack[2] != 0x0015:
-        fail(f"overlay 2 proof payload must fit in slot 2 with measured size $0015, got ${ovl2pack[0]:04X}-${ovl2pack[1]:04X} size ${ovl2pack[2]:04X}")
+    if slotpack2[2] > 0x0800:
+        fail(f"command slot 2 grew past 2KB budget, got ${slotpack2[2]:04X}")
+    if spanpack[0] != 0xB000 or spanpack[1] > 0xBFFF or spanpack[2] > 0x1000:
+        fail(f"two-slot payload must fit at $B000-$BFFF, got ${spanpack[0]:04X}-${spanpack[1]:04X} size ${spanpack[2]:04X}")
+    if ovl1pack[0] < 0xB800 or ovl1pack[1] > 0xBFFF or ovl1pack[2] > 0x0800:
+        fail(f"overlay 1 payload must fit in slot 2, got ${ovl1pack[0]:04X}-${ovl1pack[1]:04X} size ${ovl1pack[2]:04X}")
+    if ovl2pack[0] < 0xB800 or ovl2pack[1] > 0xBFFF or ovl2pack[2] > 0x0800:
+        fail(f"overlay 2 payload must fit in slot 2, got ${ovl2pack[0]:04X}-${ovl2pack[1]:04X} size ${ovl2pack[2]:04X}")
     if hidden[0] != 0xA000 or hidden[1] > 0xA7FF:
         fail(f"HIDDEN helper/common area must fit in $A000-$A7FF, got ${hidden[0]:04X}-${hidden[1]:04X}")
     if hidden[2] > 0x0800:

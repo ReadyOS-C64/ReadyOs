@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+READYOS_ROOT="${READYOS_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+if [ -n "${VICE_TASKS_ROOT:-}" ]; then
+  VICE_TOOL_ROOT="$(cd "$VICE_TASKS_ROOT" && pwd)"
+  HARNESS_REPO="$(cd "$VICE_TOOL_ROOT/../.." && pwd)"
+else
+  HARNESS_REPO="${VICE_TASKS_REPO:-$READYOS_ROOT/../agenticdevharness}"
+  HARNESS_REPO="$(cd "$HARNESS_REPO" && pwd)"
+  VICE_TOOL_ROOT="$HARNESS_REPO/tools/vice_tasks_dotnet"
+fi
+PROJECT="$VICE_TOOL_ROOT/src/ViceTasks.Binary/ViceTasks.Binary.csproj"
+PLAN="${READYBASIC_PLAN:-$SCRIPT_DIR/readybasic_sprite_visual_probe.generated.yaml}"
+READYBASIC_VISIBLE="${READYBASIC_VISIBLE:-0}"
+READYBASIC_KEEP_VICE="${READYBASIC_KEEP_VICE:-0}"
+VICE_HEADLESS="true"
+VICE_CLOSE="true"
+CLI_CLOSE_ARG="--close-vice"
+if [ "$READYBASIC_VISIBLE" = "1" ]; then
+  VICE_HEADLESS="false"
+fi
+if [ "$READYBASIC_KEEP_VICE" = "1" ]; then
+  VICE_CLOSE="false"
+  CLI_CLOSE_ARG=""
+fi
+
+keys() {
+  python3 - "$1" <<'PY'
+import sys
+s = sys.argv[1]
+print(",".join(str(ord(ch)) for ch in s))
+PY
+}
+
+cd "$READYOS_ROOT"
+PUBLIC_VERSION_TEXT="$(python3 build_support/update_build_version.py --current)"
+PUBLIC_VERSION="${PUBLIC_VERSION_TEXT%[A-Z]}"
+if [ "${READYBASIC_SKIP_BUILD:-0}" != "1" ]; then
+  RUN_VERSION_TEXT="$(python3 build_support/update_build_version.py --next)"
+  make -B \
+    BUILD_SUPPORT_DIR=build_support \
+    PROFILE=precog-d81 \
+    READYOS_VERSION_TEXT="$RUN_VERSION_TEXT" \
+    READYOS_CONFIG_RUN_FIRST=readybasic \
+    profile
+fi
+
+D81_REL="$(ls -t Releases/$PUBLIC_VERSION/precog-d81/*.d81 | head -1)"
+PREBOOT_REL="$(ls -t Releases/$PUBLIC_VERSION/precog-d81/*-preboot.prg | head -1)"
+D81="$D81_REL"
+PREBOOT="$PREBOOT_REL"
+
+cat >"$PLAN" <<YAML
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_sprite_visual_probe
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 120
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "$D81"
+    disk9: "$D81"
+    autostart_prg: "$PREBOOT"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: $VICE_CLOSE
+    headless: $VICE_HEADLESS
+    speed_percent: 100
+steps:
+  - id: launch_readyos_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_readybasic_loaded_by_readyos
+    type: screen.wait_contains
+    params:
+      text: "FREE:"
+      wait_timeout_s: 180
+      capture_on_success: true
+      capture_label: readybasic_sprite_prompt
+  - id: clear_before_rbgfx09
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT CHR$(147)\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx09
+    type: input.sequence
+    params:
+      keys: [$(keys $'LOAD "RBGFX09",8\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: list_rbgfx09
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx09
+    type: screen.capture
+    params:
+      label: readybasic_sprite_list_rbgfx09
+      note: "RBGFX09 loaded and listed from inside ReadyBASIC under ReadyOS"
+  - id: assert_list_rbgfx09
+    type: assert.screen
+    params:
+      contains: "RBGFX09 SPRITES"
+  - id: clear_for_run_rbgfx09
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT CHR$(147)\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: run_rbgfx09
+    type: input.sequence
+    params:
+      keys: [82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 3.0
+  - id: capture_two_sprites
+    type: screen.capture
+    params:
+      label: readybasic_sprite_two_sprites
+      note: "RBGFX09 running from inside ReadyBASIC under ReadyOS"
+  - id: dump_two_sprite_state
+    type: dump.memory_ranges
+    params:
+      ranges:
+        - { label: vic_sprite_regs, start: 0xD000, end: 0xD02F }
+        - { label: sprite_pointers, start: 0xCFF8, end: 0xCFFF }
+        - { label: sprite_pattern_0, start: 0xCA00, end: 0xCA3F }
+        - { label: sprite_pattern_1, start: 0xCA40, end: 0xCA7F }
+  - id: wait_rbgfx09_done
+    type: screen.wait_contains
+    params:
+      text: "TWO HARDWARE SPRITES"
+      wait_timeout_s: 300
+  - id: clear_before_rbgfx10
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT CHR$(147)\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx10
+    type: input.sequence
+    params:
+      keys: [$(keys $'LOAD "RBGFX10",8\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: list_rbgfx10
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx10
+    type: screen.capture
+    params:
+      label: readybasic_sprite_list_rbgfx10
+      note: "RBGFX10 loaded and listed from inside ReadyBASIC under ReadyOS"
+  - id: assert_list_rbgfx10
+    type: assert.screen
+    params:
+      contains: "RBGFX10 COLLISION"
+  - id: clear_for_run_rbgfx10
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT CHR$(147)\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: run_rbgfx10
+    type: input.sequence
+    params:
+      keys: [82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 3.0
+  - id: capture_collision_pair
+    type: screen.capture
+    params:
+      label: readybasic_sprite_collision_pair
+      note: "RBGFX10 running from inside ReadyBASIC under ReadyOS"
+  - id: dump_collision_state
+    type: dump.memory_ranges
+    params:
+      ranges:
+        - { label: vic_sprite_regs_collision, start: 0xD000, end: 0xD02F }
+        - { label: sprite_pointers_collision, start: 0xCFF8, end: 0xCFFF }
+  - id: capture_collision_report
+    type: screen.wait_contains
+    params:
+      text: "SPRITE COLLISION"
+      wait_timeout_s: 300
+      capture_on_success: true
+      capture_label: readybasic_sprite_collision_report
+  - id: assert_collision_report
+    type: assert.screen
+    params:
+      contains: "SPRCOLL"
+  - id: assert_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+YAML
+
+if [ "${READYBASIC_GENERATE_PLAN_ONLY:-0}" = "1" ]; then
+  echo "wrote $PLAN"
+  exit 0
+fi
+
+dotnet run --project "$PROJECT" -- run --plan "$PLAN" $CLI_CLOSE_ARG

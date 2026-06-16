@@ -1,0 +1,866 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_readyos_loaded_apps_suite
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 180
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5a-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5a-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5a-d81-preboot.prg"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_readyos_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_readybasic_loaded_by_readyos
+    type: screen.wait_contains
+    params:
+      text: "FREE:"
+      wait_timeout_s: 180
+      capture_on_success: true
+      capture_label: readyos_loaded_readybasic_prompt
+  - id: assert_readybasic_banner
+    type: assert.screen
+    params:
+      contains: "READYBASIC"
+  - id: clear_before_rbtest1
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbtest1
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,84,69,83,84,49,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbtest1
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbtest1
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBTEST1"
+  - id: list_rbtest1
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbtest1
+    type: screen.capture
+    params:
+      label: readybasic_list_rbtest1
+  - id: assert_list_rbtest1
+    type: assert.screen
+    params:
+      contains: "10 ZECHO1"
+  - id: run_rbtest1
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_run_rbtest1
+    type: screen.capture
+    params:
+      label: readybasic_run_rbtest1
+      note: "RUN RBTEST1 from inside ReadyBASIC under ReadyOS"
+  - id: assert_run_rbtest1
+    type: assert.screen
+    params:
+      contains: "EXPRSTRREADY"
+  - id: assert_no_error_rbtest1
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbproc1
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbproc1
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,80,82,79,67,49,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbproc1
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbproc1
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBPROC1"
+  - id: list_rbproc1
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbproc1
+    type: screen.capture
+    params:
+      label: readybasic_list_rbproc1
+  - id: assert_list_rbproc1
+    type: assert.screen
+    params:
+      contains: "2220 ENDP"
+  - id: run_rbproc1
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 4.0
+  - id: capture_run_rbproc1
+    type: screen.capture
+    params:
+      label: readybasic_run_rbproc1
+      note: "RUN RBPROC1 from inside ReadyBASIC under ReadyOS"
+  - id: assert_run_rbproc1
+    type: assert.screen
+    params:
+      contains: "NGS MIX"
+  - id: assert_no_error_rbproc1
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx01
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx01
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,48,49,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx01
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx01
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX01"
+  - id: list_rbgfx01
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx01
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx01
+  - id: assert_list_rbgfx01
+    type: assert.screen
+    params:
+      contains: "RBGFX01 MODES"
+  - id: run_rbgfx01
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_graphics_rbgfx01
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx01
+      note: "Graphics screenshot after RUN RBGFX01 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx01
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,49,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx01
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx01
+  - id: assert_complete_rbgfx01
+    type: assert.screen
+    params:
+      contains: "RBGFX01 COMPLETE"
+  - id: assert_no_error_rbgfx01
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx02
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx02
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,48,50,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx02
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx02
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX02"
+  - id: list_rbgfx02
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx02
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx02
+  - id: assert_list_rbgfx02
+    type: assert.screen
+    params:
+      contains: "RBGFX02 HIRES PLOT"
+  - id: run_rbgfx02
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 3.0
+  - id: capture_graphics_rbgfx02
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx02
+      note: "Graphics screenshot after RUN RBGFX02 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx02
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,50,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx02
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx02
+  - id: assert_complete_rbgfx02
+    type: assert.screen
+    params:
+      contains: "RBGFX02 COMPLETE"
+  - id: assert_no_error_rbgfx02
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx03
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx03
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,48,51,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx03
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx03
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX03"
+  - id: list_rbgfx03
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx03
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx03
+  - id: assert_list_rbgfx03
+    type: assert.screen
+    params:
+      contains: "RBGFX03 HIRES LINES"
+  - id: run_rbgfx03
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 3.0
+  - id: capture_graphics_rbgfx03
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx03
+      note: "Graphics screenshot after RUN RBGFX03 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx03
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,51,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx03
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx03
+  - id: assert_complete_rbgfx03
+    type: assert.screen
+    params:
+      contains: "RBGFX03 COMPLETE"
+  - id: assert_no_error_rbgfx03
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx04
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx04
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,48,52,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx04
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx04
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX04"
+  - id: list_rbgfx04
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx04
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx04
+  - id: assert_list_rbgfx04
+    type: assert.screen
+    params:
+      contains: "RBGFX04 RECTS"
+  - id: run_rbgfx04
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 3.0
+  - id: capture_graphics_rbgfx04
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx04
+      note: "Graphics screenshot after RUN RBGFX04 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx04
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,52,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx04
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx04
+  - id: assert_complete_rbgfx04
+    type: assert.screen
+    params:
+      contains: "RBGFX04 COMPLETE"
+  - id: assert_no_error_rbgfx04
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx05
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx05
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,48,53,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx05
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx05
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX05"
+  - id: list_rbgfx05
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx05
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx05
+  - id: assert_list_rbgfx05
+    type: assert.screen
+    params:
+      contains: "RBGFX05 POINT READ"
+  - id: run_rbgfx05
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_graphics_rbgfx05
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx05
+      note: "Graphics screenshot after RUN RBGFX05 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx05
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,53,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx05
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx05
+  - id: assert_complete_rbgfx05
+    type: assert.screen
+    params:
+      contains: "RBGFX05 COMPLETE"
+  - id: assert_no_error_rbgfx05
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx06
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx06
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,48,54,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx06
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx06
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX06"
+  - id: list_rbgfx06
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx06
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx06
+  - id: assert_list_rbgfx06
+    type: assert.screen
+    params:
+      contains: "RBGFX06 REU SURFACE"
+  - id: run_rbgfx06
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_graphics_rbgfx06
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx06
+      note: "Graphics screenshot after RUN RBGFX06 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx06
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,54,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx06
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx06
+  - id: assert_complete_rbgfx06
+    type: assert.screen
+    params:
+      contains: "RBGFX06 COMPLETE"
+  - id: assert_no_error_rbgfx06
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx07
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx07
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,48,55,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx07
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx07
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX07"
+  - id: list_rbgfx07
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx07
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx07
+  - id: assert_list_rbgfx07
+    type: assert.screen
+    params:
+      contains: "RBGFX07 MBITMAP"
+  - id: run_rbgfx07
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 3.0
+  - id: capture_graphics_rbgfx07
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx07
+      note: "Graphics screenshot after RUN RBGFX07 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx07
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,55,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx07
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx07
+  - id: assert_complete_rbgfx07
+    type: assert.screen
+    params:
+      contains: "RBGFX07 COMPLETE"
+  - id: assert_no_error_rbgfx07
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx08
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx08
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,48,56,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx08
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx08
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX08"
+  - id: list_rbgfx08
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx08
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx08
+  - id: assert_list_rbgfx08
+    type: assert.screen
+    params:
+      contains: "RBGFX08 TILE"
+  - id: run_rbgfx08
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 3.0
+  - id: capture_graphics_rbgfx08
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx08
+      note: "Graphics screenshot after RUN RBGFX08 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx08
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,56,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx08
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx08
+  - id: assert_complete_rbgfx08
+    type: assert.screen
+    params:
+      contains: "RBGFX08 COMPLETE"
+  - id: assert_no_error_rbgfx08
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx09
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx09
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,48,57,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx09
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx09
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX09"
+  - id: list_rbgfx09
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx09
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx09
+  - id: assert_list_rbgfx09
+    type: assert.screen
+    params:
+      contains: "RBGFX09 SPRITES"
+  - id: run_rbgfx09
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 4.0
+  - id: capture_graphics_rbgfx09
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx09
+      note: "Graphics screenshot after RUN RBGFX09 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx09
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,57,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx09
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx09
+  - id: assert_complete_rbgfx09
+    type: assert.screen
+    params:
+      contains: "RBGFX09 COMPLETE"
+  - id: assert_no_error_rbgfx09
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx10
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx10
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,49,48,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx10
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx10
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX10"
+  - id: list_rbgfx10
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx10
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx10
+  - id: assert_list_rbgfx10
+    type: assert.screen
+    params:
+      contains: "RBGFX10 COLLISION"
+  - id: run_rbgfx10
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.5
+  - id: capture_graphics_rbgfx10
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx10
+      note: "Graphics screenshot after RUN RBGFX10 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx10
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,49,48,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx10
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx10
+  - id: assert_complete_rbgfx10
+    type: assert.screen
+    params:
+      contains: "RBGFX10 COMPLETE"
+  - id: assert_no_error_rbgfx10
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx11
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx11
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,49,49,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx11
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx11
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX11"
+  - id: list_rbgfx11
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx11
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx11
+  - id: assert_list_rbgfx11
+    type: assert.screen
+    params:
+      contains: "RBGFX11 INPUT"
+  - id: run_rbgfx11
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 4.0
+  - id: capture_graphics_rbgfx11
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx11
+      note: "Graphics screenshot after RUN RBGFX11 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx11
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,49,49,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx11
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx11
+  - id: assert_complete_rbgfx11
+    type: assert.screen
+    params:
+      contains: "RBGFX11 COMPLETE"
+  - id: assert_no_error_rbgfx11
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: clear_before_rbgfx12
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.4
+  - id: load_rbgfx12
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,49,50,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_loaded_rbgfx12
+    type: screen.capture
+    params:
+      label: readybasic_loaded_rbgfx12
+      note: "ReadyOS-loaded ReadyBASIC after LOAD RBGFX12"
+  - id: list_rbgfx12
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_list_rbgfx12
+    type: screen.capture
+    params:
+      label: readybasic_list_rbgfx12
+  - id: assert_list_rbgfx12
+    type: assert.screen
+    params:
+      contains: "RBGFX12 SHOWCASE"
+  - id: run_rbgfx12
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 3.0
+  - id: capture_graphics_rbgfx12
+    type: screen.capture
+    params:
+      label: readybasic_graphics_rbgfx12
+      note: "Graphics screenshot after RUN RBGFX12 from inside ReadyBASIC under ReadyOS"
+  - id: restore_text_rbgfx12
+    type: input.sequence
+    params:
+      keys: [71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,49,50,32,67,79,77,80,76,69,84,69,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: capture_restored_rbgfx12
+    type: screen.capture
+    params:
+      label: readybasic_restored_rbgfx12
+  - id: assert_complete_rbgfx12
+    type: assert.screen
+    params:
+      contains: "RBGFX12 COMPLETE"
+  - id: assert_no_error_rbgfx12
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"

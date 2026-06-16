@@ -1,0 +1,36 @@
+10 rem see readybasic_graphics_command_design.md
+20 print chr$(147);"rbgfx13 sprite steps"
+30 gfxmode("tile"):gfxclear(0)
+40 sprset(0,1,2,0):sprset(1,1,7,0)
+50 sprrow(0,0,0,24,0):sprrow(0,1,0,60,0)
+60 sprrow(0,2,0,126,0):sprrow(0,3,0,255,0)
+70 sprrow(0,4,1,255,128):sprrow(0,5,3,255,192)
+80 sprrow(0,6,7,255,224):sprrow(0,7,15,255,240)
+90 sprrow(0,8,31,255,248):sprrow(0,9,63,255,252)
+100 sprrow(0,10,127,255,254):sprrow(0,11,63,255,252)
+110 sprrow(0,12,31,255,248):sprrow(0,13,15,255,240)
+120 sprrow(0,14,7,255,224):sprrow(0,15,3,255,192)
+130 sprrow(0,16,1,255,128):sprrow(0,17,0,255,0)
+140 sprrow(0,18,0,126,0):sprrow(0,19,0,60,0)
+150 sprrow(0,20,0,24,0)
+160 sprrow(1,0,255,255,0):sprrow(1,1,128,1,0)
+170 sprrow(1,2,191,253,0):sprrow(1,3,160,5,0)
+180 sprrow(1,4,175,245,0):sprrow(1,5,168,21,0)
+190 sprrow(1,6,171,85,0):sprrow(1,7,170,85,0)
+200 sprrow(1,8,171,85,0):sprrow(1,9,168,21,0)
+210 sprrow(1,10,175,245,0):sprrow(1,11,160,5,0)
+220 sprrow(1,12,191,253,0):sprrow(1,13,128,1,0)
+230 sprrow(1,14,255,255,0):sprrow(1,15,0,0,0)
+240 sprrow(1,16,255,255,0):sprrow(1,17,128,1,0)
+250 sprrow(1,18,255,255,0):sprrow(1,19,0,0,0)
+260 sprrow(1,20,255,255,0)
+270 sprmove(0,60,70):sprmove(1,190,110)
+280 zpause(30)
+290 get a$:if a$="" then 280
+300 sprmove(0,120,88):sprmove(1,145,110)
+310 zpause(30)
+320 get a$:if a$="" then 310
+330 sprset(0,1,5,0):sprset(1,1,3,0)
+340 zpause(30)
+350 get a$:if a$="" then 340
+360 gfxtext():print "sprite demo done"

@@ -8,10 +8,10 @@ same ReadyOS and REU discipline.
 
 - `BASIC_START = $2AC1`; BASIC owns `$2AC1-$9FFF`, with `30013` formula empty
   free bytes.
-- `RESIDENT` is `$1200-$2ABE` (`$18BF`, 6335B).
-- `BRIDGE` is `$C000-$C1FD` (`$01FE`, 510B), still below `$C200`.
+- `RESIDENT` is `$1200-$2ABA` (`$18BB`, 6331B).
+- `BRIDGE` is `$C000-$C1FE` (`$01FF`, 511B), still below `$C200`.
 - Under BASIC ROM, `$A000-$A7FF` is the common helper area, currently using
-  `$A000-$A6C7`; `$A800-$AFFF`,
+  `$A000-$A790`; `$A800-$AFFF`,
   `$B000-$B7FF`, and `$B800-$BFFF` are three 2KB submodule slots.
 - ReadyBASIC uses two launcher-assigned REU resource banks. The core bank is
   registry/runtime storage; the code bank is built-in and disk-loaded module
@@ -23,6 +23,9 @@ same ReadyOS and REU discipline.
 - The disk-loader proof command is `ZMODLD(name$)` in module 2/slot 1. It opens
   ReadyBasicModule SEQ packages named `rbm.<name>` and streams them into REU.
   Sample packages add `ZDM1`, `ZDM2S`, `ZDOV1`, `ZDOV2`, and `ZSAA`-`ZUEB`.
+- Phase 1 graphics commands are built-in module id `3`: `GFXCORE` submodule
+  `16` in slot 1, `GFXPRIM` submodule `17` in slot 2, `GFXSPR` submodule `18`
+  as slot-2 overlay 1, and `INPUTEV` submodule `19` as slot-2 overlay 2.
 
 ## Pre-Module V1 Layout Snapshot
 
@@ -66,19 +69,23 @@ same ReadyOS and REU discipline.
 - `$0C00-$0CFF`: 192-page heap bitmap plus reserved bytes.
 - `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. Slot 14 is `SCRCAP`, slot 128 is `SCRPUT`, and zero-filled filler slots are unused.
 - `$2000-$3FFF`: reserved common/system expansion space.
-- `$4000-$FFFF`: typed 48KB heap for buffer and screen handles.
+- `$4000-$FFFF`: typed 48KB heap for buffer, screen, and Phase 1 graphics
+  surface handles.
 
 ## Assigned Code Bank Regions
 
-- `$0000-$06CD`: built-in module 1 slot-0 payload, fetched into
-  `$A800-$AECD` (`$06CE`, 1742B). The linker symbol is still named
+- `$0000-$06FC`: built-in module 1 slot-0 payload, fetched into
+  `$A800-$AEFC` (`$06FD`, 1789B). The linker symbol is still named
   `LOWPACK` for compatibility, but the current runtime slot base is `$A800`.
-- `$06CE-$0908`: built-in module 2 slot-1 proof and streaming `ZMODLD` loader
-  payload, fetched into `$B000-$B23A` (`$023B`, 571B).
-- `$0909-$095C`: built-in slot-2, span, and overlay proof slices (`$0054`,
-  84B total). Each proof slice is 21B.
-- `$095D-$14FF`: free gap before the current disk-module proof offsets
-  (`$0BA3`, 2979B).
+- `$06FD-$0B71`: built-in module 2 slot-1 proof, streaming `ZMODLD` loader,
+  and Phase 1 `GFXCORE`, fetched into `$B000-$B474` (`$0475`, 1141B).
+- `$0B72-$0ED4`: built-in slot-2 proof and Phase 1 `GFXPRIM`, fetched into
+  `$B800-$BB62` (`$0363`, 867B).
+- `$0ED5-$0EE9`: two-slot span proof payload (`$0015`, 21B).
+- `$0EEA-$10AB`: Phase 1 `GFXSPR` slot-2 overlay (`$01C2`, 450B).
+- `$10AC-$1118`: Phase 1 `INPUTEV` slot-2 overlay (`$006D`, 109B).
+- `$1119-$14FF`: free gap before the current disk-module proof offsets
+  (`$03E7`, 999B).
 - `$1500-$151F`: `rbm.sample1` descriptor proof for `ZDM1`.
 - `$1600-$165F`: `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`;
   submodule 5 appears twice because those entries are overlays 1 and 2.
@@ -152,6 +159,22 @@ Each descriptor is 32 bytes:
   `ZCOPY`: built-in slot/span/overlay proof commands.
 - `ZMODLD(name$)`: module 2 slot 1 SEQ package loader proof command.
 - `ZDM1`, `ZDM2S`, `ZDOV1`, `ZDOV2`, and `ZSAA`-`ZUEB`: disk-loaded sample module commands.
+- `GFXMODE(mode$)` / `GFXMODE()`: module 3 `GFXCORE`, switches or reads
+  `TEXT`, `HIRES`, `MBITMAP`, `TILE`, and `MTILE`.
+- `GFXTEXT()`, `GFXCLEAR(C)`, `GFXTARGET(H%)`, and `GFXSYNC()`: module 3
+  `GFXCORE` Bank D setup/control commands. `GFXTARGET(0)` is the Phase 1
+  visible target; offscreen target drawing is future work.
+- `GFXSURF(mode$)` and `GFXBLIT(H%)`: slot-0 allocator-backed surface handle
+  commands. They allocate/validate typed handle `3`; full REU drawing/blitting
+  is future work.
+- `PLOT(X,Y,C)`, `POINT(X,Y,OUT%)` / `PNT(X,Y,OUT%)`, `LINE(X1,Y1,X2,Y2,C)`,
+  `RECT(X1,Y1,X2,Y2,C)`, and `FRECT(X1,Y1,X2,Y2,C)`: module 3 `GFXPRIM`
+  immediate primitive commands.
+- `SPRSET(N,ON,COLOR,PATTERN)`, `SPRMOVE(N,X,Y)`, `SPRCOLOR(N,COLOR)`,
+  `SPRROW(N,ROW,B1,B2,B3)`, `SPRSCAN()`, and `SPRCOLL(N,OUT%)`: module 3
+  `GFXSPR` overlay commands.
+- `JOY(PORT,OUT%)`, `KEYP(OUT%)`, `KEYSCAN()`, and `KEYLAST(OUT%)`: module 3
+  `INPUTEV` polling input commands.
 
 Native reusable BASIC routines:
 
@@ -205,10 +228,10 @@ The current design includes resident flow control and error introspection:
   ReadyBASIC runtime error code and line.
 
 Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
-`30013` formula empty free bytes. `ENTRY` is `$1000-$11FC` (`509` bytes),
-`RESIDENT` is `$1200-$2ABE` (`6335` bytes), `HIDDEN` is `$A000-$A6C7`
-(`1736` bytes), `BRIDGE` is `$C000-$C1FD` (`510` bytes), `LOWPACK` is `$06CE`
-(`1742` bytes), and `bin/readybasic.prg` remains `20994` bytes.
+`30013` formula empty free bytes. `ENTRY` is `$1000-$11FF` (`512` bytes),
+`RESIDENT` is `$1200-$2ABA` (`6331` bytes), `HIDDEN` is `$A000-$A790`
+(`1937` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$06FD`
+(`1789` bytes), and `bin/readybasic.prg` remains `20994` bytes.
 
 ## Current Nested-Term Support
 

@@ -99,6 +99,7 @@ CIA1_PRA        = $DC00
 CIA1_PRB        = $DC01
 CIA1_DDRA       = $DC02
 CIA1_DDRB       = $DC03
+CIA2_PRA        = $DD00
 
 BASIC_START     = $2AC1
 BASIC_SENTINEL  = BASIC_START - 1
@@ -114,6 +115,17 @@ CPU_PORT        = $0001
 SCREEN          = $0400
 COLOR_RAM       = $D800
 VIC_MEM         = $D018
+VIC_CTRL1       = $D011
+VIC_CTRL2       = $D016
+VIC_SPR_X_MSB   = $D010
+VIC_SPR_ENABLE  = $D015
+VIC_SPR_EXP_Y   = $D017
+VIC_SPR_PRIORITY= $D01B
+VIC_SPR_MCOLOR  = $D01C
+VIC_SPR_EXP_X   = $D01D
+VIC_SPR_COLL    = $D01E
+VIC_BG_COLL     = $D01F
+VIC_SPR_COLOR0  = $D027
 VIC_BORDER      = $D020
 VIC_BG          = $D021
 
@@ -187,6 +199,12 @@ CF_NUM1_LO      = RB_CF + $12
 CF_NUM1_HI      = RB_CF + $13
 CF_NUM2_LO      = RB_CF + $14
 CF_NUM2_HI      = RB_CF + $15
+CF_NUM3_LO      = RB_CF + $16
+CF_NUM3_HI      = RB_CF + $17
+CF_NUM4_LO      = RB_CF + $18
+CF_NUM4_HI      = RB_CF + $19
+CF_NUM5_LO      = RB_CF + $1A
+CF_NUM5_HI      = RB_CF + $1B
 CF_FLOAT0       = RB_CF + $20
 CF_FLOAT1       = RB_CF + $25
 CF_FLOAT2       = RB_CF + $2A
@@ -208,6 +226,7 @@ RF_FLOAT        = RB_RF + $08
 RF_STR_LEN      = RB_RF + $10
 RF_STR_BUF      = RB_RF + $20
 RF_ARRAY_BUF    = RB_RF + $80
+RF_RECT_BUF     = RF_ARRAY_BUF + $20
 
 RB_VAL_NONE     = 0
 RB_VAL_INT      = 1
@@ -222,12 +241,17 @@ RB_OUT_ARRAYI   = 3
 RB_OUT_FLOAT    = 4
 
 RB_MODULE_SYSTEM = 1
+RB_MODULE_GFX    = 3
 RB_SUBMOD_COMMON = 0
 RB_SUBMOD_LEGACY_LOW = 1
 RB_SUBMOD_PROOF_SLOT1 = 2
 RB_SUBMOD_PROOF_SLOT2 = 3
 RB_SUBMOD_PROOF_SPAN = 4
 RB_SUBMOD_PROOF_OVERLAY = 5
+RB_SUBMOD_GFXCORE = 16
+RB_SUBMOD_GFXPRIM = 17
+RB_SUBMOD_GFXSPR  = 18
+RB_SUBMOD_INPUTEV = 19
 RB_SLOT_LEGACY_LOW = $01
 RB_SLOT_PROOF_1 = $02
 RB_SLOT_PROOF_2 = $04
@@ -267,8 +291,22 @@ RB_HEAP_PAGES      = 192
 RB_HEAP_PAGE_BASE  = >RB_REU_DATA_OFF
 RB_HANDLE_TYPE_BUFFER = 1
 RB_HANDLE_TYPE_SCREEN_TC = 2
+RB_HANDLE_TYPE_GFXSURF = 3
 RB_SCREEN_BYTES    = $03E8
 RB_SCREEN_HANDLE_PAGES = 8
+
+RB_GFX_MODE_TEXT   = 0
+RB_GFX_MODE_HIRES  = 1
+RB_GFX_MODE_MBITMAP= 2
+RB_GFX_MODE_TILE   = 3
+RB_GFX_MODE_MTILE  = 4
+RB_GFX_SURF_PAGES  = 40
+RB_GFX_SCREEN      = $CC00
+RB_GFX_SPRITES     = $CA00
+RB_GFX_BITMAP      = $E000
+RB_GFX_COLOR       = $D800
+RB_GFX_SPR_PTRS    = $CFF8
+RB_GFX_VICMEM      = $38
 
 SIG_ZECHO1      = 1
 SIG_ZADD16      = 2
@@ -289,6 +327,12 @@ SIG_FADD        = 16
 SIG_ZPAUSE      = SIG_BUFFREE
 SIG_ERRCODE     = 17
 SIG_ERRLINE     = 18
+SIG_GFXMODE     = 19
+SIG_GFXSURF     = 20
+SIG_PLOT        = 21
+SIG_LINE        = 22
+SIG_SPRSET      = 23
+SIG_KEYNONE     = 24
 
 CMD_ZECHO1      = 1
 CMD_ZADD16      = 2
@@ -322,6 +366,29 @@ CMD_ZDM1        = 29
 CMD_ZDM2S       = 30
 CMD_ZDOV1       = 31
 CMD_ZDOV2       = 32
+CMD_GFXMODE     = 33
+CMD_GFXTEXT     = 34
+CMD_GFXCLEAR    = 35
+CMD_GFXSURF     = 36
+CMD_GFXTARGET   = 37
+CMD_GFXBLIT     = 38
+CMD_GFXSYNC     = 39
+CMD_PLOT        = 40
+CMD_POINT       = 41
+CMD_LINE        = 42
+CMD_RECT        = 43
+CMD_FRECT       = 44
+CMD_SPRSET      = 45
+CMD_SPRMOVE     = 46
+CMD_SPRCOLOR    = 47
+CMD_SPRSCAN     = 48
+CMD_SPRCOLL     = 49
+CMD_JOY         = 50
+CMD_KEYP        = 51
+CMD_KEYSCAN     = 52
+CMD_KEYLAST     = 53
+CMD_PNT         = 54
+CMD_SPRROW      = 55
 
 ; REU registers.
 REU_CMD         = $DF01
@@ -790,8 +857,17 @@ rb_execute:
         bcc rb_maybe_bare_command
         jmp rb_label_statement
 @maybe_proc:
+        lda rb_peek_lo
+        sta rb_ptr_lo
+        lda rb_peek_hi
+        sta rb_ptr_hi
+        ldy #1
+        lda (rb_ptr_lo),y
+        jsr rb_fold_a
+        cmp #'R'
+        bne rb_maybe_bare_command
         jsr rb_match_proc
-        bcc rb_call_orig_execute
+        bcc rb_maybe_bare_command
         jmp BASIC_SYNERR
 @maybe_func:
         jsr rb_match_func
@@ -2095,6 +2171,184 @@ rb_start_numeric_actual:
         rts
 
 rb_lookup_command:
+        lda #<hidden_lookup_command
+        sta rb_lookup_index
+        lda #>hidden_lookup_command
+        sta rb_lookup_slots
+        jsr call_hidden_common
+        lda rb_found_kind
+        beq @miss
+        sec
+        rts
+@miss:
+        clc
+        rts
+
+rb_parse_by_signature:
+        lda RB_DESC_BUF+14
+        beq @bad
+        cmp #SIG_KEYNONE + 1
+        bcs @bad
+        asl
+        tax
+        lda rb_parse_sig_table-2,x
+        sta rb_ptr_lo
+        lda rb_parse_sig_table-1,x
+        sta rb_ptr_hi
+        jmp (rb_ptr_lo)
+@bad:
+        jmp BASIC_SYNERR
+
+rb_parse_sig_table:
+        .word parse_sig_zecho1
+        .word parse_sig_zadd16
+        .word parse_sig_string_out
+        .word parse_sig_string_out
+        .word parse_sig_zhiddenram
+        .word parse_sig_zsumnumarray
+        .word parse_sig_zrangenumarray
+        .word parse_sig_bufnew
+        .word parse_sig_buffill
+        .word parse_sig_buffree
+        .word parse_sig_ztempscratch
+        .word parse_sig_zfail
+        .word parse_sig_freemem
+        .word parse_sig_scrcap
+        .word parse_sig_scrput
+        .word parse_sig_fadd
+        .word parse_sig_errcode
+        .word parse_sig_errline
+        .word parse_sig_gfxmode
+        .word parse_sig_gfxsurf
+        .word parse_sig_num3
+        .word parse_sig_num5
+        .word parse_sig_sprset
+        .word parse_sig_no_args
+
+parse_sig_zecho1:
+        jsr rb_parse_out_int_current
+        jmp rb_precompute_zecho1
+
+parse_sig_zadd16:
+        jsr rb_parse_num0
+        jsr rb_parse_num1
+        jmp rb_parse_out_int
+
+parse_sig_string_out:
+        jsr rb_parse_string_value
+        jmp rb_parse_out_string
+
+parse_sig_zhiddenram:
+        jsr rb_parse_string_value
+        jmp rb_parse_out_int
+
+parse_sig_zsumnumarray:
+        jsr rb_parse_int_array_input
+        jsr rb_parse_out_int
+        jmp rb_resolve_int_array_input_ptr
+
+parse_sig_zrangenumarray:
+        jsr rb_parse_num0
+        jsr rb_parse_num1
+        lda CF_NUM1_LO
+        sta rb_saved_count_lo
+        lda CF_NUM1_HI
+        sta rb_saved_count_hi
+        jmp rb_parse_out_int_array
+
+parse_sig_bufnew:
+        jsr rb_parse_num0
+        jmp rb_parse_out_int
+
+parse_sig_buffill:
+        jsr rb_parse_num0
+        jmp rb_parse_num1
+
+parse_sig_buffree:
+        jmp rb_parse_num0
+
+parse_sig_ztempscratch:
+        jsr rb_parse_num0
+        jmp rb_parse_out_int
+
+parse_sig_zfail:
+        jsr rb_parse_num0
+        jmp rb_parse_out_int
+
+parse_sig_freemem:
+        jmp parse_sig_no_args
+
+parse_sig_scrcap:
+        jmp rb_parse_out_int_current
+
+parse_sig_scrput:
+        jmp rb_parse_num0
+
+parse_sig_fadd:
+        jsr rb_parse_float0
+        jsr rb_parse_float1
+        jsr rb_parse_out_float
+        jmp rb_compute_fadd_result
+
+parse_sig_errcode:
+        jsr rb_parse_out_int_current
+        jmp rb_precompute_errcode
+
+parse_sig_errline:
+        jsr rb_parse_out_int_current
+        jmp rb_precompute_errline
+
+parse_sig_no_args:
+        jmp rb_parse_no_args
+
+parse_sig_num3:
+        jsr rb_parse_num0
+        jsr rb_parse_num1
+        jmp rb_parse_num2
+
+parse_sig_num5:
+        jsr rb_parse_num0
+        jsr rb_parse_num1
+        jsr rb_parse_num2
+        jsr rb_parse_num3
+        jmp rb_parse_num4
+
+parse_sig_sprset:
+        jsr rb_parse_num0
+        jsr rb_parse_num1
+        jsr rb_parse_num2
+        jmp rb_parse_num3
+
+parse_sig_gfxmode:
+        jsr rb_skip_spaces
+        cmp #')'
+        beq :+
+        jsr rb_parse_string_value_current
+:       rts
+
+parse_sig_gfxsurf:
+        jsr rb_parse_string_value_current
+        jsr rb_skip_spaces
+        cmp #')'
+        beq :+
+        jsr rb_parse_out_int
+:       rts
+
+rb_parse_no_args:
+        jsr rb_skip_spaces
+        cmp #0
+        beq @ok
+        cmp #':'
+        beq @ok
+        cmp #')'
+        beq @ok
+        jmp BASIC_SYNERR
+@ok:
+        rts
+
+        .segment "HIDDEN"
+
+hidden_lookup_command:
         lda #<RB_REU_DESC_OFF
         sta rb_reu_off_lo
         lda #>RB_REU_DESC_OFF
@@ -2158,7 +2412,8 @@ rb_lookup_command:
         iny
         cpy #RB_CMD_DESC_SIZE
         bcc @copy
-        sec
+        lda #1
+        sta rb_found_kind
         rts
 @next:
         clc
@@ -2173,133 +2428,11 @@ rb_lookup_command:
         inc rb_reu_off_hi
         jmp @page
 @miss:
-        clc
+        lda #0
+        sta rb_found_kind
         rts
 
-rb_parse_by_signature:
-        lda RB_DESC_BUF+14
-        cmp #SIG_ZECHO1
-        beq parse_sig_zecho1
-        cmp #SIG_ZADD16
-        beq parse_sig_zadd16
-        cmp #SIG_UPPER
-        beq parse_sig_string_out
-        cmp #SIG_LOWER
-        beq parse_sig_string_out
-        cmp #SIG_ZHIDDENRAM
-        beq parse_sig_zhiddenram
-        cmp #SIG_ZSUMNUMARRAY
-        beq parse_sig_zsumnumarray
-        cmp #SIG_ZRANGENUMARRAY
-        beq parse_sig_zrangenumarray
-        cmp #SIG_BUFNEW
-        beq parse_sig_bufnew
-        cmp #SIG_BUFFILL
-        beq parse_sig_buffill
-        cmp #SIG_BUFFREE
-        beq parse_sig_buffree
-        cmp #SIG_ZTEMPSCRATCH
-        beq parse_sig_ztempscratch
-        cmp #SIG_ZFAIL
-        beq parse_sig_zfail
-        cmp #SIG_FREEMEM
-        beq parse_sig_freemem
-        cmp #SIG_SCRCAP
-        beq parse_sig_scrcap
-        cmp #SIG_SCRPUT
-        beq parse_sig_scrput
-        cmp #SIG_FADD
-        beq parse_sig_fadd
-        cmp #SIG_ERRCODE
-        beq parse_sig_errcode
-        cmp #SIG_ERRLINE
-        beq parse_sig_errline
-        jmp BASIC_SYNERR
-
-parse_sig_zecho1:
-        jsr rb_parse_out_int_current
-        jmp rb_precompute_zecho1
-
-parse_sig_zadd16:
-        jsr rb_parse_num0
-        jsr rb_parse_num1
-        jmp rb_parse_out_int
-
-parse_sig_string_out:
-        jsr rb_parse_string_value
-        jmp rb_parse_out_string
-
-parse_sig_zhiddenram:
-        jsr rb_parse_string_value
-        jmp rb_parse_out_int
-
-parse_sig_zsumnumarray:
-        jsr rb_parse_int_array_input
-        jsr rb_parse_out_int
-        jmp rb_resolve_int_array_input_ptr
-
-parse_sig_zrangenumarray:
-        jsr rb_parse_num0
-        jsr rb_parse_num1
-        lda CF_NUM1_LO
-        sta rb_saved_count_lo
-        lda CF_NUM1_HI
-        sta rb_saved_count_hi
-        jmp rb_parse_out_int_array
-
-parse_sig_bufnew:
-        jsr rb_parse_num0
-        jmp rb_parse_out_int
-
-parse_sig_buffill:
-        jsr rb_parse_num0
-        jmp rb_parse_num1
-
-parse_sig_buffree:
-        jmp rb_parse_num0
-
-parse_sig_ztempscratch:
-        jsr rb_parse_num0
-        jmp rb_parse_out_int
-
-parse_sig_zfail:
-        jsr rb_parse_num0
-        jmp rb_parse_out_int
-
-parse_sig_freemem:
-        jmp rb_parse_no_args
-
-parse_sig_scrcap:
-        jmp rb_parse_out_int_current
-
-parse_sig_scrput:
-        jmp rb_parse_num0
-
-parse_sig_fadd:
-        jsr rb_parse_float0
-        jsr rb_parse_float1
-        jsr rb_parse_out_float
-        jmp rb_compute_fadd_result
-
-parse_sig_errcode:
-        jsr rb_parse_out_int_current
-        jmp rb_precompute_errcode
-
-parse_sig_errline:
-        jsr rb_parse_out_int_current
-        jmp rb_precompute_errline
-
-rb_parse_no_args:
-        jsr rb_skip_spaces
-        cmp #0
-        beq @ok
-        cmp #':'
-        beq @ok
-        cmp #')'
-        beq @ok
-        jmp BASIC_SYNERR
-@ok:
-        rts
+        .segment "RESIDENT"
 
 rb_precompute_zecho1:
         lda #0
@@ -2347,6 +2480,15 @@ rb_parse_num1:
         bne rb_parse_num_to_slot
 rb_parse_num2:
         lda #CF_NUM2_LO-RB_CF
+        bne rb_parse_num_to_slot
+rb_parse_num3:
+        lda #CF_NUM3_LO-RB_CF
+        bne rb_parse_num_to_slot
+rb_parse_num4:
+        lda #CF_NUM4_LO-RB_CF
+        bne rb_parse_num_to_slot
+rb_parse_num5:
+        lda #CF_NUM5_LO-RB_CF
 rb_parse_num_to_slot:
         sta rb_target_off
         jsr rb_parse_arg_sep
@@ -3372,6 +3514,10 @@ rb_parse_expr_signature:
         beq parse_expr_int_string
         cmp #SIG_BUFNEW
         beq parse_expr_num0
+        cmp #SIG_BUFFILL
+        beq parse_expr_num2
+        cmp #SIG_BUFFREE
+        beq parse_expr_num0
         cmp #SIG_ZTEMPSCRATCH
         beq parse_expr_num0
         cmp #SIG_SCRCAP
@@ -3384,6 +3530,12 @@ rb_parse_expr_signature:
         beq parse_expr_errcode
         cmp #SIG_ERRLINE
         beq parse_expr_errline
+        cmp #SIG_GFXMODE
+        beq parse_expr_gfxmode
+        cmp #SIG_GFXSURF
+        beq parse_expr_gfxsurf
+        cmp #SIG_KEYNONE
+        beq parse_expr_no_args
         jmp BASIC_SYNERR
 
 parse_expr_no_args:
@@ -3411,6 +3563,20 @@ parse_expr_errline:
 
 parse_expr_num0:
         jmp rb_parse_num0
+
+parse_expr_num2:
+        jsr rb_parse_num0
+        jmp rb_parse_num1
+
+parse_expr_gfxmode:
+        jsr rb_skip_spaces
+        cmp #')'
+        beq :+
+        jsr rb_parse_string_value_current
+:       rts
+
+parse_expr_gfxsurf:
+        jmp rb_parse_string_value_current
 
 parse_expr_int_string:
         jmp rb_parse_string_value
@@ -3997,8 +4163,8 @@ rb_reu_header_end:
         .byte 1
         .byte RB_SLOT_PROOF_2
         .byte 1
-        .word 0
-        .word label - __OVL1PACK_RUN__
+        .word __OVL1PACK_RUN__ - __SLOTPACK2_RUN__
+        .word label - __SLOTPACK2_RUN__
         .byte sig, .strlen(name)
         .byte name
         .res 16 - .strlen(name), 0
@@ -4012,8 +4178,68 @@ rb_reu_header_end:
         .byte 2
         .byte RB_SLOT_PROOF_2
         .byte 1
+        .word __OVL2PACK_RUN__ - __SLOTPACK2_RUN__
+        .word label - __SLOTPACK2_RUN__
+        .byte sig, .strlen(name)
+        .byte name
+        .res 16 - .strlen(name), 0
+.endmacro
+
+.macro CMD_GFXCORE id, sig, label, name
+        .byte id, RB_MODULE_GFX
+        .word __SLOTPACK1_LOAD__ - __LOWPACK_LOAD__
+        .word __SLOTPACK1_SIZE__
+        .byte RB_SUBMOD_GFXCORE
+        .byte 0
+        .byte RB_SLOT_PROOF_1
+        .byte 1
         .word 0
-        .word label - __OVL2PACK_RUN__
+        .word label - __SLOTPACK1_RUN__
+        .byte sig, .strlen(name)
+        .byte name
+        .res 16 - .strlen(name), 0
+.endmacro
+
+.macro CMD_GFXPRIM id, sig, label, name
+        .byte id, RB_MODULE_GFX
+        .word __SLOTPACK2_LOAD__ - __LOWPACK_LOAD__
+        .word __SLOTPACK2_SIZE__
+        .byte RB_SUBMOD_GFXPRIM
+        .byte 0
+        .byte RB_SLOT_PROOF_2
+        .byte 1
+        .word 0
+        .word label - __SLOTPACK2_RUN__
+        .byte sig, .strlen(name)
+        .byte name
+        .res 16 - .strlen(name), 0
+.endmacro
+
+.macro CMD_GFXSPR id, sig, label, name
+        .byte id, RB_MODULE_GFX
+        .word __OVL1PACK_LOAD__ - __LOWPACK_LOAD__
+        .word __OVL1PACK_SIZE__
+        .byte RB_SUBMOD_GFXSPR
+        .byte 1
+        .byte RB_SLOT_PROOF_2
+        .byte 1
+        .word __OVL1PACK_RUN__ - __SLOTPACK2_RUN__
+        .word label - __SLOTPACK2_RUN__
+        .byte sig, .strlen(name)
+        .byte name
+        .res 16 - .strlen(name), 0
+.endmacro
+
+.macro CMD_INPUTEV id, sig, label, name
+        .byte id, RB_MODULE_GFX
+        .word __OVL2PACK_LOAD__ - __LOWPACK_LOAD__
+        .word __OVL2PACK_SIZE__
+        .byte RB_SUBMOD_INPUTEV
+        .byte 2
+        .byte RB_SLOT_PROOF_2
+        .byte 1
+        .word __OVL2PACK_RUN__ - __SLOTPACK2_RUN__
+        .word label - __SLOTPACK2_RUN__
         .byte sig, .strlen(name)
         .byte name
         .res 16 - .strlen(name), 0
@@ -4047,7 +4273,30 @@ rb_command_descriptors:
         CMD_LOW CMD_ZCPYRST, SIG_SCRCAP, cmd_zcpyrst_low, cmd_zcpyrst_low_end, "ZCPYRST"
         CMD_LOW CMD_ZCOPY, SIG_SCRCAP, cmd_zcopy_low, cmd_zcopy_low_end, "ZCOPY"
         CMD_SLOT1 CMD_ZMODLOAD, SIG_ZHIDDENRAM, cmd_zmodload, "ZMODLD"
-        .res (RB_CMD_DESC_COUNT - 28) * RB_CMD_DESC_SIZE, 0
+        CMD_GFXCORE CMD_GFXMODE, SIG_GFXMODE, cmd_gfxmode, "GFXMODE"
+        CMD_GFXCORE CMD_GFXTEXT, SIG_FREEMEM, cmd_gfxtext, "GFXTEXT"
+        CMD_GFXCORE CMD_GFXCLEAR, SIG_BUFFREE, cmd_gfxclear, "GFXCLEAR"
+        CMD_LOW_ALL CMD_GFXSURF, SIG_GFXSURF, cmd_gfxsurf_low, "GFXSURF"
+        CMD_GFXCORE CMD_GFXTARGET, SIG_BUFFREE, cmd_gfxtarget, "GFXTARGET"
+        CMD_LOW_ALL CMD_GFXBLIT, SIG_BUFFREE, cmd_gfxblit_low, "GFXBLIT"
+        CMD_GFXCORE CMD_GFXSYNC, SIG_FREEMEM, cmd_gfxsync, "GFXSYNC"
+        CMD_GFXPRIM CMD_PLOT, SIG_PLOT, cmd_plot, "PLOT"
+        CMD_GFXPRIM CMD_POINT, SIG_ZADD16, cmd_point, "POINT"
+        CMD_GFXPRIM CMD_PNT, SIG_ZADD16, cmd_point, "PNT"
+        CMD_GFXPRIM CMD_LINE, SIG_LINE, cmd_line, "LINE"
+        CMD_GFXPRIM CMD_RECT, SIG_LINE, cmd_rect, "RECT"
+        CMD_GFXPRIM CMD_FRECT, SIG_LINE, cmd_frect, "FRECT"
+        CMD_GFXSPR CMD_SPRSET, SIG_SPRSET, cmd_sprset, "SPRSET"
+        CMD_GFXSPR CMD_SPRMOVE, SIG_PLOT, cmd_sprmove, "SPRMOVE"
+        CMD_GFXSPR CMD_SPRCOLOR, SIG_BUFFILL, cmd_sprcolor, "SPRCOLOR"
+        CMD_GFXSPR CMD_SPRROW, SIG_LINE, cmd_sprrow, "SPRROW"
+        CMD_GFXSPR CMD_SPRSCAN, SIG_FREEMEM, cmd_sprscan, "SPRSCAN"
+        CMD_GFXSPR CMD_SPRCOLL, SIG_ZFAIL, cmd_sprcoll, "SPRCOLL"
+        CMD_INPUTEV CMD_JOY, SIG_ZFAIL, cmd_joy, "JOY"
+        CMD_INPUTEV CMD_KEYP, SIG_SCRCAP, cmd_keyp, "KEYP"
+        CMD_INPUTEV CMD_KEYSCAN, SIG_KEYNONE, cmd_keyscan, "KEYSCAN"
+        CMD_INPUTEV CMD_KEYLAST, SIG_SCRCAP, cmd_keylast, "KEYLAST"
+        .res (RB_CMD_DESC_COUNT - 51) * RB_CMD_DESC_SIZE, 0
         CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"
 
 ; ---------------------------------------------------------------------------
@@ -5596,6 +5845,34 @@ cmd_scrput_low:
         rts
 cmd_scrput_low_end:
 
+cmd_gfxsurf_low:
+        lda #RB_GFX_SURF_PAGES
+        sta rb_needed_pages
+        lda #RB_HANDLE_TYPE_GFXSURF
+        sta rb_handle_new_type
+        jsr rb_handle_alloc_with_pages
+        rts
+cmd_gfxsurf_low_end:
+
+cmd_gfxblit_low:
+        jsr rb_handle_load_arg
+        bcs @bad
+        lda rb_handle_type
+        cmp #RB_HANDLE_TYPE_GFXSURF
+        bne @wrong
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+@bad:
+        lda #$24
+        jmp rb_overlay_fail
+@wrong:
+        lda #$28
+        jmp rb_overlay_fail
+cmd_gfxblit_low_end:
+
 rb_handle_alloc:
         jsr rb_len_to_pages
         bcc :+
@@ -6233,6 +6510,335 @@ cmd_zslot1:
         rts
 cmd_zslot1_end:
 
+cmd_gfxmode:
+        lda CF_STR_LEN
+        beq @return_current
+        jsr gfx_mode_from_string
+        bcc @bad
+        jsr gfx_apply_mode
+@return_current:
+        jsr gfx_get_mode
+        pha
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_INT
+        sta RF_TAG
+        pla
+        sta RF_VAL_LO
+        lda #0
+        sta RF_VAL_HI
+        rts
+@bad:
+        lda #$41
+        jmp gfx_fail
+
+cmd_gfxtext:
+        jsr gfx_apply_text
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+cmd_gfxclear:
+        jsr gfx_get_mode
+        bne @gfx
+        lda #147
+        jsr K_CHROUT
+        jmp gfx_ok_none
+@gfx:
+        sta rb_saved_plot_y
+        jsr gfx_clear_bankd_screen
+        lda rb_saved_plot_y
+        cmp #RB_GFX_MODE_TILE
+        beq @done
+        cmp #RB_GFX_MODE_MTILE
+        beq @done
+        jsr gfx_clear_bitmap
+@done:
+        jmp gfx_ok_none
+
+cmd_gfxtarget:
+        jmp gfx_ok_none
+
+cmd_gfxsync:
+        jmp gfx_ok_none
+
+gfx_ok_none:
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+gfx_fail:
+        sta RF_STATUS
+        sta RF_ERROR
+        rts
+
+gfx_mode_from_string:
+        lda CF_STR_LEN
+        cmp #5
+        beq @len5
+        cmp #7
+        beq @len7
+        cmp #4
+        bne :+
+        jmp @len4
+:       
+        clc
+        rts
+@len5:
+        lda CF_STR_BUF
+        jsr gfx_fold
+        cmp #'H'
+        beq @hires
+        cmp #'T'
+        beq @tile
+        cmp #'M'
+        beq @mtile5
+        clc
+        rts
+@hires:
+        lda CF_STR_BUF+1
+        jsr gfx_fold
+        cmp #'I'
+        bne @no
+        lda CF_STR_BUF+2
+        jsr gfx_fold
+        cmp #'R'
+        bne @no
+        lda CF_STR_BUF+3
+        jsr gfx_fold
+        cmp #'E'
+        bne @no
+        lda CF_STR_BUF+4
+        jsr gfx_fold
+        cmp #'S'
+        bne @no
+        lda #RB_GFX_MODE_HIRES
+        sec
+        rts
+@tile:
+        lda CF_STR_BUF+1
+        jsr gfx_fold
+        cmp #'I'
+        bne @no
+        lda CF_STR_BUF+2
+        jsr gfx_fold
+        cmp #'L'
+        bne @no
+        lda CF_STR_BUF+3
+        jsr gfx_fold
+        cmp #'E'
+        bne @no
+        lda #RB_GFX_MODE_TILE
+        sec
+        rts
+@mtile5:
+        lda #RB_GFX_MODE_MTILE
+        sec
+        rts
+@len7:
+        lda CF_STR_BUF
+        jsr gfx_fold
+        cmp #'M'
+        bne @no
+        lda CF_STR_BUF+1
+        jsr gfx_fold
+        cmp #'B'
+        beq @mbitmap
+        cmp #'T'
+        beq @mtile
+        bne @no
+@mbitmap:
+        lda #RB_GFX_MODE_MBITMAP
+        sec
+        rts
+@mtile:
+        lda #RB_GFX_MODE_MTILE
+        sec
+        rts
+@len4:
+        lda CF_STR_BUF
+        jsr gfx_fold
+        cmp #'T'
+        bne @no
+        lda #RB_GFX_MODE_TEXT
+        sec
+        rts
+@no:
+        clc
+        rts
+
+gfx_fold:
+        cmp #'a'
+        bcc :+
+        cmp #'z' + 1
+        bcs :+
+        sec
+        sbc #$20
+:       rts
+
+gfx_apply_mode:
+        cmp #RB_GFX_MODE_TEXT
+        beq gfx_apply_text
+        pha
+        lda CIA2_PRA
+        and #$FC
+        sta CIA2_PRA
+        lda #RB_GFX_VICMEM
+        sta VIC_MEM
+        lda VIC_CTRL1
+        ora #$20
+        sta rb_saved_plot_x
+        pla
+        pha
+        tax
+        lda rb_saved_plot_x
+        cpx #RB_GFX_MODE_TILE
+        beq @textlike
+        cpx #RB_GFX_MODE_MTILE
+        bne @store_d011
+@textlike:
+        and #$DF
+@store_d011:
+        sta VIC_CTRL1
+        lda VIC_CTRL2
+        sta rb_saved_plot_x
+        pla
+        tax
+        lda rb_saved_plot_x
+        cpx #RB_GFX_MODE_MBITMAP
+        beq @multi
+        cpx #RB_GFX_MODE_MTILE
+        beq @multi
+        and #$EF
+        jmp @store_d016
+@multi:
+        ora #$10
+@store_d016:
+        sta VIC_CTRL2
+        rts
+
+gfx_get_mode:
+        lda CIA2_PRA
+        and #$03
+        bne @text
+        lda VIC_CTRL1
+        and #$20
+        beq @tile
+        lda VIC_CTRL2
+        and #$10
+        beq @hires
+        lda #RB_GFX_MODE_MBITMAP
+        rts
+@hires:
+        lda #RB_GFX_MODE_HIRES
+        rts
+@tile:
+        lda VIC_CTRL2
+        and #$10
+        beq @tile_plain
+        lda #RB_GFX_MODE_MTILE
+        rts
+@tile_plain:
+        lda #RB_GFX_MODE_TILE
+        rts
+@text:
+        lda #RB_GFX_MODE_TEXT
+        rts
+
+gfx_apply_text:
+        lda CIA2_PRA
+        ora #$03
+        sta CIA2_PRA
+        lda #VIC_MEM_LOWERCASE
+        sta VIC_MEM
+        lda VIC_CTRL1
+        and #$DF
+        sta VIC_CTRL1
+        lda VIC_CTRL2
+        and #$EF
+        sta VIC_CTRL2
+        rts
+
+gfx_clear_bankd_screen:
+        lda #<RB_GFX_SCREEN
+        sta rb_ptr_lo
+        lda #>RB_GFX_SCREEN
+        sta rb_ptr_hi
+        lda CF_NUM0_LO
+        and #$0F
+        sta rb_saved_plot_x
+        lda rb_saved_plot_y
+        cmp #RB_GFX_MODE_TILE
+        beq @dup_color
+        cmp #RB_GFX_MODE_MTILE
+        beq @dup_color
+        lda rb_saved_plot_x
+        ora #$10
+        jmp @fill_screen
+@dup_color:
+        lda rb_saved_plot_x
+        asl
+        asl
+        asl
+        asl
+        ora rb_saved_plot_x
+@fill_screen:
+        ldx #4
+@page:
+        ldy #0
+@loop:
+        sta (rb_ptr_lo),y
+        iny
+        bne @loop
+        inc rb_ptr_hi
+        dex
+        bne @page
+        lda #<RB_GFX_COLOR
+        sta rb_ptr_lo
+        lda #>RB_GFX_COLOR
+        sta rb_ptr_hi
+        lda CF_NUM0_LO
+        and #$0F
+        ldx #4
+@cpage:
+        ldy #0
+@cloop:
+        sta (rb_ptr_lo),y
+        iny
+        bne @cloop
+        inc rb_ptr_hi
+        dex
+        bne @cpage
+        rts
+
+gfx_clear_bitmap:
+        lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC
+        sta CPU_PORT
+        lda #<RB_GFX_BITMAP
+        sta rb_ptr_lo
+        lda #>RB_GFX_BITMAP
+        sta rb_ptr_hi
+        lda #0
+        ldx #32
+@page:
+        ldy #0
+@loop:
+        sta (rb_ptr_lo),y
+        iny
+        bne @loop
+        inc rb_ptr_hi
+        dex
+        bne @page
+        pla
+        sta CPU_PORT
+        rts
+
 cmd_zmodload:
         lda CF_STR_LEN
         bne :+
@@ -6515,6 +7121,415 @@ cmd_zslot2:
         rts
 cmd_zslot2_end:
 
+cmd_plot:
+        jsr gfx_plot_current
+        jmp gfxprim_ok_none
+
+cmd_point:
+        jsr gfx_point_current
+        rts
+
+cmd_line:
+        lda CF_NUM2_LO
+        sta RF_ARRAY_BUF
+        lda CF_NUM2_HI
+        sta RF_ARRAY_BUF+1
+        lda CF_NUM3_LO
+        sta RF_ARRAY_BUF+2
+        lda CF_NUM3_HI
+        sta RF_ARRAY_BUF+3
+        lda CF_NUM4_LO
+        sta RF_ARRAY_BUF+4
+        lda CF_NUM4_HI
+        sta RF_ARRAY_BUF+5
+@loop:
+        lda RF_ARRAY_BUF+4
+        sta CF_NUM2_LO
+        lda RF_ARRAY_BUF+5
+        sta CF_NUM2_HI
+        jsr gfx_plot_current
+        lda CF_NUM0_LO
+        cmp RF_ARRAY_BUF
+        bne @step
+        lda CF_NUM0_HI
+        cmp RF_ARRAY_BUF+1
+        bne @step
+        lda CF_NUM1_LO
+        cmp RF_ARRAY_BUF+2
+        beq @done
+@step:
+        jsr gfx_step_x_toward_saved
+        jsr gfx_step_y_toward_saved
+        jmp @loop
+@done:
+        jmp gfxprim_ok_none
+
+cmd_rect:
+        jsr gfx_save_rect_args
+        jsr gfx_rect_top
+        jsr gfx_rect_bottom
+        jsr gfx_rect_left
+        jsr gfx_rect_right
+        jmp gfxprim_ok_none
+
+cmd_frect:
+        jsr gfx_save_rect_args
+        lda RF_RECT_BUF+2
+        sta CF_NUM1_LO
+@row:
+        jsr gfx_rect_row
+        lda CF_NUM1_LO
+        cmp RF_RECT_BUF+6
+        beq @done
+        inc CF_NUM1_LO
+        jmp @row
+@done:
+        jmp gfxprim_ok_none
+
+gfxprim_ok_none:
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+gfxprim_ok_int:
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_INT
+        sta RF_TAG
+        rts
+
+gfx_save_rect_args:
+        lda CF_NUM0_LO
+        sta RF_RECT_BUF
+        lda CF_NUM0_HI
+        sta RF_RECT_BUF+1
+        lda CF_NUM1_LO
+        sta RF_RECT_BUF+2
+        lda CF_NUM1_HI
+        sta RF_RECT_BUF+3
+        lda CF_NUM2_LO
+        sta RF_RECT_BUF+4
+        lda CF_NUM2_HI
+        sta RF_RECT_BUF+5
+        lda CF_NUM3_LO
+        sta RF_RECT_BUF+6
+        lda CF_NUM3_HI
+        sta RF_RECT_BUF+7
+        lda CF_NUM4_LO
+        sta RF_RECT_BUF+8
+        lda CF_NUM4_HI
+        sta RF_RECT_BUF+9
+        rts
+
+gfx_restore_color_to_num4:
+        lda RF_RECT_BUF+8
+        sta CF_NUM4_LO
+        lda RF_RECT_BUF+9
+        sta CF_NUM4_HI
+        rts
+
+gfx_rect_top:
+        lda RF_RECT_BUF
+        sta CF_NUM0_LO
+        lda RF_RECT_BUF+1
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+2
+        sta CF_NUM1_LO
+        lda RF_RECT_BUF+4
+        sta CF_NUM2_LO
+        lda RF_RECT_BUF+5
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+2
+        sta CF_NUM3_LO
+        jsr gfx_restore_color_to_num4
+        jmp cmd_line
+
+gfx_rect_bottom:
+        lda RF_RECT_BUF
+        sta CF_NUM0_LO
+        lda RF_RECT_BUF+1
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+6
+        sta CF_NUM1_LO
+        lda RF_RECT_BUF+4
+        sta CF_NUM2_LO
+        lda RF_RECT_BUF+5
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+6
+        sta CF_NUM3_LO
+        jsr gfx_restore_color_to_num4
+        jmp cmd_line
+
+gfx_rect_left:
+        lda RF_RECT_BUF
+        sta CF_NUM0_LO
+        lda RF_RECT_BUF+1
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+2
+        sta CF_NUM1_LO
+        lda RF_RECT_BUF
+        sta CF_NUM2_LO
+        lda RF_RECT_BUF+1
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+6
+        sta CF_NUM3_LO
+        jsr gfx_restore_color_to_num4
+        jmp cmd_line
+
+gfx_rect_right:
+        lda RF_RECT_BUF+4
+        sta CF_NUM0_LO
+        lda RF_RECT_BUF+5
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+2
+        sta CF_NUM1_LO
+        lda RF_RECT_BUF+4
+        sta CF_NUM2_LO
+        lda RF_RECT_BUF+5
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+6
+        sta CF_NUM3_LO
+        jsr gfx_restore_color_to_num4
+        jmp cmd_line
+
+gfx_rect_row:
+        lda RF_RECT_BUF
+        sta CF_NUM0_LO
+        lda RF_RECT_BUF+1
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+4
+        sta CF_NUM2_LO
+        lda RF_RECT_BUF+5
+        sta CF_NUM2_HI
+        lda CF_NUM1_LO
+        sta CF_NUM3_LO
+        jsr gfx_restore_color_to_num4
+        jmp cmd_line
+
+gfx_step_x_toward_saved:
+        lda CF_NUM0_HI
+        cmp RF_ARRAY_BUF+1
+        bcc @inc
+        bne @dec
+        lda CF_NUM0_LO
+        cmp RF_ARRAY_BUF
+        bcc @inc
+        beq @done
+@dec:
+        lda CF_NUM0_LO
+        bne :+
+        dec CF_NUM0_HI
+:       dec CF_NUM0_LO
+        rts
+@inc:
+        inc CF_NUM0_LO
+        bne @done
+        inc CF_NUM0_HI
+@done:
+        rts
+
+gfx_step_y_toward_saved:
+        lda CF_NUM1_LO
+        cmp RF_ARRAY_BUF+2
+        bcc @inc
+        beq @done
+        dec CF_NUM1_LO
+        rts
+@inc:
+        inc CF_NUM1_LO
+@done:
+        rts
+
+gfx_plot_current:
+        jsr gfx_get_mode_prim
+        cmp #RB_GFX_MODE_TILE
+        beq gfx_plot_tile
+        cmp #RB_GFX_MODE_MTILE
+        beq gfx_plot_tile
+        jsr gfx_calc_bitmap_addr
+        lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC
+        sta CPU_PORT
+        ldy #0
+        lda (rb_ptr_lo),y
+        ldx CF_NUM2_LO
+        beq @clear
+        ldx rb_saved_plot_y
+        ora gfx_bit_masks,x
+        sta (rb_ptr_lo),y
+        pla
+        sta CPU_PORT
+        rts
+@clear:
+        ldx rb_saved_plot_y
+        and gfx_bit_unmasks,x
+        sta (rb_ptr_lo),y
+        pla
+        sta CPU_PORT
+        rts
+
+gfx_point_current:
+        jsr gfx_get_mode_prim
+        cmp #RB_GFX_MODE_TILE
+        beq @tile
+        cmp #RB_GFX_MODE_MTILE
+        beq @tile
+        jsr gfx_calc_bitmap_addr
+        lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC
+        sta CPU_PORT
+        ldy #0
+        lda (rb_ptr_lo),y
+        ldx rb_saved_plot_y
+        and gfx_bit_masks,x
+        beq @zero
+        lda #1
+        bne @ret
+@zero:
+        lda #0
+@ret:
+        sta RF_VAL_LO
+        lda #0
+        sta RF_VAL_HI
+        pla
+        sta CPU_PORT
+        jmp gfxprim_ok_int
+@tile:
+        jsr gfx_calc_tile_addr
+        ldy #0
+        lda (rb_ptr_lo),y
+        sta RF_VAL_LO
+        lda #0
+        sta RF_VAL_HI
+        jmp gfxprim_ok_int
+
+gfx_plot_tile:
+        jsr gfx_calc_tile_addr
+        ldy #0
+        lda CF_NUM2_LO
+        and #$3F
+        ora #$40
+        sta (rb_ptr_lo),y
+        lda #>RB_GFX_COLOR
+        sta rb_ptr_hi
+        lda CF_NUM2_LO
+        and #$0F
+        sta (rb_ptr_lo),y
+        rts
+
+gfx_calc_tile_addr:
+        lda #<RB_GFX_SCREEN
+        sta rb_ptr_lo
+        lda #>RB_GFX_SCREEN
+        sta rb_ptr_hi
+        lda CF_NUM1_LO
+        asl
+        asl
+        asl
+        sta rb_saved_plot_x
+        lda CF_NUM1_LO
+        asl
+        asl
+        asl
+        asl
+        asl
+        clc
+        adc rb_saved_plot_x
+        clc
+        adc CF_NUM0_LO
+        sta rb_ptr_lo
+        lda #>RB_GFX_SCREEN
+        adc #0
+        sta rb_ptr_hi
+        rts
+
+gfx_get_mode_prim:
+        lda CIA2_PRA
+        and #$03
+        bne @text
+        lda VIC_CTRL1
+        and #$20
+        beq @tile
+        lda VIC_CTRL2
+        and #$10
+        beq @hires
+        lda #RB_GFX_MODE_MBITMAP
+        rts
+@hires:
+        lda #RB_GFX_MODE_HIRES
+        rts
+@tile:
+        lda VIC_CTRL2
+        and #$10
+        beq @tile_plain
+        lda #RB_GFX_MODE_MTILE
+        rts
+@tile_plain:
+        lda #RB_GFX_MODE_TILE
+        rts
+@text:
+        lda #RB_GFX_MODE_TEXT
+        rts
+
+gfx_calc_bitmap_addr:
+        lda CF_NUM1_LO
+        and #7
+        sta rb_saved_plot_x
+        lda CF_NUM0_LO
+        and #7
+        sta rb_saved_plot_y
+        lda CF_NUM1_LO
+        lsr
+        lsr
+        lsr
+        sta rb_digit_seen
+        lda rb_digit_seen
+        and #3
+        asl
+        asl
+        asl
+        asl
+        asl
+        asl
+        sta rb_ptr_lo
+        lda #>RB_GFX_BITMAP
+        clc
+        adc rb_digit_seen
+        sta rb_ptr_hi
+        lda rb_digit_seen
+        lsr
+        lsr
+        clc
+        adc rb_ptr_hi
+        sta rb_ptr_hi
+        lda CF_NUM0_LO
+        and #$F8
+        clc
+        adc rb_ptr_lo
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       lda CF_NUM0_HI
+        clc
+        adc rb_ptr_hi
+        sta rb_ptr_hi
+        lda rb_saved_plot_x
+        clc
+        adc rb_ptr_lo
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       rts
+
+gfx_bit_masks:
+        .byte $80,$40,$20,$10,$08,$04,$02,$01
+gfx_bit_unmasks:
+        .byte $7F,$BF,$DF,$EF,$F7,$FB,$FD,$FE
+
         .segment "SPANPACK"
 
 cmd_zspan:
@@ -6543,6 +7558,222 @@ cmd_zovl1:
         rts
 cmd_zovl1_end:
 
+cmd_sprset:
+        lda CF_NUM0_LO
+        and #7
+        sta CF_NUM0_LO
+        jsr gfx_sprite_pattern
+        ldx CF_NUM0_LO
+        lda gfx_sprite_bits,x
+        ldy CF_NUM1_LO
+        beq @off
+        ora VIC_SPR_ENABLE
+        sta VIC_SPR_ENABLE
+        jmp @color
+@off:
+        eor #$FF
+        and VIC_SPR_ENABLE
+        sta VIC_SPR_ENABLE
+@color:
+        lda CF_NUM2_LO
+        and #$0F
+        ldx CF_NUM0_LO
+        sta VIC_SPR_COLOR0,x
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+cmd_sprmove:
+        lda CF_NUM0_LO
+        and #7
+        sta CF_NUM0_LO
+        ldx CF_NUM0_LO
+        txa
+        asl
+        tax
+        lda CF_NUM1_LO
+        sta $D000,x
+        lda CF_NUM2_LO
+        sta $D001,x
+        ldx CF_NUM0_LO
+        lda gfx_sprite_bits,x
+        ldy CF_NUM1_HI
+        beq @clear_msb
+        ora VIC_SPR_X_MSB
+        sta VIC_SPR_X_MSB
+        jmp @done
+@clear_msb:
+        eor #$FF
+        and VIC_SPR_X_MSB
+        sta VIC_SPR_X_MSB
+@done:
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+cmd_sprcolor:
+        lda CF_NUM0_LO
+        and #7
+        sta CF_NUM0_LO
+        ldx CF_NUM0_LO
+        lda CF_NUM1_LO
+        and #$0F
+        sta VIC_SPR_COLOR0,x
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+cmd_sprrow:
+        lda CF_NUM1_LO
+        cmp #21
+        bcc :+
+        jmp gfx_ok_none_ovl1
+:       lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC
+        sta CPU_PORT
+        lda CF_NUM0_LO
+        and #7
+        sta CF_NUM0_LO
+        ldx CF_NUM0_LO
+        lda #<RB_GFX_SPRITES
+        sta rb_ptr_lo
+        lda #>RB_GFX_SPRITES
+        sta rb_ptr_hi
+        cpx #0
+        beq @row_offset
+@sprite_advance:
+        clc
+        lda rb_ptr_lo
+        adc #64
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       dex
+        bne @sprite_advance
+@row_offset:
+        lda CF_NUM1_LO
+        asl
+        clc
+        adc CF_NUM1_LO
+        tay
+        lda CF_NUM2_LO
+        sta (rb_ptr_lo),y
+        iny
+        lda CF_NUM3_LO
+        sta (rb_ptr_lo),y
+        iny
+        lda CF_NUM4_LO
+        sta (rb_ptr_lo),y
+        pla
+        sta CPU_PORT
+        lda CF_NUM0_LO
+        clc
+        adc #<(RB_GFX_SPRITES / 64)
+        ldx CF_NUM0_LO
+        sta RB_GFX_SPR_PTRS,x
+gfx_ok_none_ovl1:
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+cmd_sprscan:
+        lda VIC_SPR_COLL
+        lda VIC_BG_COLL
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+cmd_sprcoll:
+        lda CF_NUM0_LO
+        and #7
+        sta CF_NUM0_LO
+        ldx CF_NUM0_LO
+        lda gfx_sprite_bits,x
+        and VIC_SPR_COLL
+        beq @zero
+        lda #1
+        bne @ret
+@zero:
+        lda #0
+@ret:
+        sta RF_VAL_LO
+        lda #0
+        sta RF_STATUS
+        sta RF_VAL_HI
+        lda #RB_VAL_INT
+        sta RF_TAG
+        rts
+
+gfx_sprite_pattern:
+        lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC
+        sta CPU_PORT
+        ldx CF_NUM0_LO
+        lda #<RB_GFX_SPRITES
+        sta rb_ptr_lo
+        lda #>RB_GFX_SPRITES
+        sta rb_ptr_hi
+        cpx #0
+        beq @fill
+@advance:
+        clc
+        lda rb_ptr_lo
+        adc #64
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       dex
+        bne @advance
+@fill:
+        lda CF_NUM3_LO
+        asl
+        tax
+        lda gfx_sprite_patterns,x
+        sta rb_saved_plot_x
+        lda gfx_sprite_patterns+1,x
+        sta rb_saved_plot_y
+        ldy #0
+@loop:
+        lda rb_saved_plot_x
+        sta (rb_ptr_lo),y
+        iny
+        lda rb_saved_plot_y
+        sta (rb_ptr_lo),y
+        iny
+        lda #0
+        sta (rb_ptr_lo),y
+        iny
+        cpy #63
+        bcc @loop
+        pla
+        sta CPU_PORT
+        lda CF_NUM0_LO
+        clc
+        adc #<(RB_GFX_SPRITES / 64)
+        ldx CF_NUM0_LO
+        sta RB_GFX_SPR_PTRS,x
+        rts
+
+gfx_sprite_bits:
+        .byte $01,$02,$04,$08,$10,$20,$40,$80
+gfx_sprite_patterns:
+        .byte $FF,$FF
+        .byte $81,$81
+        .byte $18,$18
+        .byte $3C,$3C
+
         .segment "OVL2PACK"
 
 cmd_zovl2:
@@ -6556,3 +7787,51 @@ cmd_zovl2:
         sta RF_VAL_HI
         rts
 cmd_zovl2_end:
+
+cmd_joy:
+        lda CF_NUM0_LO
+        cmp #2
+        beq @port2
+        lda CIA1_PRA
+        jmp @finish
+@port2:
+        lda CIA1_PRB
+@finish:
+        eor #$FF
+        and #$1F
+        sta RF_VAL_LO
+        lda #0
+        sta RF_STATUS
+        sta RF_VAL_HI
+        lda #RB_VAL_INT
+        sta RF_TAG
+        rts
+
+cmd_keyp:
+        lda KEYD_COUNT
+        beq @none
+        lda KEYD_BUFFER
+        bne @store
+@none:
+        lda #0
+@store:
+        sta RF_VAL_LO
+        lda #0
+        sta RF_STATUS
+        sta RF_VAL_HI
+        lda #RB_VAL_INT
+        sta RF_TAG
+        rts
+
+cmd_keyscan:
+        jmp cmd_keyp
+
+cmd_keylast:
+        lda KEYD_BUFFER
+        sta RF_VAL_LO
+        lda #0
+        sta RF_STATUS
+        sta RF_VAL_HI
+        lda #RB_VAL_INT
+        sta RF_TAG
+        rts
