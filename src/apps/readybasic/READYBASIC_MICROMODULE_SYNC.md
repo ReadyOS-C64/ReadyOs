@@ -174,7 +174,8 @@ dispatch wrappers over existing descriptors.
   commands.
 - Command expressions cover scalar/string-result signatures such as
   `ZECHO1()`, `ZADD16(a,b)`, `UPPER(s$)`, `LOWER(s$)`, `ZHIDDENRAM(s$)`,
-  `BUFNEW(n)`, `ZTEMPSCRATCH(n)`, `SCRCAP()`, and `ZSUMNUMARRAY(a%(0),n)`.
+  `BUFMAKE(n)`, `ZTEMPSCRATCH(n)`, `SCRCAP()`, and
+  `ZSUMNUMARRAY(a%(0),n)`.
 - String and numeric `FUNC` calls return through `RET`, `RET%`, or `RET$`.
   `FUNC` is expression-only; calls scan the body, execute simple scalar
   assignments before `RET`, and evaluate
@@ -187,7 +188,8 @@ dispatch wrappers over existing descriptors.
 - Type `1` is a byte buffer.
 - Type `2` is a screen text+color buffer.
 - `BUFFILL` accepts only type `1`.
-- `BUFFREE` frees any valid handle type.
+- `BUFDROP` frees any valid handle type. Legacy `BUFFREE` remains registered
+  for compatibility, but stored source should use `BUFDROP`.
 - `SCRPUT` accepts only type `2`.
 
 ## Banking Discipline

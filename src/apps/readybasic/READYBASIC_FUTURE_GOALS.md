@@ -104,8 +104,8 @@ overlay choice, and command-family helpers lives in under-ROM module code.
 
 ## Graphics Memory Goals
 
-Graphics commands are intentionally deferred until the command-module model is
-stable. When they arrive, they should use the same proportional memory thinking:
+Graphics commands now exist as descriptor-backed built-in modules and overlays.
+Future graphics work should keep the same proportional memory thinking:
 
 - keep BASIC workspace pressure low by storing large buffers, sprite sheets,
   character sets, and bitmap resources in REU-backed handles;
@@ -115,3 +115,10 @@ stable. When they arrive, they should use the same proportional memory thinking:
 - avoid `$C600-$C7FF` except for ReadyOS REU allocation metadata;
 - make graphics modes explicit about which C64 RAM ranges they claim while
   active, especially screen RAM, color RAM, character sets, and bitmap pages.
+
+Implemented graphics already cover immediate bitmap/tile primitives, sprites,
+polling input, polygon and convex fill helpers, retained display lists, REU
+surface handles, charset/tileset/tilemap handles, and multicolor bitmap cell
+semantics. Future work should focus on resource-file loading into REU, richer
+asset packaging, more efficient dirty-region blits, and any new commands that
+fit the existing overlay budgets.

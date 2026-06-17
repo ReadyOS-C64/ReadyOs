@@ -760,7 +760,7 @@
           <div class="registry-bar">
             <div class="registry-seg r-low" style="width: 90.63%" title="Slots 1-116: 116 descriptors, $0E80 / 3712B">
               <b>Slots 1-116</b>
-              <small>116 real descriptors, including built-in graphics, sound, and token-safe aliases. $0E80 / 3712B.</small>
+              <small>116 normal descriptors before filler; built-in graphics, sound, and token-safe aliases live here. $0E80 / 3712B.</small>
             </div>
             <div class="registry-seg r-pack" style="width: 8.59%" title="Slots 117-127: 11 zero-filled filler descriptors, $0160 / 352B">
               <b>Slots 117-127</b>
@@ -768,7 +768,7 @@
             </div>
             <div class="registry-seg r-hidden" style="width: 0.78%" title="Slot 128: SCRPUT descriptor, $0020 / 32B">
               <b>128</b>
-              <small>SCRPUT</small>
+              <small>SCRPUT proof descriptor; 117 real descriptors total.</small>
             </div>
           </div>
           <table class="stage-detail">
@@ -1130,9 +1130,9 @@
           <p>Stages consecutive integer values in the result frame; resident code writes them into the output array.</p>
         </div>
         <div class="command">
-          <h3>BUFNEW(LEN,H%) / BUFNEW(LEN)</h3>
+          <h3>BUFMAKE(LEN,H%) / BUFMAKE(LEN)</h3>
           <div class="command-meta"><span class="chip low">slot 0 $A800</span><span class="chip reu">REU handle</span><span class="chip">copy $06C7 / 1.7K</span></div>
-          <p>Allocates contiguous 256-byte buffer pages inside the assigned core bank and returns a one-based handle.</p>
+          <p>Allocates contiguous 256-byte buffer pages inside the assigned core bank and returns a one-based handle. Legacy <code>BUFNEW</code> remains accepted, but stored source should use this token-safe spelling.</p>
         </div>
         <div class="command">
           <h3>BUFFILL(H%,BYTE)</h3>
@@ -1140,9 +1140,9 @@
           <p>Fills `$C500` with a byte and stashes it page by page into a type-1 buffer handle.</p>
         </div>
         <div class="command">
-          <h3>BUFFREE(H%)</h3>
+          <h3>BUFDROP(H%)</h3>
           <div class="command-meta"><span class="chip low">slot 0 $A800</span><span class="chip reu">metadata</span><span class="chip">copy $06C7 / 1.7K</span></div>
-          <p>Clears the REU-backed page bitmap and handle descriptor for any valid handle type.</p>
+          <p>Clears the REU-backed page bitmap and handle descriptor for any valid handle type. Legacy <code>BUFFREE</code> remains accepted for compatibility.</p>
         </div>
         <div class="command">
           <h3>ZTEMPSCRATCH(LEN,OUT%) / ZTEMPSCRATCH(LEN)</h3>
@@ -1155,9 +1155,9 @@
           <p>Proves outputs are cleared before execution and stale result frames are not committed after failure.</p>
         </div>
         <div class="command">
-          <h3>FREEMEM()</h3>
+          <h3>MEMAVL()</h3>
           <div class="command-meta"><span class="chip low">slot 0 $A800</span><span class="chip">free-byte probe</span><span class="chip">small slice</span></div>
-          <p>Prints current live BASIC free bytes and refreshes the header.</p>
+          <p>Prints current live BASIC free bytes and refreshes the header. Legacy <code>FREEMEM</code> remains accepted, but stored source should use this token-safe spelling.</p>
         </div>
         <div class="command">
           <h3>SCRCAP(H%) / SCRCAP()</h3>

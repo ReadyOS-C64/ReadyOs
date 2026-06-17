@@ -304,7 +304,7 @@ through the per-cell attributes. The demos `rbgfx21_mbitmap_prims.bas` and
 | `JOY` / `KEYP` / `KEYSCAN` / `KEYLAST` | output/polling forms | Polling only, no resident input event queue. |
 
 See `READYBASIC_GRAPHICS_COMMAND_DESIGN.md` for mode tradeoffs, memory layout,
-implemented phases, and deferred REU/display-list work.
+implemented phases, REU surface/display-list behavior, and remaining limits.
 
 ## Native Flow Control And Error Introspection
 
