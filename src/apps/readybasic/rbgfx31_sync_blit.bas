@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx31 sync blit"
 30 gfxmode("hires"):gfxclear(0)
 40 line(0,0,319,199,1):rect(42,38,220,150,1)

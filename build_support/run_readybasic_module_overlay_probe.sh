@@ -107,7 +107,7 @@ steps:
   - id: builtin_overlay_bank_probe
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rFREEMEM()\rPRINT "SLOTS";ZSLOT0();"/";ZSLOT1();"/";ZSLOT2()\rPRINT "SPAN";ZSPAN()\rPRINT "OVL";ZOVL1();"/";ZOVL2()\rPRINT "CPY";ZCPYRST();"/";ZCOPY()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rMEMAVL()\rPRINT "SLOTS";ZSLOT0();"/";ZSLOT1();"/";ZSLOT2()\rPRINT "SPAN";ZSPAN()\rPRINT "OVL";ZOVL1();"/";ZOVL2()\rPRINT "CPY";ZCPYRST();"/";ZCOPY()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.5
   - id: capture_builtin_overlay_bank_probe
@@ -169,7 +169,7 @@ steps:
   - id: rbm_sample3_probe
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM RBM3 FIRST CALLS: EACH OVERLAY STATE STARTS AT ZERO AFTER LOAD\rPRINT "M3A";ZSAA();"/";ZSEB()\rPRINT "M3B";ZTAA();"/";ZTEB()\rPRINT "M3C";ZUAA();"/";ZUEB()\rFREEMEM()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM RBM3 FIRST CALLS: EACH OVERLAY STATE STARTS AT ZERO AFTER LOAD\rPRINT "M3A";ZSAA();"/";ZSEB()\rPRINT "M3B";ZTAA();"/";ZTEB()\rPRINT "M3C";ZUAA();"/";ZUEB()\rMEMAVL()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 2.0
   - id: capture_rbm_sample3

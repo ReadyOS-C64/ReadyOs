@@ -117,7 +117,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sprite_list_rbgfx09
-      note: "RBGFX09 loaded and listed from inside ReadyBASIC under ReadyOS"
+      pitch: "RBGFX09 loaded and listed from inside ReadyBASIC under ReadyOS"
   - id: assert_list_rbgfx09
     type: assert.screen
     params:
@@ -138,13 +138,13 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sprite_two_sprites
-      note: "RBGFX09 running from inside ReadyBASIC under ReadyOS"
+      pitch: "RBGFX09 running from inside ReadyBASIC under ReadyOS"
   - id: dump_two_sprite_state
     type: dump.memory_ranges
     params:
       ranges:
         - { label: vic_sprite_regs, start: 0xD000, end: 0xD02F }
-        - { label: sprite_pointers, start: 0xCFF8, end: 0xCFFF }
+        - { label: sprite_pnters, start: 0xCFF8, end: 0xCFFF }
         - { label: sprite_pattern_0, start: 0xCA00, end: 0xCA3F }
         - { label: sprite_pattern_1, start: 0xCA40, end: 0xCA7F }
   - id: wait_rbgfx09_done
@@ -174,7 +174,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sprite_list_rbgfx10
-      note: "RBGFX10 loaded and listed from inside ReadyBASIC under ReadyOS"
+      pitch: "RBGFX10 loaded and listed from inside ReadyBASIC under ReadyOS"
   - id: assert_list_rbgfx10
     type: assert.screen
     params:
@@ -195,13 +195,13 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sprite_collision_pair
-      note: "RBGFX10 running from inside ReadyBASIC under ReadyOS"
+      pitch: "RBGFX10 running from inside ReadyBASIC under ReadyOS"
   - id: dump_collision_state
     type: dump.memory_ranges
     params:
       ranges:
         - { label: vic_sprite_regs_collision, start: 0xD000, end: 0xD02F }
-        - { label: sprite_pointers_collision, start: 0xCFF8, end: 0xCFFF }
+        - { label: sprite_pnters_collision, start: 0xCFF8, end: 0xCFFF }
   - id: capture_collision_report
     type: screen.wait_contains
     params:

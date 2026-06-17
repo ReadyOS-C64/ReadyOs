@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 rem demo 17
 30 dim p%(7),q%(9)
 40 gfxmode("hires"):gfxclear(0)

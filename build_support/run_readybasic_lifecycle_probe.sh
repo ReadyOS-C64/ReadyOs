@@ -97,7 +97,7 @@ steps:
     type: screen.capture
     params:
       label: after_readybasic_loading
-      note: after READYBASIC first appears, before READY prompt wait
+      pitch: after READYBASIC first appears, before READY prompt wait
   - id: wait_readybasic_prompt
     type: screen.wait_contains
     params:
@@ -132,7 +132,7 @@ steps:
     type: screen.capture
     params:
       label: after_print_1
-      note: after direct print 1
+      pitch: after direct print 1
   - id: assert_print_1_no_error
     type: assert.screen_not_contains
     params:
@@ -151,7 +151,7 @@ steps:
     type: screen.capture
     params:
       label: after_print_hello
-      note: after direct print hello
+      pitch: after direct print hello
   - id: assert_print_hello_no_error
     type: assert.screen_not_contains
     params:
@@ -170,7 +170,7 @@ steps:
     type: screen.capture
     params:
       label: after_10_print_1
-      note: after numbered line entry
+      pitch: after numbered line entry
   - id: dump_line_entry_core
     type: dump.memory_ranges
     params:
@@ -193,7 +193,7 @@ steps:
     type: screen.capture
     params:
       label: after_list
-      note: after LIST
+      pitch: after LIST
   - id: assert_list_has_line
     type: assert.screen
     params:
@@ -208,7 +208,7 @@ steps:
     type: screen.capture
     params:
       label: after_run
-      note: after RUN
+      pitch: after RUN
   - id: assert_run_no_error
     type: assert.screen_not_contains
     params:
@@ -231,7 +231,7 @@ steps:
     type: screen.capture
     params:
       label: after_rb_direct_text
-      note: after direct scalar command statement
+      pitch: after direct scalar command statement
   - id: dump_rb_direct_text_core
     type: dump.memory_ranges
     params:
@@ -250,7 +250,7 @@ steps:
     type: screen.capture
     params:
       label: after_rb_direct_add
-      note: after direct ZADD16 statement
+      pitch: after direct ZADD16 statement
   - id: dump_rb_direct_add_core
     type: dump.memory_ranges
     params:
@@ -275,7 +275,7 @@ steps:
     type: screen.capture
     params:
       label: after_run_with_rb_line
-      note: after RUN with stored ReadyBASIC command
+      pitch: after RUN with stored ReadyBASIC command
   - id: assert_run_with_rb_line
     type: assert.screen
     params:
@@ -290,7 +290,7 @@ steps:
     type: screen.capture
     params:
       label: after_exit
-      note: after uppercase exit command
+      pitch: after uppercase exit command
   - id: wait_launcher_after_exit
     type: screen.wait_contains
     params:
@@ -319,7 +319,7 @@ steps:
     type: screen.capture
     params:
       label: after_list_after_resume
-      note: after relaunching ReadyBASIC from REU and LISTing
+      pitch: after relaunching ReadyBASIC from REU and LISTing
   - id: assert_resume_preserved_line
     type: assert.screen
     params:

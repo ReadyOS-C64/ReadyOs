@@ -89,7 +89,7 @@ overlay 2, `GFXPOLY` submodule `20` as slot-2 overlay 3, `GFXDL` submodule `21`
 as slot-2 overlay 4, and `GFXTILE` submodule `22` as slot-2 overlay 5. The
 surface handle entry points `GFXSURF` and `GFXBLIT` use the existing system slot
 allocator path so typed REU graphics handles can share the same handle directory
-as `BUFNEW` and `SCRCAP`.
+as `BUFMAKE` and `SCRCAP`.
 
 Sound Phase 1 is also built in and does not require `ZMODLD`. It uses module id
 `4`: `SIDCORE` submodule `23` as slot-2 overlay 6, prestashed to the assigned
@@ -258,33 +258,39 @@ overlay:
 | `GFXTEXT` | `GFXTEXT()` | Restores ordinary text mode. |
 | `GFXCLEAR` | `GFXCLEAR(C)` | Clears Bank D screen/color RAM and bitmap RAM for bitmap modes. |
 | `GFXSURF` | `H%=GFXSURF("HIRES")` | Allocates typed graphics-surface handle `3` in the REU heap. |
-| `GFXTARGET` / `GFXTGT` | `GFXTGT(0)`, `GFXTGT(H%)` | Selects visible target `0` or records a typed graphics-surface handle. `GFXTGT` is the tokenizer-safe stored-program alias. Immediate primitives still draw visible Bank D. |
+| `GFXTGT` / `GFXTARGET` | `GFXTGT(0)`, `GFXTGT(H%)` | Selects visible target `0` or records a typed graphics-surface handle. `GFXTGT` is the tokenizer-safe stored-program spelling; `GFXTARGET` remains a legacy friendly alias. Immediate primitives still draw visible Bank D. |
 | `GFXBLIT` | `GFXBLIT(H%)` | Copies a typed graphics-surface handle's bitmap/screen/color layout from REU to Bank D. |
 | `GFXSYNC` | `GFXSYNC()` | Snapshots the current visible Bank D bitmap/screen/color layout into the selected `GFXTGT(H%)` surface. No dirty-rect queue yet. |
-| `PLOT` / `POINT` / `PNT` | `PLOT(X,Y,C)`, `PNT(X,Y,P%)` | Hires bitmap bit plot/read, multicolor bitmap pair plot/read, or tile cell write/read depending on mode; `POINT` remains registered as the long form. |
-| `LINE` / `RECT` / `FRECT` | five numeric args | Immediate primitive workers in `GFXPRIM`. |
+| `PLOT` / `PNT` / `POINT` | `PLOT(X,Y,C)`, `PNT(X,Y,P%)` | Hires bitmap bit plot/read, multicolor bitmap pair plot/read, or tile cell write/read depending on mode; `PNT` is the tokenizer-safe readback spelling. |
+| `LINE` / `RECT` / `FBOX` / `FRECT` | five numeric args | Immediate primitive workers in `GFXPRIM`; `FBOX` is the tokenizer-safe filled-rectangle spelling. |
 | `CIRCLE` / `FCIRCLE` | `CIRCLE(X,Y,R,C)`, `FCIRCLE(X,Y,R,C)` | Phase 2 immediate primitive additions. `CIRCLE` uses a compact midpoint outline worker; `FCIRCLE` currently proves the fill path with a bounding filled rectangle. |
 | `POLY` / `FPOLY` | `POLY(A%(0),COUNT,C)`, `FPOLY(A%(0),COUNT,C)` | Phase 3 array-backed polygons from BASIC integer array pairs. `FPOLY` is a conservative convex fan fill, not full scanline/concave fill yet. |
-| `PBUFNEW` / `PBUFSET` / `PBUFFREE` | point-buffer handle lifecycle | Allocates typed REU point-buffer handle `4`, writes zero-based little-endian `x,y` point pairs, and releases the handle. |
+| `PBMAKE` / `PBUFSET` / `PBDROP` | point-buffer handle lifecycle | Allocates typed REU point-buffer handle `4`, writes zero-based little-endian `x,y` point pairs, and releases the handle. |
 | `POLYH` / `FPOLYH` | `POLYH(H%,COUNT,C)`, `FPOLYH(H%,COUNT,C)` | Phase 3 REU point-buffer polygon aliases. The originally proposed same-name `POLY(H%,...)` overload was not added so `BASIC_START` and bytes free stay fixed. |
 | `TILE` / `CHARAT` | `TILE(X,Y,CH,C)`, `CHARAT(X,Y,CH,C)` | Phase 2 cell write aliases for Bank D tile modes and ordinary text mode demo output. |
-| `DLMAKE` / `DLCLR` / `DLPLOT` / `DLLINE` / `DLRECT` / `DLFRECT` / `DLDRAW` | retained display-list handle commands | Phase 4 `GFXDL` overlay. `DLMAKE` allocates a one-page typed REU display list; `DLDRAW` replays plot/line/rectangle records. |
+| `DLMAKE` / `DLRST` / `DLPLOT` / `DLLINE` / `DLRECT` / `DLFBOX` / `DLDRAW` | retained display-list handle commands | Phase 4 `GFXDL` overlay. `DLMAKE` allocates a one-page typed REU display list; `DLDRAW` replays plot/line/rectangle records. |
 | `CHRMAKE` / `CHRROW` / `CHRUSE` | charset handle commands | Phase 4 `GFXTILE` overlay. Creates an 8-page charset handle, writes individual character rows, and copies the charset to Bank D. Phase 5 screenshots prove visible Bank D tile rendering. |
 | `TSMAKE` / `TSSET` / `TMMAKE` / `TMSET` / `TMDRAW` | tileset/tilemap handle commands | Phase 4 `GFXTILE` overlay. Fixed 1-page tilesets and 4-page 40x25 tilemaps; no external resource loader yet. |
 | `MCELL` / `MCBG` | `MCELL(CX,CY,S1,S2,S3)`, `MCBG(C)` | Phase 4 explicit multicolor bitmap cell attributes and background color. |
-| `SIDCLR` / `SILENCE` | `SIDCLR()` | Phase 1 sound `SIDCORE` overlay. Clears SID registers `$D400-$D418`. |
+| `SIDRST` / `SIDOFF` | `SIDRST()` | Phase 1 sound `SIDCORE` overlay. Clears SID registers `$D400-$D418`. |
 | `VOL` | `VOL(VOL)` | Sets SID master volume `0..15`, preserving filter mode bits. |
-| `FREQ` / `NOTE` | `FREQ(V,F)`, `NOTE(V,N,O)` | Raw SID frequency or PAL note table frequency for voice `1..3`. `NOTE` sets frequency only; use `GATE`, `WAVE`, or `VOICE` to start sound. |
+| `FRQ` / `PITCH` | `FRQ(V,F)`, `PITCH(V,N,O)` | Raw SID frequency or PAL note table frequency for voice `1..3`. `PITCH` sets frequency only; use `GATE`, `WAVE`, or `VOICE` to start sound. |
 | `PULSE` / `ADSR` / `ENV` | pulse width and envelope setup | `PULSE(V,W)` writes 12-bit pulse width. `ADSR(V,A,D,S,R)` and `ENV` write SID nibble envelope values. |
 | `WAVE` / `CTRL` / `GATE` | control register helpers | `WAVE(V,M)`/`CTRL(V,M)` writes the SID control byte; `GATE(V,ON)` sets or clears bit 0 without disturbing the other waveform/control bits. |
 | `VOICE` | `VOICE(V,F,W,AD,SR)` | Fast packed voice setup: frequency, control/wave byte, packed attack/decay byte, and packed sustain/release byte. This intentionally reuses an existing five-number parser signature to avoid resident growth. |
 | `FILTER` / `FILT` | `FILTER(CUTOFF,RES,ROUTE,MODE)` | Writes SID cutoff, resonance, route, and filter mode. Mode uses logical bits `1` low-pass, `2` band-pass, `4` high-pass, `8` voice-3-off. |
 | `SOUND` / `SND` | `SOUND(V,F,D,W)` | Blocking tone helper: gates wave `W` on for `D` spin-delay units and gates it off. No IRQ music engine yet. |
-| `SPRSET` / `SPRMOVE` / `SPRCOLOR` / `SPRCOL` / `SPRROW` | sprite config/move/color/pixels | Uses eight 64-byte Bank D sprite definitions at `$CA00`; `SPRROW` writes explicit 24-bit sprite rows. `SPRCOL` is a tokenizer-safe alias for demos. |
-| `SPREXPAND` / `SPRSIZE` | `SPRSIZE(N,XON,YON)` | Phase 2 VIC sprite X/Y expansion; `SPRSIZE` avoids PETCAT tokenizing `EXP`. |
+| `SPRSET` / `SPRMOVE` / `SPRCOL` / `SPRROW` | sprite config/move/color/pixels | Uses eight 64-byte Bank D sprite definitions at `$CA00`; `SPRROW` writes explicit 24-bit sprite rows. `SPRCOLOR` remains a legacy friendly alias. |
+| `SPRSIZE` / `SPREXPAND` | `SPRSIZE(N,XON,YON)` | Phase 2 VIC sprite X/Y expansion; `SPRSIZE` avoids PETCAT tokenizing `EXP`. |
 | `SPRPRI` | `SPRPRI(N,BEHIND)` | Phase 2 VIC sprite priority bit control. |
 | `SPRMULTI` / `SPRMUL` | `SPRMUL(N,ON)` | Phase 2 VIC sprite multicolor enable; `SPRMUL` is the tokenizer-safe demo spelling. |
-| `SPRMCOLOR` / `SPRMCO` | `SPRMCO(C1,C2)` | Phase 2 shared sprite multicolor registers; `SPRMCO` is the tokenizer-safe demo spelling. |
+| `SPRMCO` / `SPRMCOLOR` | `SPRMCO(C1,C2)` | Phase 2 shared sprite multicolor registers; `SPRMCO` is the tokenizer-safe demo spelling. |
+
+Legacy friendly spellings such as `BUFNEW`, `BUFFREE`, `FREEMEM`, `GFXTARGET`,
+`POINT`, `FRECT`, `PBUFNEW`, `PBUFFREE`, `DLCLR`, `DLFRECT`, `SIDCLR`,
+`SILENCE`, `FREQ`, and `NOTE` remain registered for compatibility. New demos
+and stored programs use the token-safe aliases because C64 BASIC V2 can
+tokenize embedded words such as `FN`, `FRE`, `INT`, `CLR`, `LEN`, and `NOT`.
 
 In `GFXMODE("MBITMAP")`, immediate primitives use 160x200 logical
 coordinates. `C=0` clears a pixel pair, `C=1..15` draws pair code `3` and
@@ -354,11 +360,11 @@ support, not the final product command catalog.
 | String Transfer/Transform | `UPPER`, `LOWER` | Prove string input capture and resident-owned BASIC string output allocation. |
 | Under-ROM Worker | `ZHIDDENRAM` | Prove worker code can run behind BASIC ROM in the shared slot-0 module payload. |
 | Integer Array Transfer | `ZSUMNUMARRAY`, `ZRANGENUMARRAY` | Prove array input/output via explicit base element plus count. |
-| Persistent REU Handles | `BUFNEW`, `BUFFILL`, `BUFFREE`, `SCRCAP`, `SCRPUT` | Prove stable BASIC-visible handles for persistent REU-backed data, including typed screen text+color resources. |
+| Persistent REU Handles | `BUFMAKE`, `BUFFILL`, `BUFDROP`, `SCRCAP`, `SCRPUT` | Prove stable BASIC-visible handles for persistent REU-backed data, including typed screen text+color resources. |
 | Temporary REU Workspace | `ZTEMPSCRATCH` | Prove temporary page allocation and cleanup. |
 | Error/Failure Contract | `ZFAIL` | Prove outputs are cleared before execution and stale results are not committed. |
 | Timing/Delay | `ZPAUSE` | Prove a small timing command can wait for a number of jiffies without command overlay growth elsewhere. |
-| Runtime Introspection | `FREEMEM`, `ERRCODE`, `ERRLINE` | Prints live BASIC free memory and exposes the last ReadyBASIC runtime error. |
+| Runtime Introspection | `MEMAVL`, `ERRCODE`, `ERRLINE` | Prints live BASIC free memory and exposes the last ReadyBASIC runtime error. |
 | Module/Submodule Proofs | `ZSLOT0`, `ZSLOT1`, `ZSLOT2`, `ZSPAN`, `ZOVL1`, `ZOVL2`, `ZCPYRST`, `ZCOPY`, `ZMODLD`, `ZDM1`, `ZDM2S`, `ZDOV1`, `ZDOV2`, `ZSAA`-`ZUEB` | Prove slot dispatch, multi-slot span loading, overlay replacement, no-recopy behavior, SEQ package streaming, and disk-loaded module registration. |
 | ReadyOS Yield | `EXIT` | Save BASIC runtime state, restore vectors, and return through the ReadyOS shim. |
 
@@ -375,12 +381,12 @@ support, not the final product command catalog.
 | `ZHIDDENRAM(S$,OUT%)` / `ZHIDDENRAM(S$)` | Module 1 slot 0 at `$A800+`, unified under-ROM dispatch | string variable or quoted literal, output integer or expression integer | Returns a simple uppercase-byte checksum. |
 | `ZSUMNUMARRAY(A%(0),COUNT,OUT%)` / `ZSUMNUMARRAY(A%(0),COUNT)` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | integer array base, count, output integer or expression integer | Sums integer array elements. |
 | `ZRANGENUMARRAY(START,COUNT,A%(0))` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | start value, count, output array base | Stages consecutive integers, then resident code writes them to the array. |
-| `BUFNEW(LEN,H%)` / `BUFNEW(LEN)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | byte length, output handle or expression handle | Allocates buffer pages in the assigned core bank and returns a one-based handle. |
+| `BUFMAKE(LEN,H%)` / `BUFMAKE(LEN)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | byte length, output handle or expression handle | Allocates buffer pages in the assigned core bank and returns a one-based handle. |
 | `BUFFILL(H%,BYTE)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | buffer handle, fill byte | Fills buffer handles through the `$C500` page buffer and rejects non-buffer handles. |
-| `BUFFREE(H%)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | handle | Frees any valid handle type and clears metadata/page bitmap state. |
+| `BUFDROP(H%)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | handle | Frees any valid handle type and clears metadata/page bitmap state. |
 | `ZTEMPSCRATCH(LEN,OUT%)` / `ZTEMPSCRATCH(LEN)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | byte length, output integer or expression integer | Allocates and frees temporary pages, returning page count. |
 | `ZFAIL(CODE,OUT%)` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | error code, output integer | Clears output first, then reports `?RB ERROR code`. |
-| `FREEMEM()` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | none | Prints current live BASIC free bytes. |
+| `MEMAVL()` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | none | Prints current live BASIC free bytes. |
 | `SCRCAP(H%)` / `SCRCAP()` | Slot 14 descriptor; module 1 slot 0, copies full `$07DC` slot-0 payload | output handle or expression handle | Captures screen text `$0400-$07E7` and color RAM `$D800-$DBE7` into a typed screen handle. |
 | `ERRCODE(OUT%)` / `ERRCODE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | output integer, or expression integer | Returns the last ReadyBASIC runtime error code. |
 | `ERRLINE(OUT%)` / `ERRLINE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | output integer, or expression integer | Returns the line number of the last ReadyBASIC runtime error, or `0` for direct mode. |
@@ -707,24 +713,25 @@ table at `$C600-$C6FF`. ReadyBASIC scans that table at startup and does not use
 | `$0A00` | Saved zero page for ReadyOS suspend/resume. |
 | `$0B00` | Saved stack page for ReadyOS suspend/resume. |
 | `$0C00-$0CFF` | 192-byte heap page bitmap plus reserved bytes. |
-| `$1000-$1FFF` | 128 command descriptor slots, 32 bytes each. Slot 14 is `SCRCAP`; slot 128 is `SCRPUT`; zero-filled slots are unused fillers. |
+| `$1000-$1FFF` | 128 command descriptor slots, 32 bytes each. Current build has 117 real descriptors, 11 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128. |
 | `$2000-$3FFF` | Reserved common/system space for future ReadyBASIC metadata. |
 | `$4000-$FFFF` | Typed handle heap: 192 pages / 48KB. |
 
-The descriptor table intentionally leaves a large filler span between the two
-screen commands:
+The descriptor table keeps `SCRPUT` in the final slot to prove full-table lookup.
+Every alias consumes a real 32-byte descriptor in the assigned core bank, so the
+source filler count must track the actual descriptor count:
 
 | Descriptor range | REU offset | Role | Slots | Size |
 |---|---:|---|---:|---:|
-| Slots 1-14 | `$1000-$11BF` | Current front commands from `ZECHO1` through `SCRCAP`. | 14 | `$01C0` / 448B |
-| Slots 15-127 | `$11C0-$1FDF` | Zero-filled filler descriptors available for future commands. | 113 | `$0E20` / 3.5K / 3616 exact bytes |
+| Slots 1-116 | `$1000-$1E7F` | Current built-in descriptors from `ZECHO1` through `SND`, including token-safe aliases. | 116 | `$0E80` / 3712B |
+| Slots 117-127 | `$1E80-$1FDF` | Zero-filled filler descriptors available for future commands. | 11 | `$0160` / 352B |
 | Slot 128 | `$1FE0-$1FFF` | `SCRPUT`, deliberately placed at the end to prove full-table lookup. | 1 | `$0020` / 32B |
 
 The persistent handle model supports 128 live handles. Each handle is
 represented to BASIC as a small integer from `1` to `128`, while canonical
 metadata lives in REU and bridge RAM keeps only the current descriptor scratch.
 Type `1` is a byte buffer, and type `2` is a screen text+color buffer.
-`BUFFILL` accepts only buffer handles; `BUFFREE` frees any valid handle;
+`BUFFILL` accepts only buffer handles; `BUFDROP` frees any valid handle;
 `SCRPUT` accepts only screen handles. The typed heap uses assigned core-bank pages
 `$40-$FF`; future large or long-lived objects should allocate additional REU
 banks and keep the same small handle model.
@@ -924,7 +931,7 @@ the regression probes stay shorter and more assertion-heavy.
 | Probe | Coverage |
 |---|---|
 | Full expression probe | Direct bare command statements, command expressions, parenthesized `EXEC PROC`, `FUNC` with later assignment plus `RET`, numeric `FUNC` expression return/assignment, string `FUNC` expression return, and readable `LIST`. |
-| Plugin command probe | Direct command statements, `IF ... THEN` assignment/expression coverage, `UPPER`/`LOWER`, old-name rejection, string/REM safety, leading-comma rejection, `SCRCAP`/`SCRPUT`, slot-128 lookup, 128-handle edge, 48KB heap edge, screen heap exhaustion, wrong-handle-type rejection, screen-handle free, resume. |
+| Plugin command probe | Direct command statements, `IF ... THEN` assignment/expression coverage, `UPPER`/`LOWER`, old-name rejection, string/REM safety, leading-comma rejection, `SCRCAP`/`SCRPUT`, slot-128 lookup, descriptor filler-count guardrails, 128-handle edge, 48KB heap edge, screen heap exhaustion, wrong-handle-type rejection, screen-handle free, resume. |
 | Program probe | Stored line start, colon chains, true/false `IF ... THEN` assignment/expression coverage, `FOR/NEXT`, strings, REM, DATA, arrays, hidden worker, handles, failure clearing. |
 | `rbproc1` probe | Stored positive `PROC`/`FUNC`: no-param PROC, `%`, `$`, explicit `RET%`/`RET$`, colon chain, normalized `IF THEN :EXEC`, nested depth 2, int/string/float command and FUNC returns, `FADD` expression and statement forms, nested ReadyBASIC actuals, string concatenation, and readable `LIST`. |
 | `rbprocerr` probe | Stored negative `PROC`/`FUNC`: unknown routine, wrong count/type, statement `EXEC` to `FUNC`, PROC extra actual, `ENDP` without `EXEC`, return-stack overflow, malformed nested actuals, and return/context type errors. |
@@ -935,7 +942,7 @@ the regression probes stay shorter and more assertion-heavy.
 | Large-vars probe | BASIC workspace and variable behavior under heavier state. |
 | Cross-app resume stress | ReadyBASIC survives repeated app switches. |
 | Second-entry/editor stress | ReadyBASIC survives editor/launcher round trips and later re-entry. |
-| Demo automation suite | Viewer-paced walkthrough covering `FREEMEM`, editor round trip, assembler commands, `PROC`/`FUNC`, parameter groups, expected errors, REU handles, and nested expression forms. |
+| Demo automation suite | Viewer-paced walkthrough covering `MEMAVL`, editor round trip, assembler commands, `PROC`/`FUNC`, parameter groups, expected errors, REU handles, and nested expression forms. |
 
 Some harness wrappers can report a process-level `partial` status even when
 every step is `ok` and `FailedStep` is `null`; for ReadyBASIC these were treated

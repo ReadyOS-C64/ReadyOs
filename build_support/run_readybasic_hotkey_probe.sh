@@ -154,7 +154,7 @@ YAML
     params:
       start: 828
       bytes_hex: "$stub_hex"
-  - id: ${id}_clear_keylog_breakpoints
+  - id: ${id}_clear_keylog_breakpnts
     type: monitor.command
     params:
       command: "raw:delete"
@@ -191,7 +191,7 @@ emit_hotkey_and_wait() {
     type: screen.capture
     params:
       label: "${capture_label}_after_input"
-      note: "after ${hotkey} input before waiting for ${expected_text}"
+      pitch: "after ${hotkey} input before waiting for ${expected_text}"
   - id: wait_${id}
     type: screen.wait_contains
     params:
@@ -455,7 +455,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_hotkey_launcher_editor_selected
-      note: after selecting Editor in launcher before F3 preload
+      pitch: after selecting Editor in launcher before F3 preload
   - id: load_editor_to_reu
     type: input.sequence
     params:
@@ -466,7 +466,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_hotkey_launcher_editor_preloaded
-      note: after F3 loading Editor to REU
+      pitch: after F3 loading Editor to REU
   - id: assert_editor_preload_label
     type: assert.screen
     params:
@@ -501,7 +501,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_hotkey_launcher_reuviewer_selected
-      note: after selecting REU Viewer in launcher before F3 preload
+      pitch: after selecting REU Viewer in launcher before F3 preload
   - id: load_reuviewer_to_reu
     type: input.sequence
     params:
@@ -512,7 +512,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_hotkey_launcher_reuviewer_preloaded
-      note: after F3 loading REU Viewer to REU
+      pitch: after F3 loading REU Viewer to REU
   - id: assert_reuviewer_preload_label
     type: assert.screen
     params:
@@ -547,7 +547,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_hotkey_launcher_after_readybasic_nav
-      note: after navigating launcher from REU Viewer to ReadyBASIC
+      pitch: after navigating launcher from REU Viewer to ReadyBASIC
   - id: wait_readybasic_prompt
     type: screen.wait_contains
     params:
@@ -583,7 +583,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_hotkey_seed_list_program
-      note: after listing the seed program in ReadyBASIC
+      pitch: after listing the seed program in ReadyBASIC
   - id: assert_readybasic_list_program
     type: assert.screen
     params:
@@ -610,7 +610,7 @@ $(emit_hotkey_and_wait f4_round2_back_to_readybasic f4 "ready." 1.2 readybasic_h
     type: screen.capture
     params:
       label: readybasic_hotkey_list_after_cycles_before_ctrl_b
-      note: after LIST following two F2 and two F4 loaded-app cycles
+      pitch: after LIST following two F2 and two F4 loaded-app cycles
   - id: assert_list_after_cycles_before_ctrl_b
     type: assert.screen
     params:
@@ -625,7 +625,7 @@ $(emit_hotkey_and_wait f4_round2_back_to_readybasic f4 "ready." 1.2 readybasic_h
     type: screen.capture
     params:
       label: readybasic_hotkey_run_after_cycles_before_ctrl_b
-      note: after RUN following two F2 and two F4 loaded-app cycles
+      pitch: after RUN following two F2 and two F4 loaded-app cycles
   - id: assert_run_after_cycles_before_ctrl_b
     type: assert.screen
     params:
@@ -651,7 +651,7 @@ $(emit_hotkey_step ctrl_b_from_readybasic_after_cycles ctrl_b 1.0 readybasic 3.0
     type: screen.capture
     params:
       label: readybasic_hotkey_ctrl_b_after_cycles
-      note: after Ctrl+B at end of cycling before launcher wait
+      pitch: after Ctrl+B at end of cycling before launcher wait
   - id: wait_launcher_after_readybasic_ctrl_b
     type: screen.wait_contains
     params:
@@ -675,7 +675,7 @@ $(emit_hotkey_step ctrl_b_from_readybasic_after_cycles ctrl_b 1.0 readybasic 3.0
     type: screen.capture
     params:
       label: readybasic_hotkey_reenter_after_ctrl_b
-      note: after returning from launcher before ReadyBASIC reentry wait
+      pitch: after returning from launcher before ReadyBASIC reentry wait
   - id: wait_readybasic_after_ctrl_b
     type: screen.wait_contains
     params:
@@ -698,7 +698,7 @@ $(emit_hotkey_step ctrl_b_from_readybasic_after_cycles ctrl_b 1.0 readybasic 3.0
     type: screen.capture
     params:
       label: readybasic_hotkey_final_list_after_reentry
-      note: after LIST on final ReadyBASIC reentry
+      pitch: after LIST on final ReadyBASIC reentry
   - id: assert_final_list_after_reentry
     type: assert.screen
     params:
@@ -713,7 +713,7 @@ $(emit_hotkey_step ctrl_b_from_readybasic_after_cycles ctrl_b 1.0 readybasic 3.0
     type: screen.capture
     params:
       label: readybasic_hotkey_final_run_after_reentry
-      note: after RUN on final ReadyBASIC reentry
+      pitch: after RUN on final ReadyBASIC reentry
   - id: assert_final_run_output
     type: assert.screen
     params:
@@ -728,7 +728,7 @@ $(emit_hotkey_step ctrl_b_from_readybasic_after_cycles ctrl_b 1.0 readybasic 3.0
     type: screen.capture
     params:
       label: readybasic_hotkey_exit_after_final_run
-      note: after EXIT before launcher wait
+      pitch: after EXIT before launcher wait
   - id: wait_launcher_after_exit
     type: screen.wait_contains
     params:
@@ -822,7 +822,7 @@ steps:
     type: screen.capture
     params:
       label: seed_readybasic_state
-      note: after seeding ReadyBASIC state before hotkey tests
+      pitch: after seeding ReadyBASIC state before hotkey tests
   - id: assert_seed_state
     type: assert.screen
     params:
@@ -832,7 +832,7 @@ $(emit_hotkey_step ctrl_b_from_readybasic ctrl_b 0.05)
     type: screen.capture
     params:
       label: readybasic_hotkey_ctrl_b_from_readybasic_after_input
-      note: after Ctrl+B input before launcher wait
+      pitch: after Ctrl+B input before launcher wait
   - id: wait_launcher_after_ctrl_b
     type: screen.wait_contains
     params:
@@ -855,7 +855,7 @@ $(emit_hotkey_step ctrl_b_from_readybasic ctrl_b 0.05)
     type: screen.capture
     params:
       label: readybasic_hotkey_readybasic_to_editor_menu
-      note: after navigating to editor from launcher
+      pitch: after navigating to editor from launcher
   - id: wait_editor_loaded
     type: screen.wait_contains
     params:
@@ -867,7 +867,7 @@ $(emit_hotkey_step ctrl_b_from_editor ctrl_b 1.0 app)
     type: screen.capture
     params:
       label: readybasic_hotkey_ctrl_b_from_editor_after_input
-      note: after Ctrl+B input from editor before launcher wait
+      pitch: after Ctrl+B input from editor before launcher wait
   - id: wait_launcher_after_editor
     type: screen.wait_contains
     params:
@@ -883,7 +883,7 @@ $(emit_hotkey_step ctrl_b_from_editor ctrl_b 1.0 app)
     type: screen.capture
     params:
       label: readybasic_hotkey_editor_to_readybasic_menu
-      note: after navigating back to ReadyBASIC before F4 test
+      pitch: after navigating back to ReadyBASIC before F4 test
   - id: wait_readybasic_resume_for_f4
     type: screen.wait_contains
     params:
@@ -900,7 +900,7 @@ $(emit_hotkey_step ctrl_b_from_editor ctrl_b 1.0 app)
     type: screen.capture
     params:
       label: readybasic_hotkey_state_after_ctrl_b
-      note: after typing HOTSTATE verification command
+      pitch: after typing HOTSTATE verification command
   - id: assert_hot_state_after_ctrl_b
     type: assert.screen
     params:
@@ -915,7 +915,7 @@ $(emit_hotkey_step ctrl_b_from_editor ctrl_b 1.0 app)
     type: screen.capture
     params:
       label: readybasic_hotkey_list_before_f4
-      note: after building LIST program before F4
+      pitch: after building LIST program before F4
   - id: wait_list_visible_before_f4
     type: screen.wait_contains
     params:

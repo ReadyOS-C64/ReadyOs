@@ -206,7 +206,7 @@ YAML
     params:
       start: 828
       bytes_hex: "$stub_hex"
-  - id: ${id}_clear_keylog_breakpoints
+  - id: ${id}_clear_keylog_breakpnts
     type: monitor.command
     params:
       command: "raw:delete"
@@ -318,7 +318,7 @@ emit_wait_readybasic_warm_steps() {
     type: screen.capture
     params:
       label: $label
-      note: warm ReadyBASIC entry evidence; bank/vector assertions and typed sentinel prove keyboard liveness
+      pitch: warm ReadyBASIC entry evidence; bank/vector assertions and typed sentinel prove keyboard liveness
 YAML
 }
 
@@ -608,7 +608,7 @@ $(emit_hotkey_step reuviewer_ctrl_b_after_readybasic_f2 ctrl_b 1.0 app)
     type: screen.capture
     params:
       label: chain_after_reuviewer_ctrl_b_hotkey
-      note: capture after resumed REU Viewer Ctrl+B hotkey
+      pitch: capture after resumed REU Viewer Ctrl+B hotkey
   - id: wait_launcher_after_reuviewer_ctrl_b
     type: screen.wait_contains
     params:

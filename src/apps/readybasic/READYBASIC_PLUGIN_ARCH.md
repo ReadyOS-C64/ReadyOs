@@ -74,7 +74,7 @@ same ReadyOS and REU discipline.
 - `$0A00`: ReadyOS suspend/resume zero-page snapshot.
 - `$0B00`: ReadyOS suspend/resume stack-page snapshot.
 - `$0C00-$0CFF`: 192-page heap bitmap plus reserved bytes.
-- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. Slot 14 is `SCRCAP`, slot 128 is `SCRPUT`, and zero-filled filler slots are unused.
+- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The current build has 117 real descriptors, 11 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128.
 - `$2000-$3FFF`: reserved common/system expansion space.
 - `$4000-$FFFF`: typed 48KB heap for buffer, screen, and Phase 1 graphics
   surface handles.
@@ -169,12 +169,12 @@ Each descriptor is 32 bytes:
 - `ZHIDDENRAM(S$,OUT%)` / `ZHIDDENRAM(S$)`: module 1 slot 0 under-ROM worker proof, returns a simple checksum.
 - `ZSUMNUMARRAY(A%(0),COUNT,OUT%)` / `ZSUMNUMARRAY(A%(0),COUNT)`: module 1 slot 0 payload, sums integer array elements.
 - `ZRANGENUMARRAY(START,COUNT,A%(0))`: module 1 slot 0 payload, stages integer array output and resident commit writes it.
-- `BUFNEW(LEN,H%)` / `BUFNEW(LEN)`: module 1 slot 0 payload, creates a persistent handle in bank `$44`.
+- `BUFMAKE(LEN,H%)` / `BUFMAKE(LEN)`: module 1 slot 0 payload, creates a persistent handle in bank `$44`.
 - `BUFFILL(H%,BYTE)`: module 1 slot 0 payload, fills buffer handle pages and rejects non-buffer handles.
-- `BUFFREE(H%)`: module 1 slot 0 payload, frees any valid handle type.
+- `BUFDROP(H%)`: module 1 slot 0 payload, frees any valid handle type.
 - `ZTEMPSCRATCH(LEN,OUT%)` / `ZTEMPSCRATCH(LEN)`: module 1 slot 0 payload, allocates and frees temporary pages, returning page count.
 - `ZFAIL(CODE,OUT%)`: module 1 slot 0 payload, exercises the error path after output clearing.
-- `FREEMEM()`: module 1 slot 0 payload, prints the current live BASIC free-byte count.
+- `MEMAVL()`: module 1 slot 0 payload, prints the current live BASIC free-byte count.
 - `SCRCAP(H%)` / `SCRCAP()`: module 1 slot 0 payload, captures screen text plus color RAM into a typed screen handle.
 - `FADD(A,B,OUT)` / `FADD(A,B)`: resident-computed demo command, returns a plain C64 BASIC float.
 - `ZPAUSE(TICKS)`: module 1 slot 0 payload, waits for a number of jiffies.
@@ -187,39 +187,47 @@ Each descriptor is 32 bytes:
 - `ZDM1`, `ZDM2S`, `ZDOV1`, `ZDOV2`, and `ZSAA`-`ZUEB`: disk-loaded sample module commands.
 - `GFXMODE(mode$)` / `GFXMODE()`: module 3 `GFXCORE`, switches or reads
   `TEXT`, `HIRES`, `MBITMAP`, `TILE`, and `MTILE`.
-- `GFXTEXT()`, `GFXCLEAR(C)`, `GFXTARGET(H%)` / `GFXTGT(H%)`, and
+- `GFXTEXT()`, `GFXCLEAR(C)`, `GFXTGT(H%)`, and
   `GFXSYNC()`: module 3 `GFXCORE` Bank D setup/control commands.
-  `GFXTARGET(0)` / `GFXTGT(0)` selects the visible target; `GFXTGT` is the
-  stored-program-safe alias used by demos.
+  `GFXTGT(0)` selects the visible target; `GFXTARGET` remains accepted as a
+  legacy friendly alias.
 - `GFXSURF(mode$)` and `GFXBLIT(H%)`: slot-0 allocator-backed surface handle
   commands. They allocate/validate typed handle `3`; full REU drawing/blitting
   is future work.
-- `PLOT(X,Y,C)`, `POINT(X,Y,OUT%)` / `PNT(X,Y,OUT%)`, `LINE(X1,Y1,X2,Y2,C)`,
-  `RECT(X1,Y1,X2,Y2,C)`, `FRECT(X1,Y1,X2,Y2,C)`, `CIRCLE(X,Y,R,C)`,
+- `PLOT(X,Y,C)`, `PNT(X,Y,OUT%)`, `LINE(X1,Y1,X2,Y2,C)`,
+  `RECT(X1,Y1,X2,Y2,C)`, `FBOX(X1,Y1,X2,Y2,C)`, `CIRCLE(X,Y,R,C)`,
   `FCIRCLE(X,Y,R,C)`, `TILE(X,Y,CH,C)`, and `CHARAT(X,Y,CH,C)`: module 3
   `GFXPRIM` immediate primitive/cell commands. In `MBITMAP`, these primitives
   use 160x200 logical coordinates and color-slot encoding: `0` clears, `1..15`
   writes color RAM and draws pair code `3`, `16..31` draws pair code `1`,
   `32..47` draws pair code `2`, and `48..63` explicitly draws pair code `3`.
 - `POLY(A%(0),COUNT,C)`, `FPOLY(A%(0),COUNT,C)`, `POLYH(H%,COUNT,C)`,
-  `FPOLYH(H%,COUNT,C)`, `PBUFNEW(COUNT,H%)`, `PBUFSET(H%,INDEX,X,Y)`, and
-  `PBUFFREE(H%)`: module 3 `GFXPOLY` overlay commands. Point buffers are typed
+  `FPOLYH(H%,COUNT,C)`, `PBMAKE(COUNT,H%)`, `PBUFSET(H%,INDEX,X,Y)`, and
+  `PBDROP(H%)`: module 3 `GFXPOLY` overlay commands. Point buffers are typed
   REU handle type `4`; `POLYH`/`FPOLYH` are explicit handle aliases because the
   same-name handle overload was not added to the resident parser.
-- `SPRSET(N,ON,COLOR,PATTERN)`, `SPRMOVE(N,X,Y)`, `SPRCOLOR(N,COLOR)` /
-  `SPRCOL(N,COLOR)`, `SPRROW(N,ROW,B1,B2,B3)`, `SPREXPAND(N,XON,YON)` /
-  `SPRSIZE(N,XON,YON)`, `SPRPRI(N,BEHIND)`, `SPRMULTI(N,ON)` / `SPRMUL(N,ON)`,
-  `SPRMCOLOR(C1,C2)` / `SPRMCO(C1,C2)`, `SPRSCAN()`, and `SPRCOLL(N,OUT%)`:
+- `SPRSET(N,ON,COLOR,PATTERN)`, `SPRMOVE(N,X,Y)`, `SPRCOL(N,COLOR)`,
+  `SPRROW(N,ROW,B1,B2,B3)`, `SPRSIZE(N,XON,YON)`, `SPRPRI(N,BEHIND)`,
+  `SPRMULTI(N,ON)` / `SPRMUL(N,ON)`, `SPRMCO(C1,C2)`, `SPRSCAN()`, and
+  `SPRCOLL(N,OUT%)`:
   module 3 `GFXSPR` overlay commands.
 - `JOY(PORT,OUT%)`, `KEYP(OUT%)`, `KEYSCAN()`, and `KEYLAST(OUT%)`: module 3
   `INPUTEV` polling input commands.
-- `SIDCLR()`, `SILENCE()`, `VOL(VOL)`, `FREQ(V,F)`, `NOTE(V,N,O)`,
+- `SIDRST()`, `SIDOFF()`, `VOL(VOL)`, `FRQ(V,F)`, `PITCH(V,N,O)`,
   `PULSE(V,W)`, `ADSR(V,A,D,S,R)` / `ENV(V,A,D,S,R)`, `WAVE(V,M)` /
   `CTRL(V,M)`, `GATE(V,ON)`, `VOICE(V,F,W,AD,SR)`, `FILTER(CUTOFF,RES,ROUTE,MODE)` /
   `FILT(CUTOFF,RES,ROUTE,MODE)`, and `SOUND(V,F,D,W)` / `SND(V,F,D,W)`:
   module 4 `SIDCORE` immediate SID sound commands. `VOICE` uses packed SID
   attack/decay and sustain/release bytes to avoid resident parser growth; no
   IRQ playback engine is installed.
+
+Legacy friendly names including `BUFNEW`, `BUFFREE`, `FREEMEM`, `GFXTARGET`,
+`POINT`, `FRECT`, `PBUFNEW`, `PBUFFREE`, `DLCLR`, `DLFRECT`, `SIDCLR`,
+`SILENCE`, `FREQ`, and `NOTE` remain registered for compatibility. New stored
+programs and demos must use the token-safe aliases above because BASIC V2
+tokenizes embedded words such as `FN`, `FRE`, `INT`, `CLR`, `LEN`, and `NOT`.
+These aliases still consume descriptor slots; the source filler count and static
+check must keep the table at exactly 128 searchable descriptors.
 
 Native reusable BASIC routines:
 
@@ -317,7 +325,7 @@ recognizes a small allow-list of expression-safe command calls and selected
 numeric/string `FUNC` calls.
 
 - Command expressions: `ZECHO1()`, `ZADD16(a,b)`, `ZHIDDENRAM(s$)`,
-  `ZSUMNUMARRAY(a%(0),n)`, `BUFNEW(n)`, `ZTEMPSCRATCH(n)`, and `SCRCAP()`
+  `ZSUMNUMARRAY(a%(0),n)`, `BUFMAKE(n)`, `ZTEMPSCRATCH(n)`, and `SCRCAP()`
   return integers or handles; `UPPER(s$)` and `LOWER(s$)` return strings.
 - Parenthesized routine syntax: `PROC NAME(P%,S$)`, `FUNC NAME(S$)`, and
   `EXEC NAME(actuals...)` for non-empty argument lists.

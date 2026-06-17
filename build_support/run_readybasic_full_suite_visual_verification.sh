@@ -302,17 +302,17 @@ steps:
     params:
       contains: "D-RANGE 7  10"
 
-  - id: direct_bufnew
+  - id: direct_bufmake
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-BUFNEW REU HANDLE TABLE RETURN H%=1 SCREEN D-BUF\rH%=BUFNEW(300)\rPRINT "D-BUF";H%;":END"\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-BUFMAKE REU HANDLE TABLE RETURN H%=1 SCREEN D-BUF\rH%=BUFMAKE(300)\rPRINT "D-BUF";H%;":END"\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
-  - id: assert_direct_bufnew
+  - id: assert_direct_bufmake
     type: assert.screen
     params:
       contains: "D-BUF 1 :END"
-  - id: dump_direct_bufnew
+  - id: dump_direct_bufmake
     type: dump.memory_ranges
     params:
       ranges: *plugin_ranges
@@ -332,17 +332,17 @@ steps:
     params:
       not_contains: "?RB ERROR"
 
-  - id: direct_buffree
+  - id: direct_bufdrop
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-BUFFREE RELEASE REU HANDLE H% SCREEN D-FREE\rBUFFREE(H%)\rPRINT "D-FREE OK"\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-BUFDROP RELEASE REU HANDLE H% SCREEN D-FREE\rBUFDROP(H%)\rPRINT "D-FREE OK"\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
-  - id: assert_direct_buffree
+  - id: assert_direct_bufdrop
     type: assert.screen
     params:
       contains: "D-FREE OK"
-  - id: assert_direct_buffree_no_error
+  - id: assert_direct_bufdrop_no_error
     type: assert.screen_not_contains
     params:
       not_contains: "?RB ERROR"
@@ -371,24 +371,24 @@ steps:
     type: assert.screen
     params:
       contains: "?RB ERROR 40"
-  - id: direct_buffree_screen_handle
+  - id: direct_bufdrop_screen_handle
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-BUFFREE RELEASES SCREEN HANDLE TYPE\rBUFFREE(S%)\rPRINT "D-SCRFREE";S%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-BUFDROP RELEASES SCREEN HANDLE TYPE\rBUFDROP(S%)\rPRINT "D-SCRFREE";S%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
-  - id: assert_direct_buffree_screen_handle
+  - id: assert_direct_bufdrop_screen_handle
     type: assert.screen
     params:
       contains: "D-SCRFREE 1"
-  - id: assert_direct_buffree_screen_no_error
+  - id: assert_direct_bufdrop_screen_no_error
     type: assert.screen_not_contains
     params:
       not_contains: "?RB ERROR"
   - id: direct_scrput_rejects_buffer_handle
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-SCRPUT MUST REJECT BUFFER HANDLE TYPE\rB%=BUFNEW(300)\rSCRPUT(B%)\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-SCRPUT MUST REJECT BUFFER HANDLE TYPE\rB%=BUFMAKE(300)\rSCRPUT(B%)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_scrput_rejects_buffer_handle
@@ -398,7 +398,7 @@ steps:
   - id: direct_free_buffer_after_type_error
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rBUFFREE(B%)\rPRINT "D-BUFREE";B%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rBUFDROP(B%)\rPRINT "D-BUFREE";B%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_free_buffer_after_type_error
@@ -413,7 +413,7 @@ steps:
   - id: direct_handle_128_edge
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 128\r20 H%=BUFNEW(1)\r30 NEXT I\r40 PRINT "D-HMAX";H%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 128\r20 H%=BUFMAKE(1)\r30 NEXT I\r40 PRINT "D-HMAX";H%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 5.0
   - id: assert_direct_handle_128_edge
@@ -427,7 +427,7 @@ steps:
   - id: direct_handle_129_rejected
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rE%=BUFNEW(1)\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rE%=BUFMAKE(1)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_handle_129_rejected
@@ -437,7 +437,7 @@ steps:
   - id: direct_free_128_handles
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 128\r20 BUFFREE(I)\r30 NEXT I\r40 PRINT "D-HFREED"\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 128\r20 BUFDROP(I)\r30 NEXT I\r40 PRINT "D-HFREED"\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 5.0
   - id: assert_direct_free_128_handles
@@ -451,7 +451,7 @@ steps:
   - id: direct_48k_heap_edge
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rM%=BUFNEW(49152)\rPRINT "D-MAXBUF";M%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rM%=BUFMAKE(49152)\rPRINT "D-MAXBUF";M%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_48k_heap_edge
@@ -461,7 +461,7 @@ steps:
   - id: direct_48k_heap_full
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rE%=BUFNEW(1)\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rE%=BUFMAKE(1)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_48k_heap_full
@@ -471,7 +471,7 @@ steps:
   - id: direct_free_48k_heap
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rBUFFREE(M%)\rPRINT "D-MAXFREE";M%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rBUFDROP(M%)\rPRINT "D-MAXFREE";M%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_free_48k_heap
@@ -505,7 +505,7 @@ steps:
   - id: direct_free_screen_heap
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 24\r20 BUFFREE(I)\r30 NEXT I\r40 PRINT "D-SFREED"\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 24\r20 BUFDROP(I)\r30 NEXT I\r40 PRINT "D-SFREED"\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 5.0
   - id: assert_direct_free_screen_heap
@@ -913,7 +913,7 @@ steps:
   - id: program_handle_enter_and_list
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM BUF REU HANDLE ALLOC RETURN FILL FREE H%=1 SCREEN P-BUF\r20 H%=BUFNEW(300)\r30 PRINT "P-BUF";H%\r40 BUFFILL(H%,170)\r50 BUFFREE(H%)\r60 PRINT "P-FREE";H%\rLIST\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM BUF REU HANDLE ALLOC RETURN FILL FREE H%=1 SCREEN P-BUF\r20 H%=BUFMAKE(300)\r30 PRINT "P-BUF";H%\r40 BUFFILL(H%,170)\r50 BUFDROP(H%)\r60 PRINT "P-FREE";H%\rLIST\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_handle_rem

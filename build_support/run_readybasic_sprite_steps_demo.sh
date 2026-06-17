@@ -117,7 +117,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sprite_steps_list_rbgfx13
-      note: "RBGFX13 loaded/listed inside ReadyBASIC under ReadyOS"
+      pitch: "RBGFX13 loaded/listed inside ReadyBASIC under ReadyOS"
   - id: assert_list_rbgfx13
     type: assert.screen
     params:
@@ -138,7 +138,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sprite_steps_stage_1_initial
-      note: "Stage 1: sprites placed from explicit SPRROW pixel data"
+      pitch: "Stage 1: sprites placed from explicit SPRROW pixel data"
   - id: continue_to_stage_2
     type: input.key
     params:
@@ -148,7 +148,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sprite_steps_stage_2_moved
-      note: "Stage 2: sprites moved after ZPAUSE/key gate"
+      pitch: "Stage 2: sprites moved after ZPAUSE/key gate"
   - id: continue_to_stage_3
     type: input.key
     params:
@@ -158,7 +158,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sprite_steps_stage_3_recolored
-      note: "Stage 3: sprite colors changed"
+      pitch: "Stage 3: sprite colors changed"
   - id: continue_to_finish
     type: input.key
     params:

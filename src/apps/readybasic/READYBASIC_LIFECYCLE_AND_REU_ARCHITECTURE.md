@@ -637,12 +637,12 @@ BASIC's string heap.
 | `ZHIDDENRAM(S$,OUT%)` / `ZHIDDENRAM(S$)` | Module 1 slot 0 under-ROM worker | small slice | string variable or literal, output/expression int | Sums uppercase bytes. |
 | `ZSUMNUMARRAY(A%(0),COUNT,OUT%)` / `ZSUMNUMARRAY(A%(0),COUNT)` | Module 1 slot 0 payload | small slice | integer array base/count, output/expression int | Sums integer array values. |
 | `ZRANGENUMARRAY(START,COUNT,A%(0))` | Module 1 slot 0 payload | small slice | start/count, output array | Stages consecutive integers. |
-| `BUFNEW(LEN,H%)` / `BUFNEW(LEN)` | Module 1 slot 0 payload | `$06CE` (1.7K) | length, output/expression handle | Allocates persistent buffer pages in the assigned core bank. |
+| `BUFMAKE(LEN,H%)` / `BUFMAKE(LEN)` | Module 1 slot 0 payload | `$06CE` (1.7K) | length, output/expression handle | Allocates persistent buffer pages in the assigned core bank. |
 | `BUFFILL(H%,BYTE)` | Module 1 slot 0 payload | `$06CE` (1.7K) | buffer handle, byte | Fills buffer handle pages using `$C500` page buffer. |
-| `BUFFREE(H%)` | Module 1 slot 0 payload | `$06CE` (1.7K) | handle | Frees any valid handle type and clears metadata. |
+| `BUFDROP(H%)` | Module 1 slot 0 payload | `$06CE` (1.7K) | handle | Frees any valid handle type and clears metadata. |
 | `ZTEMPSCRATCH(LEN,OUT%)` / `ZTEMPSCRATCH(LEN)` | Module 1 slot 0 payload | `$06CE` (1.7K) | length, output/expression int | Allocates then frees pages, returns page count. |
 | `ZFAIL(CODE,OUT%)` | Module 1 slot 0 payload | small slice | code, output int | Clears output first, then returns `?RB ERROR code`. |
-| `FREEMEM()` | Module 1 slot 0 payload | small slice | none | Prints live free BASIC bytes. |
+| `MEMAVL()` | Module 1 slot 0 payload | small slice | none | Prints live free BASIC bytes. |
 | `SCRCAP(H%)` / `SCRCAP()` | Slot 14; module 1 slot 0 payload | `$06CE` (1.7K) | output/expression screen handle | Captures screen text and color RAM into a type-2 handle. |
 | `ERRCODE(OUT%)` / `ERRCODE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | 0 copied on current path | output int or expression int | Returns the last ReadyBASIC runtime error code. |
 | `ERRLINE(OUT%)` / `ERRLINE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | 0 copied on current path | output int or expression int | Returns the last ReadyBASIC runtime error line, or 0 in direct mode. |
@@ -669,12 +669,12 @@ flowchart LR
   SCRATCH --> BITMAP --> DATA
 ```
 
-`BUFNEW` converts byte length to 256-byte pages, finds contiguous free pages,
+`BUFMAKE` converts byte length to 256-byte pages, finds contiguous free pages,
 records type-1 metadata, and returns a one-based handle. `BUFFILL` accepts only
 type-1 buffer handles, fills `$C500` with the byte, and stashes it page by page
 into the assigned core bank at page offsets `$40-$FF`. `SCRCAP` creates a type-2 handle and
 stashes screen text plus color RAM; `SCRPUT` validates type `2` before restore.
-`BUFFREE` clears both the handle descriptor and bitmap for any valid handle type.
+`BUFDROP` clears both the handle descriptor and bitmap for any valid handle type.
 `ZTEMPSCRATCH` proves temporary allocation by finding pages without persisting a
 live descriptor.
 

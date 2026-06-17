@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx14 phase2 prims"
 30 gfxmode("hires"):gfxclear(0)
 40 circle(82,82,38,1)

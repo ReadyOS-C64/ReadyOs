@@ -104,7 +104,7 @@ steps:
   - id: probe_pbuf_free
     type: input.sequence
     params:
-      keys: [$(keys $'PBUFNEW(3,H%):PBUFFREE(H%):PRINT "OK 73"\r')]
+      keys: [$(keys $'PBMAKE(3,H%):PBDROP(H%):PRINT "OK 73"\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_pbuf_free
@@ -127,7 +127,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase3_list_rbgfx17
-      note: "RBGFX17 listed inside ReadyBASIC under ReadyOS"
+      pitch: "RBGFX17 listed inside ReadyBASIC under ReadyOS"
   - id: assert_list_rbgfx17
     type: assert.screen
     params:
@@ -142,7 +142,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase3_poly_array
-      note: "POLY(A%(0),count,color) outline polygons"
+      pitch: "POLY(A%(0),count,color) outline polygons"
   - id: finish_rbgfx17
     type: input.key
     params:
@@ -165,7 +165,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase3_fpoly_array
-      note: "FPOLY(A%(0),count,color) filled polygon demo"
+      pitch: "FPOLY(A%(0),count,color) filled polygon demo"
   - id: finish_rbgfx18
     type: input.key
     params:
@@ -188,7 +188,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase3_poly_reu
-      note: "PBUFNEW/PBUFSET plus POLYH handle polygon demo"
+      pitch: "PBMAKE/PBUFSET plus POLYH handle polygon demo"
   - id: finish_rbgfx19
     type: input.key
     params:
@@ -211,7 +211,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase3_fpoly_reu_showcase
-      note: "PBUFNEW/PBUFSET plus FPOLYH filled polygon showcase"
+      pitch: "PBMAKE/PBUFSET plus FPOLYH filled polygon showcase"
   - id: finish_rbgfx20
     type: input.key
     params:

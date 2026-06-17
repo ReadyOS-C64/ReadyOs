@@ -126,12 +126,12 @@ Built-in graphics payloads are prestashed in the ReadyBASIC code bank:
 
 | Family | Module/submodule | Runtime area | Commands |
 |---|---:|---:|---|
-| `GFXCORE` | module `3`, submodule `16` | slot 1 `$B000-$B540` | `GFXMODE`, `GFXTEXT`, `GFXCLEAR`, `GFXTARGET`, `GFXSYNC` |
-| `GFXPRIM` | module `3`, submodule `17` | slot 2 `$B800-$BF37` | `PLOT`, `POINT`, `LINE`, `RECT`, `FRECT`; Phase 2 also adds `CIRCLE`, `FCIRCLE`, `TILE`, `CHARAT`; the current worker includes real multicolor-bitmap plotting for those immediate primitives |
-| `GFXSPR` | module `3`, submodule `18` | slot-2 replacement overlay at `$B800-$BA71`, stored at REU code offset `$5000` | `SPRSET`, `SPRMOVE`, `SPRCOLOR`, `SPRROW`, `SPRSCAN`, `SPRCOLL`; Phase 2 also adds size/priority/multicolor controls |
+| `GFXCORE` | module `3`, submodule `16` | slot 1 `$B000-$B540` | `GFXMODE`, `GFXTEXT`, `GFXCLEAR`, `GFXTGT`, `GFXSYNC` |
+| `GFXPRIM` | module `3`, submodule `17` | slot 2 `$B800-$BF37` | `PLOT`, `PNT`, `LINE`, `RECT`, `FBOX`; Phase 2 also adds `CIRCLE`, `FCIRCLE`, `TILE`, `CHARAT`; the current worker includes real multicolor-bitmap plotting for those immediate primitives |
+| `GFXSPR` | module `3`, submodule `18` | slot-2 replacement overlay at `$B800-$BA71`, stored at REU code offset `$5000` | `SPRSET`, `SPRMOVE`, `SPRCOL`, `SPRROW`, `SPRSCAN`, `SPRCOLL`; Phase 2 also adds size/priority/multicolor controls |
 | `INPUTEV` | module `3`, submodule `19` | slot-2 replacement overlay at `$B800-$B86C`, stored at REU code offset `$5800` | `JOY`, `KEYP`, `KEYSCAN`, `KEYLAST` |
-| `GFXPOLY` | module `3`, submodule `20` | slot-2 replacement overlay at `$B800-$BF78`, stored at REU code offset `$6000` | `POLY`, `FPOLY`, `POLYH`, `FPOLYH`, `PBUFNEW`, `PBUFSET`, `PBUFFREE` |
-| `GFXDL` | module `3`, submodule `21` | slot-2 replacement overlay at `$B800-$BF82`, stored at REU code offset `$6800` | `DLMAKE`, `DLCLR`, `DLPLOT`, `DLLINE`, `DLRECT`, `DLFRECT`, `DLDRAW` |
+| `GFXPOLY` | module `3`, submodule `20` | slot-2 replacement overlay at `$B800-$BF78`, stored at REU code offset `$6000` | `POLY`, `FPOLY`, `POLYH`, `FPOLYH`, `PBMAKE`, `PBUFSET`, `PBDROP` |
+| `GFXDL` | module `3`, submodule `21` | slot-2 replacement overlay at `$B800-$BF82`, stored at REU code offset `$6800` | `DLMAKE`, `DLRST`, `DLPLOT`, `DLLINE`, `DLRECT`, `DLFBOX`, `DLDRAW` |
 | `GFXTILE` | module `3`, submodule `22` | slot-2 replacement overlay at `$B800-$BCD9`, stored at REU code offset `$7000` | `CHRMAKE`, `CHRROW`, `CHRUSE`, `TSMAKE`, `TSSET`, `TMMAKE`, `TMSET`, `TMDRAW`, `MCELL`, `MCBG` |
 | Surface handle stubs | system slot 0 | slot 0 `$A800-$AFFF` | `GFXSURF`, `GFXBLIT` |
 
@@ -139,7 +139,7 @@ The surface handle commands use the existing typed REU handle allocator and
 therefore live in the default command slot for Phase 1. They allocate and
 validate handle type `3` (`RB_HANDLE_TYPE_GFXSURF`) using 40 heap pages.
 `GFXBLIT(H%)` copies a full surface layout from REU to the visible Bank D
-bitmap, screen, and color ranges. `GFXTARGET(H%)` records the selected surface
+bitmap, screen, and color ranges. `GFXTGT(H%)` records the selected surface
 handle, but the current immediate primitive workers still draw to the visible
 Bank D target. `GFXSYNC()` snapshots the current visible Bank D layout into the
 selected `GFXTGT(H%)` surface; `GFXBLIT(H%)` restores it. The REU surface path
@@ -157,31 +157,31 @@ M%=GFXMODE()
 GFXTEXT()
 GFXCLEAR(C)
 H%=GFXSURF("HIRES")
-GFXTARGET(0)           : rem direct form
+GFXTGT(0)           : rem direct form
 GFXTGT(0)              : rem tokenizer-safe stored-program alias
 GFXBLIT(H%)
 GFXSYNC()
 PLOT(X,Y,C)
-POINT(X,Y,P%)          : rem long form registered
+PNT(X,Y,P%)          : rem long form registered
 PNT(X,Y,P%)            : rem short readback alias used by demos
 LINE(X1,Y1,X2,Y2,C)
 RECT(X1,Y1,X2,Y2,C)
-FRECT(X1,Y1,X2,Y2,C)
+FBOX(X1,Y1,X2,Y2,C)
 CIRCLE(X,Y,R,C)
 FCIRCLE(X,Y,R,C)
 TILE(X,Y,CH,C)
 CHARAT(X,Y,CH,C)
 SPRSET(N,ON,COLOR,PATTERN)
 SPRMOVE(N,X,Y)
-SPRCOLOR(N,COLOR)
+SPRCOL(N,COLOR)
 SPRCOL(N,COLOR)       : rem token-safe alias for demos
 SPRROW(N,ROW,B1,B2,B3)
-SPREXPAND(N,XON,YON)
+SPRSIZE(N,XON,YON)
 SPRSIZE(N,XON,YON)    : rem token-safe alias for demos
 SPRPRI(N,BEHIND)
 SPRMULTI(N,ON)
 SPRMUL(N,ON)          : rem token-safe alias for demos
-SPRMCOLOR(C1,C2)
+SPRMCO(C1,C2)
 SPRMCO(C1,C2)         : rem token-safe alias for demos
 SPRSCAN()
 SPRCOLL(N,C%)
@@ -209,13 +209,13 @@ Mode tradeoffs in the implemented renderer:
 | `TEXT` / `GFXTEXT()` | Restores ordinary VIC bank and text-ish control registers. | Returns the user to readable BASIC output. |
 | `HIRES` | Sets Bank D bitmap mode and draws one-bit pixels into `$E000`. | Crisp 320x200 plotting; color attributes are still coarse and minimal. |
 | `MBITMAP` | Sets Bank D multicolor bitmap mode and draws two-bit pixels into `$E000`. | 160x200 logical plotting; each 8x8 cell has shared color attributes, so later writes can recolor earlier pixels in the same cell. |
-| `TILE` | Sets Bank D text/tile screen and treats `PLOT(X,Y,C)` as cell write. | Fast cell graphics; `POINT()` returns the cell byte. |
+| `TILE` | Sets Bank D text/tile screen and treats `PLOT(X,Y,C)` as cell write. | Fast cell graphics; `PNT()` returns the cell byte. |
 | `MTILE` | Sets tile screen plus multicolor control bit. | Establishes the mode; Phase 1 keeps the same cell-level primitive behavior. |
 
 Known Phase 1 limits:
 
-- `PNT(X,Y,OUT%)` is the preferred Phase 1 readback spelling in demos. `POINT`
-  remains registered as the long form.
+- `PNT(X,Y,OUT%)` is the preferred Phase 1 readback spelling in demos. Legacy
+  `POINT` remains registered for compatibility.
 - Primitive coordinate callers are expected to stay in range: hires bitmap
   `0<=X<320`, `0<=Y<200`; multicolor bitmap `0<=X<160`,
   `0<=Y<200`; tile `0<=X<40`, `0<=Y<25`.
@@ -227,7 +227,7 @@ Known Phase 1 limits:
   convenient direct-color form, drawing slot 3 and writing color RAM.
   `C=16..31` draws slot 1 and writes the screen high nibble, `C=32..47` draws
   slot 2 and writes the screen low nibble, and `C=48..63` draws slot 3 and
-  writes color RAM. `POINT`/`PNT` returns the pixel pair code `0..3`, not the
+  writes color RAM. `PNT` returns the pixel pair code `0..3`, not the
   final VIC color number. `MTILE` still uses cell-level behavior.
 - `SPRROW(N,ROW,B1,B2,B3)` is the Phase 1 explicit sprite-pixel path. It
   writes one 24-bit sprite row into Bank D sprite memory at `$CA00 + N*64`,
@@ -280,7 +280,7 @@ The MBITMAP-specific demos are `rbgfx21_mbitmap_prims.bas`,
 `make readybasic-gfx-mbitmap-vice`, `make readybasic-gfx-phase4-vice`, and
 `make readybasic-gfx-phase5-vice` boot ReadyOS, load ReadyBASIC, load the BASIC
 demos from ReadyBASIC, capture screenshots, and verify the focused readback
-checks such as `POINT` returning `1  2  3` for the three colored slots.
+checks such as `PNT` returning `1  2  3` for the three colored slots.
 
 ## Demo Coverage Matrix
 
@@ -290,9 +290,9 @@ ReadyBASIC-capable D81 profiles:
 | Demo | Main coverage |
 |---|---|
 | `rbgfx01` | `GFXMODE`, `GFXCLEAR`, `GFXTEXT` across `HIRES`, `MBITMAP`, `TILE`, `MTILE`. |
-| `rbgfx02`-`rbgfx05` | HIRES `PLOT`, `PNT`, `LINE`, `RECT`, `FRECT`. |
+| `rbgfx02`-`rbgfx05` | HIRES `PLOT`, `PNT`, `LINE`, `RECT`, `FBOX`. |
 | `rbgfx06`, `rbgfx27`, `rbgfx31` | `GFXSURF`, `GFXTGT`, `GFXSYNC`, `GFXBLIT`, visible target restore. |
-| `rbgfx07`, `rbgfx21`, `rbgfx22`, `rbgfx25` | MBITMAP primitive slot semantics, `POINT` pair-code readback, `MCELL`, `MCBG`. |
+| `rbgfx07`, `rbgfx21`, `rbgfx22`, `rbgfx25` | MBITMAP primitive slot semantics, `PNT` pair-code readback, `MCELL`, `MCBG`. |
 | `rbgfx08`, `rbgfx15`, `rbgfx24`, `rbgfx28`, `rbgfx29` | Tile/cell commands, charset rows, tilesets, tilemaps, and visible Bank D `TILE`/`MTILE` immediate primitives. |
 | `rbgfx09`, `rbgfx10`, `rbgfx13`, `rbgfx16` | Sprite setup, movement, pixels, collision polling, expansion, priority, multicolor. |
 | `rbgfx11` | `JOY`, `KEYP`, `KEYSCAN`, `KEYLAST` polling. |
@@ -319,7 +319,7 @@ inside the existing built-in graphics module structure:
 | `SPRPRI(N,BEHIND)` | `GFXSPR` | Controls the VIC sprite-background priority bit. |
 | `SPRMULTI(N,ON)` / `SPRMUL(N,ON)` | `GFXSPR` | Controls VIC sprite multicolor enable bits. `SPRMUL` is the token-safe demo spelling. |
 | `SPRMCOLOR(C1,C2)` / `SPRMCO(C1,C2)` | `GFXSPR` | Sets the two shared sprite multicolor registers. `SPRMCO` avoids PETCAT splitting `CLR`/`COLOR`-like names. |
-| `SPRCOL(N,C)` | `GFXSPR` | Token-safe alias for `SPRCOLOR(N,C)`. |
+| `SPRCOL(N,C)` | `GFXSPR` | Token-safe alias for legacy `SPRCOLOR(N,C)`. |
 
 Phase 2 demo programs:
 
@@ -349,11 +349,11 @@ Implemented syntax:
 ```basic
 POLY(A%(0),COUNT,C)
 FPOLY(A%(0),COUNT,C)
-PBUFNEW(COUNT,H%)
+PBMAKE(COUNT,H%)
 PBUFSET(H%,INDEX,X,Y)
 POLYH(H%,COUNT,C)
 FPOLYH(H%,COUNT,C)
-PBUFFREE(H%)
+PBDROP(H%)
 ```
 
 Array-backed `POLY` and `FPOLY` read BASIC integer array pairs:
@@ -363,9 +363,9 @@ array storage as 16-bit coordinates and the plotting worker maps them to the
 active mode.
 
 REU-backed point buffers use typed handle type `4`
-(`RB_HANDLE_TYPE_POINTBUF`). `PBUFNEW(COUNT,H%)` allocates one REU heap page,
+(`RB_HANDLE_TYPE_PNTBUF`). `PBMAKE(COUNT,H%)` allocates one REU heap page,
 currently supporting up to 64 points. `PBUFSET(H%,INDEX,X,Y)` writes zero-based
-little-endian `x,y` pairs into that page. `PBUFFREE(H%)` releases the typed
+little-endian `x,y` pairs into that page. `PBDROP(H%)` releases the typed
 handle.
 
 The originally proposed same-name handle overloads,
@@ -401,17 +401,17 @@ selection.
 | `GFXTEXT()` | Return to ordinary text mode and restore expected screen pointers. |
 | `GFXCLEAR(color)` | Clear the current visible surface using mode-aware fill logic. |
 | `GFXSURF(mode$,H%)` / `H%=GFXSURF(mode$)` | Allocate a REU-backed surface handle compatible with a mode. |
-| `GFXTARGET(H%)` | Draw subsequent immediate commands into a REU surface instead of the visible Bank D surface. |
-| `GFXTARGET(0)` | Draw subsequent immediate commands directly to the visible surface. |
-| `GFXTGT(...)` | Tokenizer-safe alias for `GFXTARGET(...)`; use this in stored BASIC programs. |
+| `GFXTGT(H%)` | Draw subsequent immediate commands into a REU surface instead of the visible Bank D surface. |
+| `GFXTGT(0)` | Draw subsequent immediate commands directly to the visible surface. |
+| `GFXTGT(...)` | Tokenizer-safe alias for legacy `GFXTARGET(...)`; use this in stored BASIC programs. |
 | `GFXBLIT(H%)` | Copy a compatible REU surface to the visible Bank D layout. |
 | `GFXSYNC()` | Apply dirty rectangles or pending blit work. |
 | `GFXINFO(H%,A%(0))` | Return handle/mode/width/height/stride metadata into an array. |
 
-The key split is visible target versus REU target. `GFXTARGET(0)` is simple and
-direct. `GFXTARGET(H%)` records an off-screen target handle and `GFXBLIT(H%)`
+The key split is visible target versus REU target. `GFXTGT(0)` is simple and
+direct. `GFXTGT(H%)` records an off-screen target handle and `GFXBLIT(H%)`
 makes a compatible surface visible. `GFXTGT(...)` is the stored-program-safe
-alias because `GFXTARGET` can be damaged by C64 BASIC tokenization. Immediate
+alias because `GFXTGT` can be damaged by C64 BASIC tokenization. Immediate
 primitives still draw visible Bank D; the speed-first path is to render or copy
 larger retained resources in command workers and blit complete surfaces.
 
@@ -423,10 +423,10 @@ current target.
 | Command | Applies to | Notes |
 |---|---|---|
 | `PLOT(x,y,c)` | Bitmap, multicolor bitmap, maybe tile modes | Pixel semantics depend on current mode. |
-| `POINT(x,y)` | Bitmap modes | Expression-safe color/readback command. |
+| `PNT(x,y)` | Bitmap modes | Expression-safe color/readback command. |
 | `LINE(x1,y1,x2,y2,c)` | Bitmap modes; tile fallback optional | Bresenham-style worker in module code. |
 | `RECT(x1,y1,x2,y2,c)` | Bitmap and tile modes | Outline rectangle. |
-| `FRECT(x1,y1,x2,y2,c)` | Bitmap and tile modes | Filled rectangle. |
+| `FBOX(x1,y1,x2,y2,c)` | Bitmap and tile modes | Filled rectangle. |
 | `CIRCLE(x,y,r,c)` | Bitmap modes | Implemented as a compact midpoint outline worker in `GFXPRIM`; further variants may move to overlays. |
 | `FCIRCLE(x,y,r,c)` | Bitmap modes | More expensive; likely overlay. |
 | `POLY(A%(0),count,c)` / `POLYH(H%,count,c)` | Bitmap modes; tile approximation | Phase 3 outline polygon from BASIC integer array pairs or a REU point-buffer handle. |
@@ -467,10 +467,10 @@ should be mostly mode-agnostic.
 | `SPRSET(n,on,color,multi,priority)` | Configure sprite flags. |
 | `SPRMOVE(n,x,y)` | Set sprite position. |
 | `SPRXY(n,X%,Y%)` / `X%=SPRX(n)` | Read sprite position. |
-| `SPREXPAND(n,xon,yon)` | Set X/Y expansion flags. |
-| `SPRCOLOR(n,c)` | Set primary color. |
+| `SPRSIZE(n,xon,yon)` | Set X/Y expansion flags. |
+| `SPRCOL(n,c)` | Set primary color. |
 | `SPRROW(n,row,b1,b2,b3)` | Phase 1 direct row write for an 8-sprite Bank D pattern. |
-| `SPRMCOLOR(c1,c2)` | Set shared multicolor registers. |
+| `SPRMCO(c1,c2)` | Set shared multicolor registers. |
 | `SPRCOLL(n)` | Read and optionally clear collision state for sprite n. |
 | `SPRSCAN()` | Poll collision registers and latch results into REU event state. |
 
@@ -787,9 +787,9 @@ mutating the state.
 ### Phase 1: Safe Visible Results
 
 - `GFXMODE`, `GFXTEXT`, `GFXCLEAR`
-- `PLOT`, `POINT`, `LINE`, `RECT`, `FRECT`
-- `GFXSURF`, `GFXTARGET`, `GFXBLIT`
-- `SPRSET`, `SPRMOVE`, `SPRCOLOR`, `SPRROW`, `SPRSCAN`, `SPRCOLL`
+- `PLOT`, `PNT`, `LINE`, `RECT`, `FBOX`
+- `GFXSURF`, `GFXTGT`, `GFXBLIT`
+- `SPRSET`, `SPRMOVE`, `SPRCOL`, `SPRROW`, `SPRSCAN`, `SPRCOLL`
 - `KEYP`, `JOY`, `KEYSCAN`, `KEYGET`
 
 This gives useful graphics without display-list complexity or IRQ hooks.
@@ -808,8 +808,8 @@ sprite sheets, and retained resources remain a later phase.
 
 ### Phase 3: Polygon Overlay
 
-- Implemented now: `POLY`, `FPOLY`, `POLYH`, `FPOLYH`, `PBUFNEW`, `PBUFSET`,
-  and `PBUFFREE`.
+- Implemented now: `POLY`, `FPOLY`, `POLYH`, `FPOLYH`, `PBMAKE`, `PBUFSET`,
+  and `PBDROP`.
 - `GFXPOLY` is a built-in slot-2 replacement overlay, prestashed at code-bank
   offset `$6000` and fetched into `$B800-$BF78`.
 - BASIC integer array polygons and typed REU point-buffer polygons are both
@@ -821,8 +821,8 @@ sprite sheets, and retained resources remain a later phase.
 
 Implemented now, command-only:
 
-- `DLMAKE(MAX,H%)`, `DLCLR(H%)`, `DLPLOT(H%,X,Y,C)`, `DLLINE(H%,X1,Y1,X2,Y2)`,
-  `DLRECT(H%,X1,Y1,X2,Y2)`, `DLFRECT(H%,X1,Y1,X2,Y2)`, and `DLDRAW(H%)`.
+- `DLMAKE(MAX,H%)`, `DLRST(H%)`, `DLPLOT(H%,X,Y,C)`, `DLLINE(H%,X1,Y1,X2,Y2)`,
+  `DLRECT(H%,X1,Y1,X2,Y2)`, `DLFBOX(H%,X1,Y1,X2,Y2)`, and `DLDRAW(H%)`.
 - `CHRMAKE(N,H%)`, `CHRROW(H%,CH,ROW,BYTE)`, and `CHRUSE(H%)`.
 - `TSMAKE(N,H%)`, `TSSET(H%,TILE,CH,C)`, `TMMAKE(N,H%)`,
   `TMSET(H%,INDEX,TILE,0)`, and `TMDRAW(MAP%,TILESET%)`.
@@ -836,7 +836,7 @@ language unchanged.
 
 Display lists are deliberately tiny: one REU page, up to 31 eight-byte records.
 The current record renderer supports plot, line, outline rectangle, and filled
-rectangle records. `DLLINE`, `DLRECT`, and `DLFRECT` default to color `1`
+rectangle records. `DLLINE`, `DLRECT`, and `DLFBOX` default to color `1`
 because adding a six-argument parser signature would grow resident code; color
 variants should be added only when the parser budget is deliberately expanded.
 

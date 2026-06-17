@@ -151,7 +151,7 @@ YAML
     params:
       start: 828
       bytes_hex: "A9 $shift_hex 8D 8D 02 A9 $matrix_hex 85 CB 20 $keylog_lo $keylog_hi 4C 74 A4"
-  - id: ${id}_clear_keylog_breakpoints
+  - id: ${id}_clear_keylog_breakpnts
     type: monitor.command
     params:
       command: "raw:delete"

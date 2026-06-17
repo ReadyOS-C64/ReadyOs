@@ -105,7 +105,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_existing_circle
-      note: "Existing CIRCLE/FCIRCLE commands under ReadyOS ReadyBASIC"
+      pitch: "Existing CIRCLE/FCIRCLE commands under ReadyOS ReadyBASIC"
   - id: finish_rbgfx14
     type: input.key
     params:
@@ -128,7 +128,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_existing_tile_charat
-      note: "Existing TILE/CHARAT commands under ReadyOS ReadyBASIC"
+      pitch: "Existing TILE/CHARAT commands under ReadyOS ReadyBASIC"
   - id: finish_rbgfx15
     type: input.key
     params:
@@ -151,7 +151,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_mbitmap_prims_list
-      note: "RBGFX21 listed inside ReadyBASIC under ReadyOS"
+      pitch: "RBGFX21 listed inside ReadyBASIC under ReadyOS"
   - id: run_rbgfx21
     type: input.sequence
     params:
@@ -162,7 +162,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_mbitmap_primitives
-      note: "MBITMAP primitive color-slot drawing"
+      pitch: "MBITMAP primitive color-slot drawing"
   - id: finish_rbgfx21
     type: input.key
     params:
@@ -181,11 +181,11 @@ steps:
       keys: [$(keys $'LOAD "RBGFX22",8\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 2.2
-  - id: capture_mbitmap_point_graphics
+  - id: capture_mbitmap_pnt_graphics
     type: screen.capture
     params:
-      label: readybasic_gfx_mbitmap_point_graphics
-      note: "MBITMAP point-code pixels before text assertion"
+      label: readybasic_gfx_mbitmap_pnt_graphics
+      pitch: "MBITMAP pnt-code pixels before text assertion"
   - id: finish_rbgfx22
     type: input.key
     params:
@@ -194,14 +194,14 @@ steps:
   - id: wait_rbgfx22_done
     type: screen.wait_contains
     params:
-      text: "MBITMAP POINT DONE"
+      text: "MBITMAP PNT DONE"
       wait_timeout_s: 60
       capture_on_success: true
-      capture_label: readybasic_gfx_mbitmap_point_done
-  - id: assert_point_values
+      capture_label: readybasic_gfx_mbitmap_pnt_done
+  - id: assert_pnt_values
     type: assert.screen
     params:
-      contains: "MBITMAP POINT: 1  2  3"
+      contains: "MBITMAP PNT: 1  2  3"
   - id: assert_no_error
     type: assert.screen_not_contains
     params:

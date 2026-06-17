@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx03 hires lines"
 30 gfxmode("hires"):gfxclear(0)
 40 for y=0 to 199 step 20

@@ -105,7 +105,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase5_tile_visible
-      note: "TILE immediate PLOT/LINE/RECT/FRECT through default Bank D glyphs"
+      pitch: "TILE immediate PLOT/LINE/RECT/FBOX through default Bank D glyphs"
   - id: finish_rbgfx28
     type: input.key
     params:
@@ -128,7 +128,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase5_mtile_visible
-      note: "MTILE immediate PLOT/LINE/RECT/FRECT through default Bank D glyphs"
+      pitch: "MTILE immediate PLOT/LINE/RECT/FBOX through default Bank D glyphs"
   - id: finish_rbgfx29
     type: input.key
     params:
@@ -151,7 +151,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase5_mbitmap_dlist
-      note: "MBITMAP retained DLPLOT/DLLINE/DLRECT/DLFRECT/DLDRAW replay"
+      pitch: "MBITMAP retained DLPLOT/DLLINE/DLRECT/DLFBOX/DLDRAW replay"
   - id: finish_rbgfx30
     type: input.key
     params:
@@ -174,7 +174,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase5_sync_source
-      note: "Visible Bank D surface before GFXSYNC snapshot"
+      pitch: "Visible Bank D surface before GFXSYNC snapshot"
   - id: sync_next_clear
     type: input.key
     params:
@@ -184,7 +184,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase5_sync_cleared
-      note: "Visible Bank D surface after GFXCLEAR"
+      pitch: "Visible Bank D surface after GFXCLEAR"
   - id: sync_next_blit
     type: input.key
     params:
@@ -194,7 +194,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase5_sync_restored
-      note: "Visible Bank D surface restored by GFXBLIT"
+      pitch: "Visible Bank D surface restored by GFXBLIT"
   - id: finish_rbgfx31
     type: input.key
     params:
@@ -217,7 +217,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase5_convex_poly
-      note: "POLY and FPOLY convex polygon showcase"
+      pitch: "POLY and FPOLY convex polygon showcase"
   - id: finish_rbgfx32
     type: input.key
     params:

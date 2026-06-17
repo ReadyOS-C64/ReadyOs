@@ -3,7 +3,8 @@
 This guide explains how current ReadyBASIC commands are made in
 `src/apps/readybasic/readybasic.s`. It uses the current names and layout:
 128 descriptor slots in the assigned ReadyBASIC core bank, packed command code in the assigned code bank,
-`SCRCAP` in slot 14, `SCRPUT` in slot 128, and zero-filled filler slots 15-127.
+117 real command descriptors, 11 zero-filled filler descriptors, and `SCRPUT`
+kept in slot 128 to prove full-table lookup.
 
 Native `PROC`/`FUNC` routines are new ReadyBASIC language features, not BASIC V2
 functions and not plugin commands. Users can write them directly in their own
@@ -90,6 +91,37 @@ Current code prefers bare `COMMAND(...)` statements and selected
 `COMMAND(...)` expressions.
 Avoid substrings that C64 BASIC can tokenize inside the command name. That is
 why the array examples use `NUM` instead of `INT`.
+This is a hard rule for new command names: do not embed native BASIC words or
+functions such as `CLR`, `FRE`, `NOT`, `INT`, `FN`, `LEN`, `OR`, `TO`,
+`LOAD`, `SAVE`, `PRINT`, `INPUT`, `DATA`, `REM`, `LEFT$`, `RIGHT$`, or `MID$`.
+`petcat` will tokenize those substrings even when they appear inside a longer
+identifier, and plain BASIC `LIST` will then show misleading keyword fragments
+or fail. Host `.bas` demo sources should also spell ReadyBASIC commands in
+lowercase so `petcat` writes ordinary PETSCII letters rather than shifted
+uppercase bytes.
+
+Some early friendly command names remain accepted for compatibility but are
+legacy in stored source. Prefer these token-safe spellings:
+
+| Legacy spelling | Preferred stored spelling |
+| --- | --- |
+| `BUFNEW` | `BUFMAKE` |
+| `BUFFREE` | `BUFDROP` |
+| `FREEMEM` | `MEMAVL` |
+| `GFXTARGET` | `GFXTGT` |
+| `POINT` | `PNT` |
+| `FRECT` | `FBOX` |
+| `SPRCOLOR` | `SPRCOL` |
+| `SPREXPAND` | `SPRSIZE` |
+| `SPRMCOLOR` / `SPRMCLR` | `SPRMCO` |
+| `PBUFNEW` | `PBMAKE` |
+| `PBUFFREE` | `PBDROP` |
+| `DLCLR` | `DLRST` |
+| `DLFRECT` | `DLFBOX` |
+| `SIDCLR` | `SIDRST` |
+| `SILENCE` | `SIDOFF` |
+| `FREQ` | `FRQ` |
+| `NOTE` | `PITCH` |
 
 Prefix conventions:
 
@@ -102,7 +134,7 @@ Prefix conventions:
 
 Current public names include `ZECHO1`, `ZADD16`, `UPPER`, `LOWER`,
 `ZHIDDENRAM`, `ZSUMNUMARRAY`, `ZRANGENUMARRAY`, `ZTEMPSCRATCH`, `ZPAUSE`,
-`ZFAIL`, `FREEMEM`, `ERRCODE`, `ERRLINE`, `BUFNEW`, `BUFFILL`, `BUFFREE`,
+`ZFAIL`, `MEMAVL`, `ERRCODE`, `ERRLINE`, `BUFMAKE`, `BUFFILL`, `BUFDROP`,
 `SCRCAP`, `SCRPUT`, `FADD`, `ZSLOT0`, `ZSLOT1`, `ZSLOT2`, `ZSPAN`, `ZOVL1`,
 `ZOVL2`, `ZCPYRST`, `ZCOPY`, and `ZMODLD`. Disk-module samples add `ZDM1`,
 `ZDM2S`, `ZDOV1`, and `ZDOV2` after `ZMODLD("RBM.SAMPLE1")` or
@@ -207,7 +239,7 @@ a graphics demo.
 ### Surface Handles And Blit
 
 `GFXSURF(mode$)` allocates a typed REU graphics-surface handle. `GFXTGT(H%)` is
-the stored-program-safe alias for `GFXTARGET(H%)`; use `GFXTGT(0)` to return to
+the stored-program-safe alias for legacy `GFXTARGET(H%)`; use `GFXTGT(0)` to return to
 the visible Bank D target. Phase 4 keeps immediate primitive drawing visible for
 speed, while `GFXSYNC()` and `GFXBLIT(H%)` exercise the REU surface path and
 copy a compatible surface layout to Bank D:
@@ -277,7 +309,7 @@ The color argument maps to VIC-II multicolor bitmap slots:
 
 The color attributes are per 8x8 cell. If two later commands draw different
 slot-1 colors inside the same cell, the later screen high nibble changes the
-visible color of every slot-1 pixel in that cell. `POINT`/`PNT` returns the
+visible color of every slot-1 pixel in that cell. `PNT` returns the
 pair code `0..3`, not the resolved VIC color.
 
 ### Tile And Text Cells
@@ -297,7 +329,7 @@ text screen RAM so demos can label themselves:
 
 Tile coordinates are `0..39,0..24`; the color argument is the low nibble written
 to color RAM. `GFXCLEAR` seeds simple solid glyphs for immediate `PLOT`/`LINE`/
-`RECT`/`FRECT` tile demos. Use `CHRMAKE`, `CHRROW`, and `CHRUSE` when a program
+`RECT`/`FBOX` tile demos. Use `CHRMAKE`, `CHRROW`, and `CHRUSE` when a program
 needs custom character shapes.
 
 ### Sprites
@@ -364,15 +396,16 @@ resident parser code. The implemented form reuses the existing five-number
 signature:
 
 ```basic
-10 SIDCLR():VOL(15):PULSE(1,2048)
-20 VOICE(1,4455,65,9,195)
-30 ZPAUSE(80):CTRL(1,64)
+10 sidrst():vol(15):pulse(1,2048)
+20 voice(1,4455,65,9,195)
+30 zpause(80):ctrl(1,64)
 ```
 
 `VOICE(V,F,W,AD,SR)` maps directly to SID registers: raw frequency, control
 byte, packed attack/decay, and packed sustain/release. Friendlier setup remains
-available with `ADSR(V,A,D,S,R)`, `PULSE(V,W)`, `FREQ(V,F)`, `WAVE(V,M)`, and
-`GATE(V,ON)`.
+available with `ADSR(V,A,D,S,R)`, `PULSE(V,W)`, `FRQ(V,F)`, `WAVE(V,M)`, and
+`GATE(V,ON)`. `FRQ` and `PITCH` remain accepted legacy aliases, but use
+`frq` and `pitch` in stored source.
 
 ### Retained Lists, Tilesets, And Multicolor Cells
 
@@ -385,7 +418,7 @@ overlays do the traversal work:
 30 dlplot(h%,20,20,17)
 40 dlline(h%,4,30,155,70)
 50 dlrect(h%,8,82,72,144)
-60 dlfrect(h%,86,82,148,144)
+60 dlfbox(h%,86,82,148,144)
 70 dldraw(h%)
 ```
 
@@ -976,7 +1009,7 @@ Nested expression examples from the verified probe path:
 220 ENDP
 ```
 
-## BUFNEW, BUFFILL, BUFFREE, SCRCAP, SCRPUT: REU Handle Commands
+## BUFMAKE, BUFFILL, BUFDROP, SCRCAP, SCRPUT: REU Handle Commands
 
 The handle commands are the main future-facing pattern. BASIC sees a small
 integer handle; canonical metadata lives in the assigned core bank.
@@ -984,18 +1017,18 @@ integer handle; canonical metadata lives in the assigned core bank.
 Basic invocation examples:
 
 ```basic
-10 BUFNEW(64,H%)
+10 BUFMAKE(64,H%)
 20 BUFFILL(H%,170)
-30 BUFFREE(H%)
-40 H%=BUFNEW(64)
-50 BUFFREE(H%)
+30 BUFDROP(H%)
+40 H%=BUFMAKE(64)
+50 BUFDROP(H%)
 ```
 
 ```basic
 10 H%=SCRCAP()
 20 PRINT CHR$(147);"CHANGED"
 30 SCRPUT(H%)
-40 BUFFREE(H%)
+40 BUFDROP(H%)
 ```
 
 ```asm
@@ -1041,9 +1074,9 @@ cmd_scrput_low:
 Descriptors:
 
 ```asm
-CMD_LOW_ALL CMD_BUFNEW, SIG_BUFNEW, cmd_bufnew_low, "BUFNEW"
+CMD_LOW_ALL CMD_BUFNEW, SIG_BUFNEW, cmd_bufnew_low, "BUFMAKE"
 CMD_LOW_ALL CMD_BUFFILL, SIG_BUFFILL, cmd_buffill_low, "BUFFILL"
-CMD_LOW_ALL CMD_BUFFREE, SIG_BUFFREE, cmd_buffree_low, "BUFFREE"
+CMD_LOW_ALL CMD_BUFFREE, SIG_BUFFREE, cmd_buffree_low, "BUFDROP"
 CMD_LOW_ALL CMD_SCRCAP, SIG_SCRCAP, cmd_scrcap_low, "SCRCAP"
 CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"
 ```
@@ -1066,7 +1099,7 @@ Line-by-line commentary:
 Why it matters: this is how future large objects should work. Keep BASIC-visible
 values small, keep canonical resource metadata in REU, and validate handle type
 at command boundaries. `BUFFILL` accepts only type-1 buffer handles; `SCRPUT`
-accepts only type-2 screen text+color handles; `BUFFREE` frees any valid type.
+accepts only type-2 screen text+color handles; `BUFDROP` frees any valid type.
 
 ## Other Current Command Invocations
 
@@ -1074,7 +1107,7 @@ These current descriptor commands are smaller utility or probe commands. They
 use the same descriptor/parser/worker contract as the larger examples above.
 
 ```basic
-10 FREEMEM()
+10 MEMAVL()
 20 P%=ZTEMPSCRATCH(512)
 30 PRINT "PAGES";P%
 40 ZTEMPSCRATCH(512,Q%)
@@ -1111,9 +1144,12 @@ before the command reports `?RB ERROR code`:
 4. Add a low or hidden worker that only writes the result frame on success.
 5. Add a descriptor entry; use `CMD_LOW_ALL` only when shared helpers require the
    full slot-0 payload.
-6. Keep resident changes minimal. Prefer REU metadata and existing scratch pages.
-7. Add direct and stored-program VICE coverage, including error behavior.
-8. Update Markdown and HTML docs after static and VICE verification, using
+6. Update the descriptor filler count so real descriptors plus filler still fit
+   exactly in `RB_CMD_DESC_COUNT`; `make readybasic-plugin-static-check` now
+   enforces this.
+7. Keep resident changes minimal. Prefer REU metadata and existing scratch pages.
+8. Add direct and stored-program VICE coverage, including error behavior.
+9. Update Markdown and HTML docs after static and VICE verification, using
    measured map values rather than predicted sizes.
 
 ## Appendix A: Descriptor And Registry Terms
@@ -1123,6 +1159,7 @@ before the command reports `?RB ERROR code`:
 | `REGSEED` | Cold-load descriptor image in C64 RAM during startup. It is copied to REU and then reclaimed, so it does not reduce empty BASIC free bytes. |
 | `RB_CMD_DESC_COUNT` | Registry capacity, currently 128 descriptors. |
 | Assigned core bank `$1000-$1FFF` | REU location of the 128 descriptor table. Runtime lookup pages through this table. |
+| Descriptor filler count | The `.res (RB_CMD_DESC_COUNT - N) * RB_CMD_DESC_SIZE` expression must use the current real descriptor count. If it is too large, later commands fall outside lookup range and look like native BASIC syntax errors. |
 | `RB_PAGEBUF` | C64 RAM page buffer used to fetch one 256-byte descriptor page, eight descriptors at a time. |
 | `RB_DESC_BUF` | Resident buffer containing the single descriptor selected by lookup. |
 | `RB_MODULE_SYSTEM` | Built-in system/default module id used by the current slot-0 command payload. |
@@ -1192,7 +1229,7 @@ This is intentionally not automatic for every command descriptor. The resident
 parser currently recognizes only command signatures that can return safely
 inside BASIC expressions without output variables. Commands with array outputs
 or no scalar result stay statement-only; handle-producing commands such as
-`BUFNEW(n)` and `SCRCAP()` are expression-enabled because their scalar return is
+`BUFMAKE(n)` and `SCRCAP()` are expression-enabled because their scalar return is
 the handle.
 
 Native routines also accept parenthesized `EXEC` and definitions:

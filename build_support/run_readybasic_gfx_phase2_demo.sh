@@ -117,7 +117,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase2_list_rbgfx14
-      note: "RBGFX14 listed inside ReadyBASIC under ReadyOS"
+      pitch: "RBGFX14 listed inside ReadyBASIC under ReadyOS"
   - id: assert_list_rbgfx14
     type: assert.screen
     params:
@@ -132,7 +132,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase2_primitives
-      note: "CIRCLE and FCIRCLE visible primitive demo"
+      pitch: "CIRCLE and FCIRCLE visible primitive demo"
   - id: finish_rbgfx14
     type: input.key
     params:
@@ -155,7 +155,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase2_tiles
-      note: "TILE and CHARAT visible tile demo"
+      pitch: "TILE and CHARAT visible tile demo"
   - id: finish_rbgfx15
     type: input.key
     params:
@@ -178,7 +178,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase2_sprite_normal
-      note: "Sprite control baseline before expansion"
+      pitch: "Sprite control baseline before expansion"
   - id: continue_sprite_expand
     type: input.key
     params:
@@ -188,7 +188,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase2_sprite_expanded
-      note: "SPREXPAND visible sprite enlargement"
+      pitch: "SPRSIZE visible sprite enlargement"
   - id: continue_sprite_multi_priority
     type: input.key
     params:
@@ -198,7 +198,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase2_sprite_multi_priority
-      note: "SPRMULTI, SPRMCOLOR, SPRPRI, and SPRCOLOR stage"
+      pitch: "SPRMULTI, SPRMCO, SPRPRI, and SPRCOL stage"
   - id: finish_rbgfx16
     type: input.key
     params:

@@ -232,7 +232,9 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
     byte values because C64 visual case is charset-dependent.
   - Old names are rejected with the existing unknown-command error.
   - `SCRCAP` remains near the front in slot 14 and `SCRPUT` remains in slot
-    128, with 113 filler descriptors between them.
+    128. Later built-in graphics/sound aliases reduced the filler span to 11
+    descriptors; static verification now enforces that real descriptors plus
+    filler remain exactly 128.
 
 ## 2026-05-22: REU-Backed 128 Handles And 48KB Typed Heap
 

@@ -1,14 +1,14 @@
-10 rem readybasic sound design: READYBASIC_SOUND_COMMAND_DESIGN.md
+10 rem readybasic sound design: sound design md
 20 print chr$(147);"rbsnd02 voice state"
 30 print "manual sid voice setup."
-40 print "listen for a pulse note, then changed"
+40 print "listen for a pulse pitch, then changed"
 50 print "pulse width and envelope."
-60 SIDCLR():VOL(15)
+60 sidrst():vol(15)
 70 print:print "wide pulse, soft release"
-80 ADSR(1,0,9,12,6):PULSE(1,3072):FREQ(1,4455)
-90 WAVE(1,64):GATE(1,1):ZPAUSE(70):GATE(1,0):ZPAUSE(50)
+80 adsr(1,0,9,12,6):pulse(1,3072):frq(1,4455)
+90 wave(1,64):gate(1,1):zpause(70):gate(1,0):zpause(50)
 100 print "narrow pulse, snappier release"
-110 ADSR(1,0,3,15,2):PULSE(1,512):FREQ(1,5612)
-120 WAVE(1,64):GATE(1,1):ZPAUSE(70):GATE(1,0):ZPAUSE(50)
-130 SILENCE()
+110 adsr(1,0,3,15,2):pulse(1,512):frq(1,5612)
+120 wave(1,64):gate(1,1):zpause(70):gate(1,0):zpause(50)
+130 sidoff()
 140 print:print "rbsnd02 done"

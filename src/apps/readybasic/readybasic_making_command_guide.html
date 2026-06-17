@@ -149,7 +149,7 @@
   <header>
     <h1>ReadyBASIC Making Command Guide</h1>
     <p class="muted">A teaching guide for how current bare <code>COMMAND(...)</code> examples are wired into descriptors, parser signatures, under-ROM module payloads, overlays, and REU handles.</p>
-    <p><span class="chip">128 descriptor slots</span><span class="chip">SCRCAP slot 14</span><span class="chip">SCRPUT slot 128</span><span class="chip">3 x 2KB submodule slots</span></p>
+    <p><span class="chip">128 descriptor slots</span><span class="chip">117 real descriptors</span><span class="chip">11 filler descriptors</span><span class="chip">SCRPUT slot 128</span><span class="chip">3 x 2KB submodule slots</span></p>
   </header>
 
   <section class="teaching">
@@ -213,16 +213,16 @@
     <p>Sound Phase 1 commands are descriptor-backed module 4 commands in the <code>SIDCORE</code> slot-2 replacement overlay. The overlay is prestashed at code-bank offset <code>$7800</code> and runs at <code>$B800-$BA0D</code>.</p>
     <table class="term">
       <tbody>
-        <tr><td><code>SIDCLR()</code> / <code>SILENCE()</code></td><td>Clear SID registers <code>$D400-$D418</code>.</td></tr>
+        <tr><td><code>SIDRST()</code> / <code>SIDOFF()</code></td><td>Clear SID registers <code>$D400-$D418</code>.</td></tr>
         <tr><td><code>VOL(V)</code></td><td>Set master volume <code>0..15</code>.</td></tr>
-        <tr><td><code>FREQ(V,F)</code> / <code>NOTE(V,N,O)</code></td><td>Set raw SID frequency or PAL note table frequency.</td></tr>
+        <tr><td><code>FRQ(V,F)</code> / <code>PITCH(V,N,O)</code></td><td>Set raw SID frequency or PAL note table frequency.</td></tr>
         <tr><td><code>PULSE</code>, <code>ADSR</code>, <code>WAVE</code>, <code>GATE</code></td><td>Explicit voice setup helpers.</td></tr>
         <tr><td><code>VOICE(V,F,W,AD,SR)</code></td><td>Fast packed SID setup. <code>AD</code> and <code>SR</code> are the hardware envelope bytes.</td></tr>
         <tr><td><code>FILTER(CUTOFF,RES,ROUTE,MODE)</code></td><td>Filter cutoff, resonance, routing, and mode bits.</td></tr>
         <tr><td><code>SOUND(V,F,D,W)</code></td><td>Blocking tone helper for demos and simple effects.</td></tr>
       </tbody>
     </table>
-<pre><code>10 SIDCLR():VOL(15):PULSE(1,2048)
+<pre><code>10 SIDRST():VOL(15):PULSE(1,2048)
 20 VOICE(1,4455,65,9,195)
 30 ZPAUSE(80):CTRL(1,64)
 </code></pre>
@@ -253,7 +253,7 @@
 30 H%=GFXSURF("HIRES")
 40 GFXTGT(H%):GFXSYNC():GFXTGT(0)
 50 GFXCLEAR(0):GFXBLIT(H%)</code></pre>
-        <p><code>GFXTGT</code> is the stored-program-safe alias for <code>GFXTARGET</code>. <code>GFXSYNC</code> snapshots the visible Bank D layout into a typed REU surface, and <code>GFXBLIT</code> restores it. Immediate primitives still draw directly to the visible Bank D target for speed.</p>
+        <p><code>GFXTGT</code> is the stored-program-safe alias for legacy <code>GFXTARGET</code>. <code>GFXSYNC</code> snapshots the visible Bank D layout into a typed REU surface, and <code>GFXBLIT</code> restores it. Immediate primitives still draw directly to the visible Bank D target for speed.</p>
       </div>
       <div class="card">
         <h3>Hires Primitives</h3>
@@ -261,7 +261,7 @@
 20 PLOT(20,20,1)
 30 LINE(20,30,300,160,1)
 40 RECT(40,50,130,120,1)
-50 FRECT(180,60,240,130,1)
+50 FBOX(180,60,240,130,1)
 60 CIRCLE(82,82,38,1)
 70 FCIRCLE(210,92,26,1)
 80 PNT(20,20,P%)</code></pre>
@@ -273,11 +273,11 @@
 20 LINE(4,18,155,18,17)
 30 LINE(4,30,155,70,34)
 40 RECT(8,82,72,144,20)
-50 FRECT(86,82,148,144,37)
+50 FBOX(86,82,148,144,37)
 60 CIRCLE(46,112,28,51)
 70 FCIRCLE(118,112,22,58)
 80 PNT(46,112,P%)</code></pre>
-        <p><code>MBITMAP</code> uses <code>X=0..159</code>, <code>Y=0..199</code>. The color argument encodes VIC-II multicolor slots: <code>0</code> clears, <code>1..15</code> draws pair 3 and writes color RAM, <code>16..31</code> draws pair 1, <code>32..47</code> draws pair 2, and <code>48..63</code> explicitly draws pair 3. <code>POINT</code>/<code>PNT</code> returns pair code <code>0..3</code>, not the resolved VIC color.</p>
+        <p><code>MBITMAP</code> uses <code>X=0..159</code>, <code>Y=0..199</code>. The color argument encodes VIC-II multicolor slots: <code>0</code> clears, <code>1..15</code> draws pair 3 and writes color RAM, <code>16..31</code> draws pair 1, <code>32..47</code> draws pair 2, and <code>48..63</code> explicitly draws pair 3. <code>PNT</code> returns pair code <code>0..3</code>, not the resolved VIC color.</p>
       </div>
       <div class="card">
         <h3>Tile And Text Cells</h3>
@@ -285,7 +285,7 @@
 20 GFXMODE("TILE"):GFXCLEAR(0)
 30 PLOT(4,4,5):PLOT(5,4,6):PLOT(6,4,7)
 40 LINE(1,1,38,20,3)
-50 RECT(3,5,20,16,10):FRECT(24,8,34,18,12)
+50 RECT(3,5,20,16,10):FBOX(24,8,34,18,12)
 60 GFXTEXT():PRINT "TILE DEMO"</code></pre>
         <p><code>TILE</code> and <code>CHARAT</code> write one cell. In tile modes they target Bank D screen RAM; after <code>GFXTEXT()</code> they target normal text screen RAM for labels and demos. <code>GFXCLEAR</code> seeds simple solid glyphs for immediate tile primitive demos.</p>
       </div>
@@ -305,9 +305,9 @@
 20 P%(0)=40:P%(1)=20:P%(2)=120:P%(3)=42
 30 P%(4)=98:P%(5)=130:P%(6)=18:P%(7)=110
 40 POLY(P%(0),4,1):FPOLY(P%(0),4,1)
-50 PBUFNEW(4,H%)
+50 PBMAKE(4,H%)
 60 PBUFSET(H%,0,40,20):PBUFSET(H%,1,120,42)
-70 POLYH(H%,4,1):PBUFFREE(H%)</code></pre>
+70 POLYH(H%,4,1):PBDROP(H%)</code></pre>
         <p><code>POLYH</code> and <code>FPOLYH</code> are explicit REU point-buffer handle aliases. Filled polygons use a conservative convex fan fill; concave scanline fill remains future work.</p>
       </div>
       <div class="card">
@@ -317,7 +317,7 @@
 30 DLPLOT(H%,20,20,17)
 40 DLLINE(H%,4,30,155,70)
 50 DLRECT(H%,8,82,72,144)
-60 DLFRECT(H%,86,82,148,144)
+60 DLFBOX(H%,86,82,148,144)
 70 DLDRAW(H%)</code></pre>
         <p><code>DLMAKE</code> creates a one-page REU display-list handle. <code>DLPLOT</code> preserves its color; line and rectangle records currently replay with color 1 to keep the overlay small. Tile resources use <code>CHRMAKE</code>, <code>CHRROW</code>, <code>CHRUSE</code>, <code>TSMAKE</code>, <code>TSSET</code>, <code>TMMAKE</code>, <code>TMSET</code>, and <code>TMDRAW</code>. Phase 5 screenshots prove visible Bank D tile and multicolor-tile rendering.</p>
       </div>
@@ -325,7 +325,7 @@
         <h3>Multicolor Cells</h3>
 <pre><code>10 GFXMODE("MBITMAP"):GFXCLEAR(0):MCBG(0)
 20 MCELL(2,2,6,10,2)
-30 FRECT(8,16,31,47,17)</code></pre>
+30 FBOX(8,16,31,47,17)</code></pre>
         <p><code>MCELL</code> writes the three per-cell multicolor bitmap attributes: screen high nibble, screen low nibble, and color RAM. <code>MCBG</code> sets the shared background color.</p>
       </div>
     </div>
@@ -335,7 +335,19 @@
 	  <section>
     <h2>Naming Rules</h2>
     <div class="card warn">
-	      <p>ReadyBASIC names are visible BASIC text, not private tokens. Avoid substrings that C64 BASIC can tokenize inside the command name; array demos use <code>NUM</code> instead of <code>INT</code>.</p>
+	      <p>ReadyBASIC names are visible BASIC text, not private tokens. New command names must avoid substrings that C64 BASIC can tokenize inside the command name, including <code>CLR</code>, <code>FRE</code>, <code>NOT</code>, <code>INT</code>, <code>FN</code>, <code>LEN</code>, <code>OR</code>, and <code>TO</code>. Host <code>.bas</code> demos should spell ReadyBASIC commands lowercase so <code>petcat</code> writes ordinary PETSCII letters.</p>
+	      <table class="term">
+	        <tbody>
+	          <tr><td><code>BUFNEW</code></td><td>Use <code>BUFMAKE</code> in stored programs.</td></tr>
+	          <tr><td><code>BUFFREE</code></td><td>Use <code>BUFDROP</code>.</td></tr>
+	          <tr><td><code>FREEMEM</code></td><td>Use <code>MEMAVL</code>.</td></tr>
+	          <tr><td><code>GFXTARGET</code></td><td>Use <code>GFXTGT</code>.</td></tr>
+	          <tr><td><code>POINT</code> / <code>FRECT</code></td><td>Use <code>PNT</code> / <code>FBOX</code>.</td></tr>
+	          <tr><td><code>PBUFNEW</code> / <code>PBUFFREE</code></td><td>Use <code>PBMAKE</code> / <code>PBDROP</code>.</td></tr>
+	          <tr><td><code>DLCLR</code> / <code>DLFRECT</code></td><td>Use <code>DLRST</code> / <code>DLFBOX</code>.</td></tr>
+	          <tr><td><code>SIDCLR</code> / <code>SILENCE</code> / <code>FREQ</code> / <code>NOTE</code></td><td>Use <code>SIDRST</code> / <code>SIDOFF</code> / <code>FRQ</code> / <code>PITCH</code>.</td></tr>
+	        </tbody>
+	      </table>
 	      <table class="term">
 	        <tbody>
 	          <tr><td><code>Z*</code></td><td>Example, demo, and proof commands.</td></tr>
@@ -344,7 +356,7 @@
 	          <tr><td><code>XU*</code></td><td>Alpha/beta Ultimate-specific commands whose behavior or parameter shape is not settled yet.</td></tr>
 	        </tbody>
 	      </table>
-		      <p>Current public names include <code>ZECHO1</code>, <code>ZADD16</code>, <code>UPPER</code>, <code>LOWER</code>, <code>ZHIDDENRAM</code>, <code>ZSUMNUMARRAY</code>, <code>ZRANGENUMARRAY</code>, <code>BUFNEW</code>, <code>BUFFILL</code>, <code>BUFFREE</code>, <code>SCRCAP</code>, <code>SCRPUT</code>, <code>ZTEMPSCRATCH</code>, <code>ZPAUSE</code>, <code>ZFAIL</code>, <code>FREEMEM</code>, <code>ERRCODE</code>, <code>ERRLINE</code>, <code>ZSLOT0</code>, <code>ZSLOT1</code>, <code>ZSLOT2</code>, <code>ZSPAN</code>, <code>ZOVL1</code>, <code>ZOVL2</code>, <code>ZCPYRST</code>, <code>ZCOPY</code>, and <code>ZMODLD</code>. Disk-module samples add <code>ZDM1</code>, <code>ZDM2S</code>, <code>ZDOV1</code>, <code>ZDOV2</code>, and <code>ZSAA</code>-<code>ZUEB</code> after loading <code>RBM.SAMPLE1</code>, <code>RBM.SAMPLE2</code>, or <code>RBM.SAMPLE3</code>.</p>
+		      <p>Current public names include <code>ZECHO1</code>, <code>ZADD16</code>, <code>UPPER</code>, <code>LOWER</code>, <code>ZHIDDENRAM</code>, <code>ZSUMNUMARRAY</code>, <code>ZRANGENUMARRAY</code>, <code>BUFMAKE</code>, <code>BUFFILL</code>, <code>BUFDROP</code>, <code>SCRCAP</code>, <code>SCRPUT</code>, <code>ZTEMPSCRATCH</code>, <code>ZPAUSE</code>, <code>ZFAIL</code>, <code>MEMAVL</code>, <code>ERRCODE</code>, <code>ERRLINE</code>, <code>ZSLOT0</code>, <code>ZSLOT1</code>, <code>ZSLOT2</code>, <code>ZSPAN</code>, <code>ZOVL1</code>, <code>ZOVL2</code>, <code>ZCPYRST</code>, <code>ZCOPY</code>, and <code>ZMODLD</code>. Disk-module samples add <code>ZDM1</code>, <code>ZDM2S</code>, <code>ZDOV1</code>, <code>ZDOV2</code>, and <code>ZSAA</code>-<code>ZUEB</code> after loading <code>RBM.SAMPLE1</code>, <code>RBM.SAMPLE2</code>, or <code>RBM.SAMPLE3</code>.</p>
     </div>
   </section>
 
@@ -759,24 +771,24 @@ CMD_LOW CMD_ZRANGENUMARRAY, SIG_ZRANGENUMARRAY,
   <section>
     <h2>REU Handle Commands</h2>
     <p>BASIC sees a small integer handle. Canonical descriptors live in assigned core-bank offsets <code>$0800-$09FF</code>, the bitmap at <code>$0C00</code>, and data in the 48KB typed heap at <code>$4000-$FFFF</code>.</p>
-<pre><code>10 BUFNEW(64,H%)
+<pre><code>10 BUFMAKE(64,H%)
 20 BUFFILL(H%,170)
-30 BUFFREE(H%)
+30 BUFDROP(H%)
 
-40 H%=BUFNEW(64)
-50 BUFFREE(H%)</code></pre>
+40 H%=BUFMAKE(64)
+50 BUFDROP(H%)</code></pre>
 <pre><code>10 H%=SCRCAP()
 
 20 PRINT CHR$(147);"CHANGED"
 
 30 SCRPUT(H%)
-40 BUFFREE(H%)</code></pre>
+40 BUFDROP(H%)</code></pre>
     <table>
       <thead><tr><th>Command</th><th>Pattern</th></tr></thead>
       <tbody>
-        <tr><td><code>BUFNEW</code></td><td>Allocate pages, store type-1 descriptor, return one-based handle.</td></tr>
+        <tr><td><code>BUFMAKE</code></td><td>Allocate pages, store type-1 descriptor, return one-based handle.</td></tr>
         <tr><td><code>BUFFILL</code></td><td>Validate type-1 buffer handle, fill pages through <code>$C500</code>.</td></tr>
-        <tr><td><code>BUFFREE</code></td><td>Free any valid handle type and clear metadata.</td></tr>
+        <tr><td><code>BUFDROP</code></td><td>Free any valid handle type and clear metadata.</td></tr>
         <tr><td><code>SCRCAP</code></td><td>Allocate type-2 screen text+color handle and stash text/color RAM.</td></tr>
         <tr><td><code>SCRPUT</code></td><td>Validate type-2 handle and restore text/color RAM from slot-128 lookup.</td></tr>
       </tbody>
@@ -797,9 +809,9 @@ cmd_scrput_low:
         lda #RB_VAL_NONE
         sta RF_TAG
         rts</code></pre>
-<pre><code>CMD_LOW_ALL CMD_BUFNEW, SIG_BUFNEW, cmd_bufnew_low, "BUFNEW"
+<pre><code>CMD_LOW_ALL CMD_BUFNEW, SIG_BUFNEW, cmd_bufnew_low, "BUFMAKE"
 CMD_LOW_ALL CMD_BUFFILL, SIG_BUFFILL, cmd_buffill_low, "BUFFILL"
-CMD_LOW_ALL CMD_BUFFREE, SIG_BUFFREE, cmd_buffree_low, "BUFFREE"
+CMD_LOW_ALL CMD_BUFFREE, SIG_BUFFREE, cmd_buffree_low, "BUFDROP"
 CMD_LOW_ALL CMD_SCRCAP, SIG_SCRCAP, cmd_scrcap_low, "SCRCAP"
 CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"</code></pre>
     <table class="annotate">
@@ -815,7 +827,7 @@ CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"</code></pre>
         <tr><td><code>CMD_LOW_ALL ...</code></td><td>These commands call shared helpers, so the descriptor copies the whole slot-0 payload instead of just the wrapper bytes.</td></tr>
       </tbody>
     </table>
-    <p class="muted">The handle lesson is to keep BASIC-visible values small, keep canonical resource metadata in REU, and validate handle type at command boundaries. <code>BUFFILL</code> accepts only type-1 buffer handles; <code>SCRPUT</code> accepts only type-2 screen text+color handles; <code>BUFFREE</code> frees any valid type.</p>
+    <p class="muted">The handle lesson is to keep BASIC-visible values small, keep canonical resource metadata in REU, and validate handle type at command boundaries. <code>BUFFILL</code> accepts only type-1 buffer handles; <code>SCRPUT</code> accepts only type-2 screen text+color handles; <code>BUFDROP</code> frees any valid type.</p>
   </section>
 
   <section>
@@ -824,7 +836,7 @@ CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"</code></pre>
     <div class="stack">
       <article class="card">
         <h3>Memory And Temporary Pages</h3>
-<pre><code>10 FREEMEM()
+<pre><code>10 MEMAVL()
 
 20 P%=ZTEMPSCRATCH(512)
 30 PRINT "PAGES";P%
@@ -869,8 +881,9 @@ CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"</code></pre>
       <li>Add a low or hidden worker that writes the result frame only on success.</li>
       <li>Add a descriptor entry; use <code>CMD_LOW_ALL</code> only when shared helpers require the full slot-0 payload.</li>
       <li>Keep resident growth minimal; prefer REU metadata and existing scratch pages.</li>
-      <li>Add direct, stored-program, error-path, and resume/slot coverage.</li>
-      <li>Update Markdown and HTML docs with measured map values after tests pass.</li>
+	      <li>Update the descriptor filler count so real descriptors plus filler still fit exactly in <code>RB_CMD_DESC_COUNT</code>.</li>
+	      <li>Add direct, stored-program, error-path, and resume/slot coverage.</li>
+	      <li>Update Markdown and HTML docs with measured map values after tests pass.</li>
     </ol>
   </section>
 
@@ -879,8 +892,9 @@ CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"</code></pre>
     <table class="term">
       <tbody>
         <tr><td><code>REGSEED</code></td><td>Cold-load descriptor image. It is copied to REU and then reclaimed so BASIC free bytes do not shrink.</td></tr>
-        <tr><td><code>RB_CMD_DESC_COUNT</code></td><td>Registry capacity, currently 128 command descriptors.</td></tr>
-        <tr><td><code>core+$1000-$1FFF</code></td><td>REU location of the descriptor table. Lookup pages through this range.</td></tr>
+	        <tr><td><code>RB_CMD_DESC_COUNT</code></td><td>Registry capacity, currently 128 command descriptors.</td></tr>
+	        <tr><td><code>core+$1000-$1FFF</code></td><td>REU location of the descriptor table. Lookup pages through this range.</td></tr>
+	        <tr><td>Descriptor filler count</td><td>The <code>.res (RB_CMD_DESC_COUNT - N) * RB_CMD_DESC_SIZE</code> expression must use the current real descriptor count; otherwise late commands can fall outside lookup range and appear as native BASIC syntax errors.</td></tr>
         <tr><td><code>RB_PAGEBUF</code></td><td>RAM page buffer used to fetch one 256-byte descriptor page, eight descriptors at a time.</td></tr>
         <tr><td><code>RB_DESC_BUF</code></td><td>Resident copy of the single matched descriptor.</td></tr>
         <tr><td><code>__LOWPACK_LOAD__</code> / <code>__LOWPACK_RUN__</code></td><td>Historical symbol names for the current built-in slot-0 payload seed and runtime image. Runtime slot 0 is <code>$A800-$AFFF</code>.</td></tr>
@@ -939,7 +953,7 @@ CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"</code></pre>
 30 UPPER("ready",T$)
 40 PRINT T$
 
-50 BUFNEW(64,H%)
+50 BUFMAKE(64,H%)
 60 PRINT "HANDLE";H%</code></pre>
       </article>
 
@@ -952,7 +966,7 @@ CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"</code></pre>
 30 PRINT ZADD16(5,10)
 40 T$=UPPER("ready")
 
-50 H%=BUFNEW(64)
+50 H%=BUFMAKE(64)
 60 PRINT "HANDLE";H%</code></pre>
       </article>
     </div>
@@ -982,7 +996,7 @@ CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"</code></pre>
     </div>
 
     <div class="card warn">
-      <p>Commands with array outputs or no scalar result remain statement-only. For example, <code>ZRANGENUMARRAY(7,4,R%(0))</code> writes several array elements after success, so it is not an expression return. Scalar handle commands such as <code>BUFNEW(n)</code> and <code>SCRCAP()</code> are expression-enabled because the returned handle is a simple integer.</p>
+      <p>Commands with array outputs or no scalar result remain statement-only. For example, <code>ZRANGENUMARRAY(7,4,R%(0))</code> writes several array elements after success, so it is not an expression return. Scalar handle commands such as <code>BUFMAKE(n)</code> and <code>SCRCAP()</code> are expression-enabled because the returned handle is a simple integer.</p>
     </div>
 
     <h3>True Expression Examples</h3>

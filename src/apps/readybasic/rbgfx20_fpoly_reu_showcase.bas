@@ -1,11 +1,11 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 rem demo 20
 30 gfxmode("hires"):gfxclear(0)
-40 pbufnew(4,h%)
+40 pbmake(4,h%)
 50 pbufset(h%,0,42,58):pbufset(h%,1,118,35)
 60 pbufset(h%,2,168,120):pbufset(h%,3,72,156)
 70 fpolyh(h%,4,1)
-80 pbufnew(5,g%)
+80 pbmake(5,g%)
 90 pbufset(g%,0,185,42):pbufset(g%,1,244,55)
 100 pbufset(g%,2,248,112):pbufset(g%,3,226,158)
 110 pbufset(g%,4,170,106)

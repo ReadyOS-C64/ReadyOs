@@ -111,7 +111,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sound_phase1_list_rbsnd01
-      note: "RBSND01 listed inside ReadyBASIC under ReadyOS"
+      pitch: "RBSND01 listed inside ReadyBASIC under ReadyOS"
   - id: assert_list_rbsnd01
     type: assert.screen
     params:
@@ -126,7 +126,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sound_phase1_sid_basics
-      note: "Human audio: triangle, saw, pulse, then noise"
+      pitch: "Human audio: triangle, saw, pulse, then noise"
   - id: wait_rbsnd01_done
     type: screen.wait_contains
     params:
@@ -144,7 +144,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sound_phase1_voice_state
-      note: "Human audio: pulse width and ADSR changes"
+      pitch: "Human audio: pulse width and ADSR changes"
   - id: wait_rbsnd02_done
     type: screen.wait_contains
     params:
@@ -161,15 +161,15 @@ steps:
   - id: capture_rbsnd03
     type: screen.capture
     params:
-      label: readybasic_sound_phase1_notes
-      note: "Human audio: chromatic NOTE command"
+      label: readybasic_sound_phase1_pitchs
+      pitch: "Human audio: chromatic PITCH command"
   - id: wait_rbsnd03_done
     type: screen.wait_contains
     params:
       text: "RBSND03 DONE"
       wait_timeout_s: 120
       capture_on_success: true
-      capture_label: readybasic_sound_phase1_notes_done
+      capture_label: readybasic_sound_phase1_pitchs_done
   - id: run_rbsnd04
     type: input.sequence
     params:
@@ -180,7 +180,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sound_phase1_filter
-      note: "Human audio: filter mode and cutoff changes"
+      pitch: "Human audio: filter mode and cutoff changes"
   - id: wait_rbsnd04_done
     type: screen.wait_contains
     params:
@@ -198,7 +198,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sound_phase1_voice_batch
-      note: "Human audio: VOICE packed fast path"
+      pitch: "Human audio: VOICE packed fast path"
   - id: wait_rbsnd05_done
     type: screen.wait_contains
     params:
@@ -216,7 +216,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sound_phase1_three_voice
-      note: "Human audio: three SID voices and chord changes"
+      pitch: "Human audio: three SID voices and chord changes"
   - id: wait_rbsnd06_done
     type: screen.wait_contains
     params:

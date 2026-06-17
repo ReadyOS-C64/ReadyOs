@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx11 input"
 30 for i=1 to 30
 40 joy(2,j%)

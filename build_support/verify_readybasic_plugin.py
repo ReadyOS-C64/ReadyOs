@@ -24,6 +24,149 @@ def require(pattern: str, text: str, description: str) -> None:
         fail(description)
 
 
+TOKEN_UNSAFE_LEGACY_COMMANDS = {
+    "BUFNEW",
+    "BUFFREE",
+    "FREEMEM",
+    "GFXTARGET",
+    "POINT",
+    "FRECT",
+    "SPRCOLOR",
+    "SPREXPAND",
+    "SPRMCOLOR",
+    "SPRMCLR",
+    "PBUFNEW",
+    "PBUFFREE",
+    "DLCLR",
+    "DLFRECT",
+    "SIDCLR",
+    "SILENCE",
+    "FREQ",
+    "NOTE",
+}
+
+BASIC_V2_EMBEDDED_TOKENS = (
+    "RESTORE",
+    "RETURN",
+    "VERIFY",
+    "PRINT#",
+    "PRINT",
+    "INPUT#",
+    "INPUT",
+    "CLOSE",
+    "GOSUB",
+    "GOTO",
+    "NEXT",
+    "DATA",
+    "READ",
+    "LOAD",
+    "SAVE",
+    "POKE",
+    "CONT",
+    "LIST",
+    "OPEN",
+    "THEN",
+    "STEP",
+    "STOP",
+    "WAIT",
+    "PEEK",
+    "LEFT$",
+    "RIGHT$",
+    "MID$",
+    "STR$",
+    "CHR$",
+    "TAB(",
+    "SPC(",
+    "END",
+    "FOR",
+    "DIM",
+    "LET",
+    "RUN",
+    "REM",
+    "NEW",
+    "CLR",
+    "CMD",
+    "SYS",
+    "GET",
+    "NOT",
+    "AND",
+    "SGN",
+    "INT",
+    "ABS",
+    "USR",
+    "FRE",
+    "POS",
+    "SQR",
+    "RND",
+    "LOG",
+    "EXP",
+    "COS",
+    "SIN",
+    "TAN",
+    "ATN",
+    "LEN",
+    "VAL",
+    "ASC",
+    "DEF",
+    "FN",
+    "IF",
+    "ON",
+    "TO",
+    "OR",
+    "GO",
+)
+
+
+def parse_command_names(asm: str) -> list[str]:
+    names: list[str] = []
+    for line in asm.splitlines():
+        if not line.strip().startswith("CMD_"):
+            continue
+        match = re.search(r'"([A-Z0-9]+)"', line)
+        if match:
+            names.append(match.group(1))
+    return names
+
+
+def token_unsafe_reason(name: str) -> str | None:
+    for i in range(len(name)):
+        tail = name[i:]
+        for token in BASIC_V2_EMBEDDED_TOKENS:
+            if token.endswith("$") or token.endswith("("):
+                literal = token
+            else:
+                literal = token
+            if tail.startswith(literal):
+                return token
+    return None
+
+
+def check_command_descriptor_layout(asm: str) -> None:
+    start = asm.find("rb_command_descriptors:")
+    if start < 0:
+        fail("command descriptor table label is missing")
+    hidden = asm.find('; ---------------------------------------------------------------------------\n; Hidden helper code', start)
+    if hidden < 0:
+        fail("command descriptor table end marker is missing")
+    block = asm[start:hidden]
+    command_lines = [line for line in block.splitlines() if line.strip().startswith("CMD_")]
+    fill_match = re.search(r"\.res\s+\(RB_CMD_DESC_COUNT\s*-\s*(\d+)\)\s*\*\s*RB_CMD_DESC_SIZE", block)
+    if not fill_match:
+        fail("command descriptor table must use RB_CMD_DESC_COUNT-based filler")
+    declared_real_descriptors = int(fill_match.group(1))
+    actual_real_descriptors = len(command_lines)
+    if actual_real_descriptors != declared_real_descriptors:
+        fail(
+            "command descriptor filler is out of sync: "
+            f"filler declares {declared_real_descriptors} real descriptors, "
+            f"but table has {actual_real_descriptors}"
+        )
+    if actual_real_descriptors > 128:
+        fail(f"command descriptor table exceeds 128 entries: {actual_real_descriptors}")
+    if not any('"SCRPUT"' in line for line in command_lines):
+        fail("SCRPUT descriptor must remain in the searchable command table")
+
+
 def parse_segments(map_text: str) -> dict[str, tuple[int, int, int]]:
     segments: dict[str, tuple[int, int, int]] = {}
     for line in map_text.splitlines():
@@ -103,10 +246,18 @@ def main() -> None:
     require(r"^RB_GFX_SPR_PTRS\s*=\s*\$CFF8\b", asm, "sprite pointer table must stay in the $CC00 screen page")
     require(r"CMD_GFXCORE\s+CMD_GFXMODE,\s+SIG_GFXMODE,\s+cmd_gfxmode,\s+\"GFXMODE\"", asm,
             "GFXMODE must be a built-in GFXCORE command")
+    require(r"CMD_LOW_ALL\s+CMD_BUFNEW,\s+SIG_BUFNEW,\s+cmd_bufnew_low,\s+\"BUFMAKE\"", asm,
+            "BUFMAKE must be registered as the stored-program-safe BUFNEW alias")
+    require(r"CMD_LOW_ALL\s+CMD_BUFFREE,\s+SIG_BUFFREE,\s+cmd_buffree_low,\s+\"BUFDROP\"", asm,
+            "BUFDROP must be registered as the stored-program-safe BUFFREE alias")
+    require(r"CMD_LOW\s+CMD_FREEMEM,\s+SIG_FREEMEM,\s+cmd_freemem_low,\s+cmd_freemem_low_end,\s+\"MEMAVL\"", asm,
+            "MEMAVL must be registered as the stored-program-safe FREEMEM alias")
     require(r"CMD_LOW_ALL\s+CMD_GFXTARGET,\s+SIG_BUFFREE,\s+cmd_gfxtarget_low,\s+\"GFXTGT\"", asm,
             "GFXTGT must be registered as the stored-program-safe GFXTARGET alias")
     require(r"CMD_GFXPRIM\s+CMD_PLOT,\s+SIG_PLOT,\s+cmd_plot,\s+\"PLOT\"", asm,
             "PLOT must be a built-in GFXPRIM command")
+    require(r"CMD_GFXPRIM\s+CMD_FRECT,\s+SIG_LINE,\s+cmd_frect,\s+\"FBOX\"", asm,
+            "FBOX must be registered as the stored-program-safe FRECT alias")
     require(r"CMD_GFXSPR\s+CMD_SPRSET,\s+SIG_SPRSET,\s+cmd_sprset,\s+\"SPRSET\"", asm,
             "SPRSET must be a built-in GFXSPR overlay command")
     require(r"CMD_INPUTEV\s+CMD_JOY,\s+SIG_ZFAIL,\s+cmd_joy,\s+\"JOY\"", asm,
@@ -115,20 +266,48 @@ def main() -> None:
             "POLY must be a built-in GFXPOLY overlay command")
     require(r"CMD_GFXPOLY\s+CMD_POLYH,\s+SIG_PLOT,\s+cmd_poly,\s+\"POLYH\"", asm,
             "POLYH must be a built-in GFXPOLY overlay command")
+    require(r"CMD_GFXPOLY\s+CMD_PBUFNEW,\s+SIG_BUFNEW,\s+cmd_pbufnew,\s+\"PBMAKE\"", asm,
+            "PBMAKE must be registered as the stored-program-safe PBUFNEW alias")
+    require(r"CMD_GFXPOLY\s+CMD_PBUFFREE,\s+SIG_BUFFREE,\s+cmd_pbuffree,\s+\"PBDROP\"", asm,
+            "PBDROP must be registered as the stored-program-safe PBUFFREE alias")
     require(r"CMD_GFXDL\s+CMD_DLNEW,\s+SIG_BUFNEW,\s+cmd_dlnew,\s+\"DLMAKE\"", asm,
             "DLMAKE must be a built-in GFXDL overlay command")
+    require(r"CMD_GFXDL\s+CMD_DLCLR,\s+SIG_BUFFREE,\s+cmd_dlclr,\s+\"DLRST\"", asm,
+            "DLRST must be registered as the stored-program-safe DLCLR alias")
+    require(r"CMD_GFXDL\s+CMD_DLFRECT,\s+SIG_LINE,\s+cmd_dlfrect,\s+\"DLFBOX\"", asm,
+            "DLFBOX must be registered as the stored-program-safe DLFRECT alias")
     require(r"CMD_GFXDL\s+CMD_DLDRAW,\s+SIG_BUFFREE,\s+cmd_dldraw,\s+\"DLDRAW\"", asm,
             "DLDRAW must be a built-in GFXDL overlay command")
     require(r"CMD_GFXTILE\s+CMD_TMDRAW,\s+SIG_BUFFILL,\s+cmd_tmdraw,\s+\"TMDRAW\"", asm,
             "TMDRAW must be a built-in GFXTILE overlay command")
     require(r"CMD_SIDCORE\s+CMD_SIDCLR,\s+SIG_KEYNONE,\s+cmd_sidclr,\s+\"SIDCLR\"", asm,
             "SIDCLR must be a built-in SIDCORE overlay command")
+    require(r"CMD_SIDCORE\s+CMD_SIDCLR,\s+SIG_KEYNONE,\s+cmd_sidclr,\s+\"SIDRST\"", asm,
+            "SIDRST must be registered as the stored-program-safe SIDCLR alias")
+    require(r"CMD_SIDCORE\s+CMD_SILENCE,\s+SIG_KEYNONE,\s+cmd_sidclr,\s+\"SIDOFF\"", asm,
+            "SIDOFF must be registered as the stored-program-safe SILENCE alias")
+    require(r"CMD_SIDCORE\s+CMD_FREQ,\s+SIG_BUFFILL,\s+cmd_freq,\s+\"FRQ\"", asm,
+            "FRQ must be registered as the stored-program-safe FREQ alias")
+    require(r"CMD_SIDCORE\s+CMD_NOTE,\s+SIG_PLOT,\s+cmd_note,\s+\"PITCH\"", asm,
+            "PITCH must be registered as the stored-program-safe NOTE alias")
     require(r"CMD_SIDCORE\s+CMD_VOICE,\s+SIG_LINE,\s+cmd_voice,\s+\"VOICE\"", asm,
             "VOICE must use the existing five-number signature to avoid resident parser growth")
     require(r"CMD_SIDCORE\s+CMD_SOUND,\s+SIG_SPRSET,\s+cmd_sound,\s+\"SOUND\"", asm,
             "SOUND must be a built-in SIDCORE overlay command")
     if re.search(r"^\s*RB_GFX_[A-Za-z0-9_]+\s*=\s*\$C[6-9][0-9A-Fa-f]{2}\b", asm, re.MULTILINE):
         fail("graphics-owned Bank D state must not live in the $C600-$C9FF forbidden range")
+    unsafe_new = []
+    for name in parse_command_names(asm):
+        reason = token_unsafe_reason(name)
+        if reason and name not in TOKEN_UNSAFE_LEGACY_COMMANDS:
+            unsafe_new.append(f"{name} ({reason})")
+    if unsafe_new:
+        fail(
+            "command names must avoid embedded BASIC V2 token words; "
+            "add a safe alias and document legacy status before allowing: "
+            + ", ".join(unsafe_new)
+        )
+    check_command_descriptor_layout(asm)
     require(r"^CMD_ZMODLOAD\s*=\s*28\b", asm, "ZMODLOAD loader command id must stay stable")
     require(r"CMD_SLOT1\s+CMD_ZMODLOAD,\s+SIG_ZHIDDENRAM,\s+cmd_zmodload,\s+\"ZMODLD\"", asm, "ZMODLD loader command must live in module 2 slot 1")
     require(r"^K_OPEN\s*=\s*\$FFC0\b", asm, "ZMODLD must use streamed KERNAL file I/O")

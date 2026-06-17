@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx27 target blit"
 30 h%=gfxsurf("hires")
 40 print "surf";h%;" err";errcode()

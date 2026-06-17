@@ -57,7 +57,7 @@ append_load_list_run_text_app() {
     type: screen.capture
     params:
       label: readybasic_loaded_${id_name}
-      note: "ReadyOS-loaded ReadyBASIC after LOAD ${disk_name}"
+      pitch: "ReadyOS-loaded ReadyBASIC after LOAD ${disk_name}"
   - id: list_${id_name}
     type: input.sequence
     params:
@@ -82,7 +82,7 @@ append_load_list_run_text_app() {
     type: screen.capture
     params:
       label: readybasic_run_${id_name}
-      note: "RUN ${disk_name} from inside ReadyBASIC under ReadyOS"
+      pitch: "RUN ${disk_name} from inside ReadyBASIC under ReadyOS"
   - id: assert_run_${id_name}
     type: assert.screen
     params:
@@ -116,7 +116,7 @@ append_load_list_run_gfx_app() {
     type: screen.capture
     params:
       label: readybasic_loaded_${id_name}
-      note: "ReadyOS-loaded ReadyBASIC after LOAD ${disk_name}"
+      pitch: "ReadyOS-loaded ReadyBASIC after LOAD ${disk_name}"
   - id: list_${id_name}
     type: input.sequence
     params:
@@ -141,7 +141,7 @@ append_load_list_run_gfx_app() {
     type: screen.capture
     params:
       label: readybasic_graphics_${id_name}
-      note: "Graphics screenshot after RUN ${disk_name} from inside ReadyBASIC under ReadyOS"
+      pitch: "Graphics screenshot after RUN ${disk_name} from inside ReadyBASIC under ReadyOS"
   - id: restore_text_${id_name}
     type: input.sequence
     params:
@@ -239,7 +239,7 @@ append_load_list_run_gfx_app "RBGFX01" "rbgfx01" "RBGFX01 MODES" "2.0"
 append_load_list_run_gfx_app "RBGFX02" "rbgfx02" "RBGFX02 HIRES PLOT" "3.0"
 append_load_list_run_gfx_app "RBGFX03" "rbgfx03" "RBGFX03 HIRES LINES" "3.0"
 append_load_list_run_gfx_app "RBGFX04" "rbgfx04" "RBGFX04 RECTS" "3.0"
-append_load_list_run_gfx_app "RBGFX05" "rbgfx05" "RBGFX05 POINT READ" "2.0"
+append_load_list_run_gfx_app "RBGFX05" "rbgfx05" "RBGFX05 PNT READ" "2.0"
 append_load_list_run_gfx_app "RBGFX06" "rbgfx06" "RBGFX06 REU SURFACE" "2.0"
 append_load_list_run_gfx_app "RBGFX07" "rbgfx07" "RBGFX07 MBITMAP" "3.0"
 append_load_list_run_gfx_app "RBGFX08" "rbgfx08" "RBGFX08 TILE" "3.0"

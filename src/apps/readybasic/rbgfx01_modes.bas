@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx01 modes"
 30 gfxmode("hires"):m%=gfxmode():print "hires mode";m%
 40 gfxclear(0)

@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx02 hires plot"
 30 gfxmode("hires"):gfxclear(0)
 40 for x=0 to 319 step 16

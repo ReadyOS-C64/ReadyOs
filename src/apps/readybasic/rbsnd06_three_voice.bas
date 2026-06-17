@@ -1,15 +1,15 @@
-10 rem readybasic sound design: READYBASIC_SOUND_COMMAND_DESIGN.md
+10 rem readybasic sound design: sound design md
 20 print chr$(147);"rbsnd06 three voice"
 30 print "three sid voices: c major, then"
 40 print "a lower pulse bass with a high saw."
-50 SIDCLR():VOL(15)
-60 ADSR(1,0,5,12,4):ADSR(2,0,5,12,4):ADSR(3,0,5,12,4)
+50 sidrst():vol(15)
+60 adsr(1,0,5,12,4):adsr(2,0,5,12,4):adsr(3,0,5,12,4)
 70 print:print "c major chord"
-80 NOTE(1,0,4):NOTE(2,4,4):NOTE(3,7,4)
-90 WAVE(1,33):WAVE(2,33):WAVE(3,33):ZPAUSE(100)
-100 GATE(1,0):GATE(2,0):GATE(3,0):ZPAUSE(45)
+80 pitch(1,0,4):pitch(2,4,4):pitch(3,7,4)
+90 wave(1,33):wave(2,33):wave(3,33):zpause(100)
+100 gate(1,0):gate(2,0):gate(3,0):zpause(45)
 110 print "pulse bass plus high saw"
-120 PULSE(1,1536):NOTE(1,7,2):NOTE(2,2,5)
-130 WAVE(1,65):WAVE(2,33):ZPAUSE(110)
-140 GATE(1,0):GATE(2,0):SILENCE()
+120 pulse(1,1536):pitch(1,7,2):pitch(2,2,5)
+130 wave(1,65):wave(2,33):zpause(110)
+140 gate(1,0):gate(2,0):sidoff()
 150 print:print "rbsnd06 done"

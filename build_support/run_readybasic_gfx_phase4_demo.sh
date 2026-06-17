@@ -129,7 +129,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase4_dlist
-      note: "DLMAKE, DLPLOT, DLLINE, DLRECT, DLFRECT, DLDRAW"
+      pitch: "DLMAKE, DLPLOT, DLLINE, DLRECT, DLFBOX, DLDRAW"
   - id: finish_rbgfx23
     type: input.key
     params:
@@ -152,7 +152,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase4_tilemap
-      note: "CHRMAKE, CHRROW, CHRUSE, TSMAKE, TSSET, TMMAKE, TMSET, TMDRAW"
+      pitch: "CHRMAKE, CHRROW, CHRUSE, TSMAKE, TSSET, TMMAKE, TMSET, TMDRAW"
   - id: finish_rbgfx24
     type: input.key
     params:
@@ -175,7 +175,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase4_mbitmap_cells
-      note: "MCELL and MCBG explicit multicolor bitmap cell controls"
+      pitch: "MCELL and MCBG explicit multicolor bitmap cell controls"
   - id: finish_rbgfx25
     type: input.key
     params:
@@ -198,7 +198,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase4_mode_matrix_hires
-      note: "Immediate PLOT/LINE/RECT/FRECT/CIRCLE/PNT in HIRES"
+      pitch: "Immediate PLOT/LINE/RECT/FBOX/CIRCLE/PNT in HIRES"
   - id: next_mode_mbitmap
     type: input.key
     params:
@@ -208,7 +208,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase4_mode_matrix_mbitmap
-      note: "Immediate PLOT/LINE/RECT/FRECT/CIRCLE/PNT in MBITMAP"
+      pitch: "Immediate PLOT/LINE/RECT/FBOX/CIRCLE/PNT in MBITMAP"
   - id: next_mode_tile
     type: input.key
     params:
@@ -218,7 +218,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase4_mode_matrix_tile
-      note: "Immediate PLOT/LINE/RECT/FRECT/PNT in TILE"
+      pitch: "Immediate PLOT/LINE/RECT/FBOX/PNT in TILE"
   - id: next_mode_mtile
     type: input.key
     params:
@@ -228,7 +228,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase4_mode_matrix_mtile
-      note: "Immediate PLOT/LINE/RECT/FRECT/PNT in MTILE"
+      pitch: "Immediate PLOT/LINE/RECT/FBOX/PNT in MTILE"
   - id: finish_rbgfx26
     type: input.key
     params:
@@ -251,7 +251,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase4_target_blit_text
-      note: "GFXSURF/GFXTARGET/GFXSYNC/GFXBLIT status output"
+      pitch: "GFXSURF/GFXTGT/GFXSYNC/GFXBLIT status output"
   - id: finish_rbgfx27
     type: input.key
     params:

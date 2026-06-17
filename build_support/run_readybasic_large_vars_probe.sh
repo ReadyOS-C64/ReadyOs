@@ -121,7 +121,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_var_table_2b00, start: 0x2B00, end: 0x2B3F }
         - { label: string_heap_9f80, start: 0x9F80, end: 0x9FFF }
         - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
@@ -135,7 +135,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_var_table_2b00, start: 0x2B00, end: 0x2B3F }
         - { label: string_heap_9f80, start: 0x9F80, end: 0x9FFF }
         - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
@@ -153,7 +153,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_var_table_2b00, start: 0x2B00, end: 0x2B3F }
         - { label: string_heap_9f80, start: 0x9F80, end: 0x9FFF }
         - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
@@ -167,7 +167,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_var_table_2b00, start: 0x2B00, end: 0x2B3F }
         - { label: string_heap_9f80, start: 0x9F80, end: 0x9FFF }
         - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
@@ -179,7 +179,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_var_table_2b00, start: 0x2B00, end: 0x2B3F }
         - { label: string_heap_9f80, start: 0x9F80, end: 0x9FFF }
   - id: dim_large_array
@@ -198,7 +198,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_var_table_2b00, start: 0x2B00, end: 0x2B3F }
         - { label: basic_vars_start_1200, start: 0x1200, end: 0x1600 }
         - { label: string_heap_9f80, start: 0x9F80, end: 0x9FFF }
@@ -252,7 +252,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_var_table_2b00, start: 0x2B00, end: 0x2B3F }
         - { label: basic_vars_start_1200, start: 0x1200, end: 0x1600 }
         - { label: string_heap_9f80, start: 0x9F80, end: 0x9FFF }
@@ -286,7 +286,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_var_table_2b00, start: 0x2B00, end: 0x2B3F }
         - { label: basic_vars_start_1200, start: 0x1200, end: 0x1600 }
         - { label: string_heap_9f80, start: 0x9F80, end: 0x9FFF }

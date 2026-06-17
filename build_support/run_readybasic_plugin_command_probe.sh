@@ -234,17 +234,17 @@ steps:
     params:
       contains: "RANGE 7  10"
 
-  - id: probe_08_bufnew
+  - id: probe_08_bufmake
     type: input.sequence
     params:
-      keys: [$(keys $'H%=BUFNEW(300)\rPRINT "BUFNEW";H%;":END"\r')]
+      keys: [$(keys $'H%=BUFMAKE(300)\rPRINT "BUFMAKE";H%;":END"\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
-  - id: assert_08_bufnew
+  - id: assert_08_bufmake
     type: assert.screen
     params:
-      contains: "BUFNEW 1 :END"
-  - id: dump_08_bufnew
+      contains: "BUFMAKE 1 :END"
+  - id: dump_08_bufmake
     type: dump.memory_ranges
     params:
       ranges: *plugin_ranges
@@ -264,17 +264,17 @@ steps:
     params:
       not_contains: "?RB ERROR"
 
-  - id: probe_10_buffree
+  - id: probe_10_bufdrop
     type: input.sequence
     params:
-      keys: [$(keys $'BUFFREE(H%)\rPRINT "FREE OK"\r')]
+      keys: [$(keys $'BUFDROP(H%)\rPRINT "FREE OK"\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
-  - id: assert_10_buffree
+  - id: assert_10_bufdrop
     type: assert.screen
     params:
       contains: "FREE OK"
-  - id: assert_10_buffree_no_error
+  - id: assert_10_bufdrop_no_error
     type: assert.screen_not_contains
     params:
       not_contains: "?RB ERROR"
@@ -303,24 +303,24 @@ steps:
     type: assert.screen
     params:
       contains: "?RB ERROR 40"
-  - id: probe_10c_buffree_screen_handle
+  - id: probe_10c_bufdrop_screen_handle
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rBUFFREE(S%)\rPRINT "SCRFREE";S%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rBUFDROP(S%)\rPRINT "SCRFREE";S%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
-  - id: assert_10c_buffree_screen_handle
+  - id: assert_10c_bufdrop_screen_handle
     type: assert.screen
     params:
       contains: "SCRFREE 1"
-  - id: assert_10c_buffree_screen_no_error
+  - id: assert_10c_bufdrop_screen_no_error
     type: assert.screen_not_contains
     params:
       not_contains: "?RB ERROR"
   - id: probe_10d_scrput_rejects_buffer_handle
     type: input.sequence
     params:
-      keys: [$(keys $'B%=BUFNEW(300)\rSCRPUT(B%)\r')]
+      keys: [$(keys $'B%=BUFMAKE(300)\rSCRPUT(B%)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10d_scrput_rejects_buffer_handle
@@ -330,7 +330,7 @@ steps:
   - id: probe_10e_free_buffer_after_type_error
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rBUFFREE(B%)\rPRINT "BUFREE";B%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rBUFDROP(B%)\rPRINT "BUFREE";B%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10e_free_buffer_after_type_error
@@ -345,7 +345,7 @@ steps:
   - id: probe_10f_allocate_128_handles
     type: input.sequence
     params:
-      keys: [$(keys $'NEW\r10 FOR I=1 TO 128\r20 H%=BUFNEW(1)\r30 NEXT I\r40 PRINT "HMAX";H%\rRUN\r')]
+      keys: [$(keys $'NEW\r10 FOR I=1 TO 128\r20 H%=BUFMAKE(1)\r30 NEXT I\r40 PRINT "HMAX";H%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 4.0
   - id: assert_10f_allocate_128_handles
@@ -360,7 +360,7 @@ steps:
   - id: probe_10g_handle_129_rejected
     type: input.sequence
     params:
-      keys: [$(keys $'E%=BUFNEW(1)\r')]
+      keys: [$(keys $'E%=BUFMAKE(1)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10g_handle_129_rejected
@@ -371,7 +371,7 @@ steps:
   - id: probe_10h_free_128_handles
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 128\r20 BUFFREE(I)\r30 NEXT I\r40 PRINT "HFREED"\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 128\r20 BUFDROP(I)\r30 NEXT I\r40 PRINT "HFREED"\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 4.0
   - id: assert_10h_free_128_handles
@@ -386,7 +386,7 @@ steps:
   - id: probe_10i_reuse_low_handle
     type: input.sequence
     params:
-      keys: [$(keys $'R%=BUFNEW(1)\rPRINT "HREUSE";R%\rBUFFREE(R%)\r')]
+      keys: [$(keys $'R%=BUFMAKE(1)\rPRINT "HREUSE";R%\rBUFDROP(R%)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10i_reuse_low_handle
@@ -401,7 +401,7 @@ steps:
   - id: probe_10j_allocate_48k_heap
     type: input.sequence
     params:
-      keys: [$(keys $'M%=BUFNEW(49152)\rPRINT "HMAXBUF";M%\r')]
+      keys: [$(keys $'M%=BUFMAKE(49152)\rPRINT "HMAXBUF";M%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_10j_allocate_48k_heap
@@ -416,7 +416,7 @@ steps:
   - id: probe_10k_heap_full_rejected
     type: input.sequence
     params:
-      keys: [$(keys $'E%=BUFNEW(1)\r')]
+      keys: [$(keys $'E%=BUFMAKE(1)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10k_heap_full_rejected
@@ -427,7 +427,7 @@ steps:
   - id: probe_10l_free_48k_heap
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rBUFFREE(M%)\rPRINT "HMAXFREE";M%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rBUFDROP(M%)\rPRINT "HMAXFREE";M%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10l_free_48k_heap
@@ -468,7 +468,7 @@ steps:
   - id: probe_10o_free_screen_handles
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 24\r20 BUFFREE(I)\r30 NEXT I\r40 PRINT "SFREED"\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 24\r20 BUFDROP(I)\r30 NEXT I\r40 PRINT "SFREED"\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 4.0
   - id: assert_10o_free_screen_handles

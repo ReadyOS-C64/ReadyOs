@@ -174,8 +174,8 @@ if [ "$READYBASIC_DEMO_WARP_OFF" = "1" ]; then
   emit_warp_step "warp_off_for_visible_demo" "false"
 fi
 
-emit_type_step "demo_01_intro" $'PRINT CHR$(147);CHR$(158);"DEMO 1: READYBASIC BASICS"\rPRINT "FREEMEM, VARIABLES, AND A PROGRAM":PRINT CHR$(5)\r' "$READ_PAUSE"
-emit_type_step "demo_01_setup" $'FREEMEM()\rNEW\rA%=42\r10 B%=ZADD16(42,8)\r20 PRINT "PROGRAM SUM";B%\r' "$STEP_POST"
+emit_type_step "demo_01_intro" $'PRINT CHR$(147);CHR$(158);"DEMO 1: READYBASIC BASICS"\rPRINT "MEMAVL, VARIABLES, AND A PROGRAM":PRINT CHR$(5)\r' "$READ_PAUSE"
+emit_type_step "demo_01_setup" $'MEMAVL()\rNEW\rA%=42\r10 B%=ZADD16(42,8)\r20 PRINT "PROGRAM SUM";B%\r' "$STEP_POST"
 emit_type_step "demo_01_list" $'LIST\r' "$STEP_POST"
 emit_type_step "demo_01_basics" $'PRINT CHR$(158);"EXPECT: RUN PRINTS PROGRAM SUM 50"\rPRINT CHR$(5)\rRUN\rA%=42\r' "$RUN_POST"
 emit_assert_step "assert_demo_01_program_sum" "PROGRAM SUM 50"
@@ -200,7 +200,7 @@ emit_type_step "demo_03_resume_liveness" $'PRINT "RESUME LIVE"\r' "$STEP_POST"
 emit_assert_step "assert_demo_03_resume_liveness" "RESUME LIVE"
 emit_type_step "demo_03_resume_intro_clear" $'PRINT CHR$(147);CHR$(158);"BACK IN READYBASIC"\r' "$STEP_POST"
 emit_type_step "demo_03_resume_intro_detail" $'PRINT "VARIABLES AND PROGRAM TEXT SHOULD REMAIN":PRINT CHR$(5)\r' "$READ_PAUSE"
-emit_type_step "demo_03_resume_var_proof" $'FREEMEM()\rPRINT "A STILL";A%\rPRINT CHR$(158);"EXPECT: A IS 42 AND RUN STILL WORKS"\rPRINT CHR$(5)\r' "$STEP_POST"
+emit_type_step "demo_03_resume_var_proof" $'MEMAVL()\rPRINT "A STILL";A%\rPRINT CHR$(158);"EXPECT: A IS 42 AND RUN STILL WORKS"\rPRINT CHR$(5)\r' "$STEP_POST"
 cat >>"$PLAN" <<'YAML'
   - id: capture_demo_03_resume_var_proof
     type: screen.capture
@@ -243,8 +243,8 @@ emit_assert_step "assert_demo_06_sum" "SUM 6"
 emit_assert_step "assert_demo_06_range" "RANGE 7  10"
 emit_assert_step "assert_demo_06_fadd" "FADD 3.5"
 
-emit_type_step "demo_07_intro" $'PRINT CHR$(147);CHR$(158);"DEMO 8: REU BUFFER COMMANDS"\rPRINT "BUFNEW RETURNS; FILL AND FREE DO WORK":PRINT CHR$(5)\r' "$READ_PAUSE"
-emit_type_step "demo_07_reu" $'H%=BUFNEW(64)\rBUFFILL(H%,170)\rPRINT CHR$(158);"EXPECT: HANDLE 1, THEN FREED 1"\rPRINT CHR$(5)\rPRINT "HANDLE";H%\rBUFFREE(H%)\rPRINT "FREED";H%\r' "$READ_PAUSE"
+emit_type_step "demo_07_intro" $'PRINT CHR$(147);CHR$(158);"DEMO 8: REU BUFFER COMMANDS"\rPRINT "BUFMAKE RETURNS; FILL AND FREE DO WORK":PRINT CHR$(5)\r' "$READ_PAUSE"
+emit_type_step "demo_07_reu" $'H%=BUFMAKE(64)\rBUFFILL(H%,170)\rPRINT CHR$(158);"EXPECT: HANDLE 1, THEN FREED 1"\rPRINT CHR$(5)\rPRINT "HANDLE";H%\rBUFDROP(H%)\rPRINT "FREED";H%\r' "$READ_PAUSE"
 emit_assert_step "assert_demo_07_handle" "HANDLE 1"
 emit_assert_step "assert_demo_07_freed" "FREED 1"
 

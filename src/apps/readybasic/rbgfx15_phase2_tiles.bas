@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx15 phase2 tiles"
 30 gfxtext():print chr$(147)
 40 for y=4 to 16

@@ -27,6 +27,11 @@ This keeps all persistent behavior out of resident ReadyBASIC RAM.
 - Prefer fast hardware-shaped commands for loops. `ADSR` is friendlier for
   setup; `VOICE` is the compact 1 MHz path.
 - Do not install interrupts for playback yet.
+- Command names used in stored BASIC demos must be BASIC-token-safe and should
+  be written lowercase in host `.bas` sources before `petcat`. Legacy friendly
+  names such as `SIDCLR`, `SILENCE`, `FREQ`, and `NOTE` remain accepted, but
+  demos use `sidrst`, `sidoff`, `frq`, and `pitch` so `LIST` does not confuse
+  command-name bytes with BASIC V2 tokens like `CLR`, `LEN`, `FRE`, and `NOT`.
 
 ## SID Register Mapping
 
@@ -67,10 +72,11 @@ Wave/control bits:
 
 | Command | Syntax | Behavior |
 |---|---|---|
-| `SIDCLR` / `SILENCE` | `SIDCLR()` | Clears SID registers `$D400-$D418`. |
+| `SIDRST` / `SIDOFF` | `SIDRST()` | Preferred token-safe reset/off aliases. Clears SID registers `$D400-$D418`. |
+| `SIDCLR` / `SILENCE` | `SIDCLR()` | Legacy friendly aliases for reset/off. Accepted, but avoid in stored demo source because `CLR` and `LEN` tokenize under BASIC V2. |
 | `VOL` | `VOL(VOL)` | Sets master volume `0..15`, preserving filter mode bits in `$D418`. |
-| `FREQ` | `FREQ(VOICE,FREQ16)` | Writes raw 16-bit SID frequency for voice `1..3`. |
-| `NOTE` | `NOTE(VOICE,NOTE,OCT)` | Sets frequency from `NOTE=0..11` (`C..B`) and octave `0..7`, using a compact PAL C0 table shifted by octave. It does not gate the voice. |
+| `FRQ` / `FREQ` | `FRQ(VOICE,FREQ16)` | Writes raw 16-bit SID frequency for voice `1..3`. `FRQ` is preferred for stored programs; `FREQ` is legacy-friendly direct-mode spelling. |
+| `PITCH` / `NOTE` | `PITCH(VOICE,NOTE,OCT)` | Sets frequency from `NOTE=0..11` (`C..B`) and octave `0..7`, using a compact PAL C0 table shifted by octave. It does not gate the voice. `PITCH` is preferred for stored programs because `NOTE` contains `NOT`. |
 | `PULSE` | `PULSE(VOICE,WIDTH)` | Writes 12-bit pulse width `0..4095`. |
 | `ADSR` / `ENV` | `ADSR(VOICE,A,D,S,R)` | Writes attack, decay, sustain, and release nibbles `0..15`. |
 | `WAVE` / `CTRL` | `WAVE(VOICE,MASK)` | Writes the SID voice control byte directly. Use bit `1` for gate, or use `GATE`. |
@@ -96,28 +102,28 @@ bit 1 routes voice 2, bit 2 routes voice 3, and bit 3 routes external input.
 Simple blocking tones:
 
 ```basic
-10 SIDCLR():VOL(15):ADSR(1,0,5,12,3)
-20 SOUND(1,4455,45,16):REM TRIANGLE C4
-30 SOUND(1,4455,45,32):REM SAW C4
-40 PULSE(1,2048):SOUND(1,4455,45,64):REM PULSE C4
-50 SOUND(1,4455,45,128):REM NOISE
-60 SILENCE()
+10 sidrst():vol(15):adsr(1,0,5,12,3)
+20 sound(1,4455,45,16):rem triangle c4
+30 sound(1,4455,45,32):rem saw c4
+40 pulse(1,2048):sound(1,4455,45,64):rem pulse c4
+50 sound(1,4455,45,128):rem noise
+60 sidoff()
 ```
 
 Manual voice control:
 
 ```basic
-10 SIDCLR():VOL(15)
-20 ADSR(1,0,9,12,6):PULSE(1,3072):FREQ(1,4455)
-30 WAVE(1,64):GATE(1,1):ZPAUSE(70):GATE(1,0)
+10 sidrst():vol(15)
+20 adsr(1,0,9,12,6):pulse(1,3072):frq(1,4455)
+30 wave(1,64):gate(1,1):zpause(70):gate(1,0)
 ```
 
 Packed fast path:
 
 ```basic
-10 SIDCLR():VOL(15):PULSE(1,2048)
-20 VOICE(1,4455,65,9,195)
-30 ZPAUSE(80):CTRL(1,64)
+10 sidrst():vol(15):pulse(1,2048)
+20 voice(1,4455,65,9,195)
+30 zpause(80):ctrl(1,64)
 ```
 
 Here `65` is pulse plus gate, `9` is packed attack/decay `$09`, and `195` is
@@ -126,12 +132,12 @@ packed sustain/release `$C3`.
 Filter example:
 
 ```basic
-10 SIDCLR():VOL(15):ADSR(1,0,9,15,4)
-20 FREQ(1,2230):WAVE(1,33)
-30 FOR C=150 TO 950 STEP 200:FILTER(C,8,1,1):ZPAUSE(35):NEXT
-40 FILTER(700,12,1,2):ZPAUSE(90)
-50 FILTER(700,12,1,4):ZPAUSE(90)
-60 SILENCE()
+10 sidrst():vol(15):adsr(1,0,9,15,4)
+20 frq(1,2230):wave(1,33)
+30 for c=150 to 950 step 200:filter(c,8,1,1):zpause(35):next
+40 filter(700,12,1,2):zpause(90)
+50 filter(700,12,1,4):zpause(90)
+60 sidoff()
 ```
 
 ## Demos
@@ -141,7 +147,7 @@ ReadyBASIC under ReadyOS:
 
 - `rbsnd01_sid_basics.bas`: triangle, saw, pulse, and noise.
 - `rbsnd02_voice_state.bas`: explicit ADSR, pulse width, frequency, wave, and gate.
-- `rbsnd03_notes.bas`: chromatic `NOTE` command.
+- `rbsnd03_notes.bas`: chromatic `PITCH` command.
 - `rbsnd04_filter.bas`: filter route/mode/cutoff changes.
 - `rbsnd05_voice_batch.bas`: packed `VOICE` fast path.
 - `rbsnd06_three_voice.bas`: three SID voices.

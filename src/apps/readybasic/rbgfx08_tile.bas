@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx08 tile"
 30 gfxmode("tile"):gfxclear(0)
 40 for y=0 to 23 step 2

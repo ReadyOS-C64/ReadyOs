@@ -286,7 +286,7 @@ cat >>"$PLAN" <<YAML
     type: dump.memory_ranges
     params:
       ranges: &state_ranges
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_text_and_vars_1200, start: 0x1200, end: 0x1800 }
         - { label: string_heap_9300, start: 0x9300, end: 0x9600 }
         - { label: runtime_state_9600, start: 0x9600, end: 0x9A00 }

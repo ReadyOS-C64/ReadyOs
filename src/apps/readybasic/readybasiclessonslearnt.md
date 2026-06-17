@@ -864,6 +864,25 @@ three-app set or cycling the entire cartridge list. Cartridge automation should
 also wait for the real BASIC `READY.` prompt, not only the ReadyBASIC title, and
 allow for occasional EasyFlash cold preload retries before the launcher.
 
+Current rule: ReadyBASIC command names are visible BASIC text, not private
+tokens. New public command spellings must avoid embedded BASIC V2 token words
+such as `CLR`, `FRE`, `NOT`, `INT`, `FN`, `LEN`, `OR`, and `TO`; otherwise
+`petcat` and BASIC `LIST` can split a command name into misleading keywords or
+raise a syntax error while `RUN` still appears to work. Host `.bas` demos should
+spell ReadyBASIC commands lowercase so `petcat` emits ordinary PETSCII letters.
+Legacy friendly names stay registered only with token-safe preferred aliases
+such as `SIDRST`, `SIDOFF`, `FRQ`, `PITCH`, `BUFMAKE`, `BUFDROP`, `MEMAVL`,
+`FBOX`, `PBMAKE`, `PBDROP`, `DLRST`, and `DLFBOX`.
+
+Current rule: aliases are descriptor entries, not free metadata. When adding a
+token-safe alias, update the descriptor-table filler expression so real
+descriptors plus zero-filled filler remain exactly `RB_CMD_DESC_COUNT`. If the
+filler is too large, late commands can be pushed past the searchable 128-slot
+range; the resulting symptom looks like a native BASIC `?SYNTAX ERROR` on an
+otherwise valid command line. `SCRPUT(H%(S))` exposed this on 2026-06-17 after
+alias additions pushed `SCRPUT` out of the registry. The static plugin check now
+counts descriptor macros and fails if the filler count drifts.
+
 ## Open Questions
 
 - Deferred hypothesis: ReadyBASIC may leave KERNAL `MSGFLG` (`$009D`) nonzero

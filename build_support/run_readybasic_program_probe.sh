@@ -237,7 +237,7 @@ steps:
   - id: program_handle_lifecycle_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 H%=BUFNEW(300)\r20 PRINT "PRBUF";H%\r30 BUFFILL(H%,170)\r40 BUFFREE(H%)\r50 PRINT "PRFREE";H%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 H%=BUFMAKE(300)\r20 PRINT "PRBUF";H%\r30 BUFFILL(H%,170)\r40 BUFDROP(H%)\r50 PRINT "PRFREE";H%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.5
   - id: assert_program_handle_new

@@ -1,9 +1,9 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx25 mbitmap cells"
 30 gfxmode("mbitmap"):gfxclear(0):mcbg(0)
-40 frect(8,16,31,47,17)
-50 frect(40,16,63,47,34)
-60 frect(72,16,95,47,51)
+40 fbox(8,16,31,47,17)
+50 fbox(40,16,63,47,34)
+60 fbox(72,16,95,47,51)
 70 mcell(2,2,6,10,2)
 80 mcell(10,2,4,12,7)
 90 mcell(18,2,1,14,5)

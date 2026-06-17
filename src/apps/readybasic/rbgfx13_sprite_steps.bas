@@ -1,4 +1,4 @@
-10 rem see readybasic_graphics_command_design.md
+10 rem see graphics design md
 20 print chr$(147);"rbgfx13 sprite steps"
 30 gfxmode("tile"):gfxclear(0)
 40 sprset(0,1,2,0):sprset(1,1,7,0)
