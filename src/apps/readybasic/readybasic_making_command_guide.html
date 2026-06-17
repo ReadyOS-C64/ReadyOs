@@ -174,7 +174,7 @@
 		    </div>
 		    <div class="card reu">
 		      <h3>Built-In And Module Command Growth</h3>
-		      <p>ReadyBASIC's built-in command set is intended to include the core commands and the 100+ additional file, graphics, sound, REU, and utility commands that are similar in spirit to other BASIC extensions. The current REU code bank still leaves about 62.4K of addressable command-code space; today's C64 <code>CMDPACK</code> seed window has about 3.6K unused before it needs a larger or additional cold-load seed range.</p>
+		      <p>ReadyBASIC's built-in command set is intended to include the core commands and the 100+ additional file, graphics, sound, REU, and utility commands that are similar in spirit to other BASIC extensions. The current built-in code-bank reservations leave the contiguous tail <code>$7800-$FFFF</code> free for future built-in payloads; today's first C64 <code>CMDPACK</code> seed window has about <code>$0141</code> / 321 bytes unused, while replacement overlays are seeded from <code>CMDPACK2</code>.</p>
 		      <p>Beyond that built-in set, ReadyBASIC will also support dynamically loaded command modules that can use additional REU banks, so other authors can add hundreds more commands without forcing everything into the core command bank.</p>
 		    </div>
 		    <div class="flow">
@@ -206,6 +206,110 @@
       <p>Use a descriptor-backed command overlay when the routine needs hidden RAM, REU handles, fast machine-code loops, direct screen/color memory, or shared command behavior.</p>
       <p>Use resident language work when the feature changes BASIC control flow or interpreter state. <code>REPEAT</code>/<code>UNTIL</code> stores and restores <code>TXTPTR</code>/<code>CURLIN</code>; <code>LABEL</code>/<code>JUMP</code> scans stored BASIC lines; <code>ERRCODE</code>/<code>ERRLINE</code> returns resident runtime state.</p>
     </div>
+  </section>
+
+  <section>
+    <h2>Graphics Command Tutorial</h2>
+    <p>The built-in graphics commands are descriptor-backed command families. They use ordinary <code>COMMAND(...)</code> syntax; resident signatures fill call-frame fields, and assembler workers do the Bank D, VIC, color RAM, and REU work.</p>
+    <table class="term">
+      <tbody>
+        <tr><td><code>$CA00-$CBFF</code></td><td>Eight hardware sprite definitions.</td></tr>
+        <tr><td><code>$CC00-$CFFF</code></td><td>Bank D screen RAM and sprite pointers at <code>$CFF8</code>.</td></tr>
+        <tr><td><code>$D800-$DBE7</code></td><td>Color RAM.</td></tr>
+        <tr><td><code>$E000-$FFFF</code></td><td>Bitmap/charset RAM, written with ROM hidden.</td></tr>
+      </tbody>
+    </table>
+<pre><code>10 GFXMODE("HIRES")   : REM 320X200 ONE-BIT BITMAP
+20 GFXMODE("MBITMAP") : REM 160X200 MULTICOLOR BITMAP
+30 GFXMODE("TILE")    : REM BANK D TEXT/TILE SCREEN
+40 GFXMODE("MTILE")   : REM BANK D MULTICOLOR TEXT/TILE
+50 GFXTEXT()          : REM RETURN TO NORMAL TEXT</code></pre>
+    <div class="grid">
+      <div class="card">
+        <h3>Surface Handles And Blit</h3>
+<pre><code>10 GFXMODE("HIRES"):GFXCLEAR(0)
+20 H%=GFXSURF("HIRES")
+30 GFXTGT(H%):GFXSYNC():GFXBLIT(H%)
+40 GFXTGT(0)
+50 LINE(20,20,300,170,1)
+60 RECT(40,50,140,130,1)</code></pre>
+        <p><code>GFXTGT</code> is the stored-program-safe alias for <code>GFXTARGET</code>. Phase 4 tracks REU surface handles and exercises blitting; immediate primitives still draw directly to the visible Bank D target for speed.</p>
+      </div>
+      <div class="card">
+        <h3>Hires Primitives</h3>
+<pre><code>10 GFXMODE("HIRES"):GFXCLEAR(0)
+20 PLOT(20,20,1)
+30 LINE(20,30,300,160,1)
+40 RECT(40,50,130,120,1)
+50 FRECT(180,60,240,130,1)
+60 CIRCLE(82,82,38,1)
+70 FCIRCLE(210,92,26,1)
+80 PNT(20,20,P%)</code></pre>
+        <p><code>LINE</code> is compact rather than full Bresenham. <code>CIRCLE</code> uses a compact midpoint outline worker; <code>FCIRCLE</code> currently fills the bounding rectangle.</p>
+      </div>
+      <div class="card">
+        <h3>Multicolor Bitmap</h3>
+<pre><code>10 GFXMODE("MBITMAP"):GFXCLEAR(0)
+20 LINE(4,18,155,18,17)
+30 LINE(4,30,155,70,34)
+40 RECT(8,82,72,144,20)
+50 FRECT(86,82,148,144,37)
+60 CIRCLE(46,112,28,51)
+70 FCIRCLE(118,112,22,58)
+80 PNT(46,112,P%)</code></pre>
+        <p><code>MBITMAP</code> uses <code>X=0..159</code>, <code>Y=0..199</code>. The color argument encodes VIC-II multicolor slots: <code>0</code> clears, <code>1..15</code> draws pair 3 and writes color RAM, <code>16..31</code> draws pair 1, <code>32..47</code> draws pair 2, and <code>48..63</code> explicitly draws pair 3. <code>POINT</code>/<code>PNT</code> returns pair code <code>0..3</code>, not the resolved VIC color.</p>
+      </div>
+      <div class="card">
+        <h3>Tile And Text Cells</h3>
+<pre><code>10 GFXTEXT():PRINT CHR$(147)
+20 FOR Y=4 TO 16
+30 FOR X=6 TO 33
+40 TILE(X,Y,160,1+(X+Y)-INT((X+Y)/8)*8)
+50 NEXT X:NEXT Y
+60 CHARAT(10,7,160,2)</code></pre>
+        <p><code>TILE</code> and <code>CHARAT</code> write one cell. In tile modes they target Bank D screen RAM; after <code>GFXTEXT()</code> they target normal text screen RAM for labels and demos.</p>
+      </div>
+      <div class="card">
+        <h3>Sprites</h3>
+<pre><code>10 GFXMODE("HIRES"):GFXCLEAR(0)
+20 SPRSET(0,1,7,0)
+30 FOR R=0 TO 20:SPRROW(0,R,60,126,60):NEXT R
+40 SPRMOVE(0,120,100)
+50 SPRSIZE(0,1,1)
+60 SPRMUL(0,1):SPRMCO(2,5):SPRCOL(0,10)</code></pre>
+        <p><code>SPRROW</code> writes one 24-bit row into Bank D sprite memory. <code>SPRSIZE</code>, <code>SPRMUL</code>, <code>SPRMCO</code>, and <code>SPRCOL</code> are tokenizer-safe demo names for size, multicolor, shared multicolor registers, and primary color.</p>
+      </div>
+      <div class="card">
+        <h3>Polygons</h3>
+<pre><code>10 DIM P%(7)
+20 P%(0)=40:P%(1)=20:P%(2)=120:P%(3)=42
+30 P%(4)=98:P%(5)=130:P%(6)=18:P%(7)=110
+40 POLY(P%(0),4,1):FPOLY(P%(0),4,1)
+50 PBUFNEW(4,H%)
+60 PBUFSET(H%,0,40,20):PBUFSET(H%,1,120,42)
+70 POLYH(H%,4,1):PBUFFREE(H%)</code></pre>
+        <p><code>POLYH</code> and <code>FPOLYH</code> are explicit REU point-buffer handle aliases. Filled polygons use a conservative convex fan fill; concave scanline fill remains future work.</p>
+      </div>
+      <div class="card">
+        <h3>Retained Lists And Tiles</h3>
+<pre><code>10 GFXMODE("HIRES"):GFXCLEAR(0)
+20 DLMAKE(12,H%)
+30 DLPLOT(H%,80,60,1)
+40 DLLINE(H%,20,20,300,160)
+50 DLRECT(H%,40,50,140,130)
+60 DLFRECT(H%,180,70,260,140)
+70 DLDRAW(H%)</code></pre>
+        <p><code>DLMAKE</code> creates a one-page REU display-list handle. Tile resources use <code>CHRMAKE</code>, <code>CHRROW</code>, <code>CHRUSE</code>, <code>TSMAKE</code>, <code>TSSET</code>, <code>TMMAKE</code>, <code>TMSET</code>, and <code>TMDRAW</code>. The current tilemap command writes Bank D screen/color bytes, but the Bank D tile/charset display path still has a blank-screen screenshot issue.</p>
+      </div>
+      <div class="card">
+        <h3>Multicolor Cells</h3>
+<pre><code>10 GFXMODE("MBITMAP"):GFXCLEAR(0):MCBG(0)
+20 MCELL(2,2,6,10,2)
+30 FRECT(8,16,31,47,17)</code></pre>
+        <p><code>MCELL</code> writes the three per-cell multicolor bitmap attributes: screen high nibble, screen low nibble, and color RAM. <code>MCBG</code> sets the shared background color.</p>
+      </div>
+    </div>
+    <div class="card warn"><p>Multicolor bitmap colors are per 8x8 cell. A later slot-1, slot-2, or slot-3 write in the same cell can recolor earlier pixels that used that same slot.</p></div>
   </section>
 
 	  <section>

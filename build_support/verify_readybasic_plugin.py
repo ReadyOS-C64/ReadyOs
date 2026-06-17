@@ -79,6 +79,8 @@ def main() -> None:
     require(r"^RB_SUBMOD_GFXSPR\s*=\s*18\b", asm, "GFXSPR submodule must be registered")
     require(r"^RB_SUBMOD_INPUTEV\s*=\s*19\b", asm, "INPUTEV submodule must be registered")
     require(r"^RB_SUBMOD_GFXPOLY\s*=\s*20\b", asm, "GFXPOLY submodule must be registered")
+    require(r"^RB_SUBMOD_GFXDL\s*=\s*21\b", asm, "GFXDL submodule must be registered")
+    require(r"^RB_SUBMOD_GFXTILE\s*=\s*22\b", asm, "GFXTILE submodule must be registered")
     require(r"^SIG_GFXMODE\s*=\s*19\b", asm, "GFXMODE signature must be registered")
     require(r"^SIG_GFXSURF\s*=\s*20\b", asm, "GFXSURF signature must be registered")
     require(r"^SIG_PLOT\s*=\s*21\b", asm, "PLOT signature must be registered")
@@ -88,6 +90,10 @@ def main() -> None:
     require(r"^SIG_POLY\s*=\s*25\b", asm, "polygon array signature must be registered")
     require(r"^RB_HANDLE_TYPE_GFXSURF\s*=\s*3\b", asm, "graphics surfaces must use typed handle 3")
     require(r"^RB_HANDLE_TYPE_POINTBUF\s*=\s*4\b", asm, "point buffers must use typed handle 4")
+    require(r"^RB_HANDLE_TYPE_DLIST\s*=\s*5\b", asm, "display lists must use typed handle 5")
+    require(r"^RB_HANDLE_TYPE_CHARSET\s*=\s*6\b", asm, "charsets must use typed handle 6")
+    require(r"^RB_HANDLE_TYPE_TILESET\s*=\s*7\b", asm, "tilesets must use typed handle 7")
+    require(r"^RB_HANDLE_TYPE_TILEMAP\s*=\s*8\b", asm, "tilemaps must use typed handle 8")
     require(r"^RB_GFX_SCREEN\s*=\s*\$CC00\b", asm, "Bank D graphics screen RAM must start at $CC00")
     require(r"^RB_GFX_SPRITES\s*=\s*\$CA00\b", asm, "Bank D sprite data must start at $CA00")
     require(r"^RB_GFX_BITMAP\s*=\s*\$E000\b", asm, "Bank D bitmap RAM must start at $E000")
@@ -95,6 +101,8 @@ def main() -> None:
     require(r"^RB_GFX_SPR_PTRS\s*=\s*\$CFF8\b", asm, "sprite pointer table must stay in the $CC00 screen page")
     require(r"CMD_GFXCORE\s+CMD_GFXMODE,\s+SIG_GFXMODE,\s+cmd_gfxmode,\s+\"GFXMODE\"", asm,
             "GFXMODE must be a built-in GFXCORE command")
+    require(r"CMD_LOW_ALL\s+CMD_GFXTARGET,\s+SIG_BUFFREE,\s+cmd_gfxtarget_low,\s+\"GFXTGT\"", asm,
+            "GFXTGT must be registered as the stored-program-safe GFXTARGET alias")
     require(r"CMD_GFXPRIM\s+CMD_PLOT,\s+SIG_PLOT,\s+cmd_plot,\s+\"PLOT\"", asm,
             "PLOT must be a built-in GFXPRIM command")
     require(r"CMD_GFXSPR\s+CMD_SPRSET,\s+SIG_SPRSET,\s+cmd_sprset,\s+\"SPRSET\"", asm,
@@ -105,6 +113,12 @@ def main() -> None:
             "POLY must be a built-in GFXPOLY overlay command")
     require(r"CMD_GFXPOLY\s+CMD_POLYH,\s+SIG_PLOT,\s+cmd_poly,\s+\"POLYH\"", asm,
             "POLYH must be a built-in GFXPOLY overlay command")
+    require(r"CMD_GFXDL\s+CMD_DLNEW,\s+SIG_BUFNEW,\s+cmd_dlnew,\s+\"DLMAKE\"", asm,
+            "DLMAKE must be a built-in GFXDL overlay command")
+    require(r"CMD_GFXDL\s+CMD_DLDRAW,\s+SIG_BUFFREE,\s+cmd_dldraw,\s+\"DLDRAW\"", asm,
+            "DLDRAW must be a built-in GFXDL overlay command")
+    require(r"CMD_GFXTILE\s+CMD_TMDRAW,\s+SIG_BUFFILL,\s+cmd_tmdraw,\s+\"TMDRAW\"", asm,
+            "TMDRAW must be a built-in GFXTILE overlay command")
     if re.search(r"^\s*RB_GFX_[A-Za-z0-9_]+\s*=\s*\$C[6-9][0-9A-Fa-f]{2}\b", asm, re.MULTILINE):
         fail("graphics-owned Bank D state must not live in the $C600-$C9FF forbidden range")
     require(r"^CMD_ZMODLOAD\s*=\s*28\b", asm, "ZMODLOAD loader command id must stay stable")
@@ -118,7 +132,7 @@ def main() -> None:
     if "REU_BANK_RB_CORE" in reu_hdr or "REU_BANK_RB_CODE" in reu_hdr:
         fail("ReadyBASIC core/code banks must not be fixed in reu_mgr.h")
 
-    for name in ("ENTRY", "RESIDENT", "LOWPACK", "SLOTPACK1", "SLOTPACK2", "SPANPACK", "OVL1PACK", "OVL2PACK", "OVL3PACK", "HIDDEN", "BRIDGE", "REGSEED"):
+    for name in ("ENTRY", "RESIDENT", "LOWPACK", "SLOTPACK1", "SLOTPACK2", "SPANPACK", "OVL1PACK", "OVL2PACK", "OVL3PACK", "OVL4PACK", "OVL5PACK", "HIDDEN", "BRIDGE", "REGSEED"):
         if name not in segments:
             fail(f"map is missing segment {name}")
 
@@ -130,6 +144,8 @@ def main() -> None:
     ovl1pack = segments["OVL1PACK"]
     ovl2pack = segments["OVL2PACK"]
     ovl3pack = segments["OVL3PACK"]
+    ovl4pack = segments["OVL4PACK"]
+    ovl5pack = segments["OVL5PACK"]
     hidden = segments["HIDDEN"]
     bridge = segments["BRIDGE"]
     regseed = segments["REGSEED"]
@@ -158,6 +174,10 @@ def main() -> None:
         fail(f"overlay 2 payload must fit in slot 2, got ${ovl2pack[0]:04X}-${ovl2pack[1]:04X} size ${ovl2pack[2]:04X}")
     if ovl3pack[0] < 0xB800 or ovl3pack[1] > 0xBFFF or ovl3pack[2] > 0x0800:
         fail(f"overlay 3 payload must fit in slot 2, got ${ovl3pack[0]:04X}-${ovl3pack[1]:04X} size ${ovl3pack[2]:04X}")
+    if ovl4pack[0] < 0xB800 or ovl4pack[1] > 0xBFFF or ovl4pack[2] > 0x0800:
+        fail(f"overlay 4 payload must fit in slot 2, got ${ovl4pack[0]:04X}-${ovl4pack[1]:04X} size ${ovl4pack[2]:04X}")
+    if ovl5pack[0] < 0xB800 or ovl5pack[1] > 0xBFFF or ovl5pack[2] > 0x0800:
+        fail(f"overlay 5 payload must fit in slot 2, got ${ovl5pack[0]:04X}-${ovl5pack[1]:04X} size ${ovl5pack[2]:04X}")
     if hidden[0] != 0xA000 or hidden[1] > 0xA7FF:
         fail(f"HIDDEN helper/common area must fit in $A000-$A7FF, got ${hidden[0]:04X}-${hidden[1]:04X}")
     if hidden[2] > 0x0800:
@@ -185,6 +205,10 @@ def main() -> None:
             asm, "built-in INPUTEV overlay must be stashed at REU code offset $5800")
     require(r"^RB_CODE_GFXPOLY_OFF\s*=\s*\$6000\b",
             asm, "built-in GFXPOLY overlay must be stashed at REU code offset $6000")
+    require(r"^RB_CODE_GFXDL_OFF\s*=\s*\$6800\b",
+            asm, "built-in GFXDL overlay must be stashed at REU code offset $6800")
+    require(r"^RB_CODE_GFXTILE_OFF\s*=\s*\$7000\b",
+            asm, "built-in GFXTILE overlay must be stashed at REU code offset $7000")
     if re.search(r"^HIDDEN_SHADOW\s*=", asm, re.MULTILINE):
         fail("ReadyBASIC hidden helper shadow must not consume C64 RAM")
     hidden_shadow_end = 0x3000 + hidden[2] - 1
@@ -198,12 +222,20 @@ def main() -> None:
         fail(f"overlay 2 must run as a replacement slot-2 overlay at $B800, got ${ovl2pack[0]:04X}")
     if ovl3pack[0] != 0xB800:
         fail(f"overlay 3 must run as a replacement slot-2 overlay at $B800, got ${ovl3pack[0]:04X}")
+    if ovl4pack[0] != 0xB800:
+        fail(f"overlay 4 must run as a replacement slot-2 overlay at $B800, got ${ovl4pack[0]:04X}")
+    if ovl5pack[0] != 0xB800:
+        fail(f"overlay 5 must run as a replacement slot-2 overlay at $B800, got ${ovl5pack[0]:04X}")
     if 0x5000 + ovl1pack[2] > 0x5800:
         fail(f"GFXSPR built-in overlay overflowed its reserved 2KB REU code range, size ${ovl1pack[2]:04X}")
     if 0x5800 + ovl2pack[2] > 0x6000:
         fail(f"INPUTEV built-in overlay overflowed its reserved 2KB REU code range, size ${ovl2pack[2]:04X}")
     if 0x6000 + ovl3pack[2] > 0x6800:
         fail(f"GFXPOLY built-in overlay overflowed its reserved 2KB REU code range, size ${ovl3pack[2]:04X}")
+    if 0x6800 + ovl4pack[2] > 0x7000:
+        fail(f"GFXDL built-in overlay overflowed its reserved 2KB REU code range, size ${ovl4pack[2]:04X}")
+    if 0x7000 + ovl5pack[2] > 0x7800:
+        fail(f"GFXTILE built-in overlay overflowed its reserved 2KB REU code range, size ${ovl5pack[2]:04X}")
     expected_payload = 0x8000 - 0x1000
     actual_payload = PRG.stat().st_size - 2
     if actual_payload < expected_payload:

@@ -11,7 +11,7 @@ same ReadyOS and REU discipline.
 - `RESIDENT` is `$1200-$2ABF` (`$18C0`, 6336B).
 - `BRIDGE` is `$C000-$C1FE` (`$01FF`, 511B), still below `$C200`.
 - Under BASIC ROM, `$A000-$A7FF` is the common helper area, currently using
-  `$A000-$A7DC`; `$A800-$AFFF`,
+  `$A000-$A7E8`; `$A800-$AFFF`,
   `$B000-$B7FF`, and `$B800-$BFFF` are three 2KB submodule slots.
 - ReadyBASIC uses two launcher-assigned REU resource banks. The core bank is
   registry/runtime storage; the code bank is built-in and disk-loaded module
@@ -78,16 +78,16 @@ same ReadyOS and REU discipline.
 
 ## Assigned Code Bank Regions
 
-- `$0000-$06FC`: built-in module 1 slot-0 payload, fetched into
-  `$A800-$AEFC` (`$06FD`, 1789B). The linker symbol is still named
+- `$0000-$07DB`: built-in module 1 slot-0 payload, fetched into
+  `$A800-$AFDB` (`$07DC`, 2012B). The linker symbol is still named
   `LOWPACK` for compatibility, but the current runtime slot base is `$A800`.
-- `$06FD-$0B71`: built-in module 2 slot-1 proof, streaming `ZMODLD` loader,
+- `$07DC-$0C50`: built-in module 2 slot-1 proof, streaming `ZMODLD` loader,
   and Phase 1 `GFXCORE`, fetched into `$B000-$B474` (`$0475`, 1141B).
-- `$0B72-$1086`: built-in slot-2 proof plus Phase 1/2 `GFXPRIM`, fetched into
-  `$B800-$BD14` (`$0515`, 1301B).
-- `$1087-$109B`: two-slot span proof payload (`$0015`, 21B).
-- `$109C-$14FF`: free gap before the current disk-module proof offsets
-  (`$0464`, 1124B).
+- `$0C51-$13A9`: built-in slot-2 proof plus Phase 1/2 `GFXPRIM`, fetched into
+  `$B800-$BF58` (`$0759`, 1881B).
+- `$13AA-$13BE`: two-slot span proof payload (`$0015`, 21B).
+- `$13BF-$14FF`: free gap before the current disk-module proof offsets
+  (`$0141`, 321B).
 - `$1500-$151F`: `rbm.sample1` descriptor proof for `ZDM1`.
 - `$1600-$165F`: `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`;
   submodule 5 appears twice because those entries are overlays 1 and 2.
@@ -104,6 +104,15 @@ same ReadyOS and REU discipline.
 - `$6000-$6799`: built-in `GFXPOLY` replacement overlay, loaded from cold-only
   `CMDPACK2` and fetched into `$B800-$BF99` when polygon commands run.
 - `$679A-$67FF`: reserved `GFXPOLY` growth headroom.
+- `$6800-$6E29`: built-in `GFXDL` replacement overlay, loaded from cold-only
+  `CMDPACK2` and fetched into `$B800-$BE29` when display-list commands run.
+- `$6E2A-$6FFF`: reserved `GFXDL` growth headroom.
+- `$7000-$74D9`: built-in `GFXTILE` replacement overlay, loaded from cold-only
+  `CMDPACK2` and fetched into `$B800-$BCD9` when charset, tileset, tilemap, or
+  explicit multicolor-cell commands run.
+- `$74DA-$77FF`: reserved `GFXTILE` growth headroom.
+- `$7800-$FFFF`: currently unreserved assigned code-bank tail for future
+  built-in command payloads or a later resource-loader/codebank split.
 
 Descriptors store payload offsets, payload sizes, slot masks, runtime
 destinations, and entry offsets. Heap and screen commands currently fetch the
@@ -172,16 +181,20 @@ Each descriptor is 32 bytes:
 - `ZDM1`, `ZDM2S`, `ZDOV1`, `ZDOV2`, and `ZSAA`-`ZUEB`: disk-loaded sample module commands.
 - `GFXMODE(mode$)` / `GFXMODE()`: module 3 `GFXCORE`, switches or reads
   `TEXT`, `HIRES`, `MBITMAP`, `TILE`, and `MTILE`.
-- `GFXTEXT()`, `GFXCLEAR(C)`, `GFXTARGET(H%)`, and `GFXSYNC()`: module 3
-  `GFXCORE` Bank D setup/control commands. `GFXTARGET(0)` is the Phase 1
-  visible target; offscreen target drawing is future work.
+- `GFXTEXT()`, `GFXCLEAR(C)`, `GFXTARGET(H%)` / `GFXTGT(H%)`, and
+  `GFXSYNC()`: module 3 `GFXCORE` Bank D setup/control commands.
+  `GFXTARGET(0)` / `GFXTGT(0)` selects the visible target; `GFXTGT` is the
+  stored-program-safe alias used by demos.
 - `GFXSURF(mode$)` and `GFXBLIT(H%)`: slot-0 allocator-backed surface handle
   commands. They allocate/validate typed handle `3`; full REU drawing/blitting
   is future work.
 - `PLOT(X,Y,C)`, `POINT(X,Y,OUT%)` / `PNT(X,Y,OUT%)`, `LINE(X1,Y1,X2,Y2,C)`,
   `RECT(X1,Y1,X2,Y2,C)`, `FRECT(X1,Y1,X2,Y2,C)`, `CIRCLE(X,Y,R,C)`,
   `FCIRCLE(X,Y,R,C)`, `TILE(X,Y,CH,C)`, and `CHARAT(X,Y,CH,C)`: module 3
-  `GFXPRIM` immediate primitive/cell commands.
+  `GFXPRIM` immediate primitive/cell commands. In `MBITMAP`, these primitives
+  use 160x200 logical coordinates and color-slot encoding: `0` clears, `1..15`
+  writes color RAM and draws pair code `3`, `16..31` draws pair code `1`,
+  `32..47` draws pair code `2`, and `48..63` explicitly draws pair code `3`.
 - `POLY(A%(0),COUNT,C)`, `FPOLY(A%(0),COUNT,C)`, `POLYH(H%,COUNT,C)`,
   `FPOLYH(H%,COUNT,C)`, `PBUFNEW(COUNT,H%)`, `PBUFSET(H%,INDEX,X,Y)`, and
   `PBUFFREE(H%)`: module 3 `GFXPOLY` overlay commands. Point buffers are typed
@@ -248,9 +261,9 @@ The current design includes resident flow control and error introspection:
 
 Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
 `30013` formula empty free bytes. `ENTRY` is `$1000-$11FF` (`512` bytes),
-`RESIDENT` is `$1200-$2ABF` (`6336` bytes), `HIDDEN` is `$A000-$A7DC`
-(`2013` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$06FD`
-(`1789` bytes), `SLOTPACK2` is `$0515` (`1301` bytes), `OVL1PACK` is `$0272`
+`RESIDENT` is `$1200-$2ABF` (`6336` bytes), `HIDDEN` is `$A000-$A7E8`
+(`2025` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$07DC`
+(`2012` bytes), `SLOTPACK2` is `$0759` (`1881` bytes), `OVL1PACK` is `$0272`
 (`626` bytes), `OVL2PACK` is `$006D` (`109` bytes), `OVL3PACK` is `$079A`
 (`1946` bytes), and `bin/readybasic.prg` is `28674` bytes because `CMDPACK2`
 extends the cold-load seed image through `$7FFF`. BASIC free bytes remain

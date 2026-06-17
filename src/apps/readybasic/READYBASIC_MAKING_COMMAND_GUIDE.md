@@ -74,13 +74,14 @@ language statement is a resident parser and lifecycle task.
 
 ReadyBASIC's built-in command set is intended to include the core commands and
 the 100+ additional file, graphics, sound, REU, and utility commands that are
-similar in spirit to other BASIC extensions. The current single code bank still
-leaves about 62.4K of addressable REU command-code space; today's C64 `CMDPACK`
-cold-load window has about 3.6K of unused seed room before it would need a
-larger or additional cold-load seed range. Beyond that built-in set, ReadyBASIC
-will also support dynamically loaded command modules that can use additional REU
-banks, so other authors can add hundreds more commands without forcing
-everything into the core command bank.
+similar in spirit to other BASIC extensions. The current built-in code-bank
+reservations leave the contiguous tail `$7800-$FFFF` free for future built-in
+payloads; today's first C64 `CMDPACK` cold-load window has about `$0141` / 321
+bytes of unused seed room, while replacement overlays are seeded from
+`CMDPACK2`. Beyond that built-in set, ReadyBASIC will also support
+dynamically loaded command modules that can use additional REU banks, so other
+authors can add hundreds more commands without forcing everything into the core
+command bank.
 
 ## Naming Rules
 
@@ -171,6 +172,220 @@ or interpreter state. `REPEAT`/`UNTIL` stores and restores `TXTPTR`/`CURLIN`;
 `LABEL`/`JUMP` scans stored BASIC lines; `ERRCODE`/`ERRLINE` returns resident
 runtime state. Those shapes are intentionally outside the command descriptor
 ABI.
+
+## Graphics Command Tutorial
+
+The built-in graphics commands are examples of descriptor-backed command
+families. They are intentionally commands, not language extensions: they use
+ordinary `COMMAND(...)` syntax, parser signatures fill the command call frame,
+and assembler workers do the Bank D/VIC/REU work.
+
+The current visible graphics memory map is:
+
+| Range | Use |
+|---:|---|
+| `$CA00-$CBFF` | Eight hardware sprite definitions. |
+| `$CC00-$CFFF` | Bank D screen RAM and sprite pointers at `$CFF8`. |
+| `$D800-$DBE7` | Color RAM. |
+| `$E000-$FFFF` | Bitmap/charset RAM, written with ROM hidden. |
+
+Mode setup:
+
+```basic
+10 gfxmode("hires")   : rem 320x200 one-bit bitmap
+20 gfxmode("mbitmap") : rem 160x200 multicolor bitmap
+30 gfxmode("tile")    : rem Bank D text/tile screen
+40 gfxmode("mtile")   : rem Bank D multicolor text/tile screen
+50 gfxtext()          : rem return to normal readable text
+```
+
+`GFXCLEAR(C)` clears the active graphics screen. In bitmap modes it clears the
+bitmap at `$E000`; in tile modes it clears the Bank D screen cells and color
+RAM. `GFXTEXT()` is the command to call before printing normal BASIC text after
+a graphics demo.
+
+### Surface Handles And Blit
+
+`GFXSURF(mode$)` allocates a typed REU graphics-surface handle. `GFXTGT(H%)` is
+the stored-program-safe alias for `GFXTARGET(H%)`; use `GFXTGT(0)` to return to
+the visible Bank D target. Phase 4 keeps immediate primitive drawing visible for
+speed, while `GFXSYNC()` and `GFXBLIT(H%)` exercise the REU surface path and
+copy a compatible surface layout to Bank D:
+
+```basic
+10 rem see readybasic_graphics_command_design.md
+20 gfxmode("hires"):gfxclear(0)
+30 h%=gfxsurf("hires")
+40 gfxtgt(h%):gfxsync():gfxblit(h%)
+50 gfxtgt(0)
+60 line(20,20,300,170,1):rect(40,50,140,130,1)
+```
+
+### Hires Primitives
+
+In `HIRES`, the immediate primitive commands use 320x200 coordinates:
+
+```basic
+10 rem see readybasic_graphics_command_design.md
+20 gfxmode("hires"):gfxclear(0)
+30 plot(20,20,1)
+40 line(20,30,300,160,1)
+50 rect(40,50,130,120,1)
+60 frect(180,60,240,130,1)
+70 circle(82,82,38,1)
+80 fcircle(210,92,26,1)
+90 pnt(20,20,p%):print p%
+```
+
+`LINE` is compact and command-slot friendly rather than full Bresenham. It is
+good for horizontal, vertical, 45-degree, fan, and demo lines; uneven slopes are
+approximate. `CIRCLE` uses a compact midpoint outline worker, and `FCIRCLE`
+currently fills the bounding rectangle as a
+placeholder for a later true disk fill.
+
+### Multicolor Bitmap Primitives
+
+In `MBITMAP`, the same primitive commands use 160x200 logical coordinates
+because each multicolor bitmap pixel is two hardware pixels wide:
+
+```basic
+10 rem see readybasic_graphics_command_design.md
+20 gfxmode("mbitmap"):gfxclear(0)
+30 line(4,18,155,18,17)    : rem pair 1, color 1
+40 line(4,30,155,70,34)    : rem pair 2, color 2
+50 rect(8,82,72,144,20)    : rem pair 1, color 4
+60 frect(86,82,148,144,37) : rem pair 2, color 5
+70 circle(46,112,28,51)    : rem pair 3, color 3
+80 fcircle(118,112,22,58)  : rem pair 3, color 10
+90 pnt(46,112,p%)          : rem p% is 0..3 pair code
+```
+
+The color argument maps to VIC-II multicolor bitmap slots:
+
+| Argument | Pair code | Attribute written |
+|---:|---:|---|
+| `0` | `0` | none; clears that pixel pair |
+| `1..15` | `3` | color RAM, convenient direct-color form |
+| `16..31` | `1` | screen RAM high nibble, use `16+color` |
+| `32..47` | `2` | screen RAM low nibble, use `32+color` |
+| `48..63` | `3` | color RAM, explicit slot-3 form |
+
+The color attributes are per 8x8 cell. If two later commands draw different
+slot-1 colors inside the same cell, the later screen high nibble changes the
+visible color of every slot-1 pixel in that cell. `POINT`/`PNT` returns the
+pair code `0..3`, not the resolved VIC color.
+
+### Tile And Text Cells
+
+`TILE(X,Y,CH,C)` and `CHARAT(X,Y,CH,C)` write one cell. In `TILE` and `MTILE`
+they target the Bank D screen at `$CC00`; after `GFXTEXT()` they target ordinary
+text screen RAM so demos can label themselves:
+
+```basic
+10 gfxtext():print chr$(147)
+20 for y=4 to 16
+30 for x=6 to 33
+40 tile(x,y,160,1+(x+y)-int((x+y)/8)*8)
+50 next x:next y
+60 charat(10,7,160,2):charat(11,7,160,3)
+```
+
+Tile coordinates are `0..39,0..24`; the color argument is the low nibble written
+to color RAM.
+
+### Sprites
+
+Sprites use Bank D sprite data at `$CA00`. The direct pixel path is
+`SPRROW(N,ROW,B1,B2,B3)`, where `ROW` is `0..20` and the three bytes are the
+24-bit sprite row:
+
+```basic
+10 gfxmode("hires"):gfxclear(0)
+20 sprset(0,1,7,0)
+30 for r=0 to 20
+40 sprrow(0,r,60,126,60)
+50 next r
+60 sprmove(0,120,100)
+70 sprsize(0,1,1)
+80 sprmul(0,1):sprmco(2,5):sprcol(0,10)
+```
+
+`SPRSIZE` is the tokenizer-safe alias for expansion, `SPRMUL` enables sprite
+multicolor, `SPRMCO` sets the shared multicolor registers, and `SPRCOL` is the
+tokenizer-safe primary color alias. `SPRSCAN()` polls and clears VIC collision
+latches; Phase 1/2 input and collision commands do not install an IRQ sampler.
+
+### Polygons And Point Buffers
+
+Phase 3 polygon commands live in the `GFXPOLY` slot-2 replacement overlay.
+Array-backed polygons read BASIC integer array pairs:
+
+```basic
+10 dim p%(7)
+20 p%(0)=40:p%(1)=20:p%(2)=120:p%(3)=42
+30 p%(4)=98:p%(5)=130:p%(6)=18:p%(7)=110
+40 gfxmode("hires"):gfxclear(0)
+50 poly(p%(0),4,1)
+60 fpoly(p%(0),4,1)
+```
+
+REU point buffers keep the point list out of BASIC arrays:
+
+```basic
+10 pbufnew(4,h%)
+20 pbufset(h%,0,40,20):pbufset(h%,1,120,42)
+30 pbufset(h%,2,98,130):pbufset(h%,3,18,110)
+40 polyh(h%,4,1)
+50 fpolyh(h%,4,1)
+60 pbuffree(h%)
+```
+
+`POLYH` and `FPOLYH` are explicit handle aliases. The originally proposed
+same-name handle overloads were avoided so the resident parser and BASIC bytes
+free stay unchanged. `FPOLY`/`FPOLYH` currently use a conservative convex fan
+fill; concave scanline filling remains future work.
+
+### Retained Lists, Tilesets, And Multicolor Cells
+
+Phase 4 keeps richer graphics data in typed REU handles and lets command
+overlays do the traversal work:
+
+```basic
+10 gfxmode("hires"):gfxclear(0)
+20 dlmake(12,h%)
+30 dlplot(h%,80,60,1)
+40 dlline(h%,20,20,300,160)
+50 dlrect(h%,40,50,140,130)
+60 dlfrect(h%,180,70,260,140)
+70 dldraw(h%)
+```
+
+Tile resources are fixed-format for now. `CHRMAKE` creates an 8-page charset,
+`TSMAKE` creates a 1-page tileset, and `TMMAKE` creates a 4-page 40x25 tilemap:
+
+```basic
+10 gfxmode("tile"):gfxclear(0)
+20 chrmake(256,c%):chrrow(c%,1,0,255):chruse(c%)
+30 tsmake(64,t%):tsset(t%,1,1,2)
+40 tmmake(1000,m%):tmset(m%,0,1,0)
+50 tmdraw(m%,t%)
+```
+
+Current VICE automation proves `TMDRAW` writes Bank D screen/color bytes, but
+the Bank D tile/charset display path still has a visible blank-screen issue.
+That is tracked as a display-path bug, not a parser or REU tilemap handle bug.
+
+For multicolor bitmap cell attributes, use:
+
+```basic
+10 gfxmode("mbitmap"):gfxclear(0):mcbg(0)
+20 mcell(2,2,6,10,2)
+30 frect(8,16,31,47,17)
+```
+
+Future resource files should be able to carry charset, tileset, tilemap,
+sprite-sheet, and display-list payloads that can be stashed directly into REU
+before BASIC init or loaded later into the same typed handles.
 
 ## Descriptor Shape
 
