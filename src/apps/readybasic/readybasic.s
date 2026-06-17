@@ -100,6 +100,7 @@ CIA1_PRB        = $DC01
 CIA1_DDRA       = $DC02
 CIA1_DDRB       = $DC03
 CIA2_PRA        = $DD00
+CIA2_DDRA       = $DD02
 
 BASIC_START     = $2AC1
 BASIC_SENTINEL  = BASIC_START - 1
@@ -326,6 +327,7 @@ RB_GFX_TARGET_HANDLE = $C4F0
 RB_GFX_TARGET_BANK   = $C4F1
 RB_GFX_TARGET_PAGE   = $C4F2
 RB_GFX_TARGET_PAGES  = $C4F3
+RB_GFX_MODE_STATE    = $C4F4
 RB_DL_MAX_RECORDS    = 31
 RB_DL_REC_SIZE       = 8
 
@@ -3832,7 +3834,7 @@ rb_call_underrom_payload:
         sta CPU_DDR
         lda CPU_PORT
         sta rb_saved_cpu
-        and #RAM_UNDER_BASIC_KEEP_KERNAL
+        lda #$36
         sta CPU_PORT
         jsr rb_hidden_overlay_jmp
         lda rb_saved_cpu
@@ -6071,7 +6073,7 @@ cmd_gfxblit_low:
         bne @wrong
         lda CPU_PORT
         pha
-        and #RAM_UNDER_BASIC
+        lda #$35
         sta CPU_PORT
         jsr rb_gfx_blit_bitmap
         jsr rb_gfx_blit_screen
@@ -6827,17 +6829,33 @@ cmd_gfxclear:
         jsr gfx_clear_bankd_screen
         lda rb_saved_plot_y
         cmp #RB_GFX_MODE_TILE
-        beq @done
+        beq @tile
         cmp #RB_GFX_MODE_MTILE
-        beq @done
+        beq @tile
         jsr gfx_clear_bitmap
 @done:
         jmp gfx_ok_none
+@tile:
+        jsr gfx_init_tile_glyphs
+        jmp @done
 
 cmd_gfxtarget:
         jmp gfx_ok_none
 
 cmd_gfxsync:
+        lda RB_GFX_TARGET_HANDLE
+        bne :+
+        jmp gfx_ok_none
+:
+        lda CPU_PORT
+        pha
+        lda #$35
+        sta CPU_PORT
+        jsr gfx_sync_bitmap
+        jsr gfx_sync_screen
+        jsr gfx_sync_color
+        pla
+        sta CPU_PORT
         jmp gfx_ok_none
 
 gfx_ok_none:
@@ -6851,6 +6869,61 @@ gfx_fail:
         sta RF_STATUS
         sta RF_ERROR
         rts
+
+gfx_sync_bitmap:
+        lda #<RB_GFX_BITMAP
+        sta rb_reu_c64_lo
+        lda #>RB_GFX_BITMAP
+        sta rb_reu_c64_hi
+        lda #0
+        sta rb_reu_off_lo
+        lda RB_GFX_TARGET_PAGE
+        sta rb_reu_off_hi
+        lda RB_GFX_TARGET_BANK
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #$20
+        sta rb_reu_len_hi
+        jmp rb_reu_stash
+
+gfx_sync_screen:
+        lda #<RB_GFX_SCREEN
+        sta rb_reu_c64_lo
+        lda #>RB_GFX_SCREEN
+        sta rb_reu_c64_hi
+        lda #0
+        sta rb_reu_off_lo
+        lda RB_GFX_TARGET_PAGE
+        clc
+        adc #$20
+        sta rb_reu_off_hi
+        lda RB_GFX_TARGET_BANK
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #4
+        sta rb_reu_len_hi
+        jmp rb_reu_stash
+
+gfx_sync_color:
+        lda #<RB_GFX_COLOR
+        sta rb_reu_c64_lo
+        lda #>RB_GFX_COLOR
+        sta rb_reu_c64_hi
+        lda #0
+        sta rb_reu_off_lo
+        lda RB_GFX_TARGET_PAGE
+        clc
+        adc #$24
+        sta rb_reu_off_hi
+        lda RB_GFX_TARGET_BANK
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #4
+        sta rb_reu_len_hi
+        jmp rb_reu_stash
 
 gfx_mode_from_string:
         lda CF_STR_LEN
@@ -6879,19 +6952,19 @@ gfx_mode_from_string:
         lda CF_STR_BUF+1
         jsr gfx_fold
         cmp #'I'
-        bne @no
+        bne @bad_len5
         lda CF_STR_BUF+2
         jsr gfx_fold
         cmp #'R'
-        bne @no
+        bne @bad_len5
         lda CF_STR_BUF+3
         jsr gfx_fold
         cmp #'E'
-        bne @no
+        bne @bad_len5
         lda CF_STR_BUF+4
         jsr gfx_fold
         cmp #'S'
-        bne @no
+        bne @bad_len5
         lda #RB_GFX_MODE_HIRES
         sec
         rts
@@ -6899,17 +6972,20 @@ gfx_mode_from_string:
         lda CF_STR_BUF+1
         jsr gfx_fold
         cmp #'I'
-        bne @no
+        bne @bad_len5
         lda CF_STR_BUF+2
         jsr gfx_fold
         cmp #'L'
-        bne @no
+        bne @bad_len5
         lda CF_STR_BUF+3
         jsr gfx_fold
         cmp #'E'
-        bne @no
+        bne @bad_len5
         lda #RB_GFX_MODE_TILE
         sec
+        rts
+@bad_len5:
+        clc
         rts
 @mtile5:
         lda #RB_GFX_MODE_MTILE
@@ -6940,7 +7016,17 @@ gfx_mode_from_string:
         jsr gfx_fold
         cmp #'T'
         bne @no
+        lda CF_STR_BUF+1
+        jsr gfx_fold
+        cmp #'I'
+        beq @tile4
+        cmp #'E'
+        bne @no
         lda #RB_GFX_MODE_TEXT
+        sec
+        rts
+@tile4:
+        lda #RB_GFX_MODE_TILE
         sec
         rts
 @no:
@@ -6958,8 +7044,13 @@ gfx_fold:
 
 gfx_apply_mode:
         cmp #RB_GFX_MODE_TEXT
-        beq gfx_apply_text
+        bne :+
+        jmp gfx_apply_text
+:
         pha
+        lda CIA2_DDRA
+        ora #$03
+        sta CIA2_DDRA
         lda CIA2_PRA
         and #$FC
         sta CIA2_PRA
@@ -6995,37 +7086,21 @@ gfx_apply_mode:
         ora #$10
 @store_d016:
         sta VIC_CTRL2
+        txa
+        sta RB_GFX_MODE_STATE
         rts
 
 gfx_get_mode:
-        lda CIA2_PRA
-        and #$03
-        bne @text
-        lda VIC_CTRL1
-        and #$20
-        beq @tile
-        lda VIC_CTRL2
-        and #$10
-        beq @hires
-        lda #RB_GFX_MODE_MBITMAP
-        rts
-@hires:
-        lda #RB_GFX_MODE_HIRES
-        rts
-@tile:
-        lda VIC_CTRL2
-        and #$10
-        beq @tile_plain
-        lda #RB_GFX_MODE_MTILE
-        rts
-@tile_plain:
-        lda #RB_GFX_MODE_TILE
-        rts
-@text:
+        lda RB_GFX_MODE_STATE
+        cmp #RB_GFX_MODE_MTILE + 1
+        bcc :+
         lda #RB_GFX_MODE_TEXT
-        rts
+:       rts
 
 gfx_apply_text:
+        lda CIA2_DDRA
+        ora #$03
+        sta CIA2_DDRA
         lda CIA2_PRA
         ora #$03
         sta CIA2_PRA
@@ -7037,6 +7112,8 @@ gfx_apply_text:
         lda VIC_CTRL2
         and #$EF
         sta VIC_CTRL2
+        lda #RB_GFX_MODE_TEXT
+        sta RB_GFX_MODE_STATE
         rts
 
 gfx_clear_bankd_screen:
@@ -7111,6 +7188,26 @@ gfx_clear_bitmap:
         inc rb_ptr_hi
         dex
         bne @page
+        pla
+        sta CPU_PORT
+        rts
+
+gfx_init_tile_glyphs:
+        lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC
+        sta CPU_PORT
+        lda #<($E000 + (64 * 8))
+        sta rb_ptr_lo
+        lda #>($E000 + (64 * 8))
+        sta rb_ptr_hi
+        lda #$FF
+        ldy #0
+@loop:
+        sta (rb_ptr_lo),y
+        iny
+        cpy #$80
+        bne @loop
         pla
         sta CPU_PORT
         rts
@@ -8081,32 +8178,11 @@ gfx_calc_tile_addr:
         rts
 
 gfx_get_mode_prim:
-        lda CIA2_PRA
-        and #$03
-        bne @text
-        lda VIC_CTRL1
-        and #$20
-        beq @tile
-        lda VIC_CTRL2
-        and #$10
-        beq @hires
-        lda #RB_GFX_MODE_MBITMAP
-        rts
-@hires:
-        lda #RB_GFX_MODE_HIRES
-        rts
-@tile:
-        lda VIC_CTRL2
-        and #$10
-        beq @tile_plain
-        lda #RB_GFX_MODE_MTILE
-        rts
-@tile_plain:
-        lda #RB_GFX_MODE_TILE
-        rts
-@text:
+        lda RB_GFX_MODE_STATE
+        cmp #RB_GFX_MODE_MTILE + 1
+        bcc :+
         lda #RB_GFX_MODE_TEXT
-        rts
+:       rts
 
 gfx_calc_bitmap_addr:
         lda CF_NUM1_LO
@@ -8803,6 +8879,10 @@ cmd_dldraw:
         jmp @loop
 @plot:
         jsr dl_load_record_nums
+        lda CF_NUM4_LO
+        sta CF_NUM2_LO
+        lda #0
+        sta CF_NUM2_HI
         jsr dl_plot_current
         jmp @next
 @line:
@@ -9054,6 +9134,8 @@ dl_plot_current:
         beq dl_plot_tile
         cmp #RB_GFX_MODE_MTILE
         beq dl_plot_tile
+        cmp #RB_GFX_MODE_MBITMAP
+        beq dl_plot_mbitmap
         jsr dl_calc_bitmap_addr
         lda CPU_PORT
         pha
@@ -9095,21 +9177,55 @@ dl_plot_tile:
         sta (rb_ptr_lo),y
         rts
 
+dl_plot_mbitmap:
+        lda CF_NUM2_LO
+        beq @clear
+        jsr dl_mbitmap_apply_attr
+        jsr dl_calc_mbitmap_addr
+        lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC
+        sta CPU_PORT
+        ldy #0
+        lda (rb_ptr_lo),y
+        ldx rb_saved_plot_y
+        and dl_mbit_unmasks,x
+        sta rb_digit_seen
+        lda rb_digit_count
+        sec
+        sbc #1
+        asl
+        asl
+        clc
+        adc rb_saved_plot_y
+        tax
+        lda dl_mbit_pair_masks,x
+        ora rb_digit_seen
+        sta (rb_ptr_lo),y
+        pla
+        sta CPU_PORT
+        rts
+@clear:
+        jsr dl_calc_mbitmap_addr
+        lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC
+        sta CPU_PORT
+        ldy #0
+        lda (rb_ptr_lo),y
+        ldx rb_saved_plot_y
+        and dl_mbit_unmasks,x
+        sta (rb_ptr_lo),y
+        pla
+        sta CPU_PORT
+        rts
+
 dl_get_mode:
-        lda CIA2_PRA
-        and #$03
-        bne @text
-        lda VIC_CTRL1
-        and #$20
-        beq @tile
-        lda #RB_GFX_MODE_HIRES
-        rts
-@tile:
-        lda #RB_GFX_MODE_TILE
-        rts
-@text:
+        lda RB_GFX_MODE_STATE
+        cmp #RB_GFX_MODE_MTILE + 1
+        bcc :+
         lda #RB_GFX_MODE_TEXT
-        rts
+:       rts
 
 dl_calc_tile_addr:
         lda #<RB_GFX_SCREEN
@@ -9186,6 +9302,143 @@ dl_calc_bitmap_addr:
         bcc :+
         inc rb_ptr_hi
 :       rts
+
+dl_calc_mbitmap_addr:
+        lda CF_NUM1_LO
+        and #7
+        sta rb_saved_plot_x
+        lda CF_NUM0_LO
+        and #3
+        sta rb_saved_plot_y
+        lda CF_NUM1_LO
+        lsr
+        lsr
+        lsr
+        sta rb_digit_seen
+        lda rb_digit_seen
+        and #3
+        asl
+        asl
+        asl
+        asl
+        asl
+        asl
+        sta rb_ptr_lo
+        lda #>RB_GFX_BITMAP
+        clc
+        adc rb_digit_seen
+        sta rb_ptr_hi
+        lda rb_digit_seen
+        lsr
+        lsr
+        clc
+        adc rb_ptr_hi
+        sta rb_ptr_hi
+        lda CF_NUM0_LO
+        and #$FC
+        asl
+        clc
+        adc rb_ptr_lo
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       lda rb_saved_plot_x
+        clc
+        adc rb_ptr_lo
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       rts
+
+dl_calc_mbitmap_cell_addr:
+        lda #<RB_GFX_SCREEN
+        sta rb_ptr_lo
+        lda #>RB_GFX_SCREEN
+        sta rb_ptr_hi
+        lda CF_NUM1_LO
+        lsr
+        lsr
+        lsr
+        sta rb_digit_seen
+        asl
+        asl
+        asl
+        sta rb_saved_plot_x
+        lda rb_digit_seen
+        asl
+        asl
+        asl
+        asl
+        asl
+        clc
+        adc rb_saved_plot_x
+        sta rb_ptr_lo
+        lda #>RB_GFX_SCREEN
+        adc #0
+        sta rb_ptr_hi
+        lda CF_NUM0_LO
+        lsr
+        lsr
+        clc
+        adc rb_ptr_lo
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       rts
+
+dl_mbitmap_apply_attr:
+        lda CF_NUM2_LO
+        cmp #16
+        bcc @slot3
+        cmp #32
+        bcc @slot1
+        cmp #48
+        bcc @slot2
+@slot3:
+        lda #3
+        sta rb_digit_count
+        jsr dl_calc_mbitmap_cell_addr
+        lda rb_ptr_hi
+        sec
+        sbc #>RB_GFX_SCREEN
+        clc
+        adc #>RB_GFX_COLOR
+        sta rb_ptr_hi
+        ldy #0
+        lda CF_NUM2_LO
+        and #$0F
+        sta (rb_ptr_lo),y
+        rts
+@slot1:
+        lda #1
+        sta rb_digit_count
+        jsr dl_calc_mbitmap_cell_addr
+        ldy #0
+        lda (rb_ptr_lo),y
+        and #$0F
+        sta rb_digit_seen
+        lda CF_NUM2_LO
+        and #$0F
+        asl
+        asl
+        asl
+        asl
+        ora rb_digit_seen
+        sta (rb_ptr_lo),y
+        rts
+@slot2:
+        lda #2
+        sta rb_digit_count
+        jsr dl_calc_mbitmap_cell_addr
+        ldy #0
+        lda (rb_ptr_lo),y
+        and #$F0
+        sta rb_digit_seen
+        lda CF_NUM2_LO
+        and #$0F
+        ora rb_digit_seen
+        sta (rb_ptr_lo),y
+        rts
 
 dl_fetch_handle_page:
         lda #<RB_PAGEBUF
@@ -9472,6 +9725,10 @@ dl_bit_masks:
         .byte $80,$40,$20,$10,$08,$04,$02,$01
 dl_bit_unmasks:
         .byte $7F,$BF,$DF,$EF,$F7,$FB,$FD,$FE
+dl_mbit_pair_masks:
+        .byte $40,$10,$04,$01,$80,$20,$08,$02,$C0,$30,$0C,$03
+dl_mbit_unmasks:
+        .byte $3F,$CF,$F3,$FC
 
         .segment "OVL5PACK"
 
@@ -10629,32 +10886,11 @@ poly_plot_tile:
         rts
 
 poly_get_mode:
-        lda CIA2_PRA
-        and #$03
-        bne @text
-        lda VIC_CTRL1
-        and #$20
-        beq @tile
-        lda VIC_CTRL2
-        and #$10
-        beq @hires
-        lda #RB_GFX_MODE_MBITMAP
-        rts
-@hires:
-        lda #RB_GFX_MODE_HIRES
-        rts
-@tile:
-        lda VIC_CTRL2
-        and #$10
-        beq @tile_plain
-        lda #RB_GFX_MODE_MTILE
-        rts
-@tile_plain:
-        lda #RB_GFX_MODE_TILE
-        rts
-@text:
+        lda RB_GFX_MODE_STATE
+        cmp #RB_GFX_MODE_MTILE + 1
+        bcc :+
         lda #RB_GFX_MODE_TEXT
-        rts
+:       rts
 
 poly_calc_tile_addr:
         lda #<RB_GFX_SCREEN

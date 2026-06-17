@@ -76,7 +76,7 @@ ReadyBASIC's built-in command set is intended to include the core commands and
 the 100+ additional file, graphics, sound, REU, and utility commands that are
 similar in spirit to other BASIC extensions. The current built-in code-bank
 reservations leave the contiguous tail `$7800-$FFFF` free for future built-in
-payloads; today's first C64 `CMDPACK` cold-load window has about `$0141` / 321
+payloads; today's first C64 `CMDPACK` cold-load window has about `$00AB` / 171
 bytes of unused seed room, while replacement overlays are seeded from
 `CMDPACK2`. Beyond that built-in set, ReadyBASIC will also support
 dynamically loaded command modules that can use additional REU banks, so other
@@ -215,11 +215,16 @@ copy a compatible surface layout to Bank D:
 ```basic
 10 rem see readybasic_graphics_command_design.md
 20 gfxmode("hires"):gfxclear(0)
-30 h%=gfxsurf("hires")
-40 gfxtgt(h%):gfxsync():gfxblit(h%)
-50 gfxtgt(0)
-60 line(20,20,300,170,1):rect(40,50,140,130,1)
+30 line(20,20,300,170,1):rect(40,50,140,130,1)
+40 h%=gfxsurf("hires")
+50 gfxtgt(h%):gfxsync():gfxtgt(0)
+60 gfxclear(0):gfxblit(h%)
 ```
+
+`GFXSYNC()` snapshots the current visible Bank D bitmap/screen/color layout into
+the selected surface. `GFXBLIT(H%)` restores that snapshot. This is a
+full-surface copy, not a dirty-rectangle queue and not live offscreen primitive
+drawing yet.
 
 ### Hires Primitives
 
@@ -282,16 +287,18 @@ they target the Bank D screen at `$CC00`; after `GFXTEXT()` they target ordinary
 text screen RAM so demos can label themselves:
 
 ```basic
-10 gfxtext():print chr$(147)
-20 for y=4 to 16
-30 for x=6 to 33
-40 tile(x,y,160,1+(x+y)-int((x+y)/8)*8)
-50 next x:next y
-60 charat(10,7,160,2):charat(11,7,160,3)
+10 gfxmode("tile"):gfxclear(0)
+20 plot(4,4,5):plot(5,4,6):plot(6,4,7)
+30 line(1,1,38,20,3)
+40 rect(3,5,20,16,10):frect(24,8,34,18,12)
+50 get a$:if a$="" then 50
+60 gfxtext():print "tile demo"
 ```
 
 Tile coordinates are `0..39,0..24`; the color argument is the low nibble written
-to color RAM.
+to color RAM. `GFXCLEAR` seeds simple solid glyphs for immediate `PLOT`/`LINE`/
+`RECT`/`FRECT` tile demos. Use `CHRMAKE`, `CHRROW`, and `CHRUSE` when a program
+needs custom character shapes.
 
 ### Sprites
 
@@ -351,14 +358,19 @@ Phase 4 keeps richer graphics data in typed REU handles and lets command
 overlays do the traversal work:
 
 ```basic
-10 gfxmode("hires"):gfxclear(0)
+10 gfxmode("mbitmap"):gfxclear(0):mcbg(0)
 20 dlmake(12,h%)
-30 dlplot(h%,80,60,1)
-40 dlline(h%,20,20,300,160)
-50 dlrect(h%,40,50,140,130)
-60 dlfrect(h%,180,70,260,140)
+30 dlplot(h%,20,20,17)
+40 dlline(h%,4,30,155,70)
+50 dlrect(h%,8,82,72,144)
+60 dlfrect(h%,86,82,148,144)
 70 dldraw(h%)
 ```
+
+Display-list records are intentionally compact. `DLPLOT` stores and replays its
+color argument; line and rectangle records currently replay with color `1` to
+keep the overlay small. `DLDRAW` understands the current `HIRES`, `TILE`/`MTILE`,
+and `MBITMAP` mode-specific plot paths.
 
 Tile resources are fixed-format for now. `CHRMAKE` creates an 8-page charset,
 `TSMAKE` creates a 1-page tileset, and `TMMAKE` creates a 4-page 40x25 tilemap:
@@ -371,9 +383,10 @@ Tile resources are fixed-format for now. `CHRMAKE` creates an 8-page charset,
 50 tmdraw(m%,t%)
 ```
 
-Current VICE automation proves `TMDRAW` writes Bank D screen/color bytes, but
-the Bank D tile/charset display path still has a visible blank-screen issue.
-That is tracked as a display-path bug, not a parser or REU tilemap handle bug.
+Current VICE automation proves visible Bank D tile and multicolor-tile rendering
+for immediate primitives. `TMDRAW` writes the Bank D screen/color bytes from REU
+tile resources; the next resource phase should add a file format and loader for
+stashing charset, tileset, and tilemap payloads directly into REU.
 
 For multicolor bitmap cell attributes, use:
 

@@ -27,8 +27,9 @@ same ReadyOS and REU discipline.
   slot 1, `GFXPRIM` submodule `17` in the base slot-2 image, `GFXSPR`
   submodule `18` as a slot-2 replacement overlay prestashed at code-bank offset
   `$5000`, `INPUTEV` submodule `19` as a slot-2 replacement overlay prestashed
-  at code-bank offset `$5800`, and `GFXPOLY` submodule `20` as a slot-2
-  replacement overlay prestashed at code-bank offset `$6000`.
+  at code-bank offset `$5800`, `GFXPOLY` submodule `20` as a slot-2 replacement
+  overlay prestashed at `$6000`, `GFXDL` submodule `21` at `$6800`, and
+  `GFXTILE` submodule `22` at `$7000`.
 
 ## Pre-Module V1 Layout Snapshot
 
@@ -81,13 +82,13 @@ same ReadyOS and REU discipline.
 - `$0000-$07DB`: built-in module 1 slot-0 payload, fetched into
   `$A800-$AFDB` (`$07DC`, 2012B). The linker symbol is still named
   `LOWPACK` for compatibility, but the current runtime slot base is `$A800`.
-- `$07DC-$0C50`: built-in module 2 slot-1 proof, streaming `ZMODLD` loader,
-  and Phase 1 `GFXCORE`, fetched into `$B000-$B474` (`$0475`, 1141B).
-- `$0C51-$13A9`: built-in slot-2 proof plus Phase 1/2 `GFXPRIM`, fetched into
-  `$B800-$BF58` (`$0759`, 1881B).
+- `$07DC-$0D1C`: built-in module 2 slot-1 proof, streaming `ZMODLD` loader,
+  and `GFXCORE`, fetched into `$B000-$B540` (`$0541`, 1345B).
+- `$0D1D-$1454`: built-in slot-2 proof plus `GFXPRIM`, fetched into
+  `$B800-$BF37` (`$0738`, 1848B).
 - `$13AA-$13BE`: two-slot span proof payload (`$0015`, 21B).
-- `$13BF-$14FF`: free gap before the current disk-module proof offsets
-  (`$0141`, 321B).
+- `$1455-$14FF`: free gap before the current disk-module proof offsets
+  (`$00AB`, 171B).
 - `$1500-$151F`: `rbm.sample1` descriptor proof for `ZDM1`.
 - `$1600-$165F`: `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`;
   submodule 5 appears twice because those entries are overlays 1 and 2.
@@ -101,12 +102,12 @@ same ReadyOS and REU discipline.
 - `$5800-$586C`: built-in `INPUTEV` replacement overlay, loaded from cold-only
   `CMDPACK2` and fetched into `$B800-$B86C` when input commands run.
 - `$586D-$5FFF`: reserved `INPUTEV` growth headroom.
-- `$6000-$6799`: built-in `GFXPOLY` replacement overlay, loaded from cold-only
-  `CMDPACK2` and fetched into `$B800-$BF99` when polygon commands run.
-- `$679A-$67FF`: reserved `GFXPOLY` growth headroom.
-- `$6800-$6E29`: built-in `GFXDL` replacement overlay, loaded from cold-only
-  `CMDPACK2` and fetched into `$B800-$BE29` when display-list commands run.
-- `$6E2A-$6FFF`: reserved `GFXDL` growth headroom.
+- `$6000-$6778`: built-in `GFXPOLY` replacement overlay, loaded from cold-only
+  `CMDPACK2` and fetched into `$B800-$BF78` when polygon commands run.
+- `$6779-$67FF`: reserved `GFXPOLY` growth headroom.
+- `$6800-$6F82`: built-in `GFXDL` replacement overlay, loaded from cold-only
+  `CMDPACK2` and fetched into `$B800-$BF82` when display-list commands run.
+- `$6F83-$6FFF`: reserved `GFXDL` growth headroom.
 - `$7000-$74D9`: built-in `GFXTILE` replacement overlay, loaded from cold-only
   `CMDPACK2` and fetched into `$B800-$BCD9` when charset, tileset, tilemap, or
   explicit multicolor-cell commands run.
@@ -263,10 +264,12 @@ Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
 `30013` formula empty free bytes. `ENTRY` is `$1000-$11FF` (`512` bytes),
 `RESIDENT` is `$1200-$2ABF` (`6336` bytes), `HIDDEN` is `$A000-$A7E8`
 (`2025` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$07DC`
-(`2012` bytes), `SLOTPACK2` is `$0759` (`1881` bytes), `OVL1PACK` is `$0272`
-(`626` bytes), `OVL2PACK` is `$006D` (`109` bytes), `OVL3PACK` is `$079A`
-(`1946` bytes), and `bin/readybasic.prg` is `28674` bytes because `CMDPACK2`
-extends the cold-load seed image through `$7FFF`. BASIC free bytes remain
+(`2012` bytes), `SLOTPACK1` is `$0541` (`1345` bytes), `SLOTPACK2` is `$0738`
+(`1848` bytes), `OVL1PACK` is `$0272` (`626` bytes), `OVL2PACK` is `$006D`
+(`109` bytes), `OVL3PACK` is `$0779` (`1913` bytes), `OVL4PACK` is `$0783`
+(`1923` bytes), `OVL5PACK` is `$04DA` (`1242` bytes), and `bin/readybasic.prg`
+is `28674` bytes because `CMDPACK2` extends the cold-load seed image through
+`$7FFF`. BASIC free bytes remain
 unchanged because the seed image is reclaimed before BASIC initialization.
 
 ## Current Nested-Term Support

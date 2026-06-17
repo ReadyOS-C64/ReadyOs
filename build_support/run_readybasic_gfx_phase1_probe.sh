@@ -113,7 +113,7 @@ steps:
   - id: tile_sprite_input_program
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 GFXMODE("TILE"):GFXCLEAR(0):PLOT(3,3,5)\r20 PNT(3,3,A%)\r30 SPRSET(0,1,2,0):SPRMOVE(0,80,90):SPRCOLOR(0,4)\r40 JOY(2,J%):KEYP(K%):KEYSCAN():KEYLAST(L%)\r50 GFXTEXT()\r60 PRINT "GFXIO";A%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 GFXMODE("TILE"):GFXCLEAR(0):PLOT(3,3,5)\r20 PNT(3,3,A%)\r30 SPRSET(0,1,2,0):SPRMOVE(0,80,90):SPRCOL(0,4)\r40 JOY(2,J%):KEYP(K%):KEYSCAN():KEYLAST(L%)\r50 GFXTEXT()\r60 PRINT "GFXIO";A%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 2.0
   - id: capture_tile_sprite_input_program

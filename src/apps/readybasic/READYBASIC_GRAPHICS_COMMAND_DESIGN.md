@@ -126,12 +126,12 @@ Built-in graphics payloads are prestashed in the ReadyBASIC code bank:
 
 | Family | Module/submodule | Runtime area | Commands |
 |---|---:|---:|---|
-| `GFXCORE` | module `3`, submodule `16` | slot 1 `$B000-$B7FF` | `GFXMODE`, `GFXTEXT`, `GFXCLEAR`, `GFXTARGET`, `GFXSYNC` |
-| `GFXPRIM` | module `3`, submodule `17` | slot 2 `$B800-$BF58` | `PLOT`, `POINT`, `LINE`, `RECT`, `FRECT`; Phase 2 also adds `CIRCLE`, `FCIRCLE`, `TILE`, `CHARAT`; the current worker includes real multicolor-bitmap plotting for those immediate primitives |
+| `GFXCORE` | module `3`, submodule `16` | slot 1 `$B000-$B540` | `GFXMODE`, `GFXTEXT`, `GFXCLEAR`, `GFXTARGET`, `GFXSYNC` |
+| `GFXPRIM` | module `3`, submodule `17` | slot 2 `$B800-$BF37` | `PLOT`, `POINT`, `LINE`, `RECT`, `FRECT`; Phase 2 also adds `CIRCLE`, `FCIRCLE`, `TILE`, `CHARAT`; the current worker includes real multicolor-bitmap plotting for those immediate primitives |
 | `GFXSPR` | module `3`, submodule `18` | slot-2 replacement overlay at `$B800-$BA71`, stored at REU code offset `$5000` | `SPRSET`, `SPRMOVE`, `SPRCOLOR`, `SPRROW`, `SPRSCAN`, `SPRCOLL`; Phase 2 also adds size/priority/multicolor controls |
 | `INPUTEV` | module `3`, submodule `19` | slot-2 replacement overlay at `$B800-$B86C`, stored at REU code offset `$5800` | `JOY`, `KEYP`, `KEYSCAN`, `KEYLAST` |
-| `GFXPOLY` | module `3`, submodule `20` | slot-2 replacement overlay at `$B800-$BF99`, stored at REU code offset `$6000` | `POLY`, `FPOLY`, `POLYH`, `FPOLYH`, `PBUFNEW`, `PBUFSET`, `PBUFFREE` |
-| `GFXDL` | module `3`, submodule `21` | slot-2 replacement overlay at `$B800-$BE29`, stored at REU code offset `$6800` | `DLMAKE`, `DLCLR`, `DLPLOT`, `DLLINE`, `DLRECT`, `DLFRECT`, `DLDRAW` |
+| `GFXPOLY` | module `3`, submodule `20` | slot-2 replacement overlay at `$B800-$BF78`, stored at REU code offset `$6000` | `POLY`, `FPOLY`, `POLYH`, `FPOLYH`, `PBUFNEW`, `PBUFSET`, `PBUFFREE` |
+| `GFXDL` | module `3`, submodule `21` | slot-2 replacement overlay at `$B800-$BF82`, stored at REU code offset `$6800` | `DLMAKE`, `DLCLR`, `DLPLOT`, `DLLINE`, `DLRECT`, `DLFRECT`, `DLDRAW` |
 | `GFXTILE` | module `3`, submodule `22` | slot-2 replacement overlay at `$B800-$BCD9`, stored at REU code offset `$7000` | `CHRMAKE`, `CHRROW`, `CHRUSE`, `TSMAKE`, `TSSET`, `TMMAKE`, `TMSET`, `TMDRAW`, `MCELL`, `MCBG` |
 | Surface handle stubs | system slot 0 | slot 0 `$A800-$AFFF` | `GFXSURF`, `GFXBLIT` |
 
@@ -141,7 +141,11 @@ validate handle type `3` (`RB_HANDLE_TYPE_GFXSURF`) using 40 heap pages.
 `GFXBLIT(H%)` copies a full surface layout from REU to the visible Bank D
 bitmap, screen, and color ranges. `GFXTARGET(H%)` records the selected surface
 handle, but the current immediate primitive workers still draw to the visible
-Bank D target. The speed-first path for REU-backed rendering is therefore:
+Bank D target. `GFXSYNC()` snapshots the current visible Bank D layout into the
+selected `GFXTGT(H%)` surface; `GFXBLIT(H%)` restores it. The REU surface path
+uses an I/O-visible `$35` memory configuration while programming the REU so Bank
+D RAM and REU registers are both reachable. The speed-first path for REU-backed
+rendering is therefore:
 build compact retained/tile resources in REU, render/copy them in command
 workers, then use full-surface blits rather than BASIC-level per-pixel writes.
 
@@ -271,11 +275,12 @@ slot-3 pixels in that cell. This is a hardware tradeoff, not a ReadyBASIC
 parser issue.
 
 The MBITMAP-specific demos are `rbgfx21_mbitmap_prims.bas`,
-`rbgfx22_mbitmap_point.bas`, and the broader
-`rbgfx26_mode_matrix.bas`. `make readybasic-gfx-mbitmap-vice` boots ReadyOS,
-loads ReadyBASIC, captures the existing circle and tile/char demos, then
-captures these MBITMAP demos and verifies `POINT` returns `1  2  3` for the
-three colored slots.
+`rbgfx22_mbitmap_point.bas`, `rbgfx25_mbcells.bas`, the broader
+`rbgfx26_mode_matrix.bas`, and retained-list `rbgfx30_mbitmap_dlist.bas`.
+`make readybasic-gfx-mbitmap-vice`, `make readybasic-gfx-phase4-vice`, and
+`make readybasic-gfx-phase5-vice` boot ReadyOS, load ReadyBASIC, load the BASIC
+demos from ReadyBASIC, capture screenshots, and verify the focused readback
+checks such as `POINT` returning `1  2  3` for the three colored slots.
 
 ## Demo Coverage Matrix
 
@@ -286,15 +291,17 @@ ReadyBASIC-capable D81 profiles:
 |---|---|
 | `rbgfx01` | `GFXMODE`, `GFXCLEAR`, `GFXTEXT` across `HIRES`, `MBITMAP`, `TILE`, `MTILE`. |
 | `rbgfx02`-`rbgfx05` | HIRES `PLOT`, `PNT`, `LINE`, `RECT`, `FRECT`. |
-| `rbgfx06`, `rbgfx27` | `GFXSURF`, `GFXTGT`, `GFXSYNC`, `GFXBLIT`, visible target restore. |
+| `rbgfx06`, `rbgfx27`, `rbgfx31` | `GFXSURF`, `GFXTGT`, `GFXSYNC`, `GFXBLIT`, visible target restore. |
 | `rbgfx07`, `rbgfx21`, `rbgfx22`, `rbgfx25` | MBITMAP primitive slot semantics, `POINT` pair-code readback, `MCELL`, `MCBG`. |
-| `rbgfx08`, `rbgfx15`, `rbgfx24` | Tile/cell commands, charset rows, tilesets, tilemaps. Bank D tile/charset visibility still has a blank-screen screenshot issue; command writes are verified. |
+| `rbgfx08`, `rbgfx15`, `rbgfx24`, `rbgfx28`, `rbgfx29` | Tile/cell commands, charset rows, tilesets, tilemaps, and visible Bank D `TILE`/`MTILE` immediate primitives. |
 | `rbgfx09`, `rbgfx10`, `rbgfx13`, `rbgfx16` | Sprite setup, movement, pixels, collision polling, expansion, priority, multicolor. |
 | `rbgfx11` | `JOY`, `KEYP`, `KEYSCAN`, `KEYLAST` polling. |
 | `rbgfx14` | HIRES `CIRCLE` and `FCIRCLE`. |
 | `rbgfx17`-`rbgfx20` | Array and REU-handle polygons. |
 | `rbgfx23` | Retained display-list creation and replay. |
 | `rbgfx26` | Mode matrix for immediate primitives in `HIRES`, `MBITMAP`, `TILE`, and `MTILE`. |
+| `rbgfx30` | `GFXDL` retained display-list replay in `MBITMAP`. |
+| `rbgfx32` | Convex polygon outline/fill showcase. |
 
 ## Implemented Phase 2 Snapshot
 
@@ -333,9 +340,9 @@ overlay still has a hard 2KB execution-image budget.
 ## Implemented Phase 3 Snapshot
 
 Phase 3 is polygon-first and command-only. It adds one built-in slot-2
-replacement overlay, `GFXPOLY`, with runtime address `$B800-$BF99`, cold-load
+replacement overlay, `GFXPOLY`, with runtime address `$B800-$BF78`, cold-load
 source `OVL3PACK`, and assigned code-bank offset `$6000`. `GFXPRIM` stays at
-`$B800-$BF58`; polygon bodies do not consume the remaining `GFXPRIM` headroom.
+`$B800-$BF37`; polygon bodies do not consume the remaining `GFXPRIM` headroom.
 
 Implemented syntax:
 
@@ -804,7 +811,7 @@ sprite sheets, and retained resources remain a later phase.
 - Implemented now: `POLY`, `FPOLY`, `POLYH`, `FPOLYH`, `PBUFNEW`, `PBUFSET`,
   and `PBUFFREE`.
 - `GFXPOLY` is a built-in slot-2 replacement overlay, prestashed at code-bank
-  offset `$6000` and fetched into `$B800-$BF99`.
+  offset `$6000` and fetched into `$B800-$BF78`.
 - BASIC integer array polygons and typed REU point-buffer polygons are both
   supported.
 - Deferred: same-name handle overloads, full scanline/concave fill, and larger
@@ -845,10 +852,10 @@ payloads: charset pages, tileset records, tilemap pages, sprite sheets,
           display-list records, optional palette/cell-attribute tables
 ```
 
-Known Phase 4 display issue: `TMDRAW` now writes the expected Bank D screen and
-color bytes and returns `ERRCODE()=0`, but the current VICE screenshot still
-shows a blank tile screen. The remaining bug is in the Bank D charset/tile
-display path, not in the tilemap REU structure or command parser.
+Phase 5 fixed the previous Bank D tile visibility bug: the four-character
+`GFXMODE("TILE")` parser branch now selects tile mode instead of falling through
+to `TEXT`, and `rbgfx28`/`rbgfx29` screenshots prove visible tile and multicolor
+tile cells inside ReadyBASIC running under ReadyOS.
 
 Polygon fill remains the Phase 3 conservative convex fan fill. That keeps the
 overlay small and avoids concave/intersection sorting cost on a 1MHz 6502. The
@@ -856,7 +863,26 @@ next improvement should replace the fan with a convex-only scanline fill inside
 `GFXPOLY`; concave support is intentionally out of scope until there is a
 strong use case.
 
-### Phase 5: Optional Event IRQ
+### Phase 5: Mode Visibility, REU Surface Blit, And Coverage
+
+Phase 5 is still command-only. It hardens the graphics command path rather than
+adding language behavior:
+
+- `GFXMODE("TILE")` and `GFXMODE("TEXT")` are now distinct four-character
+  modes.
+- Under-ROM command overlays execute with BASIC ROM hidden and I/O visible.
+  `GFXSYNC`/`GFXBLIT` use `$35` during REU DMA so Bank D RAM and REU registers
+  are both reachable.
+- `GFXCLEAR` seeds default solid tile glyphs for immediate `TILE`/`MTILE`
+  primitive demos. Custom charsets still use `CHRMAKE`, `CHRROW`, and
+  `CHRUSE`.
+- `DLPLOT` preserves its color argument during retained replay, and display-list
+  plotting has an `MBITMAP` path.
+- `make readybasic-gfx-phase5-vice` captures visible tile, visible multicolor
+  tile, MBITMAP retained-list, REU sync/blit source/clear/restore, and polygon
+  screenshots.
+
+### Future Phase: Optional Event IRQ
 
 - `EVINIT`, `EVON`, `EVOFF`, `EVFLUSH`, `EVGET`
 - Only after pure polling and `GFXFRAME()` are proven.

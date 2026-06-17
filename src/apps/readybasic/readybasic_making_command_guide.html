@@ -174,7 +174,7 @@
 		    </div>
 		    <div class="card reu">
 		      <h3>Built-In And Module Command Growth</h3>
-		      <p>ReadyBASIC's built-in command set is intended to include the core commands and the 100+ additional file, graphics, sound, REU, and utility commands that are similar in spirit to other BASIC extensions. The current built-in code-bank reservations leave the contiguous tail <code>$7800-$FFFF</code> free for future built-in payloads; today's first C64 <code>CMDPACK</code> seed window has about <code>$0141</code> / 321 bytes unused, while replacement overlays are seeded from <code>CMDPACK2</code>.</p>
+		      <p>ReadyBASIC's built-in command set is intended to include the core commands and the 100+ additional file, graphics, sound, REU, and utility commands that are similar in spirit to other BASIC extensions. The current built-in code-bank reservations leave the contiguous tail <code>$7800-$FFFF</code> free for future built-in payloads; today's first C64 <code>CMDPACK</code> seed window has about <code>$00AB</code> / 171 bytes unused, while replacement overlays are seeded from <code>CMDPACK2</code>.</p>
 		      <p>Beyond that built-in set, ReadyBASIC will also support dynamically loaded command modules that can use additional REU banks, so other authors can add hundreds more commands without forcing everything into the core command bank.</p>
 		    </div>
 		    <div class="flow">
@@ -228,12 +228,11 @@
       <div class="card">
         <h3>Surface Handles And Blit</h3>
 <pre><code>10 GFXMODE("HIRES"):GFXCLEAR(0)
-20 H%=GFXSURF("HIRES")
-30 GFXTGT(H%):GFXSYNC():GFXBLIT(H%)
-40 GFXTGT(0)
-50 LINE(20,20,300,170,1)
-60 RECT(40,50,140,130,1)</code></pre>
-        <p><code>GFXTGT</code> is the stored-program-safe alias for <code>GFXTARGET</code>. Phase 4 tracks REU surface handles and exercises blitting; immediate primitives still draw directly to the visible Bank D target for speed.</p>
+20 LINE(20,20,300,170,1):RECT(40,50,140,130,1)
+30 H%=GFXSURF("HIRES")
+40 GFXTGT(H%):GFXSYNC():GFXTGT(0)
+50 GFXCLEAR(0):GFXBLIT(H%)</code></pre>
+        <p><code>GFXTGT</code> is the stored-program-safe alias for <code>GFXTARGET</code>. <code>GFXSYNC</code> snapshots the visible Bank D layout into a typed REU surface, and <code>GFXBLIT</code> restores it. Immediate primitives still draw directly to the visible Bank D target for speed.</p>
       </div>
       <div class="card">
         <h3>Hires Primitives</h3>
@@ -262,12 +261,12 @@
       <div class="card">
         <h3>Tile And Text Cells</h3>
 <pre><code>10 GFXTEXT():PRINT CHR$(147)
-20 FOR Y=4 TO 16
-30 FOR X=6 TO 33
-40 TILE(X,Y,160,1+(X+Y)-INT((X+Y)/8)*8)
-50 NEXT X:NEXT Y
-60 CHARAT(10,7,160,2)</code></pre>
-        <p><code>TILE</code> and <code>CHARAT</code> write one cell. In tile modes they target Bank D screen RAM; after <code>GFXTEXT()</code> they target normal text screen RAM for labels and demos.</p>
+20 GFXMODE("TILE"):GFXCLEAR(0)
+30 PLOT(4,4,5):PLOT(5,4,6):PLOT(6,4,7)
+40 LINE(1,1,38,20,3)
+50 RECT(3,5,20,16,10):FRECT(24,8,34,18,12)
+60 GFXTEXT():PRINT "TILE DEMO"</code></pre>
+        <p><code>TILE</code> and <code>CHARAT</code> write one cell. In tile modes they target Bank D screen RAM; after <code>GFXTEXT()</code> they target normal text screen RAM for labels and demos. <code>GFXCLEAR</code> seeds simple solid glyphs for immediate tile primitive demos.</p>
       </div>
       <div class="card">
         <h3>Sprites</h3>
@@ -294,12 +293,12 @@
         <h3>Retained Lists And Tiles</h3>
 <pre><code>10 GFXMODE("HIRES"):GFXCLEAR(0)
 20 DLMAKE(12,H%)
-30 DLPLOT(H%,80,60,1)
-40 DLLINE(H%,20,20,300,160)
-50 DLRECT(H%,40,50,140,130)
-60 DLFRECT(H%,180,70,260,140)
+30 DLPLOT(H%,20,20,17)
+40 DLLINE(H%,4,30,155,70)
+50 DLRECT(H%,8,82,72,144)
+60 DLFRECT(H%,86,82,148,144)
 70 DLDRAW(H%)</code></pre>
-        <p><code>DLMAKE</code> creates a one-page REU display-list handle. Tile resources use <code>CHRMAKE</code>, <code>CHRROW</code>, <code>CHRUSE</code>, <code>TSMAKE</code>, <code>TSSET</code>, <code>TMMAKE</code>, <code>TMSET</code>, and <code>TMDRAW</code>. The current tilemap command writes Bank D screen/color bytes, but the Bank D tile/charset display path still has a blank-screen screenshot issue.</p>
+        <p><code>DLMAKE</code> creates a one-page REU display-list handle. <code>DLPLOT</code> preserves its color; line and rectangle records currently replay with color 1 to keep the overlay small. Tile resources use <code>CHRMAKE</code>, <code>CHRROW</code>, <code>CHRUSE</code>, <code>TSMAKE</code>, <code>TSSET</code>, <code>TMMAKE</code>, <code>TMSET</code>, and <code>TMDRAW</code>. Phase 5 screenshots prove visible Bank D tile and multicolor-tile rendering.</p>
       </div>
       <div class="card">
         <h3>Multicolor Cells</h3>
