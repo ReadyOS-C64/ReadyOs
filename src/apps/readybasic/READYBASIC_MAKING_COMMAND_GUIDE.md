@@ -75,7 +75,7 @@ language statement is a resident parser and lifecycle task.
 ReadyBASIC's built-in command set is intended to include the core commands and
 the 100+ additional file, graphics, sound, REU, and utility commands that are
 similar in spirit to other BASIC extensions. The current built-in code-bank
-reservations leave the contiguous tail `$7800-$FFFF` free for future built-in
+reservations leave the contiguous tail `$8000-$FFFF` free for future built-in
 payloads; today's first C64 `CMDPACK` cold-load window has about `$00AB` / 171
 bytes of unused seed room, while replacement overlays are seeded from
 `CMDPACK2`. Beyond that built-in set, ReadyBASIC will also support
@@ -351,6 +351,28 @@ REU point buffers keep the point list out of BASIC arrays:
 same-name handle overloads were avoided so the resident parser and BASIC bytes
 free stay unchanged. `FPOLY`/`FPOLYH` currently use a conservative convex fan
 fill; concave scanline filling remains future work.
+
+### SID Sound
+
+Sound Phase 1 commands live in module id `4`, submodule `SIDCORE` id `23`, as a
+slot-2 replacement overlay at runtime `$B800-$BA0D`. The overlay is prestashed
+to the ReadyBASIC assigned code bank at `$7800`.
+
+The main lesson for new command authors is parser discipline. A friendlier
+seven-argument `VOICE(V,F,W,A,D,S,R)` shape was tested, but it grew fixed
+resident parser code. The implemented form reuses the existing five-number
+signature:
+
+```basic
+10 SIDCLR():VOL(15):PULSE(1,2048)
+20 VOICE(1,4455,65,9,195)
+30 ZPAUSE(80):CTRL(1,64)
+```
+
+`VOICE(V,F,W,AD,SR)` maps directly to SID registers: raw frequency, control
+byte, packed attack/decay, and packed sustain/release. Friendlier setup remains
+available with `ADSR(V,A,D,S,R)`, `PULSE(V,W)`, `FREQ(V,F)`, `WAVE(V,M)`, and
+`GATE(V,ON)`.
 
 ### Retained Lists, Tilesets, And Multicolor Cells
 

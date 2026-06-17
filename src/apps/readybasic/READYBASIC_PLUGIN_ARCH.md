@@ -30,6 +30,8 @@ same ReadyOS and REU discipline.
   at code-bank offset `$5800`, `GFXPOLY` submodule `20` as a slot-2 replacement
   overlay prestashed at `$6000`, `GFXDL` submodule `21` at `$6800`, and
   `GFXTILE` submodule `22` at `$7000`.
+- Sound commands are built-in module id `4`: `SIDCORE` submodule `23` as a
+  slot-2 replacement overlay prestashed at code-bank offset `$7800`.
 
 ## Pre-Module V1 Layout Snapshot
 
@@ -112,7 +114,10 @@ same ReadyOS and REU discipline.
   `CMDPACK2` and fetched into `$B800-$BCD9` when charset, tileset, tilemap, or
   explicit multicolor-cell commands run.
 - `$74DA-$77FF`: reserved `GFXTILE` growth headroom.
-- `$7800-$FFFF`: currently unreserved assigned code-bank tail for future
+- `$7800-$7A0D`: built-in `SIDCORE` replacement overlay, loaded from cold-only
+  `CMDPACK2` and fetched into `$B800-$BA0D` when immediate sound commands run.
+- `$7A0E-$7FFF`: reserved `SIDCORE` growth headroom.
+- `$8000-$FFFF`: currently unreserved assigned code-bank tail for future
   built-in command payloads or a later resource-loader/codebank split.
 
 Descriptors store payload offsets, payload sizes, slot masks, runtime
@@ -208,6 +213,13 @@ Each descriptor is 32 bytes:
   module 3 `GFXSPR` overlay commands.
 - `JOY(PORT,OUT%)`, `KEYP(OUT%)`, `KEYSCAN()`, and `KEYLAST(OUT%)`: module 3
   `INPUTEV` polling input commands.
+- `SIDCLR()`, `SILENCE()`, `VOL(VOL)`, `FREQ(V,F)`, `NOTE(V,N,O)`,
+  `PULSE(V,W)`, `ADSR(V,A,D,S,R)` / `ENV(V,A,D,S,R)`, `WAVE(V,M)` /
+  `CTRL(V,M)`, `GATE(V,ON)`, `VOICE(V,F,W,AD,SR)`, `FILTER(CUTOFF,RES,ROUTE,MODE)` /
+  `FILT(CUTOFF,RES,ROUTE,MODE)`, and `SOUND(V,F,D,W)` / `SND(V,F,D,W)`:
+  module 4 `SIDCORE` immediate SID sound commands. `VOICE` uses packed SID
+  attack/decay and sustain/release bytes to avoid resident parser growth; no
+  IRQ playback engine is installed.
 
 Native reusable BASIC routines:
 
@@ -267,7 +279,8 @@ Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
 (`2012` bytes), `SLOTPACK1` is `$0541` (`1345` bytes), `SLOTPACK2` is `$0738`
 (`1848` bytes), `OVL1PACK` is `$0272` (`626` bytes), `OVL2PACK` is `$006D`
 (`109` bytes), `OVL3PACK` is `$0779` (`1913` bytes), `OVL4PACK` is `$0783`
-(`1923` bytes), `OVL5PACK` is `$04DA` (`1242` bytes), and `bin/readybasic.prg`
+(`1923` bytes), `OVL5PACK` is `$04DA` (`1242` bytes), `OVL6PACK` is `$020E`
+(`526` bytes), and `bin/readybasic.prg`
 is `28674` bytes because `CMDPACK2` extends the cold-load seed image through
 `$7FFF`. BASIC free bytes remain
 unchanged because the seed image is reclaimed before BASIC initialization.

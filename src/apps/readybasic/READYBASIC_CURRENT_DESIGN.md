@@ -48,6 +48,7 @@ Measured from the current `obj/readybasic.map`:
 | Slot 2 overlay 3 / GFXPOLY | `$B800-$BF78` replacement overlay, `$0779` / 1913B |
 | Slot 2 overlay 4 / GFXDL | `$B800-$BF82` replacement overlay, `$0783` / 1923B |
 | Slot 2 overlay 5 / GFXTILE | `$B800-$BCD9` replacement overlay, `$04DA` / 1242B |
+| Slot 2 overlay 6 / SIDCORE | `$B800-$BA0D` replacement overlay, `$020E` / 526B |
 | `BRIDGE` | `$C000-$C1FE`, `$01FF` / 511B |
 | Shared frames/buffers | `$C200-$C5FF` |
 | `REGSEED` load-only registry | `$5000-$600F`, `$1010` / 4112B |
@@ -90,9 +91,13 @@ surface handle entry points `GFXSURF` and `GFXBLIT` use the existing system slot
 allocator path so typed REU graphics handles can share the same handle directory
 as `BUFNEW` and `SCRCAP`.
 
-`GFXSPR`, `INPUTEV`, `GFXPOLY`, `GFXDL`, and `GFXTILE` are true slot-2 replacement overlays. They are
+Sound Phase 1 is also built in and does not require `ZMODLD`. It uses module id
+`4`: `SIDCORE` submodule `23` as slot-2 overlay 6, prestashed to the assigned
+code bank at `$7800`.
+
+`GFXSPR`, `INPUTEV`, `GFXPOLY`, `GFXDL`, `GFXTILE`, and `SIDCORE` are true slot-2 replacement overlays. They are
 loaded from the second cold-only command seed window (`CMDPACK2`) into fixed
-assigned code-bank offsets `$5000`, `$5800`, and `$6000`, then fetched into
+assigned code-bank offsets `$5000`, `$5800`, `$6000`, `$6800`, `$7000`, and `$7800`, then fetched into
 `$B800` only when their commands run. This removes the old slot-2 packing
 mismatch where `GFXPRIM`, `GFXSPR`, `INPUTEV`, and polygon work would otherwise
 consume one runtime strip.
@@ -267,6 +272,14 @@ overlay:
 | `CHRMAKE` / `CHRROW` / `CHRUSE` | charset handle commands | Phase 4 `GFXTILE` overlay. Creates an 8-page charset handle, writes individual character rows, and copies the charset to Bank D. Phase 5 screenshots prove visible Bank D tile rendering. |
 | `TSMAKE` / `TSSET` / `TMMAKE` / `TMSET` / `TMDRAW` | tileset/tilemap handle commands | Phase 4 `GFXTILE` overlay. Fixed 1-page tilesets and 4-page 40x25 tilemaps; no external resource loader yet. |
 | `MCELL` / `MCBG` | `MCELL(CX,CY,S1,S2,S3)`, `MCBG(C)` | Phase 4 explicit multicolor bitmap cell attributes and background color. |
+| `SIDCLR` / `SILENCE` | `SIDCLR()` | Phase 1 sound `SIDCORE` overlay. Clears SID registers `$D400-$D418`. |
+| `VOL` | `VOL(VOL)` | Sets SID master volume `0..15`, preserving filter mode bits. |
+| `FREQ` / `NOTE` | `FREQ(V,F)`, `NOTE(V,N,O)` | Raw SID frequency or PAL note table frequency for voice `1..3`. `NOTE` sets frequency only; use `GATE`, `WAVE`, or `VOICE` to start sound. |
+| `PULSE` / `ADSR` / `ENV` | pulse width and envelope setup | `PULSE(V,W)` writes 12-bit pulse width. `ADSR(V,A,D,S,R)` and `ENV` write SID nibble envelope values. |
+| `WAVE` / `CTRL` / `GATE` | control register helpers | `WAVE(V,M)`/`CTRL(V,M)` writes the SID control byte; `GATE(V,ON)` sets or clears bit 0 without disturbing the other waveform/control bits. |
+| `VOICE` | `VOICE(V,F,W,AD,SR)` | Fast packed voice setup: frequency, control/wave byte, packed attack/decay byte, and packed sustain/release byte. This intentionally reuses an existing five-number parser signature to avoid resident growth. |
+| `FILTER` / `FILT` | `FILTER(CUTOFF,RES,ROUTE,MODE)` | Writes SID cutoff, resonance, route, and filter mode. Mode uses logical bits `1` low-pass, `2` band-pass, `4` high-pass, `8` voice-3-off. |
+| `SOUND` / `SND` | `SOUND(V,F,D,W)` | Blocking tone helper: gates wave `W` on for `D` spin-delay units and gates it off. No IRQ music engine yet. |
 | `SPRSET` / `SPRMOVE` / `SPRCOLOR` / `SPRCOL` / `SPRROW` | sprite config/move/color/pixels | Uses eight 64-byte Bank D sprite definitions at `$CA00`; `SPRROW` writes explicit 24-bit sprite rows. `SPRCOL` is a tokenizer-safe alias for demos. |
 | `SPREXPAND` / `SPRSIZE` | `SPRSIZE(N,XON,YON)` | Phase 2 VIC sprite X/Y expansion; `SPRSIZE` avoids PETCAT tokenizing `EXP`. |
 | `SPRPRI` | `SPRPRI(N,BEHIND)` | Phase 2 VIC sprite priority bit control. |
@@ -428,6 +441,7 @@ different:
 | `OVL3PACK` | `$0779` (1.9K, 1913 exact bytes) | Built-in slot-2 overlay proof plus `GFXPOLY`, loaded from `CMDPACK2` and prestashed to assigned code-bank offset `$6000`. | Fetched as a replacement overlay into `$B800-$BF78`. |
 | `OVL4PACK` | `$0783` (1.9K, 1923 exact bytes) | Built-in `GFXDL` display-list overlay, prestashed to assigned code-bank offset `$6800`. | Fetched as a replacement overlay into `$B800-$BF82`. |
 | `OVL5PACK` | `$04DA` (1.2K, 1242 exact bytes) | Built-in `GFXTILE` charset/tilemap/multicolor-cell overlay, prestashed to assigned code-bank offset `$7000`. | Fetched as a replacement overlay into `$B800-$BCD9`. |
+| `OVL6PACK` | `$020E` (526B) | Built-in `SIDCORE` immediate sound overlay, prestashed to assigned code-bank offset `$7800`. | Fetched as a replacement overlay into `$B800-$BA0D`. |
 | `HIDLOAD` | `$07E9` (2.0K, 2025 exact bytes) | Load-only hidden helper seed starting at `$4000`. | Copied on cold boot into `$A000-$A7E8` and stashed to the assigned core-bank hidden shadow at `$3000`. |
 | `BRLOAD` | `$01FF` (511B) | Load-only bridge seed starting at `$4800`. | Copied on cold boot into `$C000-$C1FE`. |
 | `REGSEED` | `$1010` (4.0K, 4112 exact bytes) | Load-only registry header and 128 command descriptors at `$5000-$600F`. | Copied on cold boot into assigned core-bank offsets `$0000` and `$1000`. |
@@ -479,6 +493,7 @@ metadata and shim space above that are not general ReadyBASIC scratch.
 | Slot 2 `GFXPOLY` overlay image | `$B800-$BF78` | `$0779` (1913B) | Replacement overlay for polygon and REU point-buffer commands. |
 | Slot 2 `GFXDL` overlay image | `$B800-$BF82` | `$0783` (1923B) | Replacement overlay for display-list commands. |
 | Slot 2 `GFXTILE` overlay image | `$B800-$BCD9` | `$04DA` (1242B) | Replacement overlay for charset, tileset, tilemap, and multicolor-cell commands. |
+| Slot 2 `SIDCORE` overlay image | `$B800-$BA0D` | `$020E` (526B) | Replacement overlay for immediate SID sound commands. |
 | `BRIDGE` | `$C000-$C1FE` | `$01FF` (511B) | Persistent bridge state, saved vectors, overlay variables, current handle scratch, debug bytes, native routine return stack, and flow-control scratch. |
 | Shared frames | `$C200-$C5FF` | `$0400` (1.0K) | Call frame, result frame, descriptor buffer, command-name buffer, page/runtime buffers. |
 | Hidden helper shadow | Assigned core bank `$3000+` | `$07E9` (2025B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
@@ -502,7 +517,7 @@ not a contradiction; it is a time-of-use distinction.
 | PRG load / cold seed | `CMDPACK` is loaded at `$2B00-$3FFF`, `HIDLOAD` at `$4000+`, `BRLOAD` at `$4800+`, `REGSEED` at `$5000-$600F`, and `CMDPACK2` at `$6200-$7FFF`. These ranges are inside the future BASIC workspace but BASIC is not live there yet. | No user BASIC program or variables exist yet, so the load image can safely occupy this space temporarily. |
 | End of cold seed | Built-in module/submodule payloads have been copied from `CMDPACK` and `CMDPACK2` to the assigned code bank; the registry has been copied to the assigned core bank; hidden and bridge live copies are in their runtime homes. | `$2AC1-$9FFF` becomes the BASIC workspace. The former load-image bytes are now disposable. |
 | Ready prompt / running BASIC | BASIC owns `$2AC1-$9FFF`, including the old `$2B00-$7FFF` load ranges. Command code is fetched from REU into `$A800`, `$B000`, and/or `$B800` under BASIC ROM only while a command runs. | Empty BASIC free space is `30013` formula bytes. Warm resume never trusts the old load-image addresses. |
-| Future command growth | `CMDPACK` carries `$1455` / 5205B of base built-ins and has `$00AB` / 171B free. `CMDPACK2` carries `$16B5` / 5813B of overlay built-ins and has `$074B` / 1867B free. | Both cold-load windows are reclaimed before BASIC owns the workspace, so growing within them does not reduce steady-state BASIC free bytes. Runtime growth is still bounded by each 2K execution image. |
+| Future command growth | `CMDPACK` carries `$1455` / 5205B of base built-ins and has `$00AB` / 171B free. `CMDPACK2` carries `$18C3` / 6339B of overlay built-ins and has `$053D` / 1341B free. | Both cold-load windows are reclaimed before BASIC owns the workspace, so growing within them does not reduce steady-state BASIC free bytes. Runtime growth is still bounded by each 2K execution image. |
 
 The visual way to read this: `CMDPACK` looks like it overlaps BASIC RAM in the
 link/load map because it really does during cold loading. It does not reduce the
@@ -739,7 +754,9 @@ banks and keep the same small handle model.
 | `$6F83-$6FFF` | Reserved `GFXDL` overlay growth headroom (`$007D`, 125B). |
 | `$7000-$74D9` | Built-in `GFXTILE` replacement overlay (`$04DA`, 1242B). |
 | `$74DA-$77FF` | Reserved `GFXTILE` overlay growth headroom (`$0326`, 806B). |
-| `$7800-$FFFF` | Free tail after fixed built-in replacement overlay reservations (`$8800`, 34816B). |
+| `$7800-$7A0D` | Built-in `SIDCORE` replacement overlay (`$020E`, 526B). |
+| `$7A0E-$7FFF` | Reserved `SIDCORE` overlay growth headroom (`$05F2`, 1522B). |
+| `$8000-$FFFF` | Free tail after fixed built-in replacement overlay reservations (`$8000`, 32768B). |
 
 Descriptors point into these packed bytes with payload offset, payload size,
 slot mask, runtime destination, and entry offset. Heap and screen-handle
@@ -878,6 +895,7 @@ Current static layout:
 | `OVL3PACK` / GFXPOLY | `$B800-$BF78` | `$0779` (1913B) |
 | `OVL4PACK` / GFXDL | `$B800-$BF82` | `$0783` (1923B) |
 | `OVL5PACK` / GFXTILE | `$B800-$BCD9` | `$04DA` (1242B) |
+| `OVL6PACK` / SIDCORE | `$B800-$BA0D` | `$020E` (526B) |
 | `BRIDGE` | `$C000-$C1FE` | `$01FF` (511B) |
 
 Current measured guardrails:
@@ -895,6 +913,7 @@ Current measured guardrails:
 | `GFXPOLY` overlay | `$0779` / 1913B |
 | `GFXDL` overlay | `$0783` / 1923B |
 | `GFXTILE` overlay | `$04DA` / 1242B |
+| `SIDCORE` overlay | `$020E` / 526B |
 
 Recent VICE coverage includes:
 

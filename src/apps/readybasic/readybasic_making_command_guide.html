@@ -174,7 +174,7 @@
 		    </div>
 		    <div class="card reu">
 		      <h3>Built-In And Module Command Growth</h3>
-		      <p>ReadyBASIC's built-in command set is intended to include the core commands and the 100+ additional file, graphics, sound, REU, and utility commands that are similar in spirit to other BASIC extensions. The current built-in code-bank reservations leave the contiguous tail <code>$7800-$FFFF</code> free for future built-in payloads; today's first C64 <code>CMDPACK</code> seed window has about <code>$00AB</code> / 171 bytes unused, while replacement overlays are seeded from <code>CMDPACK2</code>.</p>
+		      <p>ReadyBASIC's built-in command set is intended to include the core commands and the 100+ additional file, graphics, sound, REU, and utility commands that are similar in spirit to other BASIC extensions. The current built-in code-bank reservations leave the contiguous tail <code>$8000-$FFFF</code> free for future built-in payloads; today's first C64 <code>CMDPACK</code> seed window has about <code>$00AB</code> / 171 bytes unused, while replacement overlays are seeded from <code>CMDPACK2</code>.</p>
 		      <p>Beyond that built-in set, ReadyBASIC will also support dynamically loaded command modules that can use additional REU banks, so other authors can add hundreds more commands without forcing everything into the core command bank.</p>
 		    </div>
 		    <div class="flow">
@@ -206,6 +206,27 @@
       <p>Use a descriptor-backed command overlay when the routine needs hidden RAM, REU handles, fast machine-code loops, direct screen/color memory, or shared command behavior.</p>
       <p>Use resident language work when the feature changes BASIC control flow or interpreter state. <code>REPEAT</code>/<code>UNTIL</code> stores and restores <code>TXTPTR</code>/<code>CURLIN</code>; <code>LABEL</code>/<code>JUMP</code> scans stored BASIC lines; <code>ERRCODE</code>/<code>ERRLINE</code> returns resident runtime state.</p>
     </div>
+  </section>
+
+  <section>
+    <h2>SID Sound Command Tutorial</h2>
+    <p>Sound Phase 1 commands are descriptor-backed module 4 commands in the <code>SIDCORE</code> slot-2 replacement overlay. The overlay is prestashed at code-bank offset <code>$7800</code> and runs at <code>$B800-$BA0D</code>.</p>
+    <table class="term">
+      <tbody>
+        <tr><td><code>SIDCLR()</code> / <code>SILENCE()</code></td><td>Clear SID registers <code>$D400-$D418</code>.</td></tr>
+        <tr><td><code>VOL(V)</code></td><td>Set master volume <code>0..15</code>.</td></tr>
+        <tr><td><code>FREQ(V,F)</code> / <code>NOTE(V,N,O)</code></td><td>Set raw SID frequency or PAL note table frequency.</td></tr>
+        <tr><td><code>PULSE</code>, <code>ADSR</code>, <code>WAVE</code>, <code>GATE</code></td><td>Explicit voice setup helpers.</td></tr>
+        <tr><td><code>VOICE(V,F,W,AD,SR)</code></td><td>Fast packed SID setup. <code>AD</code> and <code>SR</code> are the hardware envelope bytes.</td></tr>
+        <tr><td><code>FILTER(CUTOFF,RES,ROUTE,MODE)</code></td><td>Filter cutoff, resonance, routing, and mode bits.</td></tr>
+        <tr><td><code>SOUND(V,F,D,W)</code></td><td>Blocking tone helper for demos and simple effects.</td></tr>
+      </tbody>
+    </table>
+<pre><code>10 SIDCLR():VOL(15):PULSE(1,2048)
+20 VOICE(1,4455,65,9,195)
+30 ZPAUSE(80):CTRL(1,64)
+</code></pre>
+    <p>The packed <code>VOICE</code> form was chosen deliberately. A seven-argument parser shape was tested but grew resident code; the implemented form reuses an existing numeric signature and keeps BASIC free bytes unchanged.</p>
   </section>
 
   <section>

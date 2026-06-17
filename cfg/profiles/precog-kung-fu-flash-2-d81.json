@@ -91,6 +91,12 @@
         { "artifact": "obj/rbgfx30_mbitmap_dlist.prg", "name": "rbgfx30", "type": "prg" },
         { "artifact": "obj/rbgfx31_sync_blit.prg", "name": "rbgfx31", "type": "prg" },
         { "artifact": "obj/rbgfx32_convex_poly.prg", "name": "rbgfx32", "type": "prg" },
+        { "artifact": "obj/rbsnd01_sid_basics.prg", "name": "rbsnd01", "type": "prg" },
+        { "artifact": "obj/rbsnd02_voice_state.prg", "name": "rbsnd02", "type": "prg" },
+        { "artifact": "obj/rbsnd03_notes.prg", "name": "rbsnd03", "type": "prg" },
+        { "artifact": "obj/rbsnd04_filter.prg", "name": "rbsnd04", "type": "prg" },
+        { "artifact": "obj/rbsnd05_voice_batch.prg", "name": "rbsnd05", "type": "prg" },
+        { "artifact": "obj/rbsnd06_three_voice.prg", "name": "rbsnd06", "type": "prg" },
         { "artifact": "obj/apps_cfg_petscii.seq", "name": "apps.cfg", "type": "seq" },
         { "artifact": "obj/app_sidetris.seq", "name": "app.sidetris", "type": "seq" }
       ],

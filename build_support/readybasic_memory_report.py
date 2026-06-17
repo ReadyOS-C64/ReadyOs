@@ -81,6 +81,7 @@ def parse_map_segments(path: Path) -> dict[str, Segment]:
         "OVL3PACK",
         "OVL4PACK",
         "OVL5PACK",
+        "OVL6PACK",
         "BRIDGE",
     }
     missing = sorted(required - set(segments))
@@ -240,6 +241,7 @@ def command_groups(commands: list[tuple[str, str]]) -> dict[str, tuple[str, ...]
         "gfxpoly": [],
         "gfxdl": [],
         "gfxtile": [],
+        "sidcore": [],
         "end": [],
     }
     for macro, name in commands:
@@ -269,6 +271,8 @@ def command_groups(commands: list[tuple[str, str]]) -> dict[str, tuple[str, ...]
             groups["gfxdl"].append(name)
         elif macro == "CMD_GFXTILE":
             groups["gfxtile"].append(name)
+        elif macro == "CMD_SIDCORE":
+            groups["sidcore"].append(name)
     return {k: tuple(v) for k, v in groups.items()}
 
 
@@ -317,12 +321,14 @@ def render(ctx: dict[str, object]) -> str:
         + seg["OVL3PACK"].size
         + seg["OVL4PACK"].size
         + seg["OVL5PACK"].size
+        + seg["OVL6PACK"].size
     )
     gfxspr_off = const["RB_CODE_GFXSPR_OFF"]
     inputev_off = const["RB_CODE_INPUTEV_OFF"]
     gfxpoly_off = const["RB_CODE_GFXPOLY_OFF"]
     gfxdl_off = const["RB_CODE_GFXDL_OFF"]
     gfxtile_off = const["RB_CODE_GFXTILE_OFF"]
+    sidcore_off = const["RB_CODE_SIDCORE_OFF"]
 
     ram_blocks = [
         Block("Zero page", 0x0000, 0x0100, "system", "C64/BASIC/KERNAL zero page; cc65 ZP is not stomped."),
@@ -373,7 +379,8 @@ def render(ctx: dict[str, object]) -> str:
         Block("Overlay 3 seed", sym["__OVL3PACK_LOAD__"], seg["OVL3PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL3PACK'].start, seg['OVL3PACK'].end)}; REU code offset {fmt_hex(gfxpoly_off)}.", groups["gfxpoly"]),
         Block("Overlay 4 seed", sym["__OVL4PACK_LOAD__"], seg["OVL4PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL4PACK'].start, seg['OVL4PACK'].end)}; REU code offset {fmt_hex(gfxdl_off)}.", groups["gfxdl"]),
         Block("Overlay 5 seed", sym["__OVL5PACK_LOAD__"], seg["OVL5PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL5PACK'].start, seg['OVL5PACK'].end)}; REU code offset {fmt_hex(gfxtile_off)}.", groups["gfxtile"]),
-        Block("CMDPACK2 free seed room", sym["__OVL5PACK_LOAD__"] + seg["OVL5PACK"].size, (cmdpack2_start + cmdpack2_size) - (sym["__OVL5PACK_LOAD__"] + seg["OVL5PACK"].size), "free", "Unused cold-load seed capacity."),
+        Block("Overlay 6 seed", sym["__OVL6PACK_LOAD__"], seg["OVL6PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL6PACK'].start, seg['OVL6PACK'].end)}; REU code offset {fmt_hex(sidcore_off)}.", groups["sidcore"]),
+        Block("CMDPACK2 free seed room", sym["__OVL6PACK_LOAD__"] + seg["OVL6PACK"].size, (cmdpack2_start + cmdpack2_size) - (sym["__OVL6PACK_LOAD__"] + seg["OVL6PACK"].size), "free", "Unused cold-load seed capacity."),
     ]
 
     post_blocks = [
@@ -402,6 +409,8 @@ def render(ctx: dict[str, object]) -> str:
         Block("Slot 2 GFXDL free", 0xB800 + seg["OVL4PACK"].size, slot_size - seg["OVL4PACK"].size, "free", f"{fmt_size(slot_size - seg['OVL4PACK'].size)} free in the GFXDL overlay image."),
         Block("Slot 2 GFXTILE overlay", 0xB800, seg["OVL5PACK"].size, "overlay", "Replacement overlay for charset, tileset, tilemap, and multicolor-cell commands.", groups["gfxtile"]),
         Block("Slot 2 GFXTILE free", 0xB800 + seg["OVL5PACK"].size, slot_size - seg["OVL5PACK"].size, "free", f"{fmt_size(slot_size - seg['OVL5PACK'].size)} free in the GFXTILE overlay image."),
+        Block("Slot 2 SIDCORE overlay", 0xB800, seg["OVL6PACK"].size, "overlay", "Replacement overlay for immediate SID sound commands.", groups["sidcore"]),
+        Block("Slot 2 SIDCORE free", 0xB800 + seg["OVL6PACK"].size, slot_size - seg["OVL6PACK"].size, "free", f"{fmt_size(slot_size - seg['OVL6PACK'].size)} free in the SIDCORE overlay image."),
     ]
 
     reu44_blocks = [
@@ -436,7 +445,9 @@ def render(ctx: dict[str, object]) -> str:
         Block("GFXDL reserved headroom", gfxdl_off + seg["OVL4PACK"].size, 0x0800 - seg["OVL4PACK"].size, "free", "Reserved so the overlay can grow toward a full 2K slot without moving GFXTILE."),
         Block("Built-in GFXTILE overlay", gfxtile_off, seg["OVL5PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when charset/tile commands run.", groups["gfxtile"]),
         Block("GFXTILE reserved headroom", gfxtile_off + seg["OVL5PACK"].size, 0x0800 - seg["OVL5PACK"].size, "free", "Reserved for charset/tile overlay growth."),
-        Block("Payload bank free tail", gfxtile_off + 0x0800, 0x10000 - (gfxtile_off + 0x0800), "free", "Remaining space in the current single ReadyBASIC code bank."),
+        Block("Built-in SIDCORE overlay", sidcore_off, seg["OVL6PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when sound commands run.", groups["sidcore"]),
+        Block("SIDCORE reserved headroom", sidcore_off + seg["OVL6PACK"].size, 0x0800 - seg["OVL6PACK"].size, "free", "Reserved for immediate sound command growth."),
+        Block("Payload bank free tail", sidcore_off + 0x0800, 0x10000 - (sidcore_off + 0x0800), "free", "Remaining space in the current single ReadyBASIC code bank."),
     ]
 
     reu_overview_blocks = [
@@ -677,6 +688,7 @@ def render(ctx: dict[str, object]) -> str:
         Block("OVL3PACK", seg["OVL3PACK"].start, seg["OVL3PACK"].size, "overlay", "Slot 2 replacement overlay for GFXPOLY.", groups["gfxpoly"]),
         Block("OVL4PACK", seg["OVL4PACK"].start, seg["OVL4PACK"].size, "overlay", "Slot 2 replacement overlay for GFXDL.", groups["gfxdl"]),
         Block("OVL5PACK", seg["OVL5PACK"].start, seg["OVL5PACK"].size, "overlay", "Slot 2 replacement overlay for GFXTILE.", groups["gfxtile"]),
+        Block("OVL6PACK", seg["OVL6PACK"].start, seg["OVL6PACK"].size, "overlay", "Slot 2 replacement overlay for SIDCORE.", groups["sidcore"]),
         Block("BRIDGE", seg["BRIDGE"].start, seg["BRIDGE"].size, "bridge", "Persistent bridge state."),
         Block("REGSEED", seg["REGSEED"].start, seg["REGSEED"].size, "registry", "Load-only registry seed."),
       ])}
@@ -705,6 +717,7 @@ def build_context(args: argparse.Namespace) -> dict[str, object]:
             "__OVL3PACK_LOAD__",
             "__OVL4PACK_LOAD__",
             "__OVL5PACK_LOAD__",
+            "__OVL6PACK_LOAD__",
         },
     )
     const = parse_asm_constants(args.asm)

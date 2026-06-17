@@ -78,6 +78,8 @@ READYBASIC_RBPROC1 = $(OBJ_DIR)/rbproc1.prg
 READYBASIC_RBPROCERR = $(OBJ_DIR)/rbprocerr.prg
 READYBASIC_GFX_DEMO_NAMES = rbgfx01_modes rbgfx02_hires_plot rbgfx03_hires_lines rbgfx04_rects rbgfx05_point_read rbgfx06_reu_surface rbgfx07_mbitmap rbgfx08_tile rbgfx09_sprites rbgfx10_collision rbgfx11_input rbgfx12_showcase rbgfx13_sprite_steps rbgfx14_phase2_prims rbgfx15_phase2_tiles rbgfx16_phase2_sprite_ctrl rbgfx17_poly_array rbgfx18_fpoly_array rbgfx19_poly_reu rbgfx20_fpoly_reu_showcase rbgfx21_mbitmap_prims rbgfx22_mbitmap_point rbgfx23_dlist rbgfx24_tilemap rbgfx25_mbcells rbgfx26_mode_matrix rbgfx27_target_blit rbgfx28_tile_visible rbgfx29_mtile_visible rbgfx30_mbitmap_dlist rbgfx31_sync_blit rbgfx32_convex_poly
 READYBASIC_GFX_DEMOS = $(addprefix $(OBJ_DIR)/,$(addsuffix .prg,$(READYBASIC_GFX_DEMO_NAMES)))
+READYBASIC_SOUND_DEMO_NAMES = rbsnd01_sid_basics rbsnd02_voice_state rbsnd03_notes rbsnd04_filter rbsnd05_voice_batch rbsnd06_three_voice
+READYBASIC_SOUND_DEMOS = $(addprefix $(OBJ_DIR)/,$(addsuffix .prg,$(READYBASIC_SOUND_DEMO_NAMES)))
 READYBASIC_MODULE_DIR = $(OBJ_DIR)/readybasic_modules
 READYBASIC_RBM_SAMPLE1 = $(READYBASIC_MODULE_DIR)/rbm.sample1.seq
 READYBASIC_RBM_SAMPLE2 = $(READYBASIC_MODULE_DIR)/rbm.sample2.seq
@@ -99,6 +101,7 @@ READYBASIC_VICE_SCRIPTS = \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase3_demo.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase4_demo.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_mbitmap_demo.sh \
+	$(BUILD_SUPPORT_DIR)/run_readybasic_sound_phase1_demo.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_readyos_loaded_apps_suite.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_program_probe.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_rbtest1_probe.sh \
@@ -398,7 +401,7 @@ LIB_UCITEST = $(TUI_UCITEST) $(TUI_HOTKEY_SRC)
 EASYFLASH_PAYLOADS = $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(RIRC_RRNET) $(READYBASIC) $(UCITEST) $(READMEAPP) $(READYSHELL_OVL1_PRG) $(READYSHELL_OVL2_PRG) $(READYSHELL_OVL3_PRG) $(READYSHELL_OVL4_PRG) $(READYSHELL_OVL5_PRG) $(READYSHELL_OVL6_PRG) $(READYSHELL_OVL7_PRG) $(READYSHELL_OVL8_PRG) $(READYSHELL_OVL9_PRG)
 
 # Primary binaries shared across profiles
-PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(RIRC_RRNET) $(READYBASIC) $(READYBASIC_RBTEST1) $(READYBASIC_RBPROC1) $(READYBASIC_RBPROCERR) $(READYBASIC_GFX_DEMOS) $(READYBASIC_MODULES) $(UCITEST) $(READMEAPP) $(READYSHELL)
+PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(RIRC_RRNET) $(READYBASIC) $(READYBASIC_RBTEST1) $(READYBASIC_RBPROC1) $(READYBASIC_RBPROCERR) $(READYBASIC_GFX_DEMOS) $(READYBASIC_SOUND_DEMOS) $(READYBASIC_MODULES) $(UCITEST) $(READMEAPP) $(READYSHELL)
 
 $(BIN_DIR):
 	@mkdir -p "$@"
@@ -717,6 +720,9 @@ readybasic-gfx-phase4-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase4_demo.
 readybasic-gfx-phase5-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase5_demo.sh
 	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase5_demo.sh
 
+readybasic-sound-phase1-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_sound_phase1_demo.sh
+	$(BUILD_SUPPORT_DIR)/run_readybasic_sound_phase1_demo.sh
+
 readybasic-readyos-loaded-apps-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_readyos_loaded_apps_suite.sh
 	$(BUILD_SUPPORT_DIR)/run_readybasic_readyos_loaded_apps_suite.sh
 
@@ -749,7 +755,7 @@ readybasic-vice-plans: $(READYBASIC_VICE_SCRIPTS)
 		READYBASIC_SKIP_BUILD=1 READYBASIC_GENERATE_PLAN_ONLY=1 "$$script"; \
 	done
 
-readybasic-vice-suites: readybasic-demo-vice readybasic-repeat-label-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-state-vice readybasic-large-vars-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-second-entry-editor-vice readybasic-full-vice
+readybasic-vice-suites: readybasic-demo-vice readybasic-repeat-label-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-state-vice readybasic-large-vars-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-second-entry-editor-vice readybasic-sound-phase1-vice readybasic-full-vice
 
 readybasic-memory-report: $(READYBASIC) $(BUILD_SUPPORT_DIR)/readybasic_memory_report.py
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/readybasic_memory_report.py --html-out docs/readybasic_memory_diagrams.html
@@ -768,6 +774,10 @@ $(READYBASIC_RBPROCERR): $(APPS_DIR)/readybasic/rbprocerr.bas
 	$(PETCAT) -w2 -l 2ac1 -o $@ -- $<
 
 $(OBJ_DIR)/rbgfx%.prg: $(APPS_DIR)/readybasic/rbgfx%.bas
+	@mkdir -p "$(OBJ_DIR)"
+	$(PETCAT) -w2 -l 2ac1 -o $@ -- $<
+
+$(OBJ_DIR)/rbsnd%.prg: $(APPS_DIR)/readybasic/rbsnd%.bas
 	@mkdir -p "$(OBJ_DIR)"
 	$(PETCAT) -w2 -l 2ac1 -o $@ -- $<
 
@@ -1337,5 +1347,5 @@ probe-rel:
 launcher-verbose:
 	$(MAKE) LAUNCHER_CFG_VERBOSE=1 $(LAUNCHER)
 
-.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-gfx-phase1-vice readybasic-gfx-phase2-vice readybasic-gfx-phase3-vice readybasic-gfx-phase4-vice readybasic-gfx-phase5-vice readybasic-gfx-mbitmap-vice readybasic-sprite-steps-vice readybasic-readyos-loaded-apps-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
+.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-gfx-phase1-vice readybasic-gfx-phase2-vice readybasic-gfx-phase3-vice readybasic-gfx-phase4-vice readybasic-gfx-phase5-vice readybasic-gfx-mbitmap-vice readybasic-sound-phase1-vice readybasic-sprite-steps-vice readybasic-readyos-loaded-apps-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
 EASYFLASH_LAUNCHER_CPPFLAGS ?=

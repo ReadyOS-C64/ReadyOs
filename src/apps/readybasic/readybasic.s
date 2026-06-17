@@ -131,6 +131,18 @@ VIC_SPR_MCOLOR1 = $D026
 VIC_SPR_COLOR0  = $D027
 VIC_BORDER      = $D020
 VIC_BG          = $D021
+SID_BASE        = $D400
+SID_V1_FREQ_LO  = $D400
+SID_V1_FREQ_HI  = $D401
+SID_V1_PW_LO    = $D402
+SID_V1_PW_HI    = $D403
+SID_V1_CTRL     = $D404
+SID_V1_AD       = $D405
+SID_V1_SR       = $D406
+SID_FILTER_LO   = $D415
+SID_FILTER_HI   = $D416
+SID_FILTER_RES  = $D417
+SID_MODE_VOL    = $D418
 
 SHIM_RETURN     = $C80C
 SHIM_SWITCH     = $C80F
@@ -245,6 +257,7 @@ RB_OUT_FLOAT    = 4
 
 RB_MODULE_SYSTEM = 1
 RB_MODULE_GFX    = 3
+RB_MODULE_SID    = 4
 RB_SUBMOD_COMMON = 0
 RB_SUBMOD_LEGACY_LOW = 1
 RB_SUBMOD_PROOF_SLOT1 = 2
@@ -258,6 +271,7 @@ RB_SUBMOD_INPUTEV = 19
 RB_SUBMOD_GFXPOLY = 20
 RB_SUBMOD_GFXDL   = 21
 RB_SUBMOD_GFXTILE = 22
+RB_SUBMOD_SIDCORE = 23
 RB_SLOT_LEGACY_LOW = $01
 RB_SLOT_PROOF_1 = $02
 RB_SLOT_PROOF_2 = $04
@@ -289,6 +303,7 @@ RB_CODE_INPUTEV_OFF= $5800
 RB_CODE_GFXPOLY_OFF= $6000
 RB_CODE_GFXDL_OFF  = $6800
 RB_CODE_GFXTILE_OFF= $7000
+RB_CODE_SIDCORE_OFF= $7800
 
 RB_CMD_DESC_SIZE   = 32
 RB_CMD_DESC_COUNT  = 128
@@ -450,6 +465,22 @@ CMD_TMSET       = 89
 CMD_TMDRAW      = 90
 CMD_MCELL       = 91
 CMD_MCBG        = 92
+CMD_SIDCLR      = 93
+CMD_SILENCE     = 94
+CMD_VOL         = 95
+CMD_FREQ        = 96
+CMD_NOTE        = 97
+CMD_PULSE       = 98
+CMD_ADSR        = 99
+CMD_ENV         = 100
+CMD_WAVE        = 101
+CMD_GATE        = 102
+CMD_CTRL        = 103
+CMD_VOICE       = 104
+CMD_FILTER      = 105
+CMD_FILT        = 106
+CMD_SOUND       = 107
+CMD_SND         = 108
 
 ; REU registers.
 REU_CMD         = $DF01
@@ -481,6 +512,7 @@ REU_LEN_HI      = $DF08
         .import __OVL3PACK_LOAD__, __OVL3PACK_RUN__, __OVL3PACK_SIZE__
         .import __OVL4PACK_LOAD__, __OVL4PACK_RUN__, __OVL4PACK_SIZE__
         .import __OVL5PACK_LOAD__, __OVL5PACK_RUN__, __OVL5PACK_SIZE__
+        .import __OVL6PACK_LOAD__, __OVL6PACK_RUN__, __OVL6PACK_SIZE__
 
 rb_entry_src    = $FB
 rb_entry_dst    = $FD
@@ -4351,6 +4383,21 @@ rb_reu_header_end:
         .res 16 - .strlen(name), 0
 .endmacro
 
+.macro CMD_SIDCORE id, sig, label, name
+        .byte id, RB_MODULE_SID
+        .word RB_CODE_SIDCORE_OFF
+        .word __OVL6PACK_SIZE__
+        .byte RB_SUBMOD_SIDCORE
+        .byte 6
+        .byte RB_SLOT_PROOF_2
+        .byte 1
+        .word 0
+        .word label - __OVL6PACK_RUN__
+        .byte sig, .strlen(name)
+        .byte name
+        .res 16 - .strlen(name), 0
+.endmacro
+
 rb_command_descriptors:
         CMD_LOW_ALL CMD_ZECHO1, SIG_ZECHO1, cmd_zecho1_low, "ZECHO1"
         CMD_LOW CMD_ZADD16, SIG_ZADD16, cmd_zadd16_low, cmd_zadd16_low_end, "ZADD16"
@@ -4440,7 +4487,23 @@ rb_command_descriptors:
         CMD_GFXTILE CMD_TMDRAW, SIG_BUFFILL, cmd_tmdraw, "TMDRAW"
         CMD_GFXTILE CMD_MCELL, SIG_LINE, cmd_mcell, "MCELL"
         CMD_GFXTILE CMD_MCBG, SIG_BUFFREE, cmd_mcbg, "MCBG"
-        .res (RB_CMD_DESC_COUNT - 89) * RB_CMD_DESC_SIZE, 0
+        CMD_SIDCORE CMD_SIDCLR, SIG_KEYNONE, cmd_sidclr, "SIDCLR"
+        CMD_SIDCORE CMD_SILENCE, SIG_KEYNONE, cmd_sidclr, "SILENCE"
+        CMD_SIDCORE CMD_VOL, SIG_BUFFREE, cmd_vol, "VOL"
+        CMD_SIDCORE CMD_FREQ, SIG_BUFFILL, cmd_freq, "FREQ"
+        CMD_SIDCORE CMD_NOTE, SIG_PLOT, cmd_note, "NOTE"
+        CMD_SIDCORE CMD_PULSE, SIG_BUFFILL, cmd_pulse, "PULSE"
+        CMD_SIDCORE CMD_ADSR, SIG_LINE, cmd_adsr, "ADSR"
+        CMD_SIDCORE CMD_ENV, SIG_LINE, cmd_adsr, "ENV"
+        CMD_SIDCORE CMD_WAVE, SIG_BUFFILL, cmd_wave, "WAVE"
+        CMD_SIDCORE CMD_GATE, SIG_BUFFILL, cmd_gate, "GATE"
+        CMD_SIDCORE CMD_CTRL, SIG_BUFFILL, cmd_wave, "CTRL"
+        CMD_SIDCORE CMD_VOICE, SIG_LINE, cmd_voice, "VOICE"
+        CMD_SIDCORE CMD_FILTER, SIG_SPRSET, cmd_filter, "FILTER"
+        CMD_SIDCORE CMD_FILT, SIG_SPRSET, cmd_filter, "FILT"
+        CMD_SIDCORE CMD_SOUND, SIG_SPRSET, cmd_sound, "SOUND"
+        CMD_SIDCORE CMD_SND, SIG_SPRSET, cmd_sound, "SND"
+        .res (RB_CMD_DESC_COUNT - 105) * RB_CMD_DESC_SIZE, 0
         CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"
 
 ; ---------------------------------------------------------------------------
@@ -5081,7 +5144,7 @@ rb_seed_plugin_reu_hidden:
         clc
         adc #6
         tax
-        cpx #30
+        cpx #36
         bcc @stash_ovl
 
         jsr rb_clear_slot_residency
@@ -5093,6 +5156,7 @@ rb_builtin_ovl_stash:
         .byte <__OVL3PACK_LOAD__, >__OVL3PACK_LOAD__, <RB_CODE_GFXPOLY_OFF, >RB_CODE_GFXPOLY_OFF, <__OVL3PACK_SIZE__, >__OVL3PACK_SIZE__
         .byte <__OVL4PACK_LOAD__, >__OVL4PACK_LOAD__, <RB_CODE_GFXDL_OFF, >RB_CODE_GFXDL_OFF, <__OVL4PACK_SIZE__, >__OVL4PACK_SIZE__
         .byte <__OVL5PACK_LOAD__, >__OVL5PACK_LOAD__, <RB_CODE_GFXTILE_OFF, >RB_CODE_GFXTILE_OFF, <__OVL5PACK_SIZE__, >__OVL5PACK_SIZE__
+        .byte <__OVL6PACK_LOAD__, >__OVL6PACK_LOAD__, <RB_CODE_SIDCORE_OFF, >RB_CODE_SIDCORE_OFF, <__OVL6PACK_SIZE__, >__OVL6PACK_SIZE__
 
 rb_clear_slot_residency:
         lda #0
@@ -11284,3 +11348,258 @@ poly_bit_masks:
         .byte $80,$40,$20,$10,$08,$04,$02,$01
 poly_bit_unmasks:
         .byte $7F,$BF,$DF,$EF,$F7,$FB,$FD,$FE
+
+        .segment "OVL6PACK"
+
+cmd_sidclr:
+        ldx #24
+        lda #0
+@loop:
+        sta SID_BASE,x
+        dex
+        bpl @loop
+        jmp sid_ok
+
+cmd_vol:
+        lda CF_NUM0_LO
+        and #$0F
+        sta rb_saved_plot_x
+        lda SID_MODE_VOL
+        and #$F0
+        ora rb_saved_plot_x
+        sta SID_MODE_VOL
+        jmp sid_ok
+
+cmd_freq:
+        jsr sid_voice_offset
+        bcc :+
+        rts
+:       lda CF_NUM1_LO
+        sta SID_V1_FREQ_LO,x
+        lda CF_NUM1_HI
+        sta SID_V1_FREQ_HI,x
+        jmp sid_ok
+
+cmd_note:
+        jsr sid_voice_offset
+        bcc :+
+        rts
+:       stx rb_target_off
+        lda CF_NUM1_LO
+        cmp #12
+        bcc :+
+        lda #$64
+        jmp sid_fail
+:       tax
+        lda sid_note_c0_lo,x
+        sta rb_saved_plot_x
+        lda sid_note_c0_hi,x
+        sta rb_saved_plot_y
+        lda CF_NUM2_LO
+        and #7
+        sta RF_COUNT_LO
+        beq @store
+@shift:
+        asl rb_saved_plot_x
+        rol rb_saved_plot_y
+        dec RF_COUNT_LO
+        bne @shift
+@store:
+        ldx rb_target_off
+        lda rb_saved_plot_x
+        sta SID_V1_FREQ_LO,x
+        lda rb_saved_plot_y
+        sta SID_V1_FREQ_HI,x
+        jmp sid_ok
+
+cmd_pulse:
+        jsr sid_voice_offset
+        bcc :+
+        rts
+:       lda CF_NUM1_LO
+        sta SID_V1_PW_LO,x
+        lda CF_NUM1_HI
+        and #$0F
+        sta SID_V1_PW_HI,x
+        jmp sid_ok
+
+cmd_adsr:
+        jsr sid_voice_offset
+        bcc :+
+        rts
+:       lda CF_NUM2_LO
+        and #$0F
+        sta rb_saved_plot_x
+        lda CF_NUM1_LO
+        and #$0F
+        asl
+        asl
+        asl
+        asl
+        ora rb_saved_plot_x
+        sta SID_V1_AD,x
+        lda CF_NUM4_LO
+        and #$0F
+        sta rb_saved_plot_x
+        lda CF_NUM3_LO
+        and #$0F
+        asl
+        asl
+        asl
+        asl
+        ora rb_saved_plot_x
+        sta SID_V1_SR,x
+        jmp sid_ok
+
+cmd_wave:
+        jsr sid_voice_offset
+        bcc :+
+        rts
+:       lda CF_NUM1_LO
+        sta SID_V1_CTRL,x
+        jmp sid_ok
+
+cmd_gate:
+        jsr sid_voice_offset
+        bcc :+
+        rts
+:       lda CF_NUM1_LO
+        beq @off
+        lda SID_V1_CTRL,x
+        ora #$01
+        sta SID_V1_CTRL,x
+        jmp sid_ok
+@off:
+        lda SID_V1_CTRL,x
+        and #$FE
+        sta SID_V1_CTRL,x
+        jmp sid_ok
+
+cmd_voice:
+        jsr sid_voice_offset
+        bcc :+
+        rts
+:       lda CF_NUM1_LO
+        sta SID_V1_FREQ_LO,x
+        lda CF_NUM1_HI
+        sta SID_V1_FREQ_HI,x
+        lda CF_NUM3_LO
+        sta SID_V1_AD,x
+        lda CF_NUM4_LO
+        sta SID_V1_SR,x
+        lda CF_NUM2_LO
+        sta SID_V1_CTRL,x
+        jmp sid_ok
+
+cmd_filter:
+        lda CF_NUM0_LO
+        and #$07
+        sta SID_FILTER_LO
+        lda CF_NUM0_LO
+        sta rb_saved_plot_x
+        lda CF_NUM0_HI
+        sta rb_saved_plot_y
+        lsr rb_saved_plot_y
+        ror rb_saved_plot_x
+        lsr rb_saved_plot_y
+        ror rb_saved_plot_x
+        lsr rb_saved_plot_y
+        ror rb_saved_plot_x
+        lda rb_saved_plot_x
+        sta SID_FILTER_HI
+        lda CF_NUM1_LO
+        and #$0F
+        asl
+        asl
+        asl
+        asl
+        sta rb_saved_plot_x
+        lda CF_NUM2_LO
+        and #$0F
+        ora rb_saved_plot_x
+        sta SID_FILTER_RES
+        lda CF_NUM3_LO
+        and #$0F
+        asl
+        asl
+        asl
+        asl
+        sta rb_saved_plot_x
+        lda SID_MODE_VOL
+        and #$0F
+        ora rb_saved_plot_x
+        sta SID_MODE_VOL
+        jmp sid_ok
+
+cmd_sound:
+        jsr sid_voice_offset
+        bcc :+
+        rts
+:       stx rb_target_off
+        lda CF_NUM1_LO
+        sta SID_V1_FREQ_LO,x
+        lda CF_NUM1_HI
+        sta SID_V1_FREQ_HI,x
+        lda CF_NUM3_LO
+        ora #$01
+        sta SID_V1_CTRL,x
+        lda CF_NUM2_LO
+        beq @release
+        sta RF_COUNT_LO
+@outer:
+        ldx #$20
+@middle:
+        ldy #$FF
+@inner:
+        dey
+        bne @inner
+        dex
+        bne @middle
+        dec RF_COUNT_LO
+        bne @outer
+@release:
+        ldx rb_target_off
+        lda SID_V1_CTRL,x
+        and #$FE
+        sta SID_V1_CTRL,x
+        jmp sid_ok
+
+sid_voice_offset:
+        lda CF_NUM0_LO
+        cmp #1
+        bcc @bad
+        cmp #4
+        bcs @bad
+        sec
+        sbc #1
+        tax
+        lda sid_voice_offsets,x
+        tax
+        clc
+        rts
+@bad:
+        lda #$64
+        jsr sid_fail
+        sec
+        rts
+
+sid_ok:
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+sid_fail:
+        sta RF_STATUS
+        sta RF_ERROR
+        rts
+
+sid_voice_offsets:
+        .byte 0,7,14
+
+; PAL C0-B0 SID frequency words. NOTE shifts these by octave.
+sid_note_c0_lo:
+        .byte $16,$2B,$41,$58,$70,$8A,$A4,$C0,$DD,$FC,$1D,$3F
+sid_note_c0_hi:
+        .byte $01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$02,$02

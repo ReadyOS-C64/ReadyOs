@@ -640,7 +640,7 @@
       <div class="grid-3">
         <div class="callout good"><strong>Slot 0:</strong> module 1 system/default payload at <code>$A800-$AFDB</code>, copied from assigned code-bank offset <code>$0000</code>.</div>
         <div class="callout good"><strong>Slot 1:</strong> module 2 proof, streaming <code>ZMODLD</code>, and <code>GFXCORE</code> payload at <code>$B000-$B540</code>, copied from assigned code-bank offset <code>$07DC</code>.</div>
-        <div class="callout good"><strong>Slot 2:</strong> <code>GFXPRIM</code> base image at <code>$B800-$BF37</code>; <code>GFXSPR</code>, <code>INPUTEV</code>, <code>GFXPOLY</code>, <code>GFXDL</code>, and <code>GFXTILE</code> are replacement overlays prestashed at code-bank offsets <code>$5000</code>, <code>$5800</code>, <code>$6000</code>, <code>$6800</code>, and <code>$7000</code>.</div>
+        <div class="callout good"><strong>Slot 2:</strong> <code>GFXPRIM</code> base image at <code>$B800-$BF37</code>; <code>GFXSPR</code>, <code>INPUTEV</code>, <code>GFXPOLY</code>, <code>GFXDL</code>, <code>GFXTILE</code>, and <code>SIDCORE</code> are replacement overlays prestashed at code-bank offsets <code>$5000</code>, <code>$5800</code>, <code>$6000</code>, <code>$6800</code>, <code>$7000</code>, and <code>$7800</code>.</div>
       </div>
       <p><strong>Terms:</strong> a module is the logical command family; a module package is the SEQ disk container named <code>rbm.&lt;name&gt;</code>; a submodule is the runtime payload family that claims one or more slots; an overlay is a swappable image for that submodule. RBM2 repeats submodule <code>5</code> because <code>ZDOV1</code> and <code>ZDOV2</code> are different overlays of that same family.</p>
       <p>Descriptors remain 32 bytes but now carry module id, submodule id, overlay id, slot mask, generation/check byte, payload offset/size in the assigned code bank, runtime destination, entry offset, signature id, and name. Older implementation names such as <code>LOWPACK</code> remain where they are still used by the linker and source.</p>
@@ -847,6 +847,7 @@
           <tr><td><code>CHRMAKE</code> / <code>CHRROW</code> / <code>CHRUSE</code></td><td>Built-in module 3 <code>GFXTILE</code> overlay at <code>$B800-$BCD9</code></td><td>typed REU charset handle, character, row, byte</td><td>Builds an 8-page charset and copies it to Bank D. Phase 5 screenshots prove visible Bank D tile and multicolor-tile rendering.</td></tr>
           <tr><td><code>TSMAKE</code> / <code>TSSET</code> / <code>TMMAKE</code> / <code>TMSET</code> / <code>TMDRAW</code></td><td>Built-in module 3 <code>GFXTILE</code> overlay</td><td>fixed tileset and 40x25 tilemap handles</td><td>Stores tile resources in REU and draws screen/color bytes to Bank D; no external resource loader yet.</td></tr>
           <tr><td><code>MCELL(CX,CY,S1,S2,S3)</code> / <code>MCBG(C)</code></td><td>Built-in module 3 <code>GFXTILE</code> overlay</td><td>multicolor bitmap cell coordinates and slot colors</td><td>Writes screen/color cell attributes and the VIC background color for <code>MBITMAP</code>.</td></tr>
+          <tr><td><code>SIDCLR</code> / <code>SILENCE</code> / <code>VOL</code> / <code>FREQ</code> / <code>NOTE</code> / <code>PULSE</code> / <code>ADSR</code> / <code>ENV</code> / <code>WAVE</code> / <code>CTRL</code> / <code>GATE</code> / <code>VOICE</code> / <code>FILTER</code> / <code>FILT</code> / <code>SOUND</code> / <code>SND</code></td><td>Built-in module 4 <code>SIDCORE</code> overlay at <code>$B800-$BA0D</code></td><td>SID voice, waveform, envelope, pulse, filter, and blocking tone parameters</td><td>Direct SID register commands. <code>VOICE(V,F,W,AD,SR)</code> uses packed envelope bytes to avoid resident parser growth; no IRQ music engine is installed.</td></tr>
           <tr><td><code>ZDM1()</code> / <code>ZDM2S()</code> / <code>ZDOV1()</code> / <code>ZDOV2()</code></td><td>Disk-loaded sample module payloads in the assigned code bank</td><td>none</td><td>Prove disk module, span, and overlay registration after <code>ZMODLD</code>.</td></tr>
           <tr><td><code>ZSAA()</code>-<code>ZUEB()</code></td><td><code>rbm.sample3</code> disk-loaded proof payloads in the assigned code bank</td><td>none</td><td>Return stateful integer sentinels. The name encodes submodule, overlay, and entrypoint: <code>ZSAA</code> is submodule 6, overlay 1, entry A. Each overlay image has one local counter byte, so reuse increments while reload resets.</td></tr>
         </tbody>
@@ -907,6 +908,7 @@
           <tr><td><code>OVL3PACK</code></td><td><code>$0779</code> (1.9K, 1913 exact bytes)</td><td>Built-in slot-2 overlay proof plus <code>GFXPOLY</code>, prestashed to assigned code-bank offset <code>$6000</code>.</td><td>Fetched as a replacement overlay into <code>$B800-$BF78</code>.</td></tr>
           <tr><td><code>OVL4PACK</code></td><td><code>$0783</code> (1923B)</td><td>Built-in <code>GFXDL</code> replacement overlay, prestashed to assigned code-bank offset <code>$6800</code>.</td><td>Fetched as a replacement overlay into <code>$B800-$BF82</code>.</td></tr>
           <tr><td><code>OVL5PACK</code></td><td><code>$04DA</code> (1242B)</td><td>Built-in <code>GFXTILE</code> replacement overlay, prestashed to assigned code-bank offset <code>$7000</code>.</td><td>Fetched as a replacement overlay into <code>$B800-$BCD9</code>.</td></tr>
+          <tr><td><code>OVL6PACK</code></td><td><code>$020E</code> (526B)</td><td>Built-in <code>SIDCORE</code> replacement overlay, prestashed to assigned code-bank offset <code>$7800</code>.</td><td>Fetched as a replacement overlay into <code>$B800-$BA0D</code>.</td></tr>
           <tr><td><code>HIDLOAD</code></td><td><code>$07E9</code> (2.0K, 2025 exact bytes)</td><td>Load-only hidden helper seed starting at <code>$4000</code>.</td><td>Copied on cold boot into <code>$A000-$A7E8</code> and stashed to the assigned core-bank hidden shadow at <code>$3000</code>.</td></tr>
 	          <tr><td><code>BRLOAD</code></td><td><code>$01FF</code> (511B)</td><td>Load-only bridge seed starting at <code>$4800</code>.</td><td>Copied on cold boot into <code>$C000-$C1FE</code>.</td></tr>
           <tr><td><code>REGSEED</code></td><td><code>$1010</code> (4.0K, 4112 exact bytes)</td><td>Load-only registry header and 128 command descriptors at <code>$5000-$600F</code>.</td><td>Copied on cold boot into assigned core-bank offsets <code>$0000</code> and <code>$1000</code>.</td></tr>
@@ -1166,6 +1168,7 @@
 	          <div class="slice"><span>$6000-$6778</span><span>Built-in <code>GFXPOLY</code> replacement overlay copied into <code>$B800-$BF78</code>.</span></div>
 	          <div class="slice"><span>$6800-$6F82</span><span>Built-in <code>GFXDL</code> replacement overlay copied into <code>$B800-$BF82</code>.</span></div>
 	          <div class="slice"><span>$7000-$74D9</span><span>Built-in <code>GFXTILE</code> replacement overlay copied into <code>$B800-$BCD9</code>.</span></div>
+	          <div class="slice"><span>$7800-$7A0D</span><span>Built-in <code>SIDCORE</code> replacement overlay copied into <code>$B800-$BA0D</code>.</span></div>
           <div class="slice"><span>desc</span><span>Descriptors point to payload offsets, sizes, slot masks, runtime destinations, and entry offsets.</span></div>
 	          <div class="slice"><span>handles</span><span>Handle and screen commands fetch the full <code>$07DC</code> slot-0 payload because shared helpers live there.</span></div>
         </div>
@@ -1238,6 +1241,7 @@
           <tr><td><code>GFXPOLY</code> overlay</td><td><code>$0779</code> / 1913B</td></tr>
           <tr><td><code>GFXDL</code> overlay</td><td><code>$0783</code> / 1923B</td></tr>
           <tr><td><code>GFXTILE</code> overlay</td><td><code>$04DA</code> / 1242B</td></tr>
+          <tr><td><code>SIDCORE</code> overlay</td><td><code>$020E</code> / 526B</td></tr>
         </tbody>
       </table>
       <table>

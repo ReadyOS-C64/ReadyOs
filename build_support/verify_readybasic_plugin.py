@@ -74,6 +74,7 @@ def main() -> None:
     require(r"^SIG_FADD\s*=\s*16\b", asm, "FADD signature must be registered")
     require(r"^SIG_ZPAUSE\s*=\s*SIG_BUFFREE\b", asm, "ZPAUSE must reuse the one-integer parser signature")
     require(r"^RB_MODULE_GFX\s*=\s*3\b", asm, "graphics commands must use module id 3")
+    require(r"^RB_MODULE_SID\s*=\s*4\b", asm, "sound commands must use module id 4")
     require(r"^RB_SUBMOD_GFXCORE\s*=\s*16\b", asm, "GFXCORE submodule must be registered")
     require(r"^RB_SUBMOD_GFXPRIM\s*=\s*17\b", asm, "GFXPRIM submodule must be registered")
     require(r"^RB_SUBMOD_GFXSPR\s*=\s*18\b", asm, "GFXSPR submodule must be registered")
@@ -81,6 +82,7 @@ def main() -> None:
     require(r"^RB_SUBMOD_GFXPOLY\s*=\s*20\b", asm, "GFXPOLY submodule must be registered")
     require(r"^RB_SUBMOD_GFXDL\s*=\s*21\b", asm, "GFXDL submodule must be registered")
     require(r"^RB_SUBMOD_GFXTILE\s*=\s*22\b", asm, "GFXTILE submodule must be registered")
+    require(r"^RB_SUBMOD_SIDCORE\s*=\s*23\b", asm, "SIDCORE submodule must be registered")
     require(r"^SIG_GFXMODE\s*=\s*19\b", asm, "GFXMODE signature must be registered")
     require(r"^SIG_GFXSURF\s*=\s*20\b", asm, "GFXSURF signature must be registered")
     require(r"^SIG_PLOT\s*=\s*21\b", asm, "PLOT signature must be registered")
@@ -119,6 +121,12 @@ def main() -> None:
             "DLDRAW must be a built-in GFXDL overlay command")
     require(r"CMD_GFXTILE\s+CMD_TMDRAW,\s+SIG_BUFFILL,\s+cmd_tmdraw,\s+\"TMDRAW\"", asm,
             "TMDRAW must be a built-in GFXTILE overlay command")
+    require(r"CMD_SIDCORE\s+CMD_SIDCLR,\s+SIG_KEYNONE,\s+cmd_sidclr,\s+\"SIDCLR\"", asm,
+            "SIDCLR must be a built-in SIDCORE overlay command")
+    require(r"CMD_SIDCORE\s+CMD_VOICE,\s+SIG_LINE,\s+cmd_voice,\s+\"VOICE\"", asm,
+            "VOICE must use the existing five-number signature to avoid resident parser growth")
+    require(r"CMD_SIDCORE\s+CMD_SOUND,\s+SIG_SPRSET,\s+cmd_sound,\s+\"SOUND\"", asm,
+            "SOUND must be a built-in SIDCORE overlay command")
     if re.search(r"^\s*RB_GFX_[A-Za-z0-9_]+\s*=\s*\$C[6-9][0-9A-Fa-f]{2}\b", asm, re.MULTILINE):
         fail("graphics-owned Bank D state must not live in the $C600-$C9FF forbidden range")
     require(r"^CMD_ZMODLOAD\s*=\s*28\b", asm, "ZMODLOAD loader command id must stay stable")
@@ -132,7 +140,7 @@ def main() -> None:
     if "REU_BANK_RB_CORE" in reu_hdr or "REU_BANK_RB_CODE" in reu_hdr:
         fail("ReadyBASIC core/code banks must not be fixed in reu_mgr.h")
 
-    for name in ("ENTRY", "RESIDENT", "LOWPACK", "SLOTPACK1", "SLOTPACK2", "SPANPACK", "OVL1PACK", "OVL2PACK", "OVL3PACK", "OVL4PACK", "OVL5PACK", "HIDDEN", "BRIDGE", "REGSEED"):
+    for name in ("ENTRY", "RESIDENT", "LOWPACK", "SLOTPACK1", "SLOTPACK2", "SPANPACK", "OVL1PACK", "OVL2PACK", "OVL3PACK", "OVL4PACK", "OVL5PACK", "OVL6PACK", "HIDDEN", "BRIDGE", "REGSEED"):
         if name not in segments:
             fail(f"map is missing segment {name}")
 
@@ -146,6 +154,7 @@ def main() -> None:
     ovl3pack = segments["OVL3PACK"]
     ovl4pack = segments["OVL4PACK"]
     ovl5pack = segments["OVL5PACK"]
+    ovl6pack = segments["OVL6PACK"]
     hidden = segments["HIDDEN"]
     bridge = segments["BRIDGE"]
     regseed = segments["REGSEED"]
@@ -178,6 +187,8 @@ def main() -> None:
         fail(f"overlay 4 payload must fit in slot 2, got ${ovl4pack[0]:04X}-${ovl4pack[1]:04X} size ${ovl4pack[2]:04X}")
     if ovl5pack[0] < 0xB800 or ovl5pack[1] > 0xBFFF or ovl5pack[2] > 0x0800:
         fail(f"overlay 5 payload must fit in slot 2, got ${ovl5pack[0]:04X}-${ovl5pack[1]:04X} size ${ovl5pack[2]:04X}")
+    if ovl6pack[0] < 0xB800 or ovl6pack[1] > 0xBFFF or ovl6pack[2] > 0x0800:
+        fail(f"overlay 6 payload must fit in slot 2, got ${ovl6pack[0]:04X}-${ovl6pack[1]:04X} size ${ovl6pack[2]:04X}")
     if hidden[0] != 0xA000 or hidden[1] > 0xA7FF:
         fail(f"HIDDEN helper/common area must fit in $A000-$A7FF, got ${hidden[0]:04X}-${hidden[1]:04X}")
     if hidden[2] > 0x0800:
@@ -209,6 +220,8 @@ def main() -> None:
             asm, "built-in GFXDL overlay must be stashed at REU code offset $6800")
     require(r"^RB_CODE_GFXTILE_OFF\s*=\s*\$7000\b",
             asm, "built-in GFXTILE overlay must be stashed at REU code offset $7000")
+    require(r"^RB_CODE_SIDCORE_OFF\s*=\s*\$7800\b",
+            asm, "built-in SIDCORE overlay must be stashed at REU code offset $7800")
     if re.search(r"^HIDDEN_SHADOW\s*=", asm, re.MULTILINE):
         fail("ReadyBASIC hidden helper shadow must not consume C64 RAM")
     hidden_shadow_end = 0x3000 + hidden[2] - 1
@@ -226,6 +239,8 @@ def main() -> None:
         fail(f"overlay 4 must run as a replacement slot-2 overlay at $B800, got ${ovl4pack[0]:04X}")
     if ovl5pack[0] != 0xB800:
         fail(f"overlay 5 must run as a replacement slot-2 overlay at $B800, got ${ovl5pack[0]:04X}")
+    if ovl6pack[0] != 0xB800:
+        fail(f"overlay 6 must run as a replacement slot-2 overlay at $B800, got ${ovl6pack[0]:04X}")
     if 0x5000 + ovl1pack[2] > 0x5800:
         fail(f"GFXSPR built-in overlay overflowed its reserved 2KB REU code range, size ${ovl1pack[2]:04X}")
     if 0x5800 + ovl2pack[2] > 0x6000:
@@ -236,6 +251,8 @@ def main() -> None:
         fail(f"GFXDL built-in overlay overflowed its reserved 2KB REU code range, size ${ovl4pack[2]:04X}")
     if 0x7000 + ovl5pack[2] > 0x7800:
         fail(f"GFXTILE built-in overlay overflowed its reserved 2KB REU code range, size ${ovl5pack[2]:04X}")
+    if 0x7800 + ovl6pack[2] > 0x8000:
+        fail(f"SIDCORE built-in overlay overflowed its reserved 2KB REU code range, size ${ovl6pack[2]:04X}")
     expected_payload = 0x8000 - 0x1000
     actual_payload = PRG.stat().st_size - 2
     if actual_payload < expected_payload:
