@@ -76,7 +76,7 @@ READYBASIC = $(BIN_DIR)/readybasic.prg
 READYBASIC_RBTEST1 = $(OBJ_DIR)/rbtest1.prg
 READYBASIC_RBPROC1 = $(OBJ_DIR)/rbproc1.prg
 READYBASIC_RBPROCERR = $(OBJ_DIR)/rbprocerr.prg
-READYBASIC_GFX_DEMO_NAMES = rbgfx01_modes rbgfx02_hires_plot rbgfx03_hires_lines rbgfx04_rects rbgfx05_point_read rbgfx06_reu_surface rbgfx07_mbitmap rbgfx08_tile rbgfx09_sprites rbgfx10_collision rbgfx11_input rbgfx12_showcase rbgfx13_sprite_steps rbgfx14_phase2_prims rbgfx15_phase2_tiles rbgfx16_phase2_sprite_ctrl
+READYBASIC_GFX_DEMO_NAMES = rbgfx01_modes rbgfx02_hires_plot rbgfx03_hires_lines rbgfx04_rects rbgfx05_point_read rbgfx06_reu_surface rbgfx07_mbitmap rbgfx08_tile rbgfx09_sprites rbgfx10_collision rbgfx11_input rbgfx12_showcase rbgfx13_sprite_steps rbgfx14_phase2_prims rbgfx15_phase2_tiles rbgfx16_phase2_sprite_ctrl rbgfx17_poly_array rbgfx18_fpoly_array rbgfx19_poly_reu rbgfx20_fpoly_reu_showcase
 READYBASIC_GFX_DEMOS = $(addprefix $(OBJ_DIR)/,$(addsuffix .prg,$(READYBASIC_GFX_DEMO_NAMES)))
 READYBASIC_MODULE_DIR = $(OBJ_DIR)/readybasic_modules
 READYBASIC_RBM_SAMPLE1 = $(READYBASIC_MODULE_DIR)/rbm.sample1.seq
@@ -702,6 +702,9 @@ readybasic-sprite-steps-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_sprite_steps_d
 readybasic-gfx-phase2-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase2_demo.sh
 	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase2_demo.sh
 
+readybasic-gfx-phase3-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase3_demo.sh
+	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase3_demo.sh
+
 readybasic-readyos-loaded-apps-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_readyos_loaded_apps_suite.sh
 	$(BUILD_SUPPORT_DIR)/run_readybasic_readyos_loaded_apps_suite.sh
 
@@ -1322,5 +1325,5 @@ probe-rel:
 launcher-verbose:
 	$(MAKE) LAUNCHER_CFG_VERBOSE=1 $(LAUNCHER)
 
-.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-gfx-phase1-vice readybasic-gfx-phase2-vice readybasic-sprite-steps-vice readybasic-readyos-loaded-apps-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
+.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-gfx-phase1-vice readybasic-gfx-phase2-vice readybasic-gfx-phase3-vice readybasic-sprite-steps-vice readybasic-readyos-loaded-apps-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
 EASYFLASH_LAUNCHER_CPPFLAGS ?=

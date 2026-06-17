@@ -603,7 +603,7 @@
       </p>
       <div class="dashboard">
         <div class="metric"><b>COMMAND(...)</b><span>Bare statements and selected expression returns.</span></div>
-        <div class="metric"><b>$1200-$2ABA</b><span>Visible resident core, $18BB (6331 bytes). Parser, hooks, ROM calls, REU DMA, commit, PROC/FUNC, flow control, modules.</span></div>
+        <div class="metric"><b>$1200-$2ABF</b><span>Visible resident core, $18C0 (6336 bytes). Parser, hooks, ROM calls, REU DMA, commit, PROC/FUNC, flow control, modules.</span></div>
         <div class="metric"><b>Assigned REU</b><span>Core/runtime registry bank and command/module payload bank.</span></div>
         <div class="metric"><b>128 slots</b><span>Command registry pages in REU, with screen-handle commands proving slot-128 lookup.</span></div>
       </div>
@@ -633,14 +633,14 @@
       <p>This page is the current ReadyBASIC module/submodule design. After cold initialization, BASIC owns <code>$2AC1-$9FFF</code>, while registries and module payloads are authoritative in loader-assigned ReadyBASIC core/code banks.</p>
       <div class="dashboard">
         <div class="metric"><b>$2AC1</b><span>BASIC start; formula empty free bytes remain 30013.</span></div>
-        <div class="metric"><b>$A000-$A7DE</b><span>Common under-ROM helper area, current helper through $A7DE.</span></div>
+        <div class="metric"><b>$A000-$A7DC</b><span>Common under-ROM helper area, current helper through $A7DC.</span></div>
         <div class="metric"><b>$A800/$B000/$B800</b><span>Three 2KB submodule slots behind BASIC ROM.</span></div>
         <div class="metric"><b>$C000-$C1FE</b><span>Bridge stays below the shared frame region at $C200.</span></div>
       </div>
       <div class="grid-3">
         <div class="callout good"><strong>Slot 0:</strong> module 1 system/default payload at <code>$A800-$AEFC</code>, copied from assigned code-bank offset <code>$0000</code>.</div>
         <div class="callout good"><strong>Slot 1:</strong> module 2 proof, streaming <code>ZMODLD</code>, and <code>GFXCORE</code> payload at <code>$B000-$B474</code>, copied from assigned code-bank offset <code>$06FD</code>.</div>
-        <div class="callout good"><strong>Slot 2:</strong> <code>GFXPRIM</code> base image at <code>$B800-$BD14</code>; <code>GFXSPR</code> and <code>INPUTEV</code> are replacement overlays prestashed at code-bank offsets <code>$5000</code> and <code>$5800</code>.</div>
+        <div class="callout good"><strong>Slot 2:</strong> <code>GFXPRIM</code> base image at <code>$B800-$BD14</code>; <code>GFXSPR</code>, <code>INPUTEV</code>, and <code>GFXPOLY</code> are replacement overlays prestashed at code-bank offsets <code>$5000</code>, <code>$5800</code>, and <code>$6000</code>.</div>
       </div>
       <p><strong>Terms:</strong> a module is the logical command family; a module package is the SEQ disk container named <code>rbm.&lt;name&gt;</code>; a submodule is the runtime payload family that claims one or more slots; an overlay is a swappable image for that submodule. RBM2 repeats submodule <code>5</code> because <code>ZDOV1</code> and <code>ZDOV2</code> are different overlays of that same family.</p>
       <p>Descriptors remain 32 bytes but now carry module id, submodule id, overlay id, slot mask, generation/check byte, payload offset/size in the assigned code bank, runtime destination, entry offset, signature id, and name. Older implementation names such as <code>LOWPACK</code> remain where they are still used by the linker and source.</p>
@@ -774,6 +774,11 @@
           <p>Returns small BASIC integer handles for persistent REU-backed buffers and typed screen text+color resources.</p>
         </div>
         <div class="category">
+          <h3>Graphics Phase 3 <span class="chip reu">GFXPOLY</span></h3>
+          <div class="cmd-row"><span class="chip">POLY</span><span class="chip">FPOLY</span><span class="chip">POLYH</span><span class="chip">FPOLYH</span><span class="chip">PBUFNEW</span><span class="chip">PBUFSET</span><span class="chip">PBUFFREE</span></div>
+          <p>Draws array-backed and REU point-buffer polygons from a slot-2 replacement overlay without changing BASIC syntax or bytes free.</p>
+        </div>
+        <div class="category">
           <h3>Temporary REU Workspace <span class="chip reu">temp pages</span></h3>
           <div class="cmd-row"><span class="chip">ZTEMPSCRATCH</span></div>
           <p>Allocates and immediately frees pages, proving temporary workspace without persistent state leaks.</p>
@@ -824,6 +829,9 @@
           <tr><td><code>ZSLOT0</code> / <code>ZSLOT1</code> / <code>ZSLOT2</code> / <code>ZSPAN</code></td><td>Built-in module proof payloads in slots 0, 1, and 2</td><td>none</td><td>Prove slot dispatch and multi-slot span loading.</td></tr>
           <tr><td><code>ZOVL1</code> / <code>ZOVL2</code> / <code>ZCPYRST</code> / <code>ZCOPY</code></td><td>Built-in overlay and no-recopy proof payloads</td><td>none</td><td>Prove overlay replacement and residency behavior.</td></tr>
           <tr><td><code>ZMODLD(NAME$)</code></td><td>Built-in module 2 slot-1 disk-module loader</td><td>module package filename string</td><td>Streams generated SEQ packages such as <code>RBM.SAMPLE1</code>, <code>RBM.SAMPLE2</code>, and <code>RBM.SAMPLE3</code> into REU.</td></tr>
+          <tr><td><code>POLY(A%(0),COUNT,C)</code> / <code>FPOLY(A%(0),COUNT,C)</code></td><td>Built-in module 3 <code>GFXPOLY</code> overlay at <code>$B800-$BF99</code></td><td>BASIC integer array point pairs, point count, color</td><td>Draws outline polygons or conservative convex fan fills.</td></tr>
+          <tr><td><code>POLYH(H%,COUNT,C)</code> / <code>FPOLYH(H%,COUNT,C)</code></td><td>Built-in module 3 <code>GFXPOLY</code> overlay at <code>$B800-$BF99</code></td><td>typed REU point-buffer handle, point count, color</td><td>Handle aliases for point-buffer polygons; same-name handle overloads were not added to preserve resident budget.</td></tr>
+          <tr><td><code>PBUFNEW</code> / <code>PBUFSET</code> / <code>PBUFFREE</code></td><td>Built-in module 3 <code>GFXPOLY</code> overlay at <code>$B800-$BF99</code></td><td>point-buffer handle lifecycle and zero-based point writes</td><td>Allocates typed REU point-buffer handle <code>4</code>, stores little-endian <code>x,y</code> pairs, and releases handles.</td></tr>
           <tr><td><code>ZDM1()</code> / <code>ZDM2S()</code> / <code>ZDOV1()</code> / <code>ZDOV2()</code></td><td>Disk-loaded sample module payloads in the assigned code bank</td><td>none</td><td>Prove disk module, span, and overlay registration after <code>ZMODLD</code>.</td></tr>
           <tr><td><code>ZSAA()</code>-<code>ZUEB()</code></td><td><code>rbm.sample3</code> disk-loaded proof payloads in the assigned code bank</td><td>none</td><td>Return stateful integer sentinels. The name encodes submodule, overlay, and entrypoint: <code>ZSAA</code> is submodule 6, overlay 1, entry A. Each overlay image has one local counter byte, so reuse increments while reload resets.</td></tr>
         </tbody>
@@ -881,7 +889,8 @@
           <tr><td><code>SPANPACK</code></td><td><code>$0015</code> (21B)</td><td>Two-slot proof payload stored after <code>SLOTPACK2</code>.</td><td>Fetched into <code>$B000-$B014</code>.</td></tr>
           <tr><td><code>OVL1PACK</code></td><td><code>$0272</code> (626B)</td><td>Built-in slot-2 overlay proof plus <code>GFXSPR</code>, loaded from <code>CMDPACK2</code> <code>$6200</code> and prestashed to assigned code-bank offset <code>$5000</code>.</td><td>Fetched as a replacement overlay into <code>$B800-$BA71</code>.</td></tr>
           <tr><td><code>OVL2PACK</code></td><td><code>$006D</code> (109B)</td><td>Built-in slot-2 overlay proof plus <code>INPUTEV</code>, loaded from <code>CMDPACK2</code> <code>$6472</code> and prestashed to assigned code-bank offset <code>$5800</code>.</td><td>Fetched as a replacement overlay into <code>$B800-$B86C</code>.</td></tr>
-          <tr><td><code>HIDLOAD</code></td><td><code>$07DF</code> (2.0K, 2015 exact bytes)</td><td>Load-only hidden helper seed starting at <code>$4000</code>.</td><td>Copied on cold boot into <code>$A000-$A7DE</code> and stashed to the assigned core-bank hidden shadow at <code>$3000</code>.</td></tr>
+          <tr><td><code>OVL3PACK</code></td><td><code>$079A</code> (1.9K, 1946 exact bytes)</td><td>Built-in slot-2 overlay proof plus <code>GFXPOLY</code>, loaded from <code>CMDPACK2</code> <code>$64DF</code> and prestashed to assigned code-bank offset <code>$6000</code>.</td><td>Fetched as a replacement overlay into <code>$B800-$BF99</code>.</td></tr>
+          <tr><td><code>HIDLOAD</code></td><td><code>$07DD</code> (2.0K, 2013 exact bytes)</td><td>Load-only hidden helper seed starting at <code>$4000</code>.</td><td>Copied on cold boot into <code>$A000-$A7DC</code> and stashed to the assigned core-bank hidden shadow at <code>$3000</code>.</td></tr>
 	          <tr><td><code>BRLOAD</code></td><td><code>$01FF</code> (511B)</td><td>Load-only bridge seed starting at <code>$4800</code>.</td><td>Copied on cold boot into <code>$C000-$C1FE</code>.</td></tr>
           <tr><td><code>REGSEED</code></td><td><code>$1010</code> (4.0K, 4112 exact bytes)</td><td>Load-only registry header and 128 command descriptors at <code>$5000-$600F</code>.</td><td>Copied on cold boot into assigned core-bank offsets <code>$0000</code> and <code>$1000</code>.</td></tr>
         </tbody>
@@ -901,22 +910,23 @@
         Shared ReadyOS metadata and shim space above that are not general scratch.
       </p>
       <div class="memory-map" aria-label="C64 RAM map">
-        <div class="addr">$1000-$1102</div><div class="region r-entry"><b>ENTRY</b><small>Cold/warm discriminator and early copy code.</small></div><div class="size">$0103<br><span>259B</span></div>
-        <div class="addr">$1200-$2ABA</div><div class="region r-resident"><b>RESIDENT</b><small>Parser, hooks, BASIC ROM calls, REU DMA, result commit, PROC/FUNC, flow control, proper float terms.</small></div><div class="size">$18BB<br><span>6.2K</span></div>
+        <div class="addr">$1000-$11FF</div><div class="region r-entry"><b>ENTRY</b><small>Cold/warm discriminator and early copy code.</small></div><div class="size">$0200<br><span>512B</span></div>
+        <div class="addr">$1200-$2ABF</div><div class="region r-resident"><b>RESIDENT</b><small>Parser, hooks, BASIC ROM calls, REU DMA, result commit, PROC/FUNC, flow control, proper float terms.</small></div><div class="size">$18C0<br><span>6.2K</span></div>
         <div class="addr">$2AC0</div><div class="region r-basic"><b>BASIC Sentinel</b><small>Must stay zero before stored-program RUN.</small></div><div class="size">1 byte</div>
         <div class="addr">$2AC1-$9FFF</div><div class="region r-basic"><b>BASIC Workspace</b><small>Program text, variables, arrays, string heap.</small></div><div class="size">$753F<br><span>30013 formula free / 29.3K</span></div>
         <div class="addr">$2B00-$3FFF</div><div class="region r-overlay"><b>Command Pack Load Image</b><small>Built-in module/submodule payload seed bytes before cold prestash.</small></div><div class="size">$1500<br><span>5.25K</span></div>
-        <div class="addr">$4000+</div><div class="region r-hidden"><b>HIDLOAD Image</b><small>Hidden helper seed copied to $A000 and $C280.</small></div><div class="size">$0377<br><span>0.9K</span></div>
-        <div class="addr">$4800+</div><div class="region r-bridge"><b>BRLOAD Image</b><small>Bridge seed copied to $C000.</small></div><div class="size">$01F4<br><span>500B</span></div>
+        <div class="addr">$4000+</div><div class="region r-hidden"><b>HIDLOAD Image</b><small>Hidden helper seed copied to $A000 and stashed in REU.</small></div><div class="size">$07DD<br><span>2013B</span></div>
+        <div class="addr">$4800+</div><div class="region r-bridge"><b>BRLOAD Image</b><small>Bridge seed copied to $C000.</small></div><div class="size">$01FF<br><span>511B</span></div>
         <div class="addr">$5000-$600F</div><div class="region r-shared"><b>REGSEED Load-Only Image</b><small>Cold 128-slot descriptor seed copied to REU, then this range may be BASIC-owned.</small></div><div class="size">$1010<br><span>4.0K</span></div>
         <div class="addr">$6200-$7FFF</div><div class="region r-overlay"><b>CMDPACK2 Overlay Seed</b><small>Cold-only built-in replacement overlays, prestashed to sparse code-bank offsets.</small></div><div class="size">$1E00<br><span>7.5K</span></div>
         <div class="addr">Core bank $0A00-$0BFF</div><div class="region r-readyos"><b>Runtime Snapshot</b><small>Zero page, stack, SP, mode, line-chain guards.</small></div><div class="size">$0200<br><span>0.5K</span></div>
-        <div class="addr">$A000-$A7DE</div><div class="region r-hidden"><b>COMMON HELPER</b><small>Helper code under BASIC ROM RAM.</small></div><div class="size">$07DF<br><span>2015B</span></div>
+        <div class="addr">$A000-$A7DC</div><div class="region r-hidden"><b>COMMON HELPER</b><small>Helper code under BASIC ROM RAM.</small></div><div class="size">$07DD<br><span>2013B</span></div>
         <div class="addr">$A800-$AEFC</div><div class="region r-hidden"><b>SLOT 0 PAYLOAD</b><small>Module 1 system/default payload.</small></div><div class="size">$06FD<br><span>1.7K</span></div>
         <div class="addr">$B000-$B474</div><div class="region r-overlay"><b>SLOT 1 PAYLOAD</b><small>Module 2 proof, streaming ZMODLD loader, and GFXCORE payload.</small></div><div class="size">$0475<br><span>1.1K</span></div>
         <div class="addr">$B800-$BD14</div><div class="region r-overlay"><b>SLOT 2 GFXPRIM</b><small>Base slot-2 proof and graphics primitive payload.</small></div><div class="size">$0515<br><span>1.3K</span></div>
         <div class="addr">$B800-$BA71</div><div class="region r-overlay"><b>GFXSPR OVERLAY</b><small>Replacement slot-2 overlay for sprite commands.</small></div><div class="size">$0272<br><span>626B</span></div>
         <div class="addr">$B800-$B86C</div><div class="region r-overlay"><b>INPUTEV OVERLAY</b><small>Replacement slot-2 overlay for polling input commands.</small></div><div class="size">$006D<br><span>109B</span></div>
+        <div class="addr">$B800-$BF99</div><div class="region r-overlay"><b>GFXPOLY OVERLAY</b><small>Replacement slot-2 overlay for polygon and point-buffer commands.</small></div><div class="size">$079A<br><span>1946B</span></div>
         <div class="addr">$C000-$C1FE</div><div class="region r-bridge"><b>BRIDGE</b><small>Magic, saved vectors, overlay vars, current handle scratch, PROC/FUNC stack.</small></div><div class="size">$01FF<br><span>511B</span></div>
         <div class="addr">$C200-$C5FF</div><div class="region r-shared"><b>Shared Frames</b><small>Call/result frames, descriptor/name/page buffers; hidden shadow is refreshed at <code>$C280</code> on <code>EXIT</code>.</small></div><div class="size">$0400<br><span>1.0K</span></div>
         <div class="addr">$C600-$C7FF</div><div class="region r-readyos"><b>ReadyOS REU Metadata</b><small>ReadyBASIC only marks REU bank ownership here.</small></div><div class="size">$0200<br><span>0.5K</span></div>
@@ -1136,6 +1146,7 @@
 	          <div class="slice"><span>$3000+</span><span>Disk-loaded proof payloads for <code>ZDM1</code>, <code>ZDM2S</code>, <code>ZDOV1</code>, <code>ZDOV2</code>, and <code>ZSAA</code>-<code>ZUEB</code>.</span></div>
 	          <div class="slice"><span>$5000-$5271</span><span>Built-in <code>GFXSPR</code> replacement overlay copied into <code>$B800-$BA71</code>.</span></div>
 	          <div class="slice"><span>$5800-$586C</span><span>Built-in <code>INPUTEV</code> replacement overlay copied into <code>$B800-$B86C</code>.</span></div>
+	          <div class="slice"><span>$6000-$6799</span><span>Built-in <code>GFXPOLY</code> replacement overlay copied into <code>$B800-$BF99</code>.</span></div>
           <div class="slice"><span>desc</span><span>Descriptors point to payload offsets, sizes, slot masks, runtime destinations, and entry offsets.</span></div>
 	          <div class="slice"><span>handles</span><span>Handle and screen commands fetch the full <code>$06FD</code> slot-0 payload because shared helpers live there.</span></div>
         </div>
@@ -1201,10 +1212,11 @@
           <tr><td><code>BASIC_START</code></td><td><code>$2AC1</code></td></tr>
           <tr><td>Empty BASIC free bytes</td><td>30013</td></tr>
           <tr><td><code>bin/readybasic.prg</code></td><td>28674 bytes</td></tr>
-          <tr><td><code>RESIDENT</code></td><td><code>$18BB</code> / 6331B</td></tr>
+          <tr><td><code>RESIDENT</code></td><td><code>$18C0</code> / 6336B</td></tr>
           <tr><td><code>LOWPACK</code></td><td><code>$06FD</code> / 1789B</td></tr>
           <tr><td><code>BRIDGE</code></td><td><code>$01FF</code> / 511B</td></tr>
           <tr><td><code>REGSEED</code></td><td><code>$1010</code> / 4112B</td></tr>
+          <tr><td><code>GFXPOLY</code> overlay</td><td><code>$079A</code> / 1946B</td></tr>
         </tbody>
       </table>
       <table>

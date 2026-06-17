@@ -8,10 +8,10 @@ same ReadyOS and REU discipline.
 
 - `BASIC_START = $2AC1`; BASIC owns `$2AC1-$9FFF`, with `30013` formula empty
   free bytes.
-- `RESIDENT` is `$1200-$2ABA` (`$18BB`, 6331B).
+- `RESIDENT` is `$1200-$2ABF` (`$18C0`, 6336B).
 - `BRIDGE` is `$C000-$C1FE` (`$01FF`, 511B), still below `$C200`.
 - Under BASIC ROM, `$A000-$A7FF` is the common helper area, currently using
-  `$A000-$A7DE`; `$A800-$AFFF`,
+  `$A000-$A7DC`; `$A800-$AFFF`,
   `$B000-$B7FF`, and `$B800-$BFFF` are three 2KB submodule slots.
 - ReadyBASIC uses two launcher-assigned REU resource banks. The core bank is
   registry/runtime storage; the code bank is built-in and disk-loaded module
@@ -26,8 +26,9 @@ same ReadyOS and REU discipline.
 - Graphics commands are built-in module id `3`: `GFXCORE` submodule `16` in
   slot 1, `GFXPRIM` submodule `17` in the base slot-2 image, `GFXSPR`
   submodule `18` as a slot-2 replacement overlay prestashed at code-bank offset
-  `$5000`, and `INPUTEV` submodule `19` as a slot-2 replacement overlay
-  prestashed at code-bank offset `$5800`.
+  `$5000`, `INPUTEV` submodule `19` as a slot-2 replacement overlay prestashed
+  at code-bank offset `$5800`, and `GFXPOLY` submodule `20` as a slot-2
+  replacement overlay prestashed at code-bank offset `$6000`.
 
 ## Pre-Module V1 Layout Snapshot
 
@@ -99,6 +100,10 @@ same ReadyOS and REU discipline.
 - `$5272-$57FF`: reserved `GFXSPR` growth headroom inside the assigned code bank.
 - `$5800-$586C`: built-in `INPUTEV` replacement overlay, loaded from cold-only
   `CMDPACK2` and fetched into `$B800-$B86C` when input commands run.
+- `$586D-$5FFF`: reserved `INPUTEV` growth headroom.
+- `$6000-$6799`: built-in `GFXPOLY` replacement overlay, loaded from cold-only
+  `CMDPACK2` and fetched into `$B800-$BF99` when polygon commands run.
+- `$679A-$67FF`: reserved `GFXPOLY` growth headroom.
 
 Descriptors store payload offsets, payload sizes, slot masks, runtime
 destinations, and entry offsets. Heap and screen commands currently fetch the
@@ -177,6 +182,11 @@ Each descriptor is 32 bytes:
   `RECT(X1,Y1,X2,Y2,C)`, `FRECT(X1,Y1,X2,Y2,C)`, `CIRCLE(X,Y,R,C)`,
   `FCIRCLE(X,Y,R,C)`, `TILE(X,Y,CH,C)`, and `CHARAT(X,Y,CH,C)`: module 3
   `GFXPRIM` immediate primitive/cell commands.
+- `POLY(A%(0),COUNT,C)`, `FPOLY(A%(0),COUNT,C)`, `POLYH(H%,COUNT,C)`,
+  `FPOLYH(H%,COUNT,C)`, `PBUFNEW(COUNT,H%)`, `PBUFSET(H%,INDEX,X,Y)`, and
+  `PBUFFREE(H%)`: module 3 `GFXPOLY` overlay commands. Point buffers are typed
+  REU handle type `4`; `POLYH`/`FPOLYH` are explicit handle aliases because the
+  same-name handle overload was not added to the resident parser.
 - `SPRSET(N,ON,COLOR,PATTERN)`, `SPRMOVE(N,X,Y)`, `SPRCOLOR(N,COLOR)` /
   `SPRCOL(N,COLOR)`, `SPRROW(N,ROW,B1,B2,B3)`, `SPREXPAND(N,XON,YON)` /
   `SPRSIZE(N,XON,YON)`, `SPRPRI(N,BEHIND)`, `SPRMULTI(N,ON)` / `SPRMUL(N,ON)`,
@@ -238,10 +248,11 @@ The current design includes resident flow control and error introspection:
 
 Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
 `30013` formula empty free bytes. `ENTRY` is `$1000-$11FF` (`512` bytes),
-`RESIDENT` is `$1200-$2ABA` (`6331` bytes), `HIDDEN` is `$A000-$A7DE`
-(`2015` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$06FD`
+`RESIDENT` is `$1200-$2ABF` (`6336` bytes), `HIDDEN` is `$A000-$A7DC`
+(`2013` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$06FD`
 (`1789` bytes), `SLOTPACK2` is `$0515` (`1301` bytes), `OVL1PACK` is `$0272`
-(`626` bytes), and `bin/readybasic.prg` is `28674` bytes because `CMDPACK2`
+(`626` bytes), `OVL2PACK` is `$006D` (`109` bytes), `OVL3PACK` is `$079A`
+(`1946` bytes), and `bin/readybasic.prg` is `28674` bytes because `CMDPACK2`
 extends the cold-load seed image through `$7FFF`. BASIC free bytes remain
 unchanged because the seed image is reclaimed before BASIC initialization.
 

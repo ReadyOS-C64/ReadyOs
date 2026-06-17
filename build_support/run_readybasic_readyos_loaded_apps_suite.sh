@@ -247,6 +247,10 @@ append_load_list_run_gfx_app "RBGFX09" "rbgfx09" "RBGFX09 SPRITES" "4.0"
 append_load_list_run_gfx_app "RBGFX10" "rbgfx10" "RBGFX10 COLLISION" "2.5"
 append_load_list_run_gfx_app "RBGFX11" "rbgfx11" "RBGFX11 INPUT" "4.0"
 append_load_list_run_gfx_app "RBGFX12" "rbgfx12" "RBGFX12 SHOWCASE" "3.0"
+append_load_list_run_gfx_app "RBGFX17" "rbgfx17" "DEMO 17" "3.0"
+append_load_list_run_gfx_app "RBGFX18" "rbgfx18" "DEMO 18" "3.0"
+append_load_list_run_gfx_app "RBGFX19" "rbgfx19" "DEMO 19" "3.0"
+append_load_list_run_gfx_app "RBGFX20" "rbgfx20" "DEMO 20" "3.0"
 
 if [ "${READYBASIC_GENERATE_PLAN_ONLY:-0}" = "1" ]; then
   echo "wrote $PLAN"

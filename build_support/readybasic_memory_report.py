@@ -78,6 +78,7 @@ def parse_map_segments(path: Path) -> dict[str, Segment]:
         "SPANPACK",
         "OVL1PACK",
         "OVL2PACK",
+        "OVL3PACK",
         "BRIDGE",
     }
     missing = sorted(required - set(segments))
@@ -234,6 +235,7 @@ def command_groups(commands: list[tuple[str, str]]) -> dict[str, tuple[str, ...]
         "gfxprim": [],
         "gfxspr": [],
         "inputev": [],
+        "gfxpoly": [],
         "end": [],
     }
     for macro, name in commands:
@@ -257,6 +259,8 @@ def command_groups(commands: list[tuple[str, str]]) -> dict[str, tuple[str, ...]
             groups["gfxspr"].append(name)
         elif macro == "CMD_INPUTEV":
             groups["inputev"].append(name)
+        elif macro == "CMD_GFXPOLY":
+            groups["gfxpoly"].append(name)
     return {k: tuple(v) for k, v in groups.items()}
 
 
@@ -298,9 +302,10 @@ def render(ctx: dict[str, object]) -> str:
     brload_start, brload_size = cfg["BRLOAD"]
     regseed_start, regseed_size = cfg["REGSEED"]
     base_builtin_size = (sym["__SPANPACK_LOAD__"] - sym["__LOWPACK_LOAD__"]) + seg["SPANPACK"].size
-    built_in_payload_size = base_builtin_size + seg["OVL1PACK"].size + seg["OVL2PACK"].size
+    built_in_payload_size = base_builtin_size + seg["OVL1PACK"].size + seg["OVL2PACK"].size + seg["OVL3PACK"].size
     gfxspr_off = const["RB_CODE_GFXSPR_OFF"]
     inputev_off = const["RB_CODE_INPUTEV_OFF"]
+    gfxpoly_off = const["RB_CODE_GFXPOLY_OFF"]
 
     ram_blocks = [
         Block("Zero page", 0x0000, 0x0100, "system", "C64/BASIC/KERNAL zero page; cc65 ZP is not stomped."),
@@ -348,7 +353,8 @@ def render(ctx: dict[str, object]) -> str:
     cmdpack2_blocks = [
         Block("Overlay 1 seed", sym["__OVL1PACK_LOAD__"], seg["OVL1PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL1PACK'].start, seg['OVL1PACK'].end)}; REU code offset {fmt_hex(gfxspr_off)}.", ("ZOVL1",)),
         Block("Overlay 2 seed", sym["__OVL2PACK_LOAD__"], seg["OVL2PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL2PACK'].start, seg['OVL2PACK'].end)}; REU code offset {fmt_hex(inputev_off)}.", ("ZOVL2",)),
-        Block("CMDPACK2 free seed room", sym["__OVL2PACK_LOAD__"] + seg["OVL2PACK"].size, (cmdpack2_start + cmdpack2_size) - (sym["__OVL2PACK_LOAD__"] + seg["OVL2PACK"].size), "free", "Unused cold-load seed capacity."),
+        Block("Overlay 3 seed", sym["__OVL3PACK_LOAD__"], seg["OVL3PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL3PACK'].start, seg['OVL3PACK'].end)}; REU code offset {fmt_hex(gfxpoly_off)}.", groups["gfxpoly"]),
+        Block("CMDPACK2 free seed room", sym["__OVL3PACK_LOAD__"] + seg["OVL3PACK"].size, (cmdpack2_start + cmdpack2_size) - (sym["__OVL3PACK_LOAD__"] + seg["OVL3PACK"].size), "free", "Unused cold-load seed capacity."),
     ]
 
     post_blocks = [
@@ -371,6 +377,8 @@ def render(ctx: dict[str, object]) -> str:
         Block("Slot 2 GFXSPR free", 0xB800 + seg["OVL1PACK"].size, slot_size - seg["OVL1PACK"].size, "free", f"{fmt_size(slot_size - seg['OVL1PACK'].size)} free in the GFXSPR overlay image."),
         Block("Slot 2 INPUTEV overlay", 0xB800, seg["OVL2PACK"].size, "overlay", "Replacement overlay for polling input commands.", groups["overlay"][1:] + groups["inputev"]),
         Block("Slot 2 INPUTEV free", 0xB800 + seg["OVL2PACK"].size, slot_size - seg["OVL2PACK"].size, "free", f"{fmt_size(slot_size - seg['OVL2PACK'].size)} free in the INPUTEV overlay image."),
+        Block("Slot 2 GFXPOLY overlay", 0xB800, seg["OVL3PACK"].size, "overlay", "Replacement overlay for polygon and point-buffer commands.", groups["gfxpoly"]),
+        Block("Slot 2 GFXPOLY free", 0xB800 + seg["OVL3PACK"].size, slot_size - seg["OVL3PACK"].size, "free", f"{fmt_size(slot_size - seg['OVL3PACK'].size)} free in the GFXPOLY overlay image."),
     ]
 
     reu44_blocks = [
@@ -398,7 +406,10 @@ def render(ctx: dict[str, object]) -> str:
         Block("Built-in GFXSPR overlay", gfxspr_off, seg["OVL1PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when sprite commands run.", groups["overlay"][:1] + groups["gfxspr"]),
         Block("GFXSPR reserved headroom", gfxspr_off + seg["OVL1PACK"].size, 0x0800 - seg["OVL1PACK"].size, "free", "Reserved so the overlay can grow toward a full 2K slot without moving INPUTEV."),
         Block("Built-in INPUTEV overlay", inputev_off, seg["OVL2PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when input commands run.", groups["inputev"]),
-        Block("Payload bank free tail", inputev_off + seg["OVL2PACK"].size, 0x10000 - (inputev_off + seg["OVL2PACK"].size), "free", "Remaining space in the current single ReadyBASIC code bank."),
+        Block("INPUTEV reserved headroom", inputev_off + seg["OVL2PACK"].size, 0x0800 - seg["OVL2PACK"].size, "free", "Reserved so the overlay can grow toward a full 2K slot without moving GFXPOLY."),
+        Block("Built-in GFXPOLY overlay", gfxpoly_off, seg["OVL3PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when polygon commands run.", groups["gfxpoly"]),
+        Block("GFXPOLY reserved headroom", gfxpoly_off + seg["OVL3PACK"].size, 0x0800 - seg["OVL3PACK"].size, "free", "Reserved for polygon overlay growth."),
+        Block("Payload bank free tail", gfxpoly_off + 0x0800, 0x10000 - (gfxpoly_off + 0x0800), "free", "Remaining space in the current single ReadyBASIC code bank."),
     ]
 
     reu_overview_blocks = [
@@ -636,6 +647,7 @@ def render(ctx: dict[str, object]) -> str:
         Block("SPANPACK", seg["SPANPACK"].start, seg["SPANPACK"].size, "span", "Two-slot proof payload.", groups["span"]),
         Block("OVL1PACK", seg["OVL1PACK"].start, seg["OVL1PACK"].size, "overlay", "Slot 2 replacement overlay for GFXSPR.", groups["overlay"][:1] + groups["gfxspr"]),
         Block("OVL2PACK", seg["OVL2PACK"].start, seg["OVL2PACK"].size, "overlay", "Slot 2 replacement overlay for INPUTEV.", groups["overlay"][1:] + groups["inputev"]),
+        Block("OVL3PACK", seg["OVL3PACK"].start, seg["OVL3PACK"].size, "overlay", "Slot 2 replacement overlay for GFXPOLY.", groups["gfxpoly"]),
         Block("BRIDGE", seg["BRIDGE"].start, seg["BRIDGE"].size, "bridge", "Persistent bridge state."),
         Block("REGSEED", seg["REGSEED"].start, seg["REGSEED"].size, "registry", "Load-only registry seed."),
       ])}
@@ -661,6 +673,7 @@ def build_context(args: argparse.Namespace) -> dict[str, object]:
             "__SPANPACK_LOAD__",
             "__OVL1PACK_LOAD__",
             "__OVL2PACK_LOAD__",
+            "__OVL3PACK_LOAD__",
         },
     )
     const = parse_asm_constants(args.asm)

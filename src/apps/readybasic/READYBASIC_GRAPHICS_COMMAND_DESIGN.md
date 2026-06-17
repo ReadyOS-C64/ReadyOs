@@ -130,6 +130,7 @@ Built-in graphics payloads are prestashed in the ReadyBASIC code bank:
 | `GFXPRIM` | module `3`, submodule `17` | slot 2 `$B800-$BD14` | `PLOT`, `POINT`, `LINE`, `RECT`, `FRECT`; Phase 2 also adds `CIRCLE`, `FCIRCLE`, `TILE`, `CHARAT` |
 | `GFXSPR` | module `3`, submodule `18` | slot-2 replacement overlay at `$B800-$BA71`, stored at REU code offset `$5000` | `SPRSET`, `SPRMOVE`, `SPRCOLOR`, `SPRROW`, `SPRSCAN`, `SPRCOLL`; Phase 2 also adds size/priority/multicolor controls |
 | `INPUTEV` | module `3`, submodule `19` | slot-2 replacement overlay at `$B800-$B86C`, stored at REU code offset `$5800` | `JOY`, `KEYP`, `KEYSCAN`, `KEYLAST` |
+| `GFXPOLY` | module `3`, submodule `20` | slot-2 replacement overlay at `$B800-$BF99`, stored at REU code offset `$6000` | `POLY`, `FPOLY`, `POLYH`, `FPOLYH`, `PBUFNEW`, `PBUFSET`, `PBUFFREE` |
 | Surface handle stubs | system slot 0 | slot 0 `$A800-$AFFF` | `GFXSURF`, `GFXBLIT` |
 
 The surface handle commands use the existing typed REU handle allocator and
@@ -248,12 +249,65 @@ Phase 2 demo programs:
 - `rbgfx16_phase2_sprite_ctrl.bas`: explicit `SPRROW` sprite pixels, movement,
   expansion, priority, multicolor, and recolor stages.
 
-Phase 2 deliberately does not yet implement retained REU display lists,
-sprite-sheet loaders, true REU offscreen drawing, dirty-rect `GFXSYNC`, polygon
-commands (`POLY`/`FPOLY`), or true circular fill. `SCROLL` was also deferred.
+Phase 2 deliberately did not implement retained REU display lists,
+sprite-sheet loaders, true REU offscreen drawing, dirty-rect `GFXSYNC`, or true
+circular fill. `SCROLL` was also deferred. Phase 3 adds polygon commands in a
+separate `GFXPOLY` overlay rather than consuming the remaining `GFXPRIM`
+runtime headroom.
 After the `CMDPACK2`/replacement-overlay rework, `GFXSPR` and `INPUTEV` no
 longer consume `GFXPRIM`'s slot-2 runtime headroom, but every individual
 overlay still has a hard 2KB execution-image budget.
+
+## Implemented Phase 3 Snapshot
+
+Phase 3 is polygon-first and command-only. It adds one built-in slot-2
+replacement overlay, `GFXPOLY`, with runtime address `$B800-$BF99`, cold-load
+source `OVL3PACK`, and assigned code-bank offset `$6000`. `GFXPRIM` stays at
+`$B800-$BD14`; polygon bodies do not consume the remaining `GFXPRIM` headroom.
+
+Implemented syntax:
+
+```basic
+POLY(A%(0),COUNT,C)
+FPOLY(A%(0),COUNT,C)
+PBUFNEW(COUNT,H%)
+PBUFSET(H%,INDEX,X,Y)
+POLYH(H%,COUNT,C)
+FPOLYH(H%,COUNT,C)
+PBUFFREE(H%)
+```
+
+Array-backed `POLY` and `FPOLY` read BASIC integer array pairs:
+`x0,y0,x1,y1,...`. `COUNT` is the number of points and currently accepts
+`3..32`. The array stores ordinary BASIC `%` values; the command reads the
+array storage as 16-bit coordinates and the plotting worker maps them to the
+active mode.
+
+REU-backed point buffers use typed handle type `4`
+(`RB_HANDLE_TYPE_POINTBUF`). `PBUFNEW(COUNT,H%)` allocates one REU heap page,
+currently supporting up to 64 points. `PBUFSET(H%,INDEX,X,Y)` writes zero-based
+little-endian `x,y` pairs into that page. `PBUFFREE(H%)` releases the typed
+handle.
+
+The originally proposed same-name handle overloads,
+`POLY(H%,COUNT,C)` and `FPOLY(H%,COUNT,C)`, were not implemented in Phase 3.
+The resident parser was already constrained against the fixed
+`BASIC_START=$2AC1` boundary, so the handle forms use explicit command aliases
+`POLYH` and `FPOLYH`. This keeps BASIC bytes free unchanged and keeps overload
+dispatch out of the resident parser.
+
+`POLY`/`POLYH` draw each edge by using the same compact step-toward-endpoint
+line behavior as the current immediate primitives, then close the final point
+back to the first. In bitmap modes this plots to Bank D bitmap RAM at
+`$E000-$FFFF`; in tile modes it writes cell-space approximations through the
+same tile plotting path.
+
+`FPOLY`/`FPOLYH` currently use a conservative convex fan fill: the first point
+is treated as the anchor, each successive edge is stepped, and lines are drawn
+from the anchor to those edge points. This gives demoable filled triangles and
+convex polygons while staying inside the 2KB overlay. A full scanline fill with
+intersection sorting, concave polygon handling, and larger edge buffers remains
+future work.
 
 ## Command Families
 
@@ -292,8 +346,8 @@ current target.
 | `FRECT(x1,y1,x2,y2,c)` | Bitmap and tile modes | Filled rectangle. |
 | `CIRCLE(x,y,r,c)` | Bitmap modes | Expensive; module overlay candidate. |
 | `FCIRCLE(x,y,r,c)` | Bitmap modes | More expensive; likely overlay. |
-| `POLY(A%(0),count,c)` | Bitmap modes | Points passed as array pairs. |
-| `FPOLY(A%(0),count,c)` | Bitmap modes | Filled polygon; good overlay candidate. |
+| `POLY(A%(0),count,c)` / `POLYH(H%,count,c)` | Bitmap modes; tile approximation | Phase 3 outline polygon from BASIC integer array pairs or a REU point-buffer handle. |
+| `FPOLY(A%(0),count,c)` / `FPOLYH(H%,count,c)` | Bitmap modes; tile approximation | Phase 3 conservative convex fan fill from BASIC integer array pairs or a REU point-buffer handle. |
 | `FILL(x,y,c)` | Bitmap modes | Flood fill needs REU/stack workspace, not resident stack. |
 
 Tradeoff: immediate commands are intuitive but can be slow if each command maps
@@ -481,7 +535,8 @@ Use multiple modules so a user can load only what they need.
 | Module | Slot shape | Purpose |
 |---|---|---|
 | `GFXCORE` | Slot 1 stable manager | Mode state, handle validation, target selection, Bank D layout, blit dispatcher. |
-| `GFXPRIM` | Slot 2 overlays | Plot, line, rect, circle, polygon, fill workers. |
+| `GFXPRIM` | Slot 2 base image | Plot, line, rect, circle, and tile/cell workers. |
+| `GFXPOLY` | Slot 2 replacement overlay | Polygon and REU point-buffer workers. |
 | `GFXTILE` | Slot 2 overlays | Text/tile/charset/tilemap operations. |
 | `GFXSPR` | Slot 2 or slot 1+2 | Sprite definition, movement, collision polling. |
 | `GFXDL` | Slot 1+2 span or stable+overlay | Display-list traversal, z-buckets, renderer dispatch. |
@@ -503,7 +558,8 @@ shared signatures:
 | Handle input | `GFXBLIT(H%)`, `DLDRAW(H%)`, `TILESET(H%)` |
 | Numeric pair | `PLOT(x,y,c)`, `SPRMOVE(n,x,y)` |
 | Four numeric coords | `LINE(x1,y1,x2,y2,c)`, `RECT(...)` |
-| Array base plus count | `POLY(A%(0),count,c)` |
+| Array base plus count | `POLY(A%(0),count,c)`, `FPOLY(A%(0),count,c)` |
+| Point-buffer handle plus count | `POLYH(H%,count,c)`, `FPOLYH(H%,count,c)` |
 | Handle plus numeric args | `DLADDLINE(H%,x1,y1,x2,y2,c,z)` |
 | Optional output handle | `GFXSURF("HIRES",H%)` and `H%=GFXSURF("HIRES")` |
 
@@ -661,13 +717,24 @@ This gives useful graphics without display-list complexity or IRQ hooks.
   sprite priority, sprite multicolor enable, and shared sprite multicolor
   registers.
 - Deferred: `TILESET`, `TILEDEF`, `TILEMAP`, `TILEDRAW`, `SPRDEF`, `SPRLOAD`,
-  sprite-sheet handles, `GFXSYNC` dirty-rect blits, `POLY`, `FPOLY`, and `FILL`.
+  sprite-sheet handles, `GFXSYNC` dirty-rect blits, and `FILL`.
 
 This phase starts using overlay-heavy primitive and sprite workers while keeping
 REU resource/rendering work out of resident RAM. Full REU-backed tilemaps,
 sprite sheets, and retained resources remain a later phase.
 
-### Phase 3: Retained Scene System
+### Phase 3: Polygon Overlay
+
+- Implemented now: `POLY`, `FPOLY`, `POLYH`, `FPOLYH`, `PBUFNEW`, `PBUFSET`,
+  and `PBUFFREE`.
+- `GFXPOLY` is a built-in slot-2 replacement overlay, prestashed at code-bank
+  offset `$6000` and fetched into `$B800-$BF99`.
+- BASIC integer array polygons and typed REU point-buffer polygons are both
+  supported.
+- Deferred: same-name handle overloads, full scanline/concave fill, and larger
+  point-buffer paging.
+
+### Phase 4: Retained Scene System
 
 - `DLNEW`, `DLCLEAR`, `DLADDLINE`, `DLADDRECT`, `DLADDPOLY`, `DLADDSPR`,
   `DLADDTEXT`, `DLDRAW`, `DLBLIT`
@@ -677,7 +744,7 @@ sprite sheets, and retained resources remain a later phase.
 This phase provides the high-level "list of things to draw" model and lets the
 renderer choose the best draw order and target-specific implementation.
 
-### Phase 4: Optional Event IRQ
+### Phase 5: Optional Event IRQ
 
 - `EVINIT`, `EVON`, `EVOFF`, `EVFLUSH`, `EVGET`
 - Only after pure polling and `GFXFRAME()` are proven.

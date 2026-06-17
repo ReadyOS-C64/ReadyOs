@@ -254,6 +254,7 @@ RB_SUBMOD_GFXCORE = 16
 RB_SUBMOD_GFXPRIM = 17
 RB_SUBMOD_GFXSPR  = 18
 RB_SUBMOD_INPUTEV = 19
+RB_SUBMOD_GFXPOLY = 20
 RB_SLOT_LEGACY_LOW = $01
 RB_SLOT_PROOF_1 = $02
 RB_SLOT_PROOF_2 = $04
@@ -282,6 +283,7 @@ RB_REU_COMMON_LIMIT= $4000
 RB_REU_DATA_OFF    = $4000
 RB_CODE_GFXSPR_OFF = $5000
 RB_CODE_INPUTEV_OFF= $5800
+RB_CODE_GFXPOLY_OFF= $6000
 
 RB_CMD_DESC_SIZE   = 32
 RB_CMD_DESC_COUNT  = 128
@@ -296,6 +298,7 @@ RB_HEAP_PAGE_BASE  = >RB_REU_DATA_OFF
 RB_HANDLE_TYPE_BUFFER = 1
 RB_HANDLE_TYPE_SCREEN_TC = 2
 RB_HANDLE_TYPE_GFXSURF = 3
+RB_HANDLE_TYPE_POINTBUF = 4
 RB_SCREEN_BYTES    = $03E8
 RB_SCREEN_HANDLE_PAGES = 8
 
@@ -337,6 +340,7 @@ SIG_PLOT        = 21
 SIG_LINE        = 22
 SIG_SPRSET      = 23
 SIG_KEYNONE     = 24
+SIG_POLY        = 25
 
 CMD_ZECHO1      = 1
 CMD_ZADD16      = 2
@@ -406,6 +410,13 @@ CMD_SPRCOL      = 65
 CMD_SPRMCLR     = 66
 CMD_SPRMUL      = 67
 CMD_SPRMCO      = 68
+CMD_POLY        = 69
+CMD_FPOLY       = 70
+CMD_PBUFNEW     = 71
+CMD_PBUFSET     = 72
+CMD_PBUFFREE    = 73
+CMD_POLYH       = 74
+CMD_FPOLYH      = 75
 
 ; REU registers.
 REU_CMD         = $DF01
@@ -434,6 +445,7 @@ REU_LEN_HI      = $DF08
         .import __SPANPACK_LOAD__, __SPANPACK_RUN__, __SPANPACK_SIZE__
         .import __OVL1PACK_LOAD__, __OVL1PACK_RUN__, __OVL1PACK_SIZE__
         .import __OVL2PACK_LOAD__, __OVL2PACK_RUN__, __OVL2PACK_SIZE__
+        .import __OVL3PACK_LOAD__, __OVL3PACK_RUN__, __OVL3PACK_SIZE__
 
 rb_entry_src    = $FB
 rb_entry_dst    = $FD
@@ -2204,7 +2216,7 @@ rb_lookup_command:
 rb_parse_by_signature:
         lda RB_DESC_BUF+14
         beq @bad
-        cmp #SIG_KEYNONE + 1
+        cmp #SIG_POLY + 1
         bcs @bad
         asl
         tax
@@ -2226,12 +2238,12 @@ rb_parse_sig_table:
         .word parse_sig_zrangenumarray
         .word parse_sig_bufnew
         .word parse_sig_buffill
-        .word parse_sig_buffree
-        .word parse_sig_ztempscratch
+        .word rb_parse_num0
+        .word parse_sig_bufnew
         .word parse_sig_zfail
-        .word parse_sig_freemem
-        .word parse_sig_scrcap
-        .word parse_sig_scrput
+        .word parse_sig_no_args
+        .word rb_parse_out_int_current
+        .word rb_parse_num0
         .word parse_sig_fadd
         .word parse_sig_errcode
         .word parse_sig_errline
@@ -2241,6 +2253,7 @@ rb_parse_sig_table:
         .word parse_sig_num5
         .word parse_sig_sprset
         .word parse_sig_no_args
+        .word parse_sig_poly
 
 parse_sig_zecho1:
         jsr rb_parse_out_int_current
@@ -2281,25 +2294,9 @@ parse_sig_buffill:
         jsr rb_parse_num0
         jmp rb_parse_num1
 
-parse_sig_buffree:
-        jmp rb_parse_num0
-
-parse_sig_ztempscratch:
-        jsr rb_parse_num0
-        jmp rb_parse_out_int
-
 parse_sig_zfail:
         jsr rb_parse_num0
         jmp rb_parse_out_int
-
-parse_sig_freemem:
-        jmp parse_sig_no_args
-
-parse_sig_scrcap:
-        jmp rb_parse_out_int_current
-
-parse_sig_scrput:
-        jmp rb_parse_num0
 
 parse_sig_fadd:
         jsr rb_parse_float0
@@ -2350,6 +2347,14 @@ parse_sig_gfxsurf:
         beq :+
         jsr rb_parse_out_int
 :       rts
+
+parse_sig_poly:
+        lda #0
+        sta CF_COUNT0_HI
+        jsr rb_parse_int_array_arg
+        jsr rb_resolve_int_array_input_ptr
+        jsr rb_parse_num1
+        jmp rb_parse_num2
 
 rb_parse_no_args:
         jsr rb_skip_spaces
@@ -2698,7 +2703,7 @@ rb_parse_out_int_array:
         inc CF_PARAM_COUNT
         rts
 
-rb_parse_int_array_input:
+rb_parse_int_array_arg:
         jsr rb_parse_arg_sep
         lda #0
         sta SUBFLG
@@ -2719,6 +2724,10 @@ rb_parse_int_array_input:
         sbc ARYTAB+1
         sta CF_PTR0_HI
         inc CF_PARAM_COUNT
+        rts
+
+rb_parse_int_array_input:
+        jsr rb_parse_int_array_arg
         jsr rb_parse_num2
         lda CF_NUM2_LO
         sta CF_COUNT0_LO
@@ -4262,6 +4271,21 @@ rb_reu_header_end:
         .res 16 - .strlen(name), 0
 .endmacro
 
+.macro CMD_GFXPOLY id, sig, label, name
+        .byte id, RB_MODULE_GFX
+        .word RB_CODE_GFXPOLY_OFF
+        .word __OVL3PACK_SIZE__
+        .byte RB_SUBMOD_GFXPOLY
+        .byte 3
+        .byte RB_SLOT_PROOF_2
+        .byte 1
+        .word 0
+        .word label - __OVL3PACK_RUN__
+        .byte sig, .strlen(name)
+        .byte name
+        .res 16 - .strlen(name), 0
+.endmacro
+
 rb_command_descriptors:
         CMD_LOW_ALL CMD_ZECHO1, SIG_ZECHO1, cmd_zecho1_low, "ZECHO1"
         CMD_LOW CMD_ZADD16, SIG_ZADD16, cmd_zadd16_low, cmd_zadd16_low_end, "ZADD16"
@@ -4326,7 +4350,14 @@ rb_command_descriptors:
         CMD_INPUTEV CMD_KEYP, SIG_SCRCAP, cmd_keyp, "KEYP"
         CMD_INPUTEV CMD_KEYSCAN, SIG_KEYNONE, cmd_keyscan, "KEYSCAN"
         CMD_INPUTEV CMD_KEYLAST, SIG_SCRCAP, cmd_keylast, "KEYLAST"
-        .res (RB_CMD_DESC_COUNT - 64) * RB_CMD_DESC_SIZE, 0
+        CMD_GFXPOLY CMD_POLY, SIG_POLY, cmd_poly, "POLY"
+        CMD_GFXPOLY CMD_FPOLY, SIG_POLY, cmd_fpoly, "FPOLY"
+        CMD_GFXPOLY CMD_PBUFNEW, SIG_BUFNEW, cmd_pbufnew, "PBUFNEW"
+        CMD_GFXPOLY CMD_PBUFSET, SIG_SPRSET, cmd_pbufset, "PBUFSET"
+        CMD_GFXPOLY CMD_PBUFFREE, SIG_BUFFREE, cmd_pbuffree, "PBUFFREE"
+        CMD_GFXPOLY CMD_POLYH, SIG_PLOT, cmd_poly, "POLYH"
+        CMD_GFXPOLY CMD_FPOLYH, SIG_PLOT, cmd_fpoly, "FPOLYH"
+        .res (RB_CMD_DESC_COUNT - 71) * RB_CMD_DESC_SIZE, 0
         CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"
 
 ; ---------------------------------------------------------------------------
@@ -4944,40 +4975,39 @@ rb_seed_plugin_reu_hidden:
         sta rb_reu_len_hi
         jsr rb_reu_stash
 
-        lda #<__OVL1PACK_LOAD__
+        ldx #0
+@stash_ovl:
+        lda rb_builtin_ovl_stash,x
         sta rb_reu_c64_lo
-        lda #>__OVL1PACK_LOAD__
+        lda rb_builtin_ovl_stash+1,x
         sta rb_reu_c64_hi
-        lda #<RB_CODE_GFXSPR_OFF
+        lda rb_builtin_ovl_stash+2,x
         sta rb_reu_off_lo
-        lda #>RB_CODE_GFXSPR_OFF
+        lda rb_builtin_ovl_stash+3,x
         sta rb_reu_off_hi
+        lda rb_builtin_ovl_stash+4,x
+        sta rb_reu_len_lo
+        lda rb_builtin_ovl_stash+5,x
+        sta rb_reu_len_hi
+        txa
+        pha
         lda rb_reu_code_bank
         sta rb_reu_bank
-        lda #<__OVL1PACK_SIZE__
-        sta rb_reu_len_lo
-        lda #>__OVL1PACK_SIZE__
-        sta rb_reu_len_hi
         jsr rb_reu_stash
-
-        lda #<__OVL2PACK_LOAD__
-        sta rb_reu_c64_lo
-        lda #>__OVL2PACK_LOAD__
-        sta rb_reu_c64_hi
-        lda #<RB_CODE_INPUTEV_OFF
-        sta rb_reu_off_lo
-        lda #>RB_CODE_INPUTEV_OFF
-        sta rb_reu_off_hi
-        lda rb_reu_code_bank
-        sta rb_reu_bank
-        lda #<__OVL2PACK_SIZE__
-        sta rb_reu_len_lo
-        lda #>__OVL2PACK_SIZE__
-        sta rb_reu_len_hi
-        jsr rb_reu_stash
+        pla
+        clc
+        adc #6
+        tax
+        cpx #18
+        bcc @stash_ovl
 
         jsr rb_clear_slot_residency
         jmp rb_clear_handle_heap
+
+rb_builtin_ovl_stash:
+        .byte <__OVL1PACK_LOAD__, >__OVL1PACK_LOAD__, <RB_CODE_GFXSPR_OFF, >RB_CODE_GFXSPR_OFF, <__OVL1PACK_SIZE__, >__OVL1PACK_SIZE__
+        .byte <__OVL2PACK_LOAD__, >__OVL2PACK_LOAD__, <RB_CODE_INPUTEV_OFF, >RB_CODE_INPUTEV_OFF, <__OVL2PACK_SIZE__, >__OVL2PACK_SIZE__
+        .byte <__OVL3PACK_LOAD__, >__OVL3PACK_LOAD__, <RB_CODE_GFXPOLY_OFF, >RB_CODE_GFXPOLY_OFF, <__OVL3PACK_SIZE__, >__OVL3PACK_SIZE__
 
 rb_clear_slot_residency:
         lda #0
@@ -6647,7 +6677,7 @@ gfx_mode_from_string:
         cmp #4
         bne :+
         jmp @len4
-:       
+:
         clc
         rts
 @len5:
@@ -6906,7 +6936,7 @@ cmd_zmodload:
         bne :+
         lda #240
         jmp @return_int
-:       
+:
         ldx #<CF_STR_BUF
         ldy #>CF_STR_BUF
         jsr K_SETNAM
@@ -8189,3 +8219,959 @@ cmd_keylast:
         lda #RB_VAL_INT
         sta RF_TAG
         rts
+
+        .segment "OVL3PACK"
+
+cmd_poly:
+        jsr poly_apply_command_kind
+        jsr poly_prepare
+        bcc :+
+        rts
+:       jsr poly_init_first_prev
+        bcc :+
+        rts
+:       lda #1
+        sta rb_copy_chunks
+@loop:
+        lda rb_copy_chunks
+        cmp rb_copy_count
+        bcs @close
+        jsr poly_read_point_temp
+        bcc :+
+        rts
+:       jsr poly_line_prev_to_temp
+        jsr poly_temp_to_prev
+        inc rb_copy_chunks
+        jmp @loop
+@close:
+        jsr poly_first_to_temp
+        jsr poly_line_prev_to_temp
+        jmp poly_ok
+
+cmd_fpoly:
+        jsr poly_apply_command_kind
+        jsr poly_prepare
+        bcc :+
+        rts
+:       jsr poly_init_first_prev
+        bcc :+
+        rts
+:       lda #1
+        sta rb_copy_chunks
+@loop:
+        lda rb_copy_chunks
+        cmp rb_copy_count
+        bcs @done
+        jsr poly_read_point_temp
+        bcc :+
+        rts
+:       jsr poly_fill_edge_from_prev_to_temp
+        jsr poly_temp_to_prev
+        inc rb_copy_chunks
+        jmp @loop
+@done:
+        jsr poly_first_to_temp
+        jsr poly_fill_edge_from_prev_to_temp
+        jmp poly_ok
+
+cmd_pbufnew:
+        lda CF_NUM0_HI
+        bne @bad
+        lda CF_NUM0_LO
+        beq @bad
+        cmp #65
+        bcs @bad
+        lda #1
+        sta rb_needed_pages
+        lda #RB_HANDLE_TYPE_POINTBUF
+        sta rb_handle_new_type
+        jsr poly_handle_alloc_with_pages
+        rts
+@bad:
+        lda #$51
+        jmp poly_fail
+
+cmd_pbuffree:
+        jsr poly_handle_load_arg
+        bcs @bad
+        lda rb_handle_type
+        cmp #RB_HANDLE_TYPE_POINTBUF
+        bne @wrong
+        jsr poly_handle_free_loaded
+        jmp poly_ok
+@bad:
+        lda #$24
+        jmp poly_fail
+@wrong:
+        lda #$28
+        jmp poly_fail
+
+cmd_pbufset:
+        jsr poly_handle_load_arg
+        bcs @bad
+        lda rb_handle_type
+        cmp #RB_HANDLE_TYPE_POINTBUF
+        bne @wrong
+        lda CF_NUM1_HI
+        bne @range
+        lda CF_NUM1_LO
+        cmp #64
+        bcs @range
+        jsr poly_fetch_handle_page
+        lda CF_NUM1_LO
+        asl
+        asl
+        tay
+        lda CF_NUM2_LO
+        sta RB_PAGEBUF,y
+        iny
+        lda CF_NUM2_HI
+        sta RB_PAGEBUF,y
+        iny
+        lda CF_NUM3_LO
+        sta RB_PAGEBUF,y
+        iny
+        lda CF_NUM3_HI
+        sta RB_PAGEBUF,y
+        jsr poly_stash_handle_page
+        jmp poly_ok
+@bad:
+        lda #$24
+        jmp poly_fail
+@wrong:
+        lda #$28
+        jmp poly_fail
+@range:
+        lda #$52
+        jmp poly_fail
+
+poly_prepare:
+        lda CF_NUM1_HI
+        bne @bad
+        lda CF_NUM1_LO
+        cmp #3
+        bcc @bad
+        cmp #33
+        bcs @bad
+        lda CF_NUM2_LO
+        sta RF_RECT_BUF+8
+        lda CF_NUM2_HI
+        sta RF_RECT_BUF+9
+        lda CF_NUM1_LO
+        sta rb_copy_count
+        lda CF_COUNT0_HI
+        beq @array
+        jsr poly_handle_load_arg
+        bcs @bad_handle
+        lda rb_handle_type
+        cmp #RB_HANDLE_TYPE_POINTBUF
+        bne @wrong
+@array:
+        clc
+        rts
+@bad_handle:
+        lda #$24
+        jmp poly_fail_sec
+@wrong:
+        lda #$28
+        jmp poly_fail_sec
+@bad:
+        lda #$51
+poly_fail_sec:
+        jsr poly_fail
+        sec
+        rts
+
+poly_apply_command_kind:
+        lda CF_CMD_ID
+        cmp #CMD_POLYH
+        beq @handle
+        cmp #CMD_FPOLYH
+        beq @handle
+        lda #0
+        beq @store
+@handle:
+        lda #1
+@store:
+        sta CF_COUNT0_HI
+        rts
+
+poly_init_first_prev:
+        lda #0
+        sta rb_copy_chunks
+        jsr poly_read_point_temp
+        bcc :+
+        rts
+:       lda RF_RECT_BUF+10
+        sta RF_RECT_BUF
+        sta RF_RECT_BUF+4
+        lda RF_RECT_BUF+11
+        sta RF_RECT_BUF+1
+        sta RF_RECT_BUF+5
+        lda RF_RECT_BUF+12
+        sta RF_RECT_BUF+2
+        sta RF_RECT_BUF+6
+        lda RF_RECT_BUF+13
+        sta RF_RECT_BUF+3
+        sta RF_RECT_BUF+7
+        clc
+        rts
+
+poly_read_point_temp:
+        lda CF_COUNT0_HI
+        beq poly_read_array_point_temp
+        jmp poly_read_handle_point_temp
+
+poly_read_array_point_temp:
+        lda rb_copy_chunks
+        asl
+        asl
+        tay
+        lda CF_PTR0_LO
+        sta rb_ptr_lo
+        lda CF_PTR0_HI
+        sta rb_ptr_hi
+        tya
+        clc
+        adc rb_ptr_lo
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       ldy #0
+        lda (rb_ptr_lo),y
+        sta RF_RECT_BUF+11
+        iny
+        lda (rb_ptr_lo),y
+        sta RF_RECT_BUF+10
+        iny
+        lda (rb_ptr_lo),y
+        sta RF_RECT_BUF+13
+        iny
+        lda (rb_ptr_lo),y
+        sta RF_RECT_BUF+12
+        clc
+        rts
+
+poly_read_handle_point_temp:
+        lda rb_copy_chunks
+        cmp #64
+        bcc :+
+        lda #$52
+        jsr poly_fail
+        sec
+        rts
+:       jsr poly_fetch_handle_page
+        lda rb_copy_chunks
+        asl
+        asl
+        tay
+        lda RB_PAGEBUF,y
+        sta RF_RECT_BUF+10
+        iny
+        lda RB_PAGEBUF,y
+        sta RF_RECT_BUF+11
+        iny
+        lda RB_PAGEBUF,y
+        sta RF_RECT_BUF+12
+        iny
+        lda RB_PAGEBUF,y
+        sta RF_RECT_BUF+13
+        clc
+        rts
+
+poly_line_prev_to_temp:
+        lda RF_RECT_BUF+4
+        sta CF_NUM0_LO
+        lda RF_RECT_BUF+5
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+6
+        sta CF_NUM1_LO
+        lda RF_RECT_BUF+7
+        sta CF_NUM1_HI
+        lda RF_RECT_BUF+10
+        sta CF_NUM2_LO
+        lda RF_RECT_BUF+11
+        sta CF_NUM2_HI
+        lda RF_RECT_BUF+12
+        sta CF_NUM3_LO
+        lda RF_RECT_BUF+13
+        sta CF_NUM3_HI
+        lda RF_RECT_BUF+8
+        sta CF_NUM4_LO
+        lda RF_RECT_BUF+9
+        sta CF_NUM4_HI
+        jmp poly_line
+
+poly_temp_to_prev:
+        lda RF_RECT_BUF+10
+        sta RF_RECT_BUF+4
+        lda RF_RECT_BUF+11
+        sta RF_RECT_BUF+5
+        lda RF_RECT_BUF+12
+        sta RF_RECT_BUF+6
+        lda RF_RECT_BUF+13
+        sta RF_RECT_BUF+7
+        rts
+
+poly_first_to_temp:
+        lda RF_RECT_BUF
+        sta RF_RECT_BUF+10
+        lda RF_RECT_BUF+1
+        sta RF_RECT_BUF+11
+        lda RF_RECT_BUF+2
+        sta RF_RECT_BUF+12
+        lda RF_RECT_BUF+3
+        sta RF_RECT_BUF+13
+        rts
+
+poly_fill_edge_from_prev_to_temp:
+        lda RF_RECT_BUF+10
+        sta RF_RECT_BUF+14
+        lda RF_RECT_BUF+11
+        sta RF_RECT_BUF+15
+        lda RF_RECT_BUF+12
+        sta RF_STR_BUF
+        lda RF_RECT_BUF+13
+        sta RF_STR_BUF+1
+        lda RF_RECT_BUF+4
+        sta CF_NUM0_LO
+        lda RF_RECT_BUF+5
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+6
+        sta CF_NUM1_LO
+        lda RF_RECT_BUF+7
+        sta CF_NUM1_HI
+        lda #0
+        sta rb_copy_len_hi
+@loop:
+        dec rb_copy_len_hi
+        bne :+
+        jmp @done
+:
+        lda CF_NUM0_LO
+        sta RF_STR_BUF+2
+        lda CF_NUM0_HI
+        sta RF_STR_BUF+3
+        lda CF_NUM1_LO
+        sta RF_STR_BUF+4
+        lda CF_NUM1_HI
+        sta RF_STR_BUF+5
+        lda RF_RECT_BUF
+        sta CF_NUM0_LO
+        lda RF_RECT_BUF+1
+        sta CF_NUM0_HI
+        lda RF_RECT_BUF+2
+        sta CF_NUM1_LO
+        lda RF_RECT_BUF+3
+        sta CF_NUM1_HI
+        lda RF_STR_BUF+2
+        sta CF_NUM2_LO
+        lda RF_STR_BUF+3
+        sta CF_NUM2_HI
+        lda RF_STR_BUF+4
+        sta CF_NUM3_LO
+        lda RF_STR_BUF+5
+        sta CF_NUM3_HI
+        lda RF_RECT_BUF+8
+        sta CF_NUM4_LO
+        lda RF_RECT_BUF+9
+        sta CF_NUM4_HI
+        jsr poly_line
+        lda RF_STR_BUF+2
+        sta CF_NUM0_LO
+        lda RF_STR_BUF+3
+        sta CF_NUM0_HI
+        lda RF_STR_BUF+4
+        sta CF_NUM1_LO
+        lda RF_STR_BUF+5
+        sta CF_NUM1_HI
+        lda CF_NUM0_LO
+        cmp RF_RECT_BUF+14
+        bne @step
+        lda CF_NUM0_HI
+        cmp RF_RECT_BUF+15
+        bne @step
+        lda CF_NUM1_LO
+        cmp RF_STR_BUF
+        beq @done
+@step:
+        jsr poly_step_x_toward_temp
+        jsr poly_step_y_toward_temp
+        jmp @loop
+@done:
+        rts
+
+poly_line:
+        lda CF_NUM2_LO
+        sta RF_ARRAY_BUF
+        lda CF_NUM2_HI
+        sta RF_ARRAY_BUF+1
+        lda CF_NUM3_LO
+        sta RF_ARRAY_BUF+2
+        lda CF_NUM3_HI
+        sta RF_ARRAY_BUF+3
+        lda CF_NUM4_LO
+        sta RF_ARRAY_BUF+4
+        lda CF_NUM4_HI
+        sta RF_ARRAY_BUF+5
+        lda #0
+        sta rb_copy_len_lo
+@loop:
+        dec rb_copy_len_lo
+        beq @done
+        lda RF_ARRAY_BUF+4
+        sta CF_NUM2_LO
+        lda RF_ARRAY_BUF+5
+        sta CF_NUM2_HI
+        jsr poly_plot_current
+        lda CF_NUM0_LO
+        cmp RF_ARRAY_BUF
+        bne @step
+        lda CF_NUM0_HI
+        cmp RF_ARRAY_BUF+1
+        bne @step
+        lda CF_NUM1_LO
+        cmp RF_ARRAY_BUF+2
+        beq @done
+@step:
+        jsr poly_step_x_toward_array
+        jsr poly_step_y_toward_array
+        jmp @loop
+@done:
+        rts
+
+poly_step_x_toward_array:
+        lda CF_NUM0_HI
+        cmp RF_ARRAY_BUF+1
+        bcc @inc
+        bne @dec
+        lda CF_NUM0_LO
+        cmp RF_ARRAY_BUF
+        bcc @inc
+        beq @done
+@dec:
+        lda CF_NUM0_LO
+        bne :+
+        dec CF_NUM0_HI
+:       dec CF_NUM0_LO
+        rts
+@inc:
+        inc CF_NUM0_LO
+        bne @done
+        inc CF_NUM0_HI
+@done:
+        rts
+
+poly_step_y_toward_array:
+        lda CF_NUM1_LO
+        cmp RF_ARRAY_BUF+2
+        bcc @inc
+        beq @done
+        dec CF_NUM1_LO
+        rts
+@inc:
+        inc CF_NUM1_LO
+@done:
+        rts
+
+poly_step_x_toward_temp:
+        lda CF_NUM0_HI
+        cmp RF_RECT_BUF+15
+        bcc @inc
+        bne @dec
+        lda CF_NUM0_LO
+        cmp RF_RECT_BUF+14
+        bcc @inc
+        beq @done
+@dec:
+        lda CF_NUM0_LO
+        bne :+
+        dec CF_NUM0_HI
+:       dec CF_NUM0_LO
+        rts
+@inc:
+        inc CF_NUM0_LO
+        bne @done
+        inc CF_NUM0_HI
+@done:
+        rts
+
+poly_step_y_toward_temp:
+        lda CF_NUM1_LO
+        cmp RF_STR_BUF
+        bcc @inc
+        beq @done
+        dec CF_NUM1_LO
+        rts
+@inc:
+        inc CF_NUM1_LO
+@done:
+        rts
+
+poly_plot_current:
+        jsr poly_get_mode
+        cmp #RB_GFX_MODE_TILE
+        beq poly_plot_tile
+        cmp #RB_GFX_MODE_MTILE
+        beq poly_plot_tile
+        jsr poly_calc_bitmap_addr
+        lda CPU_PORT
+        pha
+        and #RAM_UNDER_BASIC
+        sta CPU_PORT
+        ldy #0
+        lda (rb_ptr_lo),y
+        ldx CF_NUM2_LO
+        beq @clear
+        ldx rb_saved_plot_y
+        ora poly_bit_masks,x
+        sta (rb_ptr_lo),y
+        pla
+        sta CPU_PORT
+        rts
+@clear:
+        ldx rb_saved_plot_y
+        and poly_bit_unmasks,x
+        sta (rb_ptr_lo),y
+        pla
+        sta CPU_PORT
+        rts
+
+poly_plot_tile:
+        jsr poly_calc_tile_addr
+        ldy #0
+        lda CF_NUM2_LO
+        and #$3F
+        ora #$40
+        sta (rb_ptr_lo),y
+        lda rb_ptr_hi
+        sec
+        sbc #>RB_GFX_SCREEN
+        clc
+        adc #>RB_GFX_COLOR
+        sta rb_ptr_hi
+        lda CF_NUM2_LO
+        and #$0F
+        sta (rb_ptr_lo),y
+        rts
+
+poly_get_mode:
+        lda CIA2_PRA
+        and #$03
+        bne @text
+        lda VIC_CTRL1
+        and #$20
+        beq @tile
+        lda VIC_CTRL2
+        and #$10
+        beq @hires
+        lda #RB_GFX_MODE_MBITMAP
+        rts
+@hires:
+        lda #RB_GFX_MODE_HIRES
+        rts
+@tile:
+        lda VIC_CTRL2
+        and #$10
+        beq @tile_plain
+        lda #RB_GFX_MODE_MTILE
+        rts
+@tile_plain:
+        lda #RB_GFX_MODE_TILE
+        rts
+@text:
+        lda #RB_GFX_MODE_TEXT
+        rts
+
+poly_calc_tile_addr:
+        lda #<RB_GFX_SCREEN
+        sta rb_ptr_lo
+        lda #>RB_GFX_SCREEN
+        sta rb_ptr_hi
+        lda CF_NUM1_LO
+        asl
+        asl
+        asl
+        sta rb_saved_plot_x
+        lda CF_NUM1_LO
+        asl
+        asl
+        asl
+        asl
+        asl
+        clc
+        adc rb_saved_plot_x
+        clc
+        adc CF_NUM0_LO
+        sta rb_ptr_lo
+        lda #>RB_GFX_SCREEN
+        adc #0
+        sta rb_ptr_hi
+        rts
+
+poly_calc_bitmap_addr:
+        lda CF_NUM1_LO
+        and #7
+        sta rb_saved_plot_x
+        lda CF_NUM0_LO
+        and #7
+        sta rb_saved_plot_y
+        lda CF_NUM1_LO
+        lsr
+        lsr
+        lsr
+        sta rb_digit_seen
+        lda rb_digit_seen
+        and #3
+        asl
+        asl
+        asl
+        asl
+        asl
+        asl
+        sta rb_ptr_lo
+        lda #>RB_GFX_BITMAP
+        clc
+        adc rb_digit_seen
+        sta rb_ptr_hi
+        lda rb_digit_seen
+        lsr
+        lsr
+        clc
+        adc rb_ptr_hi
+        sta rb_ptr_hi
+        lda CF_NUM0_LO
+        and #$F8
+        clc
+        adc rb_ptr_lo
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       lda CF_NUM0_HI
+        clc
+        adc rb_ptr_hi
+        sta rb_ptr_hi
+        lda rb_saved_plot_x
+        clc
+        adc rb_ptr_lo
+        sta rb_ptr_lo
+        bcc :+
+        inc rb_ptr_hi
+:       rts
+
+poly_handle_load_arg:
+        lda CF_NUM0_HI
+        bne @bad
+        lda CF_NUM0_LO
+        beq @bad
+        cmp #RB_HANDLE_COUNT + 1
+        bcs @bad
+        sec
+        sbc #1
+        sta rb_handle_index
+        jsr poly_handle_fetch
+        lda rb_handle_bank
+        beq @bad
+        clc
+        rts
+@bad:
+        sec
+        rts
+
+poly_handle_fetch:
+        jsr poly_handle_desc_fetch_page
+        ldy rb_handle_desc_off
+        lda RB_PAGEBUF,y
+        sta rb_handle_bank
+        iny
+        lda RB_PAGEBUF,y
+        sta rb_handle_page
+        iny
+        lda RB_PAGEBUF,y
+        sta rb_handle_pages
+        iny
+        lda RB_PAGEBUF,y
+        sta rb_handle_type
+        rts
+
+poly_handle_store:
+        jsr poly_handle_desc_fetch_page
+        ldy rb_handle_desc_off
+        lda rb_handle_bank
+        sta RB_PAGEBUF,y
+        iny
+        lda rb_handle_page
+        sta RB_PAGEBUF,y
+        iny
+        lda rb_handle_pages
+        sta RB_PAGEBUF,y
+        iny
+        lda rb_handle_type
+        sta RB_PAGEBUF,y
+        lda #<RB_PAGEBUF
+        sta rb_reu_c64_lo
+        lda #>RB_PAGEBUF
+        sta rb_reu_c64_hi
+        lda rb_reu_core_bank
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #1
+        sta rb_reu_len_hi
+        jmp rb_reu_stash
+
+poly_handle_desc_fetch_page:
+        lda rb_handle_index
+        and #$3F
+        asl
+        asl
+        sta rb_handle_desc_off
+        lda #0
+        sta rb_reu_off_lo
+        lda #>RB_REU_HANDLE_OFF
+        ldx rb_handle_index
+        cpx #RB_HANDLE_PAGE_SLOTS
+        bcc :+
+        clc
+        adc #1
+:       sta rb_reu_off_hi
+        lda #<RB_PAGEBUF
+        sta rb_reu_c64_lo
+        lda #>RB_PAGEBUF
+        sta rb_reu_c64_hi
+        lda rb_reu_core_bank
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #1
+        sta rb_reu_len_hi
+        jmp rb_reu_fetch
+
+poly_handle_alloc_with_pages:
+        jsr poly_find_free_handle
+        bcc @got_handle
+        lda #$21
+        jmp poly_fail
+@got_handle:
+        jsr poly_find_pages
+        bcc :+
+        lda #$22
+        jmp poly_fail
+:       lda rb_reu_core_bank
+        sta rb_handle_bank
+        lda rb_found_page
+        clc
+        adc #RB_HEAP_PAGE_BASE
+        sta rb_handle_page
+        lda rb_needed_pages
+        sta rb_handle_pages
+        lda rb_handle_new_type
+        sta rb_handle_type
+        jsr poly_mark_pages_used
+        jsr poly_store_heap_bitmap
+        jsr poly_handle_store
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_INT
+        sta RF_TAG
+        lda rb_handle_index
+        clc
+        adc #1
+        sta RF_VAL_LO
+        lda #0
+        sta RF_VAL_HI
+        rts
+
+poly_find_free_handle:
+        lda #0
+        sta rb_handle_scan_base
+@page:
+        lda rb_handle_scan_base
+        sta rb_handle_index
+        jsr poly_handle_desc_fetch_page
+        ldy #0
+        ldx #0
+@slot:
+        lda RB_PAGEBUF,y
+        beq @found
+        tya
+        clc
+        adc #RB_HANDLE_DESC_SIZE
+        tay
+        inx
+        cpx #RB_HANDLE_PAGE_SLOTS
+        bcc @slot
+        lda rb_handle_scan_base
+        bne @full
+        lda #RB_HANDLE_PAGE_SLOTS
+        sta rb_handle_scan_base
+        jmp @page
+@found:
+        txa
+        clc
+        adc rb_handle_scan_base
+        sta rb_handle_index
+        clc
+        rts
+@full:
+        sec
+        rts
+
+poly_fetch_heap_bitmap:
+        lda #<RB_PAGEBUF
+        sta rb_reu_c64_lo
+        lda #>RB_PAGEBUF
+        sta rb_reu_c64_hi
+        lda #<RB_REU_HEAP_OFF
+        sta rb_reu_off_lo
+        lda #>RB_REU_HEAP_OFF
+        sta rb_reu_off_hi
+        lda rb_reu_core_bank
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #1
+        sta rb_reu_len_hi
+        jmp rb_reu_fetch
+
+poly_store_heap_bitmap:
+        lda #<RB_PAGEBUF
+        sta rb_reu_c64_lo
+        lda #>RB_PAGEBUF
+        sta rb_reu_c64_hi
+        lda #<RB_REU_HEAP_OFF
+        sta rb_reu_off_lo
+        lda #>RB_REU_HEAP_OFF
+        sta rb_reu_off_hi
+        lda rb_reu_core_bank
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #1
+        sta rb_reu_len_hi
+        jmp rb_reu_stash
+
+poly_find_pages:
+        jsr poly_fetch_heap_bitmap
+        lda #0
+        sta rb_found_page
+@outer:
+        lda rb_found_page
+        clc
+        adc rb_needed_pages
+        cmp #RB_HEAP_PAGES + 1
+        bcc :+
+        sec
+        rts
+:       ldx #0
+@inner:
+        txa
+        clc
+        adc rb_found_page
+        tay
+        lda RB_PAGEBUF,y
+        bne @next_start
+        inx
+        cpx rb_needed_pages
+        bcc @inner
+        clc
+        rts
+@next_start:
+        inc rb_found_page
+        jmp @outer
+
+poly_mark_pages_used:
+        ldx #0
+@loop:
+        txa
+        clc
+        adc rb_found_page
+        tay
+        lda #1
+        sta RB_PAGEBUF,y
+        inx
+        cpx rb_needed_pages
+        bcc @loop
+        rts
+
+poly_mark_pages_free:
+        ldx #0
+@loop:
+        txa
+        clc
+        adc rb_found_page
+        tay
+        lda #0
+        sta RB_PAGEBUF,y
+        inx
+        cpx rb_needed_pages
+        bcc @loop
+        rts
+
+poly_handle_free_loaded:
+        lda rb_handle_page
+        sec
+        sbc #RB_HEAP_PAGE_BASE
+        sta rb_found_page
+        lda rb_handle_pages
+        sta rb_needed_pages
+        jsr poly_fetch_heap_bitmap
+        jsr poly_mark_pages_free
+        lda #0
+        sta rb_handle_bank
+        sta rb_handle_page
+        sta rb_handle_pages
+        sta rb_handle_type
+        jsr poly_store_heap_bitmap
+        jmp poly_handle_store
+
+poly_fetch_handle_page:
+        lda #<RB_PAGEBUF
+        sta rb_reu_c64_lo
+        lda #>RB_PAGEBUF
+        sta rb_reu_c64_hi
+        lda #0
+        sta rb_reu_off_lo
+        lda rb_handle_page
+        sta rb_reu_off_hi
+        lda rb_reu_core_bank
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #1
+        sta rb_reu_len_hi
+        jmp rb_reu_fetch
+
+poly_stash_handle_page:
+        lda #<RB_PAGEBUF
+        sta rb_reu_c64_lo
+        lda #>RB_PAGEBUF
+        sta rb_reu_c64_hi
+        lda #0
+        sta rb_reu_off_lo
+        lda rb_handle_page
+        sta rb_reu_off_hi
+        lda rb_reu_core_bank
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #1
+        sta rb_reu_len_hi
+        jmp rb_reu_stash
+
+poly_ok:
+        lda #0
+        sta RF_STATUS
+        lda #RB_VAL_NONE
+        sta RF_TAG
+        rts
+
+poly_fail:
+        sta RF_STATUS
+        sta RF_ERROR
+        rts
+
+poly_bit_masks:
+        .byte $80,$40,$20,$10,$08,$04,$02,$01
+poly_bit_unmasks:
+        .byte $7F,$BF,$DF,$EF,$F7,$FB,$FD,$FE
