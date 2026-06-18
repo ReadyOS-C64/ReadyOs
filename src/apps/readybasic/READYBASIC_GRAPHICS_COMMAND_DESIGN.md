@@ -96,8 +96,8 @@ should hide the VIC register details but not hide the tradeoffs.
 
 ### Recommended Public Mode Names
 
-Avoid names tied too tightly to old extenders. Use clear mode constants or
-numbers and allow aliases later:
+Avoid names tied too tightly to old extenders. Use clear mode constants and one
+canonical spelling per behavior:
 
 ```basic
 GFXMODE("TEXT")
@@ -157,13 +157,11 @@ M%=GFXMODE()
 GFXTEXT()
 GFXCLEAR(C)
 H%=GFXSURF("HIRES")
-GFXTGT(0)           : rem direct form
-GFXTGT(0)              : rem tokenizer-safe stored-program alias
+GFXTGT(0)              : rem visible target
 GFXBLIT(H%)
 GFXSYNC()
 PLOT(X,Y,C)
-PNT(X,Y,P%)          : rem long form registered
-PNT(X,Y,P%)            : rem short readback alias used by demos
+PNT(X,Y,P%)            : rem readback
 LINE(X1,Y1,X2,Y2,C)
 RECT(X1,Y1,X2,Y2,C)
 FBOX(X1,Y1,X2,Y2,C)
@@ -174,15 +172,11 @@ CHARAT(X,Y,CH,C)
 SPRSET(N,ON,COLOR,PATTERN)
 SPRMOVE(N,X,Y)
 SPRCOL(N,COLOR)
-SPRCOL(N,COLOR)       : rem token-safe alias for demos
 SPRROW(N,ROW,B1,B2,B3)
 SPRSIZE(N,XON,YON)
-SPRSIZE(N,XON,YON)    : rem token-safe alias for demos
 SPRPRI(N,BEHIND)
-SPRMULTI(N,ON)
-SPRMUL(N,ON)          : rem token-safe alias for demos
+SPRMUL(N,ON)
 SPRMCO(C1,C2)
-SPRMCO(C1,C2)         : rem token-safe alias for demos
 SPRSCAN()
 SPRCOLL(N,C%)
 JOY(PORT,J%)
@@ -214,8 +208,8 @@ Mode tradeoffs in the implemented renderer:
 
 Known Phase 1 limits:
 
-- `PNT(X,Y,OUT%)` is the preferred Phase 1 readback spelling in demos. Legacy
-  `POINT` remains registered for compatibility.
+- `PNT(X,Y,OUT%)` is the Phase 1 readback spelling in demos and stored
+  programs.
 - Primitive coordinate callers are expected to stay in range: hires bitmap
   `0<=X<320`, `0<=Y<200`; multicolor bitmap `0<=X<160`,
   `0<=Y<200`; tile `0<=X<40`, `0<=Y<25`.
@@ -250,10 +244,10 @@ multicolor bitmap memory layout when the current mode is MBITMAP:
 20 gfxmode("mbitmap"):gfxclear(0)
 30 line(4,18,155,18,17)    : rem slot 1, color 1
 40 line(4,30,155,70,34)    : rem slot 2, color 2
-50 frect(86,82,148,144,37) : rem slot 2, color 5
+50 fbox(86,82,148,144,37) : rem slot 2, color 5
 60 circle(46,112,28,51)    : rem slot 3, color 3
 70 fcircle(118,112,22,58)  : rem slot 3, color 10
-80 point(46,112,p%)        : rem p% is 0..3 pair code
+80 pnt(46,112,p%)          : rem p% is 0..3 pair code
 ```
 
 The same commands continue to use normal 320x200 one-bit plotting in `HIRES`,
@@ -315,11 +309,11 @@ inside the existing built-in graphics module structure:
 | `FCIRCLE(X,Y,R,C)` | `GFXPRIM` | Draws a filled circular placeholder as the bounding filled rectangle. This proves the command path and mode targeting; a true midpoint/disk fill is still future work. |
 | `TILE(X,Y,CH,C)` | `GFXPRIM` | Writes a character/color cell in Bank D tile modes, and also writes ordinary `$0400` text cells after `GFXTEXT()` so demos can show ROM charset output. |
 | `CHARAT(X,Y,CH,C)` | `GFXPRIM` | Alias for `TILE`; intended for text-cell style programs. |
-| `SPREXPAND(N,XON,YON)` / `SPRSIZE(N,XON,YON)` | `GFXSPR` | Controls VIC sprite X/Y expansion bits. `SPRSIZE` avoids PETCAT splitting `EXP` inside the command name. |
+| `SPRSIZE(N,XON,YON)` | `GFXSPR` | Controls VIC sprite X/Y expansion bits. |
 | `SPRPRI(N,BEHIND)` | `GFXSPR` | Controls the VIC sprite-background priority bit. |
-| `SPRMULTI(N,ON)` / `SPRMUL(N,ON)` | `GFXSPR` | Controls VIC sprite multicolor enable bits. `SPRMUL` is the token-safe demo spelling. |
-| `SPRMCOLOR(C1,C2)` / `SPRMCO(C1,C2)` | `GFXSPR` | Sets the two shared sprite multicolor registers. `SPRMCO` avoids PETCAT splitting `CLR`/`COLOR`-like names. |
-| `SPRCOL(N,C)` | `GFXSPR` | Token-safe alias for legacy `SPRCOLOR(N,C)`. |
+| `SPRMUL(N,ON)` | `GFXSPR` | Controls VIC sprite multicolor enable bits. |
+| `SPRMCO(C1,C2)` | `GFXSPR` | Sets the two shared sprite multicolor registers. |
+| `SPRCOL(N,C)` | `GFXSPR` | Sets the per-sprite primary color register. |
 
 Phase 2 demo programs:
 
@@ -371,7 +365,7 @@ handle.
 The originally proposed same-name handle overloads,
 `POLY(H%,COUNT,C)` and `FPOLY(H%,COUNT,C)`, were not implemented in Phase 3.
 The resident parser was already constrained against the fixed
-`BASIC_START=$2AC1` boundary, so the handle forms use explicit command aliases
+`BASIC_START=$2AC1` boundary, so the handle forms use explicit commands
 `POLYH` and `FPOLYH`. This keeps BASIC bytes free unchanged and keeps overload
 dispatch out of the resident parser.
 
@@ -403,16 +397,14 @@ selection.
 | `GFXSURF(mode$,H%)` / `H%=GFXSURF(mode$)` | Allocate a REU-backed surface handle compatible with a mode. |
 | `GFXTGT(H%)` | Draw subsequent immediate commands into a REU surface instead of the visible Bank D surface. |
 | `GFXTGT(0)` | Draw subsequent immediate commands directly to the visible surface. |
-| `GFXTGT(...)` | Tokenizer-safe alias for legacy `GFXTARGET(...)`; use this in stored BASIC programs. |
 | `GFXBLIT(H%)` | Copy a compatible REU surface to the visible Bank D layout. |
 | `GFXSYNC()` | Apply dirty rectangles or pending blit work. |
 | `GFXINFO(H%,A%(0))` | Return handle/mode/width/height/stride metadata into an array. |
 
 The key split is visible target versus REU target. `GFXTGT(0)` is simple and
 direct. `GFXTGT(H%)` records an off-screen target handle and `GFXBLIT(H%)`
-makes a compatible surface visible. `GFXTGT(...)` is the stored-program-safe
-alias because `GFXTGT` can be damaged by C64 BASIC tokenization. Immediate
-primitives still draw visible Bank D; the speed-first path is to render or copy
+makes a compatible surface visible. Immediate primitives still draw visible
+Bank D; the speed-first path is to render or copy
 larger retained resources in command workers and blit complete surfaces.
 
 ### 2. Immediate Pixel/Primitive Commands
@@ -599,7 +591,7 @@ the same semantics cheaply.
 
 | Command | Text/tile | Hi-res bitmap | Multicolor bitmap |
 |---|---|---|---|
-| `PLOT` | Optional cell-level alias, not true pixel | Natural 320x200 pixel | Natural 160x200 logical pixel |
+| `PLOT` | Cell-level write, not true pixel | Natural 320x200 pixel | Natural 160x200 logical pixel |
 | `LINE` | Optional char approximation | Strong | Strong but chunky |
 | `FILL` | Tile flood fill possible | Expensive but normal | Expensive and color-rule-sensitive |
 | `TEXTAT` | Natural | Requires glyph renderer | Requires chunky glyph renderer |

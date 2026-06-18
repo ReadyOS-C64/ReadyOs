@@ -758,24 +758,24 @@
         <h3>Command Registry Slots: Real Commands, Filler, Slot-128 Proof</h3>
         <div class="registry-body">
           <div class="registry-bar">
-            <div class="registry-seg r-low" style="width: 90.63%" title="Slots 1-116: 116 descriptors, $0E80 / 3712B">
-              <b>Slots 1-116</b>
-              <small>116 normal descriptors before filler; built-in graphics, sound, and token-safe aliases live here. $0E80 / 3712B.</small>
+            <div class="registry-seg r-low" style="width: 72.66%" title="Slots 1-93: 93 descriptors, $0BA0 / 2976B">
+              <b>Slots 1-93</b>
+              <small>93 normal descriptors before filler; built-in graphics and sound commands live here. $0BA0 / 2976B.</small>
             </div>
-            <div class="registry-seg r-pack" style="width: 8.59%" title="Slots 117-127: 11 zero-filled filler descriptors, $0160 / 352B">
-              <b>Slots 117-127</b>
-              <small>11 zero-filled filler slots. Alias descriptors consume registry entries.</small>
+            <div class="registry-seg r-pack" style="width: 26.56%" title="Slots 94-127: 34 zero-filled filler descriptors, $0440 / 1088B">
+              <b>Slots 94-127</b>
+              <small>34 zero-filled filler slots available for future command descriptors.</small>
             </div>
             <div class="registry-seg r-hidden" style="width: 0.78%" title="Slot 128: SCRPUT descriptor, $0020 / 32B">
               <b>128</b>
-              <small>SCRPUT proof descriptor; 117 real descriptors total.</small>
+              <small>SCRPUT proof descriptor; 94 real descriptors total.</small>
             </div>
           </div>
           <table class="stage-detail">
             <thead><tr><th>Descriptor range</th><th>REU offset</th><th>Role</th><th>Slots</th><th>Size</th></tr></thead>
             <tbody>
-              <tr><td>Slots 1-116</td><td><code>$1000-$1E7F</code></td><td>Current built-in descriptors from <code>ZECHO1</code> through <code>SND</code>, including token-safe aliases.</td><td>116</td><td><code>$0E80</code> / 3712B</td></tr>
-              <tr><td>Slots 117-127</td><td><code>$1E80-$1FDF</code></td><td>Zero-filled filler descriptors; available for future command descriptors.</td><td>11</td><td><code>$0160</code> / 352B</td></tr>
+              <tr><td>Slots 1-93</td><td><code>$1000-$1B9F</code></td><td>Current built-in descriptors from <code>ZECHO1</code> through <code>SOUND</code>.</td><td>93</td><td><code>$0BA0</code> / 2976B</td></tr>
+              <tr><td>Slots 94-127</td><td><code>$1BA0-$1FDF</code></td><td>Zero-filled filler descriptors; available for future command descriptors.</td><td>34</td><td><code>$0440</code> / 1088B</td></tr>
               <tr><td>Slot 128</td><td><code>$1FE0-$1FFF</code></td><td><code>SCRPUT</code>, intentionally placed at the end to prove slot-128 lookup.</td><td>1</td><td><code>$0020</code> / 32B</td></tr>
             </tbody>
           </table>
@@ -784,8 +784,8 @@
             filler descriptors, proving that
             ReadyBASIC pages through the whole 128-slot table instead of relying
             on a short resident index. Static verification now counts the real
-            descriptor macros so this filler span cannot drift when aliases are
-            added.
+            descriptor macros so this filler span cannot drift as commands are
+            added or removed.
           </p>
         </div>
       </div>
@@ -1132,7 +1132,7 @@
         <div class="command">
           <h3>BUFMAKE(LEN,H%) / BUFMAKE(LEN)</h3>
           <div class="command-meta"><span class="chip low">slot 0 $A800</span><span class="chip reu">REU handle</span><span class="chip">copy $06C7 / 1.7K</span></div>
-          <p>Allocates contiguous 256-byte buffer pages inside the assigned core bank and returns a one-based handle. Legacy <code>BUFNEW</code> remains accepted, but stored source should use this token-safe spelling.</p>
+          <p>Allocates contiguous 256-byte buffer pages inside the assigned core bank and returns a one-based handle.</p>
         </div>
         <div class="command">
           <h3>BUFFILL(H%,BYTE)</h3>
@@ -1142,7 +1142,7 @@
         <div class="command">
           <h3>BUFDROP(H%)</h3>
           <div class="command-meta"><span class="chip low">slot 0 $A800</span><span class="chip reu">metadata</span><span class="chip">copy $06C7 / 1.7K</span></div>
-          <p>Clears the REU-backed page bitmap and handle descriptor for any valid handle type. Legacy <code>BUFFREE</code> remains accepted for compatibility.</p>
+          <p>Clears the REU-backed page bitmap and handle descriptor for any valid handle type.</p>
         </div>
         <div class="command">
           <h3>ZTEMPSCRATCH(LEN,OUT%) / ZTEMPSCRATCH(LEN)</h3>
@@ -1157,7 +1157,7 @@
         <div class="command">
           <h3>MEMAVL()</h3>
           <div class="command-meta"><span class="chip low">slot 0 $A800</span><span class="chip">free-byte probe</span><span class="chip">small slice</span></div>
-          <p>Prints current live BASIC free bytes and refreshes the header. Legacy <code>FREEMEM</code> remains accepted, but stored source should use this token-safe spelling.</p>
+          <p>Prints current live BASIC free bytes and refreshes the header.</p>
         </div>
         <div class="command">
           <h3>SCRCAP(H%) / SCRCAP()</h3>

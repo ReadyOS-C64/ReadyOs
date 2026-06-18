@@ -188,8 +188,8 @@ dispatch wrappers over existing descriptors.
 - Type `1` is a byte buffer.
 - Type `2` is a screen text+color buffer.
 - `BUFFILL` accepts only type `1`.
-- `BUFDROP` frees any valid handle type. Legacy `BUFFREE` remains registered
-  for compatibility, but stored source should use `BUFDROP`.
+- `BUFDROP` frees any valid handle type. Duplicate buffer-free spellings are not
+  registered in the alpha command catalog.
 - `SCRPUT` accepts only type `2`.
 
 ## Banking Discipline

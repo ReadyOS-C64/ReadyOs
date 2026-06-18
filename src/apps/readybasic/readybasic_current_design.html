@@ -840,14 +840,14 @@
           <tr><td><code>ZOVL1</code> / <code>ZOVL2</code> / <code>ZCPYRST</code> / <code>ZCOPY</code></td><td>Built-in overlay and no-recopy proof payloads</td><td>none</td><td>Prove overlay replacement and residency behavior.</td></tr>
           <tr><td><code>ZMODLD(NAME$)</code></td><td>Built-in module 2 slot-1 disk-module loader</td><td>module package filename string</td><td>Streams generated SEQ packages such as <code>RBM.SAMPLE1</code>, <code>RBM.SAMPLE2</code>, and <code>RBM.SAMPLE3</code> into REU.</td></tr>
           <tr><td><code>POLY(A%(0),COUNT,C)</code> / <code>FPOLY(A%(0),COUNT,C)</code></td><td>Built-in module 3 <code>GFXPOLY</code> overlay at <code>$B800-$BF78</code></td><td>BASIC integer array point pairs, point count, color</td><td>Draws outline polygons or conservative convex fan fills.</td></tr>
-          <tr><td><code>POLYH(H%,COUNT,C)</code> / <code>FPOLYH(H%,COUNT,C)</code></td><td>Built-in module 3 <code>GFXPOLY</code> overlay at <code>$B800-$BF78</code></td><td>typed REU point-buffer handle, point count, color</td><td>Handle aliases for point-buffer polygons; same-name handle overloads were not added to preserve resident budget.</td></tr>
+          <tr><td><code>POLYH(H%,COUNT,C)</code> / <code>FPOLYH(H%,COUNT,C)</code></td><td>Built-in module 3 <code>GFXPOLY</code> overlay at <code>$B800-$BF78</code></td><td>typed REU point-buffer handle, point count, color</td><td>Explicit handle-form polygon commands; same-name handle overloads were not added to preserve resident budget.</td></tr>
           <tr><td><code>PBMAKE</code> / <code>PBUFSET</code> / <code>PBDROP</code></td><td>Built-in module 3 <code>GFXPOLY</code> overlay at <code>$B800-$BF78</code></td><td>point-buffer handle lifecycle and zero-based point writes</td><td>Allocates typed REU point-buffer handle <code>4</code>, stores little-endian <code>x,y</code> pairs, and releases handles.</td></tr>
           <tr><td><code>DLMAKE</code> / <code>DLRST</code> / <code>DLDRAW</code></td><td>Built-in module 3 <code>GFXDL</code> overlay at <code>$B800-$BF82</code></td><td>typed REU display-list handle</td><td>Allocates, clears, and replays a one-page retained display list.</td></tr>
           <tr><td><code>DLPLOT</code> / <code>DLLINE</code> / <code>DLRECT</code> / <code>DLFBOX</code></td><td>Built-in module 3 <code>GFXDL</code> overlay</td><td>display-list handle plus primitive coordinates</td><td>Appends compact records for later <code>DLDRAW</code>; line/rect records currently default to color 1.</td></tr>
           <tr><td><code>CHRMAKE</code> / <code>CHRROW</code> / <code>CHRUSE</code></td><td>Built-in module 3 <code>GFXTILE</code> overlay at <code>$B800-$BCD9</code></td><td>typed REU charset handle, character, row, byte</td><td>Builds an 8-page charset and copies it to Bank D. Phase 5 screenshots prove visible Bank D tile and multicolor-tile rendering.</td></tr>
           <tr><td><code>TSMAKE</code> / <code>TSSET</code> / <code>TMMAKE</code> / <code>TMSET</code> / <code>TMDRAW</code></td><td>Built-in module 3 <code>GFXTILE</code> overlay</td><td>fixed tileset and 40x25 tilemap handles</td><td>Stores tile resources in REU and draws screen/color bytes to Bank D; no external resource loader yet.</td></tr>
           <tr><td><code>MCELL(CX,CY,S1,S2,S3)</code> / <code>MCBG(C)</code></td><td>Built-in module 3 <code>GFXTILE</code> overlay</td><td>multicolor bitmap cell coordinates and slot colors</td><td>Writes screen/color cell attributes and the VIC background color for <code>MBITMAP</code>.</td></tr>
-          <tr><td><code>SIDRST</code> / <code>SIDOFF</code> / <code>VOL</code> / <code>FRQ</code> / <code>PITCH</code> / <code>PULSE</code> / <code>ADSR</code> / <code>ENV</code> / <code>WAVE</code> / <code>CTRL</code> / <code>GATE</code> / <code>VOICE</code> / <code>FILTER</code> / <code>FILT</code> / <code>SOUND</code> / <code>SND</code></td><td>Built-in module 4 <code>SIDCORE</code> overlay at <code>$B800-$BA0D</code></td><td>SID voice, waveform, envelope, pulse, filter, and blocking tone parameters</td><td>Direct SID register commands. <code>VOICE(V,F,W,AD,SR)</code> uses packed envelope bytes to avoid resident parser growth; no IRQ music engine is installed.</td></tr>
+          <tr><td><code>SIDRST</code> / <code>SIDOFF</code> / <code>VOL</code> / <code>FRQ</code> / <code>PITCH</code> / <code>PULSE</code> / <code>ADSR</code> / <code>WAVE</code> / <code>GATE</code> / <code>VOICE</code> / <code>FILTER</code> / <code>SOUND</code></td><td>Built-in module 4 <code>SIDCORE</code> overlay at <code>$B800-$BA0D</code></td><td>SID voice, waveform, envelope, pulse, filter, and blocking tone parameters</td><td>Direct SID register commands. <code>VOICE(V,F,W,AD,SR)</code> uses packed envelope bytes to avoid resident parser growth; no IRQ music engine is installed.</td></tr>
           <tr><td><code>ZDM1()</code> / <code>ZDM2S()</code> / <code>ZDOV1()</code> / <code>ZDOV2()</code></td><td>Disk-loaded sample module payloads in the assigned code bank</td><td>none</td><td>Prove disk module, span, and overlay registration after <code>ZMODLD</code>.</td></tr>
           <tr><td><code>ZSAA()</code>-<code>ZUEB()</code></td><td><code>rbm.sample3</code> disk-loaded proof payloads in the assigned code bank</td><td>none</td><td>Return stateful integer sentinels. The name encodes submodule, overlay, and entrypoint: <code>ZSAA</code> is submodule 6, overlay 1, entry A. Each overlay image has one local counter byte, so reuse increments while reload resets.</td></tr>
         </tbody>
@@ -858,6 +858,13 @@
         and <code>FAIL</code> are no longer runtime aliases. The current proof/demo
         commands use the <code>Z...</code> namespace, and array demo names use
         <code>NUM</code> rather than <code>INT</code> to avoid the BASIC tokenizer.
+      </p>
+      <p>
+        The alpha command catalog now registers one public spelling per command
+        behavior. ReadyBASIC can still implement an alias with another 32-byte
+        descriptor pointing at the same command id, signature, payload, and
+        entrypoint, but that spends registry capacity and expands the test and
+        documentation surface.
       </p>
     </section>
 
@@ -1151,7 +1158,7 @@
           <div class="slice"><span>$0A00</span><span>Saved zero page for ReadyOS suspend/resume.</span></div>
           <div class="slice"><span>$0B00</span><span>Saved stack page for ReadyOS suspend/resume.</span></div>
           <div class="slice"><span>$0C00</span><span>192-page heap bitmap plus reserved bytes.</span></div>
-          <div class="slice"><span>$1000-$1FFF</span><span>128 command descriptor slots, 32 bytes each; 117 real descriptors, 11 filler descriptors, and <code>SCRPUT</code> in slot 128.</span></div>
+          <div class="slice"><span>$1000-$1FFF</span><span>128 command descriptor slots, 32 bytes each; 94 real descriptors, 34 filler descriptors, and <code>SCRPUT</code> in slot 128.</span></div>
           <div class="slice"><span>$2000-$3FFF</span><span>Reserved common/system expansion space.</span></div>
           <div class="slice"><span>$4000-$FFFF</span><span>Typed handle heap: 192 pages / 48KB.</span></div>
         </div>

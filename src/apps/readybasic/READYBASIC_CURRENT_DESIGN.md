@@ -258,16 +258,16 @@ overlay:
 | `GFXTEXT` | `GFXTEXT()` | Restores ordinary text mode. |
 | `GFXCLEAR` | `GFXCLEAR(C)` | Clears Bank D screen/color RAM and bitmap RAM for bitmap modes. |
 | `GFXSURF` | `H%=GFXSURF("HIRES")` | Allocates typed graphics-surface handle `3` in the REU heap. |
-| `GFXTGT` / `GFXTARGET` | `GFXTGT(0)`, `GFXTGT(H%)` | Selects visible target `0` or records a typed graphics-surface handle. `GFXTGT` is the tokenizer-safe stored-program spelling; `GFXTARGET` remains a legacy friendly alias. Immediate primitives still draw visible Bank D. |
+| `GFXTGT` | `GFXTGT(0)`, `GFXTGT(H%)` | Selects visible target `0` or records a typed graphics-surface handle. Immediate primitives still draw visible Bank D. |
 | `GFXBLIT` | `GFXBLIT(H%)` | Copies a typed graphics-surface handle's bitmap/screen/color layout from REU to Bank D. |
 | `GFXSYNC` | `GFXSYNC()` | Snapshots the current visible Bank D bitmap/screen/color layout into the selected `GFXTGT(H%)` surface. No dirty-rect queue yet. |
-| `PLOT` / `PNT` / `POINT` | `PLOT(X,Y,C)`, `PNT(X,Y,P%)` | Hires bitmap bit plot/read, multicolor bitmap pair plot/read, or tile cell write/read depending on mode; `PNT` is the tokenizer-safe readback spelling. |
-| `LINE` / `RECT` / `FBOX` / `FRECT` | five numeric args | Immediate primitive workers in `GFXPRIM`; `FBOX` is the tokenizer-safe filled-rectangle spelling. |
+| `PLOT` / `PNT` | `PLOT(X,Y,C)`, `PNT(X,Y,P%)` | Hires bitmap bit plot/read, multicolor bitmap pair plot/read, or tile cell write/read depending on mode. |
+| `LINE` / `RECT` / `FBOX` | five numeric args | Immediate primitive workers in `GFXPRIM`. |
 | `CIRCLE` / `FCIRCLE` | `CIRCLE(X,Y,R,C)`, `FCIRCLE(X,Y,R,C)` | Phase 2 immediate primitive additions. `CIRCLE` uses a compact midpoint outline worker; `FCIRCLE` currently proves the fill path with a bounding filled rectangle. |
 | `POLY` / `FPOLY` | `POLY(A%(0),COUNT,C)`, `FPOLY(A%(0),COUNT,C)` | Phase 3 array-backed polygons from BASIC integer array pairs. `FPOLY` is a conservative convex fan fill, not full scanline/concave fill yet. |
 | `PBMAKE` / `PBUFSET` / `PBDROP` | point-buffer handle lifecycle | Allocates typed REU point-buffer handle `4`, writes zero-based little-endian `x,y` point pairs, and releases the handle. |
-| `POLYH` / `FPOLYH` | `POLYH(H%,COUNT,C)`, `FPOLYH(H%,COUNT,C)` | Phase 3 REU point-buffer polygon aliases. The originally proposed same-name `POLY(H%,...)` overload was not added so `BASIC_START` and bytes free stay fixed. |
-| `TILE` / `CHARAT` | `TILE(X,Y,CH,C)`, `CHARAT(X,Y,CH,C)` | Phase 2 cell write aliases for Bank D tile modes and ordinary text mode demo output. |
+| `POLYH` / `FPOLYH` | `POLYH(H%,COUNT,C)`, `FPOLYH(H%,COUNT,C)` | Phase 3 REU point-buffer polygon handle forms. The originally proposed same-name `POLY(H%,...)` overload was not added so `BASIC_START` and bytes free stay fixed. |
+| `TILE` / `CHARAT` | `TILE(X,Y,CH,C)`, `CHARAT(X,Y,CH,C)` | Phase 2 cell write commands for Bank D tile modes and ordinary text mode demo output. |
 | `DLMAKE` / `DLRST` / `DLPLOT` / `DLLINE` / `DLRECT` / `DLFBOX` / `DLDRAW` | retained display-list handle commands | Phase 4 `GFXDL` overlay. `DLMAKE` allocates a one-page typed REU display list; `DLDRAW` replays plot/line/rectangle records. |
 | `CHRMAKE` / `CHRROW` / `CHRUSE` | charset handle commands | Phase 4 `GFXTILE` overlay. Creates an 8-page charset handle, writes individual character rows, and copies the charset to Bank D. Phase 5 screenshots prove visible Bank D tile rendering. |
 | `TSMAKE` / `TSSET` / `TMMAKE` / `TMSET` / `TMDRAW` | tileset/tilemap handle commands | Phase 4 `GFXTILE` overlay. Fixed 1-page tilesets and 4-page 40x25 tilemaps; no external resource loader yet. |
@@ -275,29 +275,30 @@ overlay:
 | `SIDRST` / `SIDOFF` | `SIDRST()` | Phase 1 sound `SIDCORE` overlay. Clears SID registers `$D400-$D418`. |
 | `VOL` | `VOL(VOL)` | Sets SID master volume `0..15`, preserving filter mode bits. |
 | `FRQ` / `PITCH` | `FRQ(V,F)`, `PITCH(V,N,O)` | Raw SID frequency or PAL note table frequency for voice `1..3`. `PITCH` sets frequency only; use `GATE`, `WAVE`, or `VOICE` to start sound. |
-| `PULSE` / `ADSR` / `ENV` | pulse width and envelope setup | `PULSE(V,W)` writes 12-bit pulse width. `ADSR(V,A,D,S,R)` and `ENV` write SID nibble envelope values. |
-| `WAVE` / `CTRL` / `GATE` | control register helpers | `WAVE(V,M)`/`CTRL(V,M)` writes the SID control byte; `GATE(V,ON)` sets or clears bit 0 without disturbing the other waveform/control bits. |
+| `PULSE` / `ADSR` | pulse width and envelope setup | `PULSE(V,W)` writes 12-bit pulse width. `ADSR(V,A,D,S,R)` writes SID nibble envelope values. |
+| `WAVE` / `GATE` | control register helpers | `WAVE(V,M)` writes the SID control byte; `GATE(V,ON)` sets or clears bit 0 without disturbing the other waveform/control bits. |
 | `VOICE` | `VOICE(V,F,W,AD,SR)` | Fast packed voice setup: frequency, control/wave byte, packed attack/decay byte, and packed sustain/release byte. This intentionally reuses an existing five-number parser signature to avoid resident growth. |
-| `FILTER` / `FILT` | `FILTER(CUTOFF,RES,ROUTE,MODE)` | Writes SID cutoff, resonance, route, and filter mode. Mode uses logical bits `1` low-pass, `2` band-pass, `4` high-pass, `8` voice-3-off. |
-| `SOUND` / `SND` | `SOUND(V,F,D,W)` | Blocking tone helper: gates wave `W` on for `D` spin-delay units and gates it off. No IRQ music engine yet. |
-| `SPRSET` / `SPRMOVE` / `SPRCOL` / `SPRROW` | sprite config/move/color/pixels | Uses eight 64-byte Bank D sprite definitions at `$CA00`; `SPRROW` writes explicit 24-bit sprite rows. `SPRCOLOR` remains a legacy friendly alias. |
-| `SPRSIZE` / `SPREXPAND` | `SPRSIZE(N,XON,YON)` | Phase 2 VIC sprite X/Y expansion; `SPRSIZE` avoids PETCAT tokenizing `EXP`. |
+| `FILTER` | `FILTER(CUTOFF,RES,ROUTE,MODE)` | Writes SID cutoff, resonance, route, and filter mode. Mode uses logical bits `1` low-pass, `2` band-pass, `4` high-pass, `8` voice-3-off. |
+| `SOUND` | `SOUND(V,F,D,W)` | Blocking tone helper: gates wave `W` on for `D` spin-delay units and gates it off. No IRQ music engine yet. |
+| `SPRSET` / `SPRMOVE` / `SPRCOL` / `SPRROW` | sprite config/move/color/pixels | Uses eight 64-byte Bank D sprite definitions at `$CA00`; `SPRROW` writes explicit 24-bit sprite rows. |
+| `SPRSIZE` | `SPRSIZE(N,XON,YON)` | Phase 2 VIC sprite X/Y expansion. |
 | `SPRPRI` | `SPRPRI(N,BEHIND)` | Phase 2 VIC sprite priority bit control. |
-| `SPRMULTI` / `SPRMUL` | `SPRMUL(N,ON)` | Phase 2 VIC sprite multicolor enable; `SPRMUL` is the tokenizer-safe demo spelling. |
-| `SPRMCO` / `SPRMCOLOR` | `SPRMCO(C1,C2)` | Phase 2 shared sprite multicolor registers; `SPRMCO` is the tokenizer-safe demo spelling. |
+| `SPRMUL` | `SPRMUL(N,ON)` | Phase 2 VIC sprite multicolor enable. |
+| `SPRMCO` | `SPRMCO(C1,C2)` | Phase 2 shared sprite multicolor registers. |
 
-Legacy friendly spellings such as `BUFNEW`, `BUFFREE`, `FREEMEM`, `GFXTARGET`,
-`POINT`, `FRECT`, `PBUFNEW`, `PBUFFREE`, `DLCLR`, `DLFRECT`, `SIDCLR`,
-`SILENCE`, `FREQ`, and `NOTE` remain registered for compatibility. New demos
-and stored programs use the token-safe aliases because C64 BASIC V2 can
-tokenize embedded words such as `FN`, `FRE`, `INT`, `CLR`, `LEN`, and `NOT`.
+This alpha build intentionally keeps one public spelling per command behavior.
+ReadyBASIC can create aliases by adding extra 32-byte descriptors that share a
+command id, parser signature, payload, and entrypoint, but duplicate spellings
+consume registry slots and preserve tokenizer hazards. New demos and stored
+programs use only the canonical names because C64 BASIC V2 can tokenize embedded
+words such as `FN`, `FRE`, `INT`, `CLR`, `LEN`, and `NOT`.
 
 In `GFXMODE("MBITMAP")`, immediate primitives use 160x200 logical
 coordinates. `C=0` clears a pixel pair, `C=1..15` draws pair code `3` and
 writes color RAM, `C=16..31` draws pair code `1` and writes the screen high
 nibble, `C=32..47` draws pair code `2` and writes the screen low nibble, and
 `C=48..63` draws pair code `3` with an explicit color-RAM write.
-`POINT`/`PNT` returns pair code `0..3`; it does not resolve the final VIC color
+`PNT` returns pair code `0..3`; it does not resolve the final VIC color
 through the per-cell attributes. The demos `rbgfx21_mbitmap_prims.bas` and
 `rbgfx22_mbitmap_point.bas` exercise this path.
 | `SPRSCAN` / `SPRCOLL` | `SPRSCAN()`, `SPRCOLL(N,C%)` | Polls VIC collision latches; no IRQ sampler. |
@@ -713,18 +714,19 @@ table at `$C600-$C6FF`. ReadyBASIC scans that table at startup and does not use
 | `$0A00` | Saved zero page for ReadyOS suspend/resume. |
 | `$0B00` | Saved stack page for ReadyOS suspend/resume. |
 | `$0C00-$0CFF` | 192-byte heap page bitmap plus reserved bytes. |
-| `$1000-$1FFF` | 128 command descriptor slots, 32 bytes each. Current build has 117 real descriptors, 11 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128. |
+| `$1000-$1FFF` | 128 command descriptor slots, 32 bytes each. Current build has 94 real descriptors, 34 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128. |
 | `$2000-$3FFF` | Reserved common/system space for future ReadyBASIC metadata. |
 | `$4000-$FFFF` | Typed handle heap: 192 pages / 48KB. |
 
 The descriptor table keeps `SCRPUT` in the final slot to prove full-table lookup.
-Every alias consumes a real 32-byte descriptor in the assigned core bank, so the
-source filler count must track the actual descriptor count:
+Every duplicate public spelling would consume a real 32-byte descriptor in the
+assigned core bank, so the source filler count must track the actual descriptor
+count:
 
 | Descriptor range | REU offset | Role | Slots | Size |
 |---|---:|---|---:|---:|
-| Slots 1-116 | `$1000-$1E7F` | Current built-in descriptors from `ZECHO1` through `SND`, including token-safe aliases. | 116 | `$0E80` / 3712B |
-| Slots 117-127 | `$1E80-$1FDF` | Zero-filled filler descriptors available for future commands. | 11 | `$0160` / 352B |
+| Slots 1-93 | `$1000-$1B9F` | Current built-in descriptors from `ZECHO1` through `SOUND`. | 93 | `$0BA0` / 2976B |
+| Slots 94-127 | `$1BA0-$1FDF` | Zero-filled filler descriptors available for future commands. | 34 | `$0440` / 1088B |
 | Slot 128 | `$1FE0-$1FFF` | `SCRPUT`, deliberately placed at the end to prove full-table lookup. | 1 | `$0020` / 32B |
 
 The persistent handle model supports 128 live handles. Each handle is

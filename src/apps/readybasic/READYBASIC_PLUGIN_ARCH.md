@@ -74,7 +74,7 @@ same ReadyOS and REU discipline.
 - `$0A00`: ReadyOS suspend/resume zero-page snapshot.
 - `$0B00`: ReadyOS suspend/resume stack-page snapshot.
 - `$0C00-$0CFF`: 192-page heap bitmap plus reserved bytes.
-- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The current build has 117 real descriptors, 11 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128.
+- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The current build has 94 real descriptors, 34 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128.
 - `$2000-$3FFF`: reserved common/system expansion space.
 - `$4000-$FFFF`: typed 48KB heap for buffer, screen, and Phase 1 graphics
   surface handles.
@@ -189,8 +189,7 @@ Each descriptor is 32 bytes:
   `TEXT`, `HIRES`, `MBITMAP`, `TILE`, and `MTILE`.
 - `GFXTEXT()`, `GFXCLEAR(C)`, `GFXTGT(H%)`, and
   `GFXSYNC()`: module 3 `GFXCORE` Bank D setup/control commands.
-  `GFXTGT(0)` selects the visible target; `GFXTARGET` remains accepted as a
-  legacy friendly alias.
+  `GFXTGT(0)` selects the visible target.
 - `GFXSURF(mode$)` and `GFXBLIT(H%)`: slot-0 allocator-backed surface handle
   commands. They allocate/validate typed handle `3`; full REU drawing/blitting
   is future work.
@@ -204,30 +203,31 @@ Each descriptor is 32 bytes:
 - `POLY(A%(0),COUNT,C)`, `FPOLY(A%(0),COUNT,C)`, `POLYH(H%,COUNT,C)`,
   `FPOLYH(H%,COUNT,C)`, `PBMAKE(COUNT,H%)`, `PBUFSET(H%,INDEX,X,Y)`, and
   `PBDROP(H%)`: module 3 `GFXPOLY` overlay commands. Point buffers are typed
-  REU handle type `4`; `POLYH`/`FPOLYH` are explicit handle aliases because the
+  REU handle type `4`; `POLYH`/`FPOLYH` are explicit handle forms because the
   same-name handle overload was not added to the resident parser.
 - `SPRSET(N,ON,COLOR,PATTERN)`, `SPRMOVE(N,X,Y)`, `SPRCOL(N,COLOR)`,
   `SPRROW(N,ROW,B1,B2,B3)`, `SPRSIZE(N,XON,YON)`, `SPRPRI(N,BEHIND)`,
-  `SPRMULTI(N,ON)` / `SPRMUL(N,ON)`, `SPRMCO(C1,C2)`, `SPRSCAN()`, and
+  `SPRMUL(N,ON)`, `SPRMCO(C1,C2)`, `SPRSCAN()`, and
   `SPRCOLL(N,OUT%)`:
   module 3 `GFXSPR` overlay commands.
 - `JOY(PORT,OUT%)`, `KEYP(OUT%)`, `KEYSCAN()`, and `KEYLAST(OUT%)`: module 3
   `INPUTEV` polling input commands.
 - `SIDRST()`, `SIDOFF()`, `VOL(VOL)`, `FRQ(V,F)`, `PITCH(V,N,O)`,
-  `PULSE(V,W)`, `ADSR(V,A,D,S,R)` / `ENV(V,A,D,S,R)`, `WAVE(V,M)` /
-  `CTRL(V,M)`, `GATE(V,ON)`, `VOICE(V,F,W,AD,SR)`, `FILTER(CUTOFF,RES,ROUTE,MODE)` /
-  `FILT(CUTOFF,RES,ROUTE,MODE)`, and `SOUND(V,F,D,W)` / `SND(V,F,D,W)`:
+  `PULSE(V,W)`, `ADSR(V,A,D,S,R)`, `WAVE(V,M)`, `GATE(V,ON)`,
+  `VOICE(V,F,W,AD,SR)`, `FILTER(CUTOFF,RES,ROUTE,MODE)`, and
+  `SOUND(V,F,D,W)`:
   module 4 `SIDCORE` immediate SID sound commands. `VOICE` uses packed SID
   attack/decay and sustain/release bytes to avoid resident parser growth; no
   IRQ playback engine is installed.
 
-Legacy friendly names including `BUFNEW`, `BUFFREE`, `FREEMEM`, `GFXTARGET`,
-`POINT`, `FRECT`, `PBUFNEW`, `PBUFFREE`, `DLCLR`, `DLFRECT`, `SIDCLR`,
-`SILENCE`, `FREQ`, and `NOTE` remain registered for compatibility. New stored
-programs and demos must use the token-safe aliases above because BASIC V2
-tokenizes embedded words such as `FN`, `FRE`, `INT`, `CLR`, `LEN`, and `NOT`.
-These aliases still consume descriptor slots; the source filler count and static
-check must keep the table at exactly 128 searchable descriptors.
+This alpha build registers no duplicate public command spellings. ReadyBASIC
+can implement an alias by adding a second 32-byte descriptor that points at the
+same command id, signature, payload, and entrypoint, so the command body cost is
+usually zero. The descriptor cost is still real: each alias consumes one of the
+128 searchable slots, increases generated documentation/test surface, and can
+preserve BASIC V2 tokenization hazards such as embedded `FN`, `FRE`, `INT`,
+`CLR`, `LEN`, and `NOT`. Current stored programs and demos must use only the
+canonical names above, and static verification rejects removed aliases.
 
 Native reusable BASIC routines:
 

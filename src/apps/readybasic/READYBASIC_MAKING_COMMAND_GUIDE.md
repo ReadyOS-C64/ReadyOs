@@ -3,7 +3,7 @@
 This guide explains how current ReadyBASIC commands are made in
 `src/apps/readybasic/readybasic.s`. It uses the current names and layout:
 128 descriptor slots in the assigned ReadyBASIC core bank, packed command code in the assigned code bank,
-117 real command descriptors, 11 zero-filled filler descriptors, and `SCRPUT`
+94 real command descriptors, 34 zero-filled filler descriptors, and `SCRPUT`
 kept in slot 128 to prove full-table lookup.
 
 Native `PROC`/`FUNC` routines are new ReadyBASIC language features, not BASIC V2
@@ -100,28 +100,12 @@ or fail. Host `.bas` demo sources should also spell ReadyBASIC commands in
 lowercase so `petcat` writes ordinary PETSCII letters rather than shifted
 uppercase bytes.
 
-Some early friendly command names remain accepted for compatibility but are
-legacy in stored source. Prefer these token-safe spellings:
-
-| Legacy spelling | Preferred stored spelling |
-| --- | --- |
-| `BUFNEW` | `BUFMAKE` |
-| `BUFFREE` | `BUFDROP` |
-| `FREEMEM` | `MEMAVL` |
-| `GFXTARGET` | `GFXTGT` |
-| `POINT` | `PNT` |
-| `FRECT` | `FBOX` |
-| `SPRCOLOR` | `SPRCOL` |
-| `SPREXPAND` | `SPRSIZE` |
-| `SPRMCOLOR` / `SPRMCLR` | `SPRMCO` |
-| `PBUFNEW` | `PBMAKE` |
-| `PBUFFREE` | `PBDROP` |
-| `DLCLR` | `DLRST` |
-| `DLFRECT` | `DLFBOX` |
-| `SIDCLR` | `SIDRST` |
-| `SILENCE` | `SIDOFF` |
-| `FREQ` | `FRQ` |
-| `NOTE` | `PITCH` |
+This alpha build does not keep duplicate public command spellings. ReadyBASIC
+can alias a command by registering another 32-byte descriptor that points at the
+same command id, parser signature, payload, and entrypoint, but that costs one
+registry slot, increases documentation and test surface, and can preserve names
+that BASIC V2 tokenizes badly. Current demos and tests must use only the
+canonical spellings.
 
 Prefix conventions:
 
@@ -238,8 +222,8 @@ a graphics demo.
 
 ### Surface Handles And Blit
 
-`GFXSURF(mode$)` allocates a typed REU graphics-surface handle. `GFXTGT(H%)` is
-the stored-program-safe alias for legacy `GFXTARGET(H%)`; use `GFXTGT(0)` to return to
+`GFXSURF(mode$)` allocates a typed REU graphics-surface handle. `GFXTGT(H%)`
+selects a graphics target; use `GFXTGT(0)` to return to
 the visible Bank D target. Phase 4 keeps immediate primitive drawing visible for
 speed, while `GFXSYNC()` and `GFXBLIT(H%)` exercise the REU surface path and
 copy a compatible surface layout to Bank D:
@@ -268,7 +252,7 @@ In `HIRES`, the immediate primitive commands use 320x200 coordinates:
 30 plot(20,20,1)
 40 line(20,30,300,160,1)
 50 rect(40,50,130,120,1)
-60 frect(180,60,240,130,1)
+60 fbox(180,60,240,130,1)
 70 circle(82,82,38,1)
 80 fcircle(210,92,26,1)
 90 pnt(20,20,p%):print p%
@@ -291,7 +275,7 @@ because each multicolor bitmap pixel is two hardware pixels wide:
 30 line(4,18,155,18,17)    : rem pair 1, color 1
 40 line(4,30,155,70,34)    : rem pair 2, color 2
 50 rect(8,82,72,144,20)    : rem pair 1, color 4
-60 frect(86,82,148,144,37) : rem pair 2, color 5
+60 fbox(86,82,148,144,37) : rem pair 2, color 5
 70 circle(46,112,28,51)    : rem pair 3, color 3
 80 fcircle(118,112,22,58)  : rem pair 3, color 10
 90 pnt(46,112,p%)          : rem p% is 0..3 pair code
@@ -322,7 +306,7 @@ text screen RAM so demos can label themselves:
 10 gfxmode("tile"):gfxclear(0)
 20 plot(4,4,5):plot(5,4,6):plot(6,4,7)
 30 line(1,1,38,20,3)
-40 rect(3,5,20,16,10):frect(24,8,34,18,12)
+40 rect(3,5,20,16,10):fbox(24,8,34,18,12)
 50 get a$:if a$="" then 50
 60 gfxtext():print "tile demo"
 ```
@@ -349,9 +333,9 @@ Sprites use Bank D sprite data at `$CA00`. The direct pixel path is
 80 sprmul(0,1):sprmco(2,5):sprcol(0,10)
 ```
 
-`SPRSIZE` is the tokenizer-safe alias for expansion, `SPRMUL` enables sprite
-multicolor, `SPRMCO` sets the shared multicolor registers, and `SPRCOL` is the
-tokenizer-safe primary color alias. `SPRSCAN()` polls and clears VIC collision
+`SPRSIZE` controls expansion, `SPRMUL` enables sprite multicolor, `SPRMCO`
+sets the shared multicolor registers, and `SPRCOL` sets the primary sprite
+color. `SPRSCAN()` polls and clears VIC collision
 latches; Phase 1/2 input and collision commands do not install an IRQ sampler.
 
 ### Polygons And Point Buffers
@@ -371,15 +355,15 @@ Array-backed polygons read BASIC integer array pairs:
 REU point buffers keep the point list out of BASIC arrays:
 
 ```basic
-10 pbufnew(4,h%)
+10 pbmake(4,h%)
 20 pbufset(h%,0,40,20):pbufset(h%,1,120,42)
 30 pbufset(h%,2,98,130):pbufset(h%,3,18,110)
 40 polyh(h%,4,1)
 50 fpolyh(h%,4,1)
-60 pbuffree(h%)
+60 pbdrop(h%)
 ```
 
-`POLYH` and `FPOLYH` are explicit handle aliases. The originally proposed
+`POLYH` and `FPOLYH` are explicit handle-form commands. The originally proposed
 same-name handle overloads were avoided so the resident parser and BASIC bytes
 free stay unchanged. `FPOLY`/`FPOLYH` currently use a conservative convex fan
 fill; concave scanline filling remains future work.
@@ -398,14 +382,13 @@ signature:
 ```basic
 10 sidrst():vol(15):pulse(1,2048)
 20 voice(1,4455,65,9,195)
-30 zpause(80):ctrl(1,64)
+30 zpause(80):wave(1,64)
 ```
 
 `VOICE(V,F,W,AD,SR)` maps directly to SID registers: raw frequency, control
 byte, packed attack/decay, and packed sustain/release. Friendlier setup remains
 available with `ADSR(V,A,D,S,R)`, `PULSE(V,W)`, `FRQ(V,F)`, `WAVE(V,M)`, and
-`GATE(V,ON)`. `FRQ` and `PITCH` remain accepted legacy aliases, but use
-`frq` and `pitch` in stored source.
+`GATE(V,ON)`. Use the canonical `frq` and `pitch` spellings in stored source.
 
 ### Retained Lists, Tilesets, And Multicolor Cells
 
@@ -448,7 +431,7 @@ For multicolor bitmap cell attributes, use:
 ```basic
 10 gfxmode("mbitmap"):gfxclear(0):mcbg(0)
 20 mcell(2,2,6,10,2)
-30 frect(8,16,31,47,17)
+30 fbox(8,16,31,47,17)
 ```
 
 Future resource files should be able to carry charset, tileset, tilemap,

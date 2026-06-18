@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5v-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5v-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5v-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5q-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5q-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5q-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -179,17 +179,17 @@ steps:
     params:
       contains: "RANGE 7  10"
 
-  - id: probe_08_bufnew
+  - id: probe_08_bufmake
     type: input.sequence
     params:
-      keys: [72,37,61,66,85,70,78,69,87,40,51,48,48,41,13,80,82,73,78,84,32,34,66,85,70,78,69,87,34,59,72,37,59,34,58,69,78,68,34,13]
+      keys: [72,37,61,66,85,70,77,65,75,69,40,51,48,48,41,13,80,82,73,78,84,32,34,66,85,70,77,65,75,69,34,59,72,37,59,34,58,69,78,68,34,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
-  - id: assert_08_bufnew
+  - id: assert_08_bufmake
     type: assert.screen
     params:
-      contains: "BUFNEW 1 :END"
-  - id: dump_08_bufnew
+      contains: "BUFMAKE 1 :END"
+  - id: dump_08_bufmake
     type: dump.memory_ranges
     params:
       ranges: *plugin_ranges
@@ -209,17 +209,17 @@ steps:
     params:
       not_contains: "?RB ERROR"
 
-  - id: probe_10_buffree
+  - id: probe_10_bufdrop
     type: input.sequence
     params:
-      keys: [66,85,70,70,82,69,69,40,72,37,41,13,80,82,73,78,84,32,34,70,82,69,69,32,79,75,34,13]
+      keys: [66,85,70,68,82,79,80,40,72,37,41,13,80,82,73,78,84,32,34,70,82,69,69,32,79,75,34,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
-  - id: assert_10_buffree
+  - id: assert_10_bufdrop
     type: assert.screen
     params:
       contains: "FREE OK"
-  - id: assert_10_buffree_no_error
+  - id: assert_10_bufdrop_no_error
     type: assert.screen_not_contains
     params:
       not_contains: "?RB ERROR"
@@ -248,24 +248,24 @@ steps:
     type: assert.screen
     params:
       contains: "?RB ERROR 40"
-  - id: probe_10c_buffree_screen_handle
+  - id: probe_10c_bufdrop_screen_handle
     type: input.sequence
     params:
-      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,66,85,70,70,82,69,69,40,83,37,41,13,80,82,73,78,84,32,34,83,67,82,70,82,69,69,34,59,83,37,13]
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,66,85,70,68,82,79,80,40,83,37,41,13,80,82,73,78,84,32,34,83,67,82,70,82,69,69,34,59,83,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
-  - id: assert_10c_buffree_screen_handle
+  - id: assert_10c_bufdrop_screen_handle
     type: assert.screen
     params:
       contains: "SCRFREE 1"
-  - id: assert_10c_buffree_screen_no_error
+  - id: assert_10c_bufdrop_screen_no_error
     type: assert.screen_not_contains
     params:
       not_contains: "?RB ERROR"
   - id: probe_10d_scrput_rejects_buffer_handle
     type: input.sequence
     params:
-      keys: [66,37,61,66,85,70,78,69,87,40,51,48,48,41,13,83,67,82,80,85,84,40,66,37,41,13]
+      keys: [66,37,61,66,85,70,77,65,75,69,40,51,48,48,41,13,83,67,82,80,85,84,40,66,37,41,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10d_scrput_rejects_buffer_handle
@@ -275,7 +275,7 @@ steps:
   - id: probe_10e_free_buffer_after_type_error
     type: input.sequence
     params:
-      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,66,85,70,70,82,69,69,40,66,37,41,13,80,82,73,78,84,32,34,66,85,70,82,69,69,34,59,66,37,13]
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,66,85,70,68,82,79,80,40,66,37,41,13,80,82,73,78,84,32,34,66,85,70,82,69,69,34,59,66,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10e_free_buffer_after_type_error
@@ -290,7 +290,7 @@ steps:
   - id: probe_10f_allocate_128_handles
     type: input.sequence
     params:
-      keys: [78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,49,50,56,13,50,48,32,72,37,61,66,85,70,78,69,87,40,49,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,72,77,65,88,34,59,72,37,13,82,85,78,13]
+      keys: [78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,49,50,56,13,50,48,32,72,37,61,66,85,70,77,65,75,69,40,49,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,72,77,65,88,34,59,72,37,13,82,85,78,13]
       inter_key_delay_s: 0.03
       post_delay_s: 4.0
   - id: assert_10f_allocate_128_handles
@@ -305,7 +305,7 @@ steps:
   - id: probe_10g_handle_129_rejected
     type: input.sequence
     params:
-      keys: [69,37,61,66,85,70,78,69,87,40,49,41,13]
+      keys: [69,37,61,66,85,70,77,65,75,69,40,49,41,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10g_handle_129_rejected
@@ -316,7 +316,7 @@ steps:
   - id: probe_10h_free_128_handles
     type: input.sequence
     params:
-      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,49,50,56,13,50,48,32,66,85,70,70,82,69,69,40,73,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,72,70,82,69,69,68,34,13,82,85,78,13]
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,49,50,56,13,50,48,32,66,85,70,68,82,79,80,40,73,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,72,70,82,69,69,68,34,13,82,85,78,13]
       inter_key_delay_s: 0.03
       post_delay_s: 4.0
   - id: assert_10h_free_128_handles
@@ -331,7 +331,7 @@ steps:
   - id: probe_10i_reuse_low_handle
     type: input.sequence
     params:
-      keys: [82,37,61,66,85,70,78,69,87,40,49,41,13,80,82,73,78,84,32,34,72,82,69,85,83,69,34,59,82,37,13,66,85,70,70,82,69,69,40,82,37,41,13]
+      keys: [82,37,61,66,85,70,77,65,75,69,40,49,41,13,80,82,73,78,84,32,34,72,82,69,85,83,69,34,59,82,37,13,66,85,70,68,82,79,80,40,82,37,41,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10i_reuse_low_handle
@@ -346,7 +346,7 @@ steps:
   - id: probe_10j_allocate_48k_heap
     type: input.sequence
     params:
-      keys: [77,37,61,66,85,70,78,69,87,40,52,57,49,53,50,41,13,80,82,73,78,84,32,34,72,77,65,88,66,85,70,34,59,77,37,13]
+      keys: [77,37,61,66,85,70,77,65,75,69,40,52,57,49,53,50,41,13,80,82,73,78,84,32,34,72,77,65,88,66,85,70,34,59,77,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_10j_allocate_48k_heap
@@ -361,7 +361,7 @@ steps:
   - id: probe_10k_heap_full_rejected
     type: input.sequence
     params:
-      keys: [69,37,61,66,85,70,78,69,87,40,49,41,13]
+      keys: [69,37,61,66,85,70,77,65,75,69,40,49,41,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10k_heap_full_rejected
@@ -372,7 +372,7 @@ steps:
   - id: probe_10l_free_48k_heap
     type: input.sequence
     params:
-      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,66,85,70,70,82,69,69,40,77,37,41,13,80,82,73,78,84,32,34,72,77,65,88,70,82,69,69,34,59,77,37,13]
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,66,85,70,68,82,79,80,40,77,37,41,13,80,82,73,78,84,32,34,72,77,65,88,70,82,69,69,34,59,77,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_10l_free_48k_heap
@@ -413,7 +413,7 @@ steps:
   - id: probe_10o_free_screen_handles
     type: input.sequence
     params:
-      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,50,52,13,50,48,32,66,85,70,70,82,69,69,40,73,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,83,70,82,69,69,68,34,13,82,85,78,13]
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,50,52,13,50,48,32,66,85,70,68,82,79,80,40,73,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,83,70,82,69,69,68,34,13,82,85,78,13]
       inter_key_delay_s: 0.03
       post_delay_s: 4.0
   - id: assert_10o_free_screen_handles

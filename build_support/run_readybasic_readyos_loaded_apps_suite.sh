@@ -99,6 +99,7 @@ append_load_list_run_gfx_app() {
   local id_name="$2"
   local title="$3"
   local run_delay="${4:-3.0}"
+  local self_complete="${5:-0}"
   cat >>"$PLAN" <<YAML
   - id: clear_before_${id_name}
     type: input.sequence
@@ -142,10 +143,33 @@ append_load_list_run_gfx_app() {
     params:
       label: readybasic_graphics_${id_name}
       pitch: "Graphics screenshot after RUN ${disk_name} from inside ReadyBASIC under ReadyOS"
+YAML
+  if [ "$self_complete" = "1" ]; then
+    cat >>"$PLAN" <<YAML
+  - id: wait_complete_${id_name}
+    type: screen.wait_contains
+    params:
+      text: "${disk_name} COMPLETE"
+      wait_timeout_s: 10
+  - id: capture_restored_${id_name}
+    type: screen.capture
+    params:
+      label: readybasic_restored_${id_name}
+  - id: assert_complete_${id_name}
+    type: assert.screen
+    params:
+      contains: "${disk_name} COMPLETE"
+  - id: assert_no_error_${id_name}
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+YAML
+  else
+    cat >>"$PLAN" <<YAML
   - id: restore_text_${id_name}
     type: input.sequence
     params:
-      keys: [$(keys "GFXTEXT():PRINT \"${disk_name} COMPLETE\""$'\r')]
+      keys: [$(keys "::GFXTEXT():PRINT \"${disk_name} COMPLETE\""$'\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: capture_restored_${id_name}
@@ -161,6 +185,7 @@ append_load_list_run_gfx_app() {
     params:
       not_contains: "?"
 YAML
+  fi
 }
 
 mkdir -p "$(dirname "$PLAN")"
@@ -243,7 +268,7 @@ append_load_list_run_gfx_app "RBGFX05" "rbgfx05" "RBGFX05 PNT READ" "2.0"
 append_load_list_run_gfx_app "RBGFX06" "rbgfx06" "RBGFX06 REU SURFACE" "2.0"
 append_load_list_run_gfx_app "RBGFX07" "rbgfx07" "RBGFX07 MBITMAP" "3.0"
 append_load_list_run_gfx_app "RBGFX08" "rbgfx08" "RBGFX08 TILE" "3.0"
-append_load_list_run_gfx_app "RBGFX09" "rbgfx09" "RBGFX09 SPRITES" "4.0"
+append_load_list_run_gfx_app "RBGFX09" "rbgfx09" "RBGFX09 SPRITES" "1.0" "1"
 append_load_list_run_gfx_app "RBGFX10" "rbgfx10" "RBGFX10 COLLISION" "2.5"
 append_load_list_run_gfx_app "RBGFX11" "rbgfx11" "RBGFX11 INPUT" "4.0"
 append_load_list_run_gfx_app "RBGFX12" "rbgfx12" "RBGFX12 SHOWCASE" "3.0"

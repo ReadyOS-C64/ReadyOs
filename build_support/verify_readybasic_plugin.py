@@ -24,7 +24,7 @@ def require(pattern: str, text: str, description: str) -> None:
         fail(description)
 
 
-TOKEN_UNSAFE_LEGACY_COMMANDS = {
+REMOVED_COMMAND_NAMES = {
     "BUFNEW",
     "BUFFREE",
     "FREEMEM",
@@ -43,6 +43,11 @@ TOKEN_UNSAFE_LEGACY_COMMANDS = {
     "SILENCE",
     "FREQ",
     "NOTE",
+    "SND",
+    "ENV",
+    "CTRL",
+    "FILT",
+    "SPRMULTI",
 }
 
 BASIC_V2_EMBEDDED_TOKENS = (
@@ -247,17 +252,17 @@ def main() -> None:
     require(r"CMD_GFXCORE\s+CMD_GFXMODE,\s+SIG_GFXMODE,\s+cmd_gfxmode,\s+\"GFXMODE\"", asm,
             "GFXMODE must be a built-in GFXCORE command")
     require(r"CMD_LOW_ALL\s+CMD_BUFNEW,\s+SIG_BUFNEW,\s+cmd_bufnew_low,\s+\"BUFMAKE\"", asm,
-            "BUFMAKE must be registered as the stored-program-safe BUFNEW alias")
+            "BUFMAKE must be the only public buffer allocation command")
     require(r"CMD_LOW_ALL\s+CMD_BUFFREE,\s+SIG_BUFFREE,\s+cmd_buffree_low,\s+\"BUFDROP\"", asm,
-            "BUFDROP must be registered as the stored-program-safe BUFFREE alias")
+            "BUFDROP must be the only public buffer release command")
     require(r"CMD_LOW\s+CMD_FREEMEM,\s+SIG_FREEMEM,\s+cmd_freemem_low,\s+cmd_freemem_low_end,\s+\"MEMAVL\"", asm,
-            "MEMAVL must be registered as the stored-program-safe FREEMEM alias")
+            "MEMAVL must be the only public BASIC free-memory probe")
     require(r"CMD_LOW_ALL\s+CMD_GFXTARGET,\s+SIG_BUFFREE,\s+cmd_gfxtarget_low,\s+\"GFXTGT\"", asm,
-            "GFXTGT must be registered as the stored-program-safe GFXTARGET alias")
+            "GFXTGT must be the only public graphics target command")
     require(r"CMD_GFXPRIM\s+CMD_PLOT,\s+SIG_PLOT,\s+cmd_plot,\s+\"PLOT\"", asm,
             "PLOT must be a built-in GFXPRIM command")
     require(r"CMD_GFXPRIM\s+CMD_FRECT,\s+SIG_LINE,\s+cmd_frect,\s+\"FBOX\"", asm,
-            "FBOX must be registered as the stored-program-safe FRECT alias")
+            "FBOX must be the only public filled-rectangle command")
     require(r"CMD_GFXSPR\s+CMD_SPRSET,\s+SIG_SPRSET,\s+cmd_sprset,\s+\"SPRSET\"", asm,
             "SPRSET must be a built-in GFXSPR overlay command")
     require(r"CMD_INPUTEV\s+CMD_JOY,\s+SIG_ZFAIL,\s+cmd_joy,\s+\"JOY\"", asm,
@@ -267,45 +272,46 @@ def main() -> None:
     require(r"CMD_GFXPOLY\s+CMD_POLYH,\s+SIG_PLOT,\s+cmd_poly,\s+\"POLYH\"", asm,
             "POLYH must be a built-in GFXPOLY overlay command")
     require(r"CMD_GFXPOLY\s+CMD_PBUFNEW,\s+SIG_BUFNEW,\s+cmd_pbufnew,\s+\"PBMAKE\"", asm,
-            "PBMAKE must be registered as the stored-program-safe PBUFNEW alias")
+            "PBMAKE must be the only public point-buffer allocation command")
     require(r"CMD_GFXPOLY\s+CMD_PBUFFREE,\s+SIG_BUFFREE,\s+cmd_pbuffree,\s+\"PBDROP\"", asm,
-            "PBDROP must be registered as the stored-program-safe PBUFFREE alias")
+            "PBDROP must be the only public point-buffer release command")
     require(r"CMD_GFXDL\s+CMD_DLNEW,\s+SIG_BUFNEW,\s+cmd_dlnew,\s+\"DLMAKE\"", asm,
             "DLMAKE must be a built-in GFXDL overlay command")
     require(r"CMD_GFXDL\s+CMD_DLCLR,\s+SIG_BUFFREE,\s+cmd_dlclr,\s+\"DLRST\"", asm,
-            "DLRST must be registered as the stored-program-safe DLCLR alias")
+            "DLRST must be the only public display-list reset command")
     require(r"CMD_GFXDL\s+CMD_DLFRECT,\s+SIG_LINE,\s+cmd_dlfrect,\s+\"DLFBOX\"", asm,
-            "DLFBOX must be registered as the stored-program-safe DLFRECT alias")
+            "DLFBOX must be the only public display-list filled-rectangle command")
     require(r"CMD_GFXDL\s+CMD_DLDRAW,\s+SIG_BUFFREE,\s+cmd_dldraw,\s+\"DLDRAW\"", asm,
             "DLDRAW must be a built-in GFXDL overlay command")
     require(r"CMD_GFXTILE\s+CMD_TMDRAW,\s+SIG_BUFFILL,\s+cmd_tmdraw,\s+\"TMDRAW\"", asm,
             "TMDRAW must be a built-in GFXTILE overlay command")
-    require(r"CMD_SIDCORE\s+CMD_SIDCLR,\s+SIG_KEYNONE,\s+cmd_sidclr,\s+\"SIDCLR\"", asm,
-            "SIDCLR must be a built-in SIDCORE overlay command")
     require(r"CMD_SIDCORE\s+CMD_SIDCLR,\s+SIG_KEYNONE,\s+cmd_sidclr,\s+\"SIDRST\"", asm,
-            "SIDRST must be registered as the stored-program-safe SIDCLR alias")
+            "SIDRST must be the only public SID reset command")
     require(r"CMD_SIDCORE\s+CMD_SILENCE,\s+SIG_KEYNONE,\s+cmd_sidclr,\s+\"SIDOFF\"", asm,
-            "SIDOFF must be registered as the stored-program-safe SILENCE alias")
+            "SIDOFF must be the only public SID silence command")
     require(r"CMD_SIDCORE\s+CMD_FREQ,\s+SIG_BUFFILL,\s+cmd_freq,\s+\"FRQ\"", asm,
-            "FRQ must be registered as the stored-program-safe FREQ alias")
+            "FRQ must be the only public raw SID frequency command")
     require(r"CMD_SIDCORE\s+CMD_NOTE,\s+SIG_PLOT,\s+cmd_note,\s+\"PITCH\"", asm,
-            "PITCH must be registered as the stored-program-safe NOTE alias")
+            "PITCH must be the only public note-to-frequency command")
     require(r"CMD_SIDCORE\s+CMD_VOICE,\s+SIG_LINE,\s+cmd_voice,\s+\"VOICE\"", asm,
             "VOICE must use the existing five-number signature to avoid resident parser growth")
     require(r"CMD_SIDCORE\s+CMD_SOUND,\s+SIG_SPRSET,\s+cmd_sound,\s+\"SOUND\"", asm,
             "SOUND must be a built-in SIDCORE overlay command")
     if re.search(r"^\s*RB_GFX_[A-Za-z0-9_]+\s*=\s*\$C[6-9][0-9A-Fa-f]{2}\b", asm, re.MULTILINE):
         fail("graphics-owned Bank D state must not live in the $C600-$C9FF forbidden range")
-    unsafe_new = []
-    for name in parse_command_names(asm):
+    command_names = parse_command_names(asm)
+    removed_present = sorted(set(command_names) & REMOVED_COMMAND_NAMES)
+    if removed_present:
+        fail("removed alpha command aliases must not be registered: " + ", ".join(removed_present))
+    unsafe_names = []
+    for name in command_names:
         reason = token_unsafe_reason(name)
-        if reason and name not in TOKEN_UNSAFE_LEGACY_COMMANDS:
-            unsafe_new.append(f"{name} ({reason})")
-    if unsafe_new:
+        if reason:
+            unsafe_names.append(f"{name} ({reason})")
+    if unsafe_names:
         fail(
-            "command names must avoid embedded BASIC V2 token words; "
-            "add a safe alias and document legacy status before allowing: "
-            + ", ".join(unsafe_new)
+            "command names must avoid embedded BASIC V2 token words: "
+            + ", ".join(unsafe_names)
         )
     check_command_descriptor_layout(asm)
     require(r"^CMD_ZMODLOAD\s*=\s*28\b", asm, "ZMODLOAD loader command id must stay stable")

@@ -6,7 +6,7 @@ memory map, use `READYBASIC_CURRENT_DESIGN.md`.
 
 Current runtime command names use `ZECHO1`, `ZADD16`, `UPPER`, `LOWER`,
 `ZHIDDENRAM`, `ZSUMNUMARRAY`, `ZRANGENUMARRAY`, `ZTEMPSCRATCH`, `ZPAUSE`,
-`ZFAIL`, `FREEMEM`, `ERRCODE`, and `ERRLINE` for the core demo/proof commands.
+`ZFAIL`, `MEMAVL`, `ERRCODE`, and `ERRLINE` for the core demo/proof commands.
 The module/submodule branch also includes `ZSLOT0`, `ZSLOT1`, `ZSLOT2`,
 `ZSPAN`, `ZOVL1`, `ZOVL2`, `ZCPYRST`, `ZCOPY`, `ZMODLD`, and disk-loaded sample
 commands `ZDM1`, `ZDM2S`, `ZDOV1`, and `ZDOV2`. Native language features also include `PROC`/`FUNC`,
@@ -77,7 +77,7 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
     and `NGS HI`.
   - Broad external command/program/lifecycle/state wrappers were later refreshed
     to the bare parenthesized syntax on this branch.
-  - Added a viewer-paced ReadyBASIC demo automation suite covering `FREEMEM`,
+  - Added a viewer-paced ReadyBASIC demo automation suite covering `MEMAVL`,
     editor round trips, command groups, `PROC`/`FUNC`, expected errors, REU
     handles, and nested expression forms.
 
@@ -115,7 +115,7 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
   natural BASIC syntax lean.
 - Added `$030A/$030B` eval-vector hook for selected expression returns:
   `ZECHO1()`, `ZADD16(a,b)`, `UPPER(s$)`, `LOWER(s$)`, `ZHIDDENRAM(s$)`,
-  `ZSUMNUMARRAY(a%(0),n)`, `BUFNEW(n)`, `ZTEMPSCRATCH(n)`, and `SCRCAP()`.
+  `ZSUMNUMARRAY(a%(0),n)`, `BUFMAKE(n)`, `ZTEMPSCRATCH(n)`, and `SCRCAP()`.
 - Added parenthesized `PROC`/`FUNC` definitions and parenthesized non-empty
   `EXEC` actual lists. Zero-argument routines still use `EXEC NAME`; `EXEC
   NAME()` was cut for resident size.
@@ -316,7 +316,7 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
   - Existing live handle count remains eight.
   - Type `1` is a byte buffer; type `2` is screen text+color.
   - `BUFFILL` rejects non-buffer handles with `?RB ERROR 40`.
-  - `BUFFREE` frees any valid handle type.
+  - `BUFDROP` frees any valid handle type.
   - `SCRCAP H%` captures `$0400-$07E7` and `$D800-$DBE7`.
   - `SCRPUT H%` validates type `2` and restores screen text plus color RAM.
   - The originally proposed `SCRSAVE`/`SCRLOAD` names were changed to
@@ -448,7 +448,7 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
 - Result: pass, 44/44 steps.
 - Key trace:
   - Cold boot reached `READYBASIC REU PLUGINS`.
-  - Direct command probes passed for `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `BUFNEW`, `BUFFILL`, `BUFFREE`, `TEMPSCRATCH`, `FAIL`, and unknown-command error.
+  - Direct command probes passed for the current proof commands, including scalar, string, hidden-worker, array, REU-buffer, temporary-scratch, failure, and unknown-command cases.
   - `EXIT` returned to the launcher.
   - ReadyBasic was relaunched by menu navigation, not `CTRL+3`.
   - READY-mode resume cleared/redrew the ReadyBasic screen and `!PING` still worked after resume.
@@ -517,7 +517,7 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
   - String input/output works: `!STRUP S$,T$`.
   - Hidden `$A000` worker works: `!HCRC "AB",H%`.
   - Integer array input/output works: `SUMAI` and `RANGEAI`.
-  - Persistent REU handle lifecycle works: `BUFNEW`, `BUFFILL`, `BUFFREE`.
+  - Persistent REU handle lifecycle works: `BUFMAKE`, `BUFFILL`, `BUFDROP`.
   - Error path works: `!FAIL 7,X%` reports `?RB ERROR 7` and leaves the pre-cleared output variable at zero.
 - Regression command: `READYBASIC_SKIP_BUILD=1 READYBASIC_VISIBLE=1 bash build_support/run_readybasic_plugin_command_probe.sh`
 - Regression run dir: `../agenticdevharness/logs/vice_auto_20260511_204727`
@@ -539,7 +539,7 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
   - Cold ReadyOS boot autoloaded ReadyBasic through the generated app config.
   - Direct-mode sample commands passed across scalar, string, hidden worker, array, REU handle, temporary heap, failure, and unknown-command paths.
   - Launcher round trip used menu navigation, not `CTRL+3`; ReadyBasic redrew on return and variables plus registry state survived.
-  - Stored BASIC program tests passed for `PING`, same-line `ADD16`, `STRUP`, hidden `HCRC`, `SUMAI`, `RANGEAI`, `BUFNEW/BUFFILL/BUFFREE`, and failure output clearing.
+  - Stored BASIC program tests passed for scalar, same-line numeric, string, hidden-worker, array, `BUFMAKE`/`BUFFILL`/`BUFDROP`, and failure output clearing.
 - First failing step/code: none.
 - Next hypothesis:
   - Keep this script as the human-watchable acceptance suite while shorter direct/program probes remain better for tight edit-run loops.

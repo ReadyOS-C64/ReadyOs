@@ -12,7 +12,7 @@ code REU bank at offset `$7800`, loaded from cold-only `OVL6PACK`, and fetched
 to `$B800-$BA0D` when a sound command runs.
 
 There is no IRQ music engine in Phase 1. Commands either write SID registers
-immediately or, in the case of `SOUND`/`SND`, perform a simple blocking tone.
+immediately or, in the case of `SOUND`, perform a simple blocking tone.
 This keeps all persistent behavior out of resident ReadyBASIC RAM.
 
 ## Design Rules
@@ -28,10 +28,10 @@ This keeps all persistent behavior out of resident ReadyBASIC RAM.
   setup; `VOICE` is the compact 1 MHz path.
 - Do not install interrupts for playback yet.
 - Command names used in stored BASIC demos must be BASIC-token-safe and should
-  be written lowercase in host `.bas` sources before `petcat`. Legacy friendly
-  names such as `SIDCLR`, `SILENCE`, `FREQ`, and `NOTE` remain accepted, but
-  demos use `sidrst`, `sidoff`, `frq`, and `pitch` so `LIST` does not confuse
-  command-name bytes with BASIC V2 tokens like `CLR`, `LEN`, `FRE`, and `NOT`.
+  be written lowercase in host `.bas` sources before `petcat`. This alpha build
+  does not register duplicate legacy spellings, so demos use `sidrst`,
+  `sidoff`, `frq`, and `pitch` and avoid names that contain BASIC V2 tokens
+  such as `CLR`, `LEN`, `FRE`, and `NOT`.
 
 ## SID Register Mapping
 
@@ -72,18 +72,17 @@ Wave/control bits:
 
 | Command | Syntax | Behavior |
 |---|---|---|
-| `SIDRST` / `SIDOFF` | `SIDRST()` | Preferred token-safe reset/off aliases. Clears SID registers `$D400-$D418`. |
-| `SIDCLR` / `SILENCE` | `SIDCLR()` | Legacy friendly aliases for reset/off. Accepted, but avoid in stored demo source because `CLR` and `LEN` tokenize under BASIC V2. |
+| `SIDRST` / `SIDOFF` | `SIDRST()` | Reset/off commands. Clears SID registers `$D400-$D418`. |
 | `VOL` | `VOL(VOL)` | Sets master volume `0..15`, preserving filter mode bits in `$D418`. |
-| `FRQ` / `FREQ` | `FRQ(VOICE,FREQ16)` | Writes raw 16-bit SID frequency for voice `1..3`. `FRQ` is preferred for stored programs; `FREQ` is legacy-friendly direct-mode spelling. |
-| `PITCH` / `NOTE` | `PITCH(VOICE,NOTE,OCT)` | Sets frequency from `NOTE=0..11` (`C..B`) and octave `0..7`, using a compact PAL C0 table shifted by octave. It does not gate the voice. `PITCH` is preferred for stored programs because `NOTE` contains `NOT`. |
+| `FRQ` | `FRQ(VOICE,FREQ16)` | Writes raw 16-bit SID frequency for voice `1..3`. |
+| `PITCH` | `PITCH(VOICE,SEMI,OCT)` | Sets frequency from semitone `0..11` (`C..B`) and octave `0..7`, using a compact PAL C0 table shifted by octave. It does not gate the voice. |
 | `PULSE` | `PULSE(VOICE,WIDTH)` | Writes 12-bit pulse width `0..4095`. |
-| `ADSR` / `ENV` | `ADSR(VOICE,A,D,S,R)` | Writes attack, decay, sustain, and release nibbles `0..15`. |
-| `WAVE` / `CTRL` | `WAVE(VOICE,MASK)` | Writes the SID voice control byte directly. Use bit `1` for gate, or use `GATE`. |
+| `ADSR` | `ADSR(VOICE,A,D,S,R)` | Writes attack, decay, sustain, and release nibbles `0..15`. |
+| `WAVE` | `WAVE(VOICE,MASK)` | Writes the SID voice control byte directly. Use bit `1` for gate, or use `GATE`. |
 | `GATE` | `GATE(VOICE,ON)` | Sets or clears bit 0 in the current voice control register. |
 | `VOICE` | `VOICE(VOICE,FREQ16,WAVE,AD,SR)` | Fast packed setup. Writes frequency, packed attack/decay byte, packed sustain/release byte, and control/wave byte. |
-| `FILTER` / `FILT` | `FILTER(CUTOFF,RES,ROUTE,MODE)` | Writes cutoff `0..2047`, resonance `0..15`, route bitmask, and mode bitmask. |
-| `SOUND` / `SND` | `SOUND(VOICE,FREQ16,DURATION,WAVE)` | Blocking helper. Writes frequency, gates `WAVE` on, waits for `DURATION` spin-delay units, then gates off. |
+| `FILTER` | `FILTER(CUTOFF,RES,ROUTE,MODE)` | Writes cutoff `0..2047`, resonance `0..15`, route bitmask, and mode bitmask. |
+| `SOUND` | `SOUND(VOICE,FREQ16,DURATION,WAVE)` | Blocking helper. Writes frequency, gates `WAVE` on, waits for `DURATION` spin-delay units, then gates off. |
 
 `FILTER` mode uses a logical low-nibble mask before shifting into `$D418`:
 
@@ -123,7 +122,7 @@ Packed fast path:
 ```basic
 10 sidrst():vol(15):pulse(1,2048)
 20 voice(1,4455,65,9,195)
-30 zpause(80):ctrl(1,64)
+30 zpause(80):wave(1,64)
 ```
 
 Here `65` is pulse plus gate, `9` is packed attack/decay `$09`, and `195` is

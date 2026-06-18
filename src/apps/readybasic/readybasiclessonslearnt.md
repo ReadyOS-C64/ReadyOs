@@ -285,7 +285,7 @@ or the conditions that ROM helpers such as `CHRGOT`, `FRMNUM`, `GETADR`, and
 
 The concrete regression was that pointer/register preservation was relaxed while
 renaming and refactoring lookup. Direct commands still reached parts of the
-dispatcher, but parser-sensitive commands such as `BUFNEW` and output-variable
+dispatcher, but parser-sensitive commands such as `BUFMAKE` and output-variable
 forms could fail because the follow-on BASIC ROM helper contract was no longer
 exactly intact. The fix was to restore the parser contract, including ensuring
 the whitespace-skip/`CHRGOT` path leaves `Y` in the expected state before
@@ -369,11 +369,10 @@ reserved words that appear inside the typed command name. Names such as
 `LOAD` tokens after crunching. The implemented names became `SCRCAP` and
 `SCRPUT` to avoid those embedded tokens.
 
-The same class of problem showed up in shorter examples too: `BUFNEW` can carry
-an `FN` token, `FREEMEM` can carry a `FRE` token, and historical `PING` could
-carry a `PI` token. ReadyBASIC currently has parser accommodations for shipped
-names that still need them, but future command names should not rely on adding
-more special cases.
+The same class of problem showed up in shorter examples too: early buffer and
+free-memory spellings could carry BASIC `FN`/`FRE` tokens, and a historical echo
+probe could carry a `PI` token. ReadyBASIC now favors names that avoid those
+token substrings instead of carrying compatibility aliases.
 
 The 2026-05-22 command rename pass made that rule practical: proof/demo
 commands now live under a `Z...` namespace, `STRUP` became useful command
@@ -789,7 +788,7 @@ Added on 2026-05-24 with `build_support/run_readybasic_demo_suite.sh`. A demo
 suite is different from a regression probe: it should pause long enough for a
 viewer to read the screen, describe each section with visible `REM` text before
 running it, and state expected outcomes before printing or intentionally causing
-errors. The ReadyBASIC demo covers `FREEMEM`, app suspend/restore through the
+errors. The ReadyBASIC demo covers `MEMAVL`, app suspend/restore through the
 Editor, assembler command groups, `PROC`/`FUNC`, array/float/string parameters,
 REU handles, expected syntax/runtime errors, and nested expression forms. The
 same script keeps `READYBASIC_DEMO_FAST=1` for tight development runs.

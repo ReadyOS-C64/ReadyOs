@@ -198,7 +198,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_gfx_phase2_sprite_multi_priority
-      pitch: "SPRMULTI, SPRMCO, SPRPRI, and SPRCOL stage"
+      pitch: "SPRMUL, SPRMCO, SPRPRI, and SPRCOL stage"
   - id: finish_rbgfx16
     type: input.key
     params:

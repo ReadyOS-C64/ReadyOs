@@ -7,4 +7,5 @@
 70 sprmove(1,180,110)
 80 sprcol(0,5)
 90 for t=1 to 60000:next t
-100 gfxtext():print "two hardware sprites"
+100 sprset(0,0,0,0):sprset(1,0,0,1)
+110 gfxtext():print "rbgfx09 complete"
