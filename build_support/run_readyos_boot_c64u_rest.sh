@@ -10,6 +10,7 @@ api="http://${host}/v1"
 remote_root="${C64U_REMOTE_DIR:-USB1}"
 remote="${remote_root}/${remote_name}"
 tmp_dir="${out_dir}/tmp"
+connect_wait_s="${C64U_CONNECT_WAIT_S:-300}"
 mkdir -p "$out_dir" "$tmp_dir"
 log="${out_dir}/run.log"
 : > "$log"
@@ -17,6 +18,39 @@ log="${out_dir}/run.log"
 run() {
   echo "+ $*" >> "$log"
   "$@" >> "$log" 2>&1
+}
+
+wait_for_http() {
+  local deadline now
+  deadline=$((SECONDS + connect_wait_s))
+  while (( SECONDS <= deadline )); do
+    if curl --fail --silent --show-error --max-time 5 \
+      "${api}/drives" -o "${tmp_dir}/drives.json" >> "$log" 2>&1; then
+      echo "REST ready after ${SECONDS}s" >> "$log"
+      return 0
+    fi
+    sleep 3
+  done
+  now="$(date)"
+  echo "REST not reachable after ${connect_wait_s}s at ${now}" >> "$log"
+  return 1
+}
+
+wait_for_ftp() {
+  local deadline now
+  deadline=$((SECONDS + connect_wait_s))
+  while (( SECONDS <= deadline )); do
+    if curl --fail --silent --show-error --max-time 8 \
+      "ftp://${host}/${remote_root}/" --user anonymous:anonymous@ \
+      -o "${tmp_dir}/ftp-list.txt" >> "$log" 2>&1; then
+      echo "FTP ready after ${SECONDS}s" >> "$log"
+      return 0
+    fi
+    sleep 3
+  done
+  now="$(date)"
+  echo "FTP not reachable after ${connect_wait_s}s at ${now}" >> "$log"
+  return 1
 }
 
 post_bytes() {
@@ -193,8 +227,11 @@ readyshell_overlay_smoke() {
 }
 
 echo "host=${host}" >> "$log"
+echo "connect_wait_s=${connect_wait_s}" >> "$log"
+wait_for_ftp
 run curl --fail --silent --show-error --ftp-create-dirs \
   -T "$image" "ftp://${host}/${remote}" --user anonymous:anonymous@
+wait_for_http
 
 cat > "${tmp_dir}/config_a.json" <<JSON
 {"Drive A Settings":{"Drive":"Enabled","Drive Type":"1581","Drive Bus ID":8}}

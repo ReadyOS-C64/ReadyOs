@@ -50,6 +50,7 @@ def main() -> int:
     failures: list[str] = []
     makefile = read("Makefile")
     launcher = read("src/apps/launcher/launcher.c")
+    dma_asm = read("src/apps/launcher/launcher_uci_dma.s")
     lessons = read("ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md")
 
     require(
@@ -94,6 +95,26 @@ def main() -> int:
         and "CTRL_CMD_LOAD_REU" in lessons
         and "CTRL_CMD_GET_DRVINFO" in lessons,
         "lessons distinguish DOS LOAD_REU, Control LOAD_REU, and drive info limits",
+        failures,
+    )
+    require(
+        "jsr dos_file_info" in dma_asm
+        and "lda data_buf" in dma_asm
+        and "sbc #$02" in dma_asm
+        and "sta remaining_lo" in dma_asm
+        and "sta remaining_hi" in dma_asm,
+        "DMA loader derives LOAD_REU length from Ultimate DOS FILE_INFO minus PRG header",
+        failures,
+    )
+    require(
+        "lda _launcher_uci_dma_max_len\n        sta remaining_lo" not in dma_asm,
+        "DMA loader no longer uses destination slot size as the transfer length",
+        failures,
+    )
+    require(
+        "FILE_INFO" in lessons
+        and "exactly that payload length" in lessons,
+        "lessons document exact-size LOAD_REU requirement for ReadyShell overlays",
         failures,
     )
 

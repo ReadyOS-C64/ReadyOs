@@ -34,6 +34,9 @@
 - Headless ReadyBASIC regular automation: `make readybasic-vice-suites`; focused hotkey probe: `/bin/bash build_support/run_readybasic_hotkey_probe.sh`.
 - Headless ReadyBASIC cartridge automation: `make easyflash-readybasic-vice-suites`.
 - Harness scripts close VICE by default; only use their `KEEP_VICE`/non-headless options when deliberately debugging automation, not for normal interactive launch.
+- C64 Ultimate hardware automation must be launched from a long-running/background
+  bash shell. One-shot foreground shell calls from Codex may not reach the C64U
+  REST/FTP endpoints even when the device is reachable.
 
 ## CAL26 REL Debugging Discipline
 
