@@ -750,6 +750,9 @@ quicknotes-owned-reu-vice: $(BUILD_SUPPORT_DIR)/run_quicknotes_owned_reu_probe.s
 readyshell-cross-app-resume-vice: $(BUILD_SUPPORT_DIR)/run_readyshell_cross_app_resume_probe.sh
 	$(BUILD_SUPPORT_DIR)/run_readyshell_cross_app_resume_probe.sh
 
+readyshell-cross-app-resume-c64u: $(BUILD_SUPPORT_DIR)/run_readyshell_cross_app_resume_c64u.sh
+	$(BUILD_SUPPORT_DIR)/run_readyshell_cross_app_resume_c64u.sh
+
 readybasic-second-entry-editor-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_second_entry_editor_probe.sh
 	$(BUILD_SUPPORT_DIR)/run_readybasic_second_entry_editor_probe.sh
 
@@ -1293,6 +1296,7 @@ help:
 	@echo "  launcher-reu-state-vice - Run focused launcher unload/reload REU-state VICE probe"
 	@echo "  quicknotes-owned-reu-vice - Run QuickNotes app-owned REU unload/viewer VICE probe"
 	@echo "  readyshell-cross-app-resume-vice - Run ReadyShell cross-app resume VICE probe"
+	@echo "  readyshell-cross-app-resume-c64u - Run ReadyShell cross-app resume probe on C64 Ultimate"
 	@echo "  readybasic-vice-plans - Regenerate tracked ReadyBASIC VICE YAML plans"
 	@echo "  readybasic-vice-suites - Run all repo-owned ReadyBASIC VICE suites"
 	@echo "  readybasic-full-vice - Run the full ReadyBASIC VICE visual suite"
@@ -1353,5 +1357,5 @@ probe-rel:
 launcher-verbose:
 	$(MAKE) LAUNCHER_CFG_VERBOSE=1 $(LAUNCHER)
 
-.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-gfx-phase1-vice readybasic-gfx-phase2-vice readybasic-gfx-phase3-vice readybasic-gfx-phase4-vice readybasic-gfx-phase5-vice readybasic-gfx-mbitmap-vice readybasic-sound-phase1-vice readybasic-sprite-steps-vice readybasic-readyos-loaded-apps-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
+.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readyshell-cross-app-resume-c64u readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-gfx-phase1-vice readybasic-gfx-phase2-vice readybasic-gfx-phase3-vice readybasic-gfx-phase4-vice readybasic-gfx-phase5-vice readybasic-gfx-mbitmap-vice readybasic-sound-phase1-vice readybasic-sprite-steps-vice readybasic-readyos-loaded-apps-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
 EASYFLASH_LAUNCHER_CPPFLAGS ?=

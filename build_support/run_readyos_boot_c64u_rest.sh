@@ -11,6 +11,8 @@ remote_root="${C64U_REMOTE_DIR:-USB1}"
 remote="${remote_root}/${remote_name}"
 tmp_dir="${out_dir}/tmp"
 connect_wait_s="${C64U_CONNECT_WAIT_S:-300}"
+skip_upload="${C64U_SKIP_UPLOAD:-0}"
+skip_config="${C64U_SKIP_CONFIG:-0}"
 mkdir -p "$out_dir" "$tmp_dir"
 log="${out_dir}/run.log"
 : > "$log"
@@ -209,7 +211,7 @@ readyshell_overlay_smoke() {
     exit 1
   fi
 
-  type_text $'CAT "RSHELP" . TOP 1\r'
+  type_text $'CAT "RSHELP" ! TOP 1\r'
   if ! wait_for_screen "readyshell_cat_wait" "READYSHELL QUICK REF" 120; then
     capture_screen "readyshell_cat_failure"
     echo "READYOS_READYSHELL_CAT_FAIL" | tee "${out_dir}/status"
@@ -228,18 +230,26 @@ readyshell_overlay_smoke() {
 
 echo "host=${host}" >> "$log"
 echo "connect_wait_s=${connect_wait_s}" >> "$log"
-wait_for_ftp
-run curl --fail --silent --show-error --ftp-create-dirs \
-  -T "$image" "ftp://${host}/${remote}" --user anonymous:anonymous@
-wait_for_http
+echo "skip_upload=${skip_upload}" >> "$log"
+echo "skip_config=${skip_config}" >> "$log"
+if [[ "$skip_upload" == "1" ]]; then
+  wait_for_http
+else
+  wait_for_ftp
+  run curl --fail --silent --show-error --ftp-create-dirs \
+    -T "$image" "ftp://${host}/${remote}" --user anonymous:anonymous@
+  wait_for_http
+fi
 
-cat > "${tmp_dir}/config_a.json" <<JSON
+if [[ "$skip_config" != "1" ]]; then
+  cat > "${tmp_dir}/config_a.json" <<JSON
 {"Drive A Settings":{"Drive":"Enabled","Drive Type":"1581","Drive Bus ID":8}}
 JSON
-run curl --fail --silent --show-error --max-time 10 \
-  -H "Content-Type: application/json" \
-  --data-binary "@${tmp_dir}/config_a.json" \
-  "${api}/configs"
+  run curl --fail --silent --show-error --max-time 10 \
+    -H "Content-Type: application/json" \
+    --data-binary "@${tmp_dir}/config_a.json" \
+    "${api}/configs"
+fi
 
 run curl --fail --silent --show-error --max-time 10 -X PUT "${api}/machine:reset"
 sleep 2
@@ -322,10 +332,18 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
       exit 1
     fi
     type_key 13
-    if ! wait_for_screen "dma_on_wait" "DMA:ON" 60; then
-      capture_screen "dma_on_failure"
-      echo "READYOS_DMA_ON_FAIL" | tee "${out_dir}/status"
-      exit 1
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      if ! wait_for_screen "dma_on_wait" "DMA:ON" 60; then
+        capture_screen "dma_on_failure"
+        echo "READYOS_DMA_ON_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
+    else
+      if ! wait_for_screen "load_selected_done_wait" "READY OS" 60; then
+        capture_screen "load_selected_done_failure"
+        echo "READYOS_LOAD_SELECTED_DONE_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
     fi
     type_key 13
     if ! wait_for_screen "editor_wait" "EDITOR:" 120; then
@@ -365,10 +383,18 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
       exit 1
     fi
     type_key 13
-    if ! wait_for_screen "dma_on_wait" "DMA:ON" 60; then
-      capture_screen "dma_on_failure"
-      echo "READYOS_DMA_ON_FAIL" | tee "${out_dir}/status"
-      exit 1
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      if ! wait_for_screen "dma_on_wait" "DMA:ON" 60; then
+        capture_screen "dma_on_failure"
+        echo "READYOS_DMA_ON_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
+    else
+      if ! wait_for_screen "load_selected_done_wait" "READY OS" 60; then
+        capture_screen "load_selected_done_failure"
+        echo "READYOS_LOAD_SELECTED_DONE_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
     fi
     type_key 13
     if ! wait_for_screen "app_wait" "$expected_text" 180; then

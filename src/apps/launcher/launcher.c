@@ -151,6 +151,12 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #define READYSHELL_META_VALID_LO 0xFFu
 #define READYSHELL_META_VALID_HI 0x01u
 #define READYSHELL_STATE_BANK_CACHE ((unsigned char*)0xCFF2)
+#ifndef LAUNCHER_DMA_LOAD_READYSHELL
+#define LAUNCHER_DMA_LOAD_READYSHELL 0
+#endif
+#ifndef LAUNCHER_DMA_LOAD_RESOURCES
+#define LAUNCHER_DMA_LOAD_RESOURCES 0
+#endif
 #define RESOURCE_IO_CHUNK 128
 #define LAUNCHER_C64U_IMAGE_PATH_LEN 95
 #define LAUNCHER_C64U_IMAGE_PATH_DEFAULT "/usb1/readyos.d81"
@@ -552,6 +558,23 @@ static void shim_bitmap_clear_bank(unsigned char bank) {
     }
 }
 
+static void launcher_mark_loaded_snapshot_banks(void) {
+    unsigned char i;
+    unsigned char bank;
+    unsigned char physical;
+
+    for (i = launcher_first_app_index(); i < app_count; ++i) {
+        bank = app_banks[i];
+        if (bank == 0u || !apps_loaded[i]) {
+            continue;
+        }
+        physical = launcher_logical_to_physical(bank);
+        if (physical != 0xFFu) {
+            REU_ALLOC_TABLE[physical] = REU_APP_STATE;
+        }
+    }
+}
+
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
 static void shim_bitmap_set_bank(unsigned char bank) {
     if (bank < 8) {
@@ -630,6 +653,7 @@ static void sync_from_reu_bitmap(void) {
             }
         }
     }
+    launcher_mark_loaded_snapshot_banks();
 
     /* Clear the last_saved flag - we've synced state */
     *SHIM_LAST_SAVED = 0xFF;
@@ -2199,7 +2223,69 @@ static void launcher_mark_readybasic_banks(unsigned char index) {
     }
 }
 
+static void launcher_mark_readyshell_banks(unsigned char index) {
+    unsigned int bank;
+
+    for (bank = 0u; bank < REU_TOTAL_BANKS; ++bank) {
+        if (REU_ALLOC_TABLE[bank] == REU_RS_CACHE &&
+            (unsigned char)bank != app_rs_bank1[index] &&
+            (unsigned char)bank != app_rs_bank2[index] &&
+            (unsigned char)bank != app_rs_bank3[index]) {
+            REU_ALLOC_TABLE[bank] = REU_FREE;
+        } else if (REU_ALLOC_TABLE[bank] == REU_RS_SCRATCH &&
+                   (unsigned char)bank != app_rs_bank4[index]) {
+            REU_ALLOC_TABLE[bank] = REU_FREE;
+        }
+    }
+    if (app_rs_bank1[index] != 0u) {
+        REU_ALLOC_TABLE[app_rs_bank1[index]] = REU_RS_CACHE;
+    }
+    if (app_rs_bank2[index] != 0u) {
+        REU_ALLOC_TABLE[app_rs_bank2[index]] = REU_RS_CACHE;
+    }
+    if (app_rs_bank3[index] != 0u) {
+        REU_ALLOC_TABLE[app_rs_bank3[index]] = REU_RS_CACHE;
+    }
+    if (app_rs_bank4[index] != 0u) {
+        REU_ALLOC_TABLE[app_rs_bank4[index]] = REU_RS_SCRATCH;
+    }
+}
+
+static unsigned char launcher_validated_resource_bank(unsigned char bank,
+                                                      unsigned char type) {
+    unsigned char alloc;
+
+    if (bank == 0u) {
+        return 0u;
+    }
+    alloc = REU_ALLOC_TABLE[bank];
+    if (alloc != REU_FREE && alloc != type) {
+        return 0u;
+    }
+    return bank;
+}
+
 static unsigned char launcher_ensure_readyshell_banks(unsigned char index) {
+    app_rs_bank1[index] =
+        launcher_validated_resource_bank(app_rs_bank1[index], REU_RS_CACHE);
+    app_rs_bank2[index] =
+        launcher_validated_resource_bank(app_rs_bank2[index], REU_RS_CACHE);
+    app_rs_bank3[index] =
+        launcher_validated_resource_bank(app_rs_bank3[index], REU_RS_CACHE);
+    app_rs_bank4[index] =
+        launcher_validated_resource_bank(app_rs_bank4[index], REU_RS_SCRATCH);
+    if (app_rs_bank2[index] == app_rs_bank1[index]) {
+        app_rs_bank2[index] = 0u;
+    }
+    if (app_rs_bank3[index] == app_rs_bank1[index] ||
+        app_rs_bank3[index] == app_rs_bank2[index]) {
+        app_rs_bank3[index] = 0u;
+    }
+    if (app_rs_bank4[index] == app_rs_bank1[index] ||
+        app_rs_bank4[index] == app_rs_bank2[index] ||
+        app_rs_bank4[index] == app_rs_bank3[index]) {
+        app_rs_bank4[index] = 0u;
+    }
     if (app_rs_bank1[index] == 0u) {
         app_rs_bank1[index] = launcher_alloc_physical_resource_bank(REU_RS_CACHE);
     }
@@ -2212,6 +2298,7 @@ static unsigned char launcher_ensure_readyshell_banks(unsigned char index) {
     if (app_rs_bank4[index] == 0u) {
         app_rs_bank4[index] = launcher_alloc_physical_resource_bank(REU_RS_SCRATCH);
     }
+    launcher_mark_readyshell_banks(index);
     return (unsigned char)(app_rs_bank1[index] != 0u &&
                            app_rs_bank2[index] != 0u &&
                            app_rs_bank3[index] != 0u &&
@@ -2219,6 +2306,13 @@ static unsigned char launcher_ensure_readyshell_banks(unsigned char index) {
 }
 
 static unsigned char launcher_ensure_readybasic_banks(unsigned char index) {
+    app_rs_bank1[index] =
+        launcher_validated_resource_bank(app_rs_bank1[index], REU_RB_CORE);
+    app_rs_bank2[index] =
+        launcher_validated_resource_bank(app_rs_bank2[index], REU_RB_CODE);
+    if (app_rs_bank2[index] == app_rs_bank1[index]) {
+        app_rs_bank2[index] = 0u;
+    }
     if (app_rs_bank1[index] == 0u) {
         app_rs_bank1[index] = launcher_alloc_physical_resource_bank(REU_RB_CORE);
     }
@@ -2433,7 +2527,7 @@ static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
     unsigned int chunk;
     int n;
 
-#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD && LAUNCHER_DMA_LOAD_RESOURCES
     launcher_zero_reu_range(bank, reu_off, READYSHELL_OVERLAY_SLOT_LEN);
     if (launcher_dma_try_prg_to_reu(drive, name, bank, reu_off,
                                     READYSHELL_OVERLAY_SLOT_LEN,
@@ -2636,6 +2730,7 @@ static unsigned char launcher_load_readybasic_resources(unsigned char index) {
     launcher_mirror_reu_control();
     return 1u;
 }
+
 #endif
 
 static unsigned char launcher_prepare_app_resources(unsigned char index) {
@@ -2645,12 +2740,13 @@ static unsigned char launcher_prepare_app_resources(unsigned char index) {
     if (app_resource_sets[index] == APP_RESOURCE_NONE) {
         return 1u;
     }
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH
+    launcher_mark_loaded_snapshot_banks();
+#endif
     if (app_resource_loaded[index]) {
         if (app_resource_sets[index] == APP_RESOURCE_READYSHELL_OVL) {
-            if (app_rs_bank4[index] != 0u) {
-                REU_ALLOC_TABLE[app_rs_bank4[index]] = REU_RS_SCRATCH;
-                *READYSHELL_STATE_BANK_CACHE = app_rs_bank4[index];
-            }
+            launcher_mark_readyshell_banks(index);
+            *READYSHELL_STATE_BANK_CACHE = app_rs_bank4[index];
             return launcher_restore_readyshell_meta(index);
         } else if (app_resource_sets[index] == APP_RESOURCE_READYBASIC_CORE) {
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH
@@ -2672,6 +2768,12 @@ static unsigned char launcher_prepare_app_resources(unsigned char index) {
     }
     return 0u;
 #endif
+}
+
+static void launcher_invalidate_resource_preload(unsigned char index) {
+    if (index < app_count && app_resource_sets[index] != APP_RESOURCE_NONE) {
+        app_resource_loaded[index] = 0u;
+    }
 }
 
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH
@@ -2766,7 +2868,9 @@ static unsigned int load_app_to_reu(unsigned char index) {
         physical = launcher_logical_to_physical(bank);
         launcher_dma_breadcrumb = 0x42u;
         (*(volatile unsigned char*)0x052C) = 0x32;
-        if (physical != 0xFFu) {
+        if (physical != 0xFFu &&
+            (app_resource_sets[index] != APP_RESOURCE_READYSHELL_OVL ||
+             LAUNCHER_DMA_LOAD_READYSHELL)) {
             launcher_dma_breadcrumb = 0x43u;
             (*(volatile unsigned char*)0x052C) = 0x33;
             if (launcher_dma_try_prg_to_reu(app_drives[index], filename,
@@ -2777,8 +2881,10 @@ static unsigned int load_app_to_reu(unsigned char index) {
                 if (bank < 24u) {
                     shim_bitmap_set_bank(bank);
                 }
+                REU_ALLOC_TABLE[physical] = REU_APP_STATE;
                 apps_loaded[index] = 1;
                 app_sizes[index] = file_size;
+                launcher_invalidate_resource_preload(index);
                 if (!launcher_prepare_app_resources(index)) {
                     apps_loaded[index] = 0;
                     app_sizes[index] = 0;
@@ -2811,6 +2917,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
         if (loaded_in_bitmap) {
             apps_loaded[index] = 1;
             app_sizes[index] = APP_SAVE_SIZE;
+            launcher_invalidate_resource_preload(index);
             if (!launcher_prepare_app_resources(index)) {
                 apps_loaded[index] = 0;
                 app_sizes[index] = 0;
@@ -2834,6 +2941,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
         if (loaded_in_bitmap) {
             apps_loaded[index] = 1;
             app_sizes[index] = APP_SAVE_SIZE;
+            launcher_invalidate_resource_preload(index);
             if (!launcher_prepare_app_resources(index)) {
                 apps_loaded[index] = 0;
                 app_sizes[index] = 0;
@@ -2864,6 +2972,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
     /* On return, launcher is back in memory and app is valid in REU. */
     apps_loaded[index] = 1;
     app_sizes[index] = file_size;
+    launcher_invalidate_resource_preload(index);
     if (!launcher_prepare_app_resources(index)) {
         apps_loaded[index] = 0;
         app_sizes[index] = 0;
@@ -3685,7 +3794,17 @@ static void launch_app(unsigned char index) {
 #if READYOS_LAUNCHER_VARIANT_EASYFLASH
         launcher_set_notice("preload missing for selected app", TUI_COLOR_LIGHTRED);
 #else
-        launch_from_disk(index);
+        tui_clear(TUI_COLOR_BLUE);
+        tui_puts(4, 5, "LOADING TO REU:", TUI_COLOR_WHITE);
+        draw_drive_prefixed_name(20, 5, index, TUI_COLOR_CYAN, 16);
+        tui_puts(4, 7, "PLEASE WAIT...", TUI_COLOR_YELLOW);
+        (void)load_app_to_reu(index);
+        sync_from_reu_bitmap();
+        if (apps_loaded[index]) {
+            launch_from_reu(index);
+        } else {
+            launcher_set_notice_if_empty("app load failed", TUI_COLOR_LIGHTRED);
+        }
 #endif
     }
 }

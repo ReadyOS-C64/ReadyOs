@@ -199,6 +199,34 @@ aligned with the proven probe sequence, with any deviation verified on hardware.
 - First prove one standalone app payload, then ReadyShell overlay/resource
   payloads, then ReadyBASIC/ReadyShell launch behavior.
 
+### Main App Snapshot Size Rule
+
+The Ultimate DOS `LOAD_REU` byte count and the ReadyOS shim restore byte count
+are different pieces of state:
+
+- `LOAD_REU` should use the exact PRG payload length reported by Ultimate DOS
+  `FILE_INFO` minus the two-byte PRG load header, after seeking to payload
+  offset 2. Loading a fixed window length from a shorter file is not a safe
+  EOF strategy.
+- For normal DMA-loaded app PRGs, the launcher records the exact payload size
+  for the shim REU launch, matching the pre-existing launcher/shim behavior.
+- A tested ReadyShell hypothesis tried clearing the full target snapshot window
+  and then asking the shim to restore the full `$B600` ReadyOS app window. On
+  C64U hardware, that moved the failure earlier: the DMA preload still reported
+  `DMA:ON`, but launching ReadyShell dropped to BASIC `READY.` instead of
+  drawing the shell UI.
+
+Current intentional guardrail:
+
+- Ultimate DOS DMA remains enabled for normal main app PRGs.
+- ReadyShell main PRG DMA is disabled by default behind
+  `LAUNCHER_DMA_LOAD_READYSHELL=0`.
+- ReadyShell overlay/resource PRG DMA is disabled by default behind
+  `LAUNCHER_DMA_LOAD_RESOURCES=0`.
+- ReadyShell therefore uses the existing KERNAL/chunked preload path until its
+  DMA-specific resident/overlay startup issue is understood and proven on
+  hardware.
+
 ## Temporary Launcher Config Bridge
 
 The experimental launcher now has a deliberately temporary config key:
@@ -499,6 +527,39 @@ Rules for future changes:
   and leaves the pre-zeroed tail alone. The DMA path must query Ultimate DOS
   `FILE_INFO`, subtract the two-byte PRG header, then `SEEK 2` and `LOAD_REU`
   exactly that payload length.
+- Do not trust restored `app_resource_loaded` state when a main app is freshly
+  preloaded. A C64U reboot can preserve launcher bank-0 state while the REU
+  cache banks contain stale contents from a previous experiment/session. The
+  failure signature was ReadyShell drawing its header and `LOADING DONE`, then
+  hanging before the `>` prompt because overlay 9 (`rsedit`) metadata pointed at
+  a stale app snapshot bank. The launcher fix is to invalidate resource preload
+  state on every fresh main-app load, reload the resources, and reassert all
+  ReadyShell cache/state bank allocation types before restoring metadata.
+- Do not blindly reuse restored `app_rs_bank*` values. On C64U cross-app runs,
+  Editor and ReadyBASIC could load correctly, ReadyShell could reach its prompt,
+  and then an overlay command such as `LST "RSHELP"` could drop to BASIC if the
+  restored ReadyShell resource bank slots conflicted with banks now marked for
+  another app/resource type. Before reusing restored resource-bank slots, compare
+  them against the allocation table, discard conflicting or duplicate slots, and
+  allocate fresh banks before reloading overlays/modules.
+- ReadyShell currently clears its high-RAM runtime area at startup, which can
+  clear the launcher's `$CFF2` cached state-bank pointer before ReadyShell asks
+  for the REU state bank. In that case ReadyShell scans the allocation table for
+  the first `REU_RS_SCRATCH` bank. The launcher therefore must prune stale
+  ReadyShell cache/scratch allocation-table marks so only the current
+  ReadyShell cache banks and state/scratch bank are advertised before launch.
+- Keep the REU allocation table authoritative for loaded app snapshots as well
+  as resource banks. The DMA preload path updates the shim bitmap directly; it
+  must also mark the loaded app's physical REU bank as `REU_APP_STATE`, and the
+  launcher should reassert all currently loaded snapshot banks before allocating
+  resource banks. Otherwise ReadyShell overlay banks can be allocated over a
+  loaded app snapshot; later returning from that app can overwrite an overlay
+  bank and make commands such as `LST "RSHELP"` fail even though the ReadyShell
+  prompt and lighter commands still work.
+- On this experiment branch, Enter on an unloaded app should go through the
+  launcher preload path first, then launch from REU. That keeps DMA-capable app
+  loads, KERNAL fallback loads, and resource preparation on the same launcher
+  code path as F3/load-all instead of using the older direct disk-launch path.
 - Do not poll screen/RAM through the REST API while the C64 side is in the
   boot/UCI-critical section. Earlier automation did this and produced stuck
   boot screens that looked like launcher crashes but were really
