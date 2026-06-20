@@ -147,6 +147,51 @@ wait_for_screen() {
   return 1
 }
 
+readyshell_overlay_smoke() {
+  if ! wait_for_screen "readyshell_prompt_wait" "RUN: CAT" 120; then
+    capture_screen "readyshell_prompt_failure"
+    echo "READYOS_READYSHELL_PROMPT_FAIL" | tee "${out_dir}/status"
+    exit 1
+  fi
+
+  type_text $'VER\r'
+  if ! wait_for_screen "readyshell_ver_wait" "VERSION 0.2" 90; then
+    capture_screen "readyshell_ver_failure"
+    echo "READYOS_READYSHELL_VER_FAIL" | tee "${out_dir}/status"
+    exit 1
+  fi
+
+  type_text $'LST "RSHELP"\r'
+  if ! wait_for_screen "readyshell_lst_wait" "NAME:RSHELP" 120; then
+    capture_screen "readyshell_lst_failure"
+    echo "READYOS_READYSHELL_LST_FAIL" | tee "${out_dir}/status"
+    exit 1
+  fi
+
+  type_text $'VER\r'
+  if ! wait_for_screen "readyshell_ver_after_lst_wait" "VERSION 0.2" 90; then
+    capture_screen "readyshell_ver_after_lst_failure"
+    echo "READYOS_READYSHELL_VER_AFTER_LST_FAIL" | tee "${out_dir}/status"
+    exit 1
+  fi
+
+  type_text $'CAT "RSHELP" . TOP 1\r'
+  if ! wait_for_screen "readyshell_cat_wait" "READYSHELL QUICK REF" 120; then
+    capture_screen "readyshell_cat_failure"
+    echo "READYOS_READYSHELL_CAT_FAIL" | tee "${out_dir}/status"
+    exit 1
+  fi
+
+  type_text $'VER\r'
+  if ! wait_for_screen "readyshell_ver_after_cat_wait" "VERSION 0.2" 90; then
+    capture_screen "readyshell_ver_after_cat_failure"
+    echo "READYOS_READYSHELL_VER_AFTER_CAT_FAIL" | tee "${out_dir}/status"
+    exit 1
+  fi
+
+  capture_screen "readyshell_overlay_final"
+}
+
 echo "host=${host}" >> "$log"
 run curl --fail --silent --show-error --ftp-create-dirs \
   -T "$image" "ftp://${host}/${remote}" --user anonymous:anonymous@
@@ -256,11 +301,15 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
     exit 0
   fi
 
-  if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-load-selected" || "${READYOS_BOOT_ACTION:-}" == "readybasic-load-selected" ]]; then
-    if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-load-selected" ]]; then
+  if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-load-selected" || "${READYOS_BOOT_ACTION:-}" == "readyshell-overlay-smoke" || "${READYOS_BOOT_ACTION:-}" == "readybasic-load-selected" ]]; then
+    if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-load-selected" || "${READYOS_BOOT_ACTION:-}" == "readyshell-overlay-smoke" ]]; then
       select_menu_downs "${READYOS_SELECT_DOWNS:-3}"
       expected_text="${READYOS_EXPECT_TEXT:-READYOS READYSHELL}"
-      pass_status="READYOS_READYSHELL_LOAD_SELECTED_PASS"
+      if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-overlay-smoke" ]]; then
+        pass_status="READYOS_READYSHELL_OVERLAY_SMOKE_PASS"
+      else
+        pass_status="READYOS_READYSHELL_LOAD_SELECTED_PASS"
+      fi
     else
       select_menu_downs "${READYOS_SELECT_DOWNS:-6}"
       expected_text="${READYOS_EXPECT_TEXT:-READYBASIC}"
@@ -289,6 +338,9 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
       capture_screen "app_failure"
       echo "READYOS_APP_FAIL" | tee "${out_dir}/status"
       exit 1
+    fi
+    if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-overlay-smoke" ]]; then
+      readyshell_overlay_smoke
     fi
     capture_screen "app_final"
     echo "$pass_status" | tee "${out_dir}/status"
