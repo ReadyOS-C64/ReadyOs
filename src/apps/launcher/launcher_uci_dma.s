@@ -257,6 +257,41 @@ cd_image_status_ok:
         lda #'7'
         jsr debug_stage
 
+        jsr dos_file_info
+        BCC_FAR load_stat_fail
+        jsr data_or_status_ok
+        BCC_FAR load_stat_fail
+        lda data_len
+        cmp #$04
+        BCC_FAR load_stat_fail
+        lda data_buf+2
+        ora data_buf+3
+        BNE_FAR load_size_fail
+        lda data_buf
+        sec
+        sbc #$02
+        sta remaining_lo
+        lda data_buf+1
+        sbc #$00
+        sta remaining_hi
+        BCC_FAR load_size_fail
+        lda remaining_lo
+        ora remaining_hi
+        BEQ_FAR load_size_fail
+        lda _launcher_uci_dma_max_len+1
+        cmp remaining_hi
+        bcc load_size_fail_local
+        bne load_size_ok
+        lda _launcher_uci_dma_max_len
+        cmp remaining_lo
+        bcs load_size_ok
+load_size_fail_local:
+        jmp load_size_fail
+load_size_ok:
+        lda #$00
+        sta _launcher_uci_dma_loaded_size
+        sta _launcher_uci_dma_loaded_size+1
+
         jsr dos_read_header
         BCC_FAR load_header_fail
         jsr data_or_status_ok
@@ -272,14 +307,6 @@ cd_image_status_ok:
         lda data_buf+1
         cmp _launcher_uci_dma_expected_load_addr+1
         BNE_FAR load_header_fail
-
-        lda _launcher_uci_dma_max_len
-        sta remaining_lo
-        lda _launcher_uci_dma_max_len+1
-        sta remaining_hi
-        lda #$00
-        sta _launcher_uci_dma_loaded_size
-        sta _launcher_uci_dma_loaded_size+1
 
         jsr dos_seek_payload
         BCC_FAR load_seek_fail
@@ -503,6 +530,16 @@ dos_read_header:
         lda #$02
         jsr uci_write_cmd
         lda #$00
+        jsr uci_write_cmd
+        jsr uci_push_cmd
+        jmp drain_response
+
+dos_file_info:
+        jsr sync_interface
+        BCC_FAR command_fail
+        lda #$01
+        jsr uci_write_cmd
+        lda #$07
         jsr uci_write_cmd
         jsr uci_push_cmd
         jmp drain_response

@@ -493,6 +493,12 @@ Rules for future changes:
   each command, drain data/status queues and require stable idle; after each
   response, write `DATA_ACC`, wait for `DATA_ACC` to clear, then require stable
   idle before the next command.
+- Do not use the destination slot size as the `LOAD_REU` length unless the file
+  is known to be exactly that size. ReadyShell overlays are short PRGs packed
+  into fixed `$3800` REU slots; the normal KERNAL/resource path reads until EOF
+  and leaves the pre-zeroed tail alone. The DMA path must query Ultimate DOS
+  `FILE_INFO`, subtract the two-byte PRG header, then `SEEK 2` and `LOAD_REU`
+  exactly that payload length.
 - Do not poll screen/RAM through the REST API while the C64 side is in the
   boot/UCI-critical section. Earlier automation did this and produced stuck
   boot screens that looked like launcher crashes but were really
