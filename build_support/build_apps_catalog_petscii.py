@@ -12,6 +12,7 @@ Source format is sectioned:
   [launcher]
   load_all_to_reu=0
   runappfirst=
+  c64u_image_path=
 
   [apps]
   9:editor:editor:1
@@ -206,6 +207,7 @@ def parse_source(path: str) -> Tuple[Dict[str, str], Dict[str, str], List[Tuple[
     launcher_cfg: Dict[str, str] = {
         "load_all_to_reu": "0",
         "runappfirst": "",
+        "c64u_image_path": "",
     }
     apps: List[Tuple[str, str, str]] = []
 
@@ -253,6 +255,8 @@ def parse_source(path: str) -> Tuple[Dict[str, str], Dict[str, str], List[Tuple[
                     launcher_cfg[key] = normalize_prg_token(value, path, idx)
                 else:
                     launcher_cfg[key] = ""
+            elif key == "c64u_image_path":
+                launcher_cfg[key] = value.strip()
             continue
 
         if section == SECTION_APPS:
@@ -304,6 +308,7 @@ def render_lines(system_cfg: Dict[str, str],
         "[launcher]",
         f"load_all_to_reu={launcher_cfg['load_all_to_reu']}",
         f"runappfirst={launcher_cfg['runappfirst']}",
+        f"c64u_image_path={launcher_cfg['c64u_image_path']}",
         "[apps]",
     ]
     for entry, desc, deps in apps:

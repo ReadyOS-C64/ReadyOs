@@ -44,7 +44,13 @@ SIMPLEFILES_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_simplefiles.cfg
 SIMPLECELLS_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_simplecells.cfg -Os
 CAL26_CFLAGS = $(APP_CFLAGS) -Os
 LAUNCHER_CFG_VERBOSE ?= 0
-LAUNCHER_CFLAGS = $(APP_CFLAGS) -Os -DLAUNCHER_CFG_VERBOSE=$(LAUNCHER_CFG_VERBOSE)
+LAUNCHER_DMA_LOAD ?= 0
+LAUNCHER_CFLAGS = $(APP_CFLAGS) -Os -DLAUNCHER_CFG_VERBOSE=$(LAUNCHER_CFG_VERBOSE) -DLAUNCHER_DMA_LOAD=$(LAUNCHER_DMA_LOAD)
+ifeq ($(LAUNCHER_DMA_LOAD),1)
+LAUNCHER_DMA_SRCS = $(APPS_DIR)/launcher/launcher_uci_dma.s
+else
+LAUNCHER_DMA_SRCS =
+endif
 
 # Output files
 BOOT = $(BIN_DIR)/boot.prg
@@ -498,8 +504,8 @@ $(TEST_REU): $(SRC_DIR)/test_reu.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 # Launcher app (loads at $1000)
-$(LAUNCHER): $(APPS_DIR)/launcher/launcher.c $(LIB_LAUNCHER_DISK) $(VERSION_HEADER)
-	$(CC) $(LAUNCHER_CFLAGS) -m $(OBJ_DIR)/launcher.map -o $@ $(APPS_DIR)/launcher/launcher.c $(LIB_LAUNCHER_DISK)
+$(LAUNCHER): $(APPS_DIR)/launcher/launcher.c $(LAUNCHER_DMA_SRCS) $(LIB_LAUNCHER_DISK) $(VERSION_HEADER)
+	$(CC) $(LAUNCHER_CFLAGS) -m $(OBJ_DIR)/launcher.map -o $@ $(APPS_DIR)/launcher/launcher.c $(LAUNCHER_DMA_SRCS) $(LIB_LAUNCHER_DISK)
 
 $(LAUNCHER_EASYFLASH): $(APPS_DIR)/launcher/launcher_easyflash.c $(LIB_LAUNCHER) $(VERSION_HEADER) $(EASYFLASH_LAUNCHER_HEADER)
 	$(CC) $(LAUNCHER_CFLAGS) $(EASYFLASH_LAUNCHER_CPPFLAGS) -m $(OBJ_DIR)/launcher_easyflash.map -o $@ $(APPS_DIR)/launcher/launcher_easyflash.c $(LIB_LAUNCHER)

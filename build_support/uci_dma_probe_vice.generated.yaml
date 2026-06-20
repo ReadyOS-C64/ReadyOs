@@ -1,0 +1,81 @@
+version: 1
+kind: vice_task_plan
+plan_id: uci_dma_probe_vice
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  dump_reu_mode: sampled
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 30
+    step_s: 90
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: true
+  vice:
+    disk8: build/uci_dma_probe/uci_dma_probe.d81
+    disk9: build/uci_dma_probe/uci_dma_probe.d81
+    autostart_prg: build/uci_dma_probe/uci_dma_probe.prg
+    autostart_enabled: false
+    drive8_enabled: true
+    drive9_enabled: false
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 800
+steps:
+- id: launch
+  type: vice.launch
+  params:
+    kill_stale: true
+    launch_attempts: 1
+- id: set_initial_speed
+  type: warp.set
+  params:
+    enabled: true
+    mhz: 8
+    capture_after: false
+- id: load_and_run_probe
+  type: input.sequence
+  params:
+    keys: [76,79,65,68,34,80,82,79,66,69,34,44,56,44,49,13,82,85,78,13]
+    inter_key_delay_s: 0.03
+    post_delay_s: 2.0
+- id: wait_probe_started
+  type: screen.wait_contains
+  params:
+    text: "UCI DOS REU PROBE V41"
+    wait_timeout_s: 30
+    capture_label: vice_uci_dma_probe_started
+- id: wait_probe_done
+  type: screen.wait_contains
+  params:
+    text: "PROBE DONE"
+    wait_timeout_s: 45
+    capture_label: vice_uci_dma_probe_done
+- id: assert_no_uci
+  type: assert.screen
+  params:
+    contains: "NOT FOUND"
+- id: dump_probe_state
+  type: dump.memory_ranges
+  criticality: observe
+  params:
+    ranges:
+    - { label: probe_results_3000, start: 0x3000, end: 0x307F }
+    - { label: screen_0400, start: 0x0400, end: 0x07E7 }
+- id: restore_speed
+  type: warp.set
+  params:
+    enabled: false
+    mhz: 1
+    capture_after: true

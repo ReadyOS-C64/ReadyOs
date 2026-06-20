@@ -10,6 +10,9 @@
 #include "../../lib/reu_control_bank.h"
 #include "../../lib/reu_phys.h"
 #include "../../generated/build_version.h"
+#ifndef LAUNCHER_DMA_LOAD
+#define LAUNCHER_DMA_LOAD 0
+#endif
 #ifndef READYOS_LAUNCHER_VARIANT_EASYFLASH
 #define READYOS_LAUNCHER_VARIANT_EASYFLASH 0
 #endif
@@ -149,6 +152,8 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #define READYSHELL_META_VALID_HI 0x01u
 #define READYSHELL_STATE_BANK_CACHE ((unsigned char*)0xCFF2)
 #define RESOURCE_IO_CHUNK 128
+#define LAUNCHER_C64U_IMAGE_PATH_LEN 95
+#define LAUNCHER_C64U_IMAGE_PATH_DEFAULT "/usb1/readyos.d81"
 
 #ifndef LAUNCHER_CFG_VERBOSE
 #define LAUNCHER_CFG_VERBOSE 0
@@ -230,7 +235,7 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #define REU_LOGICAL_TO_PHYSICAL(bank) \
     ((unsigned char)(*SHIM_REU_BANK_SKIP + \
      (((unsigned char)(bank) == 0u) ? 1u : (1u + (unsigned char)(bank)))))
-#define LAUNCHER_RESUME_SCHEMA 8
+#define LAUNCHER_RESUME_SCHEMA 9
 
 /* App save size - must include code + data + BSS */
 #define APP_SAVE_SIZE 0xB600  /* $1000-$C5FF (46KB) */
@@ -284,6 +289,32 @@ static FileDialogState launcher_file_dialog;
 static DirPageEntry launcher_manifest_entry;
 static char launcher_manifest_open_spec[24];
 static char launcher_resource_open_spec[18];
+#if LAUNCHER_DMA_LOAD
+extern unsigned char launcher_uci_dma_detect(void);
+extern unsigned char launcher_uci_dma_load_prg(void);
+extern unsigned char launcher_uci_dma_available;
+extern const char *launcher_uci_dma_name;
+extern unsigned char launcher_uci_dma_reu_bank;
+extern unsigned int launcher_uci_dma_reu_offset;
+extern unsigned int launcher_uci_dma_max_len;
+extern unsigned int launcher_uci_dma_expected_load_addr;
+extern unsigned int launcher_uci_dma_loaded_size;
+extern unsigned char launcher_uci_dma_last_error;
+extern unsigned char launcher_uci_dma_dbg_stat0;
+extern unsigned char launcher_uci_dma_dbg_stat1;
+extern const char *launcher_uci_dma_image_dir;
+extern const char *launcher_uci_dma_image_name;
+extern const char *launcher_uci_dma_mount_name;
+static char launcher_c64u_image_path[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
+static char launcher_uci_dma_name_buf[MAX_FILE_LEN + 1];
+static char launcher_uci_dma_dir_buf[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
+static char launcher_uci_dma_image_buf[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
+static char launcher_uci_dma_mount_buf[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
+static unsigned char launcher_dma_checked;
+static unsigned char launcher_dma_available;
+static unsigned char launcher_dma_used;
+static volatile unsigned char launcher_dma_breadcrumb;
+#endif
 #endif
 
 /* Menu state */
@@ -520,6 +551,18 @@ static void shim_bitmap_clear_bank(unsigned char bank) {
         *SHIM_REU_BITMAP_XHI &= (unsigned char)~(unsigned char)(1U << (bank - 16));
     }
 }
+
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+static void shim_bitmap_set_bank(unsigned char bank) {
+    if (bank < 8) {
+        *SHIM_REU_BITMAP_LO |= (unsigned char)(1U << bank);
+    } else if (bank < 16) {
+        *SHIM_REU_BITMAP_HI |= (unsigned char)(1U << (bank - 8));
+    } else if (bank < 24) {
+        *SHIM_REU_BITMAP_XHI |= (unsigned char)(1U << (bank - 16));
+    }
+}
+#endif
 
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH
 static void launcher_free_snapshot_bank(unsigned char index) {
@@ -1103,6 +1146,10 @@ static void catalog_init_defaults(void) {
     launcher_variant_name[0] = 0;
     launcher_variant_boot_name[0] = 0;
     launcher_runappfirst_prg[0] = 0;
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    copy_text_limit(launcher_c64u_image_path, sizeof(launcher_c64u_image_path),
+                    LAUNCHER_C64U_IMAGE_PATH_DEFAULT);
+#endif
     launcher_notice[0] = 0;
     launcher_notice_color = TUI_COLOR_GRAY3;
     copy_text_limit(launcher_variant_name, sizeof(launcher_variant_name), "readyos");
@@ -1552,6 +1599,11 @@ static unsigned char load_catalog_from_disk(unsigned char *detail_a,
                             return err;
                         }
                     }
+#if LAUNCHER_DMA_LOAD
+                } else if (strcmp(key, "c64u_image_path") == 0) {
+                    copy_text_limit(launcher_c64u_image_path,
+                                    sizeof(launcher_c64u_image_path), value);
+#endif
                 }
             }
             continue;
@@ -2219,6 +2271,158 @@ static void launcher_zero_reu_range(unsigned char bank,
     }
 }
 
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+static unsigned char launcher_dma_hex(unsigned char value) {
+    value &= 0x0Fu;
+    return (unsigned char)(value < 10u ? ('0' + value)
+                                       : ('A' + (value - 10u)));
+}
+
+static unsigned char launcher_dma_check_available(void) {
+    if (!launcher_dma_checked) {
+        launcher_dma_checked = 1u;
+        if (launcher_c64u_image_path[0] == 0u) {
+            launcher_dma_available = 0u;
+        } else {
+            launcher_dma_available = 1u;
+        }
+    }
+    return launcher_dma_available;
+}
+
+static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
+                                                 const char *name,
+                                                 unsigned char bank,
+                                                 unsigned int reu_off,
+                                                 unsigned int max_len,
+                                                 unsigned int load_addr) {
+    char *slash;
+    char *cursor;
+    char *dir_start;
+    unsigned char i;
+    unsigned char dir_len;
+    unsigned char img_len;
+
+    /* Hardware note: these screen breadcrumbs are not just cosmetic.
+     * The C64U UCI/DOS transaction proved code-shape/pacing sensitive;
+     * replacing them with private RAM breadcrumbs made DMA fall back to
+     * the KERNAL path on hardware. The success dialog clears this row
+     * before drawing OK, while failures leave useful diagnostics. */
+    launcher_dma_breadcrumb = 0x31u;
+    (*(volatile unsigned char*)0x052D) = 0x31;
+    if ((drive != 8u && drive != 9u) || name[0] == 0u) {
+        return 0u;
+    }
+    for (i = 0u; i < MAX_FILE_LEN && name[i] != 0; ++i) {
+        launcher_uci_dma_name_buf[i] = name[i];
+    }
+    if (name[i] != 0) {
+        return 0u;
+    }
+    launcher_uci_dma_name_buf[i] = 0;
+    launcher_dma_breadcrumb = 0x32u;
+    (*(volatile unsigned char*)0x052D) = 0x32;
+    if (launcher_c64u_image_path[0] == 0u) {
+        return 0u;
+    }
+    launcher_dma_breadcrumb = 0x33u;
+    (*(volatile unsigned char*)0x052D) = 0x33;
+    if (!launcher_dma_check_available()) {
+        return 0u;
+    }
+    launcher_dma_breadcrumb = 0x34u;
+    (*(volatile unsigned char*)0x052D) = 0x34;
+
+    slash = 0;
+    cursor = launcher_c64u_image_path;
+    while (*cursor != 0) {
+        if (*cursor == '/') {
+            slash = cursor;
+        }
+        ++cursor;
+    }
+    if (slash == 0 || slash[1] == 0) {
+        return 0u;
+    }
+    if (launcher_c64u_image_path[0] == '/') {
+        if (slash == launcher_c64u_image_path) {
+            launcher_uci_dma_dir_buf[0] = '/';
+            launcher_uci_dma_dir_buf[1] = 0;
+        } else {
+            dir_start = launcher_c64u_image_path + 1;
+            dir_len = (unsigned char)(slash - dir_start);
+            if (dir_len == 0u || dir_len >= sizeof(launcher_uci_dma_dir_buf)) {
+                return 0u;
+            }
+            for (i = 0u; i < dir_len; ++i) {
+                launcher_uci_dma_dir_buf[i] = dir_start[i];
+            }
+            launcher_uci_dma_dir_buf[dir_len] = 0;
+        }
+        img_len = (unsigned char)(cursor - (slash + 1));
+        if (img_len == 0u || img_len >= sizeof(launcher_uci_dma_image_buf)) {
+            return 0u;
+        }
+        for (i = 0u; i < img_len; ++i) {
+            launcher_uci_dma_image_buf[i] = slash[1 + i];
+            launcher_uci_dma_mount_buf[i] = slash[1 + i];
+        }
+        launcher_uci_dma_image_buf[img_len] = 0;
+        launcher_uci_dma_mount_buf[img_len] = 0;
+    } else {
+        dir_start = launcher_c64u_image_path;
+        dir_len = (unsigned char)(slash - dir_start);
+        if (dir_len == 0u || dir_len >= sizeof(launcher_uci_dma_dir_buf)) {
+            return 0u;
+        }
+        for (i = 0u; i < dir_len; ++i) {
+            launcher_uci_dma_dir_buf[i] = dir_start[i];
+        }
+        launcher_uci_dma_dir_buf[dir_len] = 0;
+        img_len = (unsigned char)(cursor - (slash + 1));
+        if (img_len == 0u || img_len >= sizeof(launcher_uci_dma_image_buf)) {
+            return 0u;
+        }
+        for (i = 0u; i < img_len; ++i) {
+            launcher_uci_dma_image_buf[i] = slash[1 + i];
+            launcher_uci_dma_mount_buf[i] = slash[1 + i];
+        }
+        launcher_uci_dma_image_buf[img_len] = 0;
+        launcher_uci_dma_mount_buf[img_len] = 0;
+    }
+    launcher_uci_dma_image_dir = launcher_uci_dma_dir_buf;
+    launcher_uci_dma_image_name = launcher_uci_dma_image_buf;
+    launcher_uci_dma_mount_name = launcher_uci_dma_mount_buf;
+    launcher_uci_dma_name = launcher_uci_dma_name_buf;
+    launcher_uci_dma_reu_bank = bank;
+    launcher_uci_dma_reu_offset = reu_off;
+    launcher_uci_dma_max_len = max_len;
+    launcher_uci_dma_expected_load_addr = load_addr;
+    launcher_dma_breadcrumb = 0x35u;
+    (*(volatile unsigned char*)0x052D) = 0x35;
+    if (launcher_uci_dma_load_prg()) {
+        launcher_dma_available = 1u;
+        launcher_dma_used = 1u;
+        return 1u;
+    }
+    launcher_dma_breadcrumb = launcher_uci_dma_last_error;
+    (*(volatile unsigned char*)0x052E) =
+        launcher_dma_hex((unsigned char)(launcher_uci_dma_last_error >> 4));
+    (*(volatile unsigned char*)0x052F) =
+        launcher_dma_hex(launcher_uci_dma_last_error);
+    (*(volatile unsigned char*)0x0530) =
+        launcher_dma_hex((unsigned char)(launcher_uci_dma_dbg_stat0 >> 4));
+    (*(volatile unsigned char*)0x0531) =
+        launcher_dma_hex(launcher_uci_dma_dbg_stat0);
+    (*(volatile unsigned char*)0x0532) =
+        launcher_dma_hex((unsigned char)(launcher_uci_dma_dbg_stat1 >> 4));
+    (*(volatile unsigned char*)0x0533) =
+        launcher_dma_hex(launcher_uci_dma_dbg_stat1);
+    launcher_dma_available = 0u;
+    return 0u;
+}
+#endif
+
 static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
                                                 const char *name,
                                                 unsigned char bank,
@@ -2228,6 +2432,15 @@ static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
     unsigned int pos;
     unsigned int chunk;
     int n;
+
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    launcher_zero_reu_range(bank, reu_off, READYSHELL_OVERLAY_SLOT_LEN);
+    if (launcher_dma_try_prg_to_reu(drive, name, bank, reu_off,
+                                    READYSHELL_OVERLAY_SLOT_LEN,
+                                    READYSHELL_OVERLAY_LOAD_ADDR)) {
+        return 1u;
+    }
+#endif
 
     if (!launcher_build_resource_open_spec(name)) {
         return 0u;
@@ -2542,6 +2755,46 @@ static unsigned int load_app_to_reu(unsigned char index) {
     set_shim_name(filename);
 
     set_shim_drive(app_drives[index]);
+
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    {
+        unsigned char physical;
+        /* See launcher_dma_try_prg_to_reu(): these volatile stores preserve
+         * the hardware-proven UCI transaction shape. */
+        launcher_dma_breadcrumb = 0x41u;
+        (*(volatile unsigned char*)0x052C) = 0x31;
+        physical = launcher_logical_to_physical(bank);
+        launcher_dma_breadcrumb = 0x42u;
+        (*(volatile unsigned char*)0x052C) = 0x32;
+        if (physical != 0xFFu) {
+            launcher_dma_breadcrumb = 0x43u;
+            (*(volatile unsigned char*)0x052C) = 0x33;
+            if (launcher_dma_try_prg_to_reu(app_drives[index], filename,
+                                            physical, 0u, APP_SAVE_SIZE,
+                                            APP_LOAD_START)) {
+                file_size = launcher_uci_dma_loaded_size;
+                *SHIM_APP_SIZE = file_size;
+                if (bank < 24u) {
+                    shim_bitmap_set_bank(bank);
+                }
+                apps_loaded[index] = 1;
+                app_sizes[index] = file_size;
+                if (!launcher_prepare_app_resources(index)) {
+                    apps_loaded[index] = 0;
+                    app_sizes[index] = 0;
+                    shim_bitmap_clear_bank(bank);
+                    launcher_set_notice_if_empty("app resources failed",
+                                                 TUI_COLOR_LIGHTRED);
+                    launcher_mirror_reu_control();
+                    return 0;
+                }
+                launcher_bind_default_hotkey_for_index(index);
+                launcher_mirror_reu_control();
+                return file_size;
+            }
+        }
+    }
+#endif
 
     /* Call shim's preload routine - it handles everything and returns */
     __asm__("jsr $C809");
@@ -3046,7 +3299,7 @@ static void load_selected_to_reu(unsigned char index) {
     loaded_ok = apps_loaded[index];
 
     /* Show result */
-    tui_puts_n(4, 7, "", 16, TUI_COLOR_WHITE);
+    tui_puts_n(4, 7, "", 32, TUI_COLOR_WHITE);
 
     if (loaded_ok) {
         tui_puts(4, 7, "OK", TUI_COLOR_LIGHTGREEN);
@@ -3461,10 +3714,26 @@ static void draw_status(void) {
     tui_window(&box, TUI_COLOR_LIGHTBLUE);
 
     tui_puts(2, STATUS_Y + 1, "REU: 16MB", TUI_COLOR_WHITE);
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    tui_puts(12, STATUS_Y + 1, "DMA:", TUI_COLOR_GRAY3);
+    if (launcher_dma_used) {
+        tui_puts(16, STATUS_Y + 1, "ON ", TUI_COLOR_LIGHTGREEN);
+    } else if (!launcher_dma_checked) {
+        tui_puts(16, STATUS_Y + 1, "?? ", TUI_COLOR_GRAY2);
+    } else if (launcher_dma_available) {
+        tui_puts(16, STATUS_Y + 1, "YES", TUI_COLOR_LIGHTGREEN);
+    } else {
+        tui_puts(16, STATUS_Y + 1, "NO ", TUI_COLOR_GRAY2);
+    }
 
+    /* Legend for REU indicator */
+    tui_putc(22, STATUS_Y + 1, REU_INDICATOR, TUI_COLOR_LIGHTGREEN);
+    tui_puts(23, STATUS_Y + 1, "=IN REU", TUI_COLOR_GRAY3);
+#else
     /* Legend for REU indicator */
     tui_putc(20, STATUS_Y + 1, REU_INDICATOR, TUI_COLOR_LIGHTGREEN);
     tui_puts(21, STATUS_Y + 1, "=IN REU", TUI_COLOR_GRAY3);
+#endif
 }
 
 static void draw_help(void) {
