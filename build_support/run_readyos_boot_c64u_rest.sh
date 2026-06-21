@@ -356,6 +356,26 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
     exit 0
   fi
 
+  if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-enter-smoke" ]]; then
+    select_menu_downs "${READYOS_SELECT_DOWNS:-3}"
+    type_key 13
+    sleep "${READYOS_ENTER_QUIET_WAIT_S:-5}"
+    capture_screen "enter_after_quiet"
+    if ! screen_has "enter_after_quiet" "READYOS READYSHELL" &&
+       ! screen_has "enter_after_quiet" "LOADING TO REU"; then
+      echo "READYOS_READYSHELL_ENTER_EARLY_STATE_UNEXPECTED" >> "$log"
+    fi
+    if ! wait_for_screen "app_wait" "${READYOS_EXPECT_TEXT:-READYOS READYSHELL}" 180; then
+      capture_screen "app_failure"
+      echo "READYOS_READYSHELL_ENTER_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    readyshell_overlay_smoke
+    capture_screen "app_final"
+    echo "READYOS_READYSHELL_ENTER_SMOKE_PASS" | tee "${out_dir}/status"
+    exit 0
+  fi
+
   if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-load-selected" || "${READYOS_BOOT_ACTION:-}" == "readyshell-overlay-smoke" || "${READYOS_BOOT_ACTION:-}" == "readybasic-load-selected" ]]; then
     if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-load-selected" || "${READYOS_BOOT_ACTION:-}" == "readyshell-overlay-smoke" ]]; then
       select_menu_downs "${READYOS_SELECT_DOWNS:-3}"

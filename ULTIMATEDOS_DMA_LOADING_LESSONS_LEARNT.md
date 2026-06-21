@@ -590,16 +590,27 @@ Final measured launcher map impact after the verified build:
 
 ```text
 LAUNCHER_DMA_LOAD=1 verified build:
-  PRG bytes 42416
-  CODE   $1033..$AF6D size $9F3B
-  RODATA $AF6E..$B539 size $05CC
-  DATA   $B53A..$B56B size $0032
-  ONCE   $B588..$B5AD size $0026
-  BSS    $B5AE..$C11C size $0B6F
+  PRG bytes 43521
+  CODE   $1033..$B3B1
+  RODATA $B3B2..$B98A
+  DATA   $B98B..$B9BC
+  INIT   $B9BD..$B9D8
+  ONCE   $B9D9..$B9FE
+  BSS    $B9FF..$C56E
 ```
 
 Verification:
 
 - `python3 build_support/verify_memory_map.py` passed.
-- `make readybasic-vice-suites` passed; the final sub-suite reported
-  `Status: success`.
+- `python3 build_support/verify_launcher_dma_gate.py` passed.
+- C64U D81 artifact `readyos-v0.2.5q-d81.d81` was deployed as
+  `USB1/automation/vice_tasks_dotnet/readyos-readyshell-c64u-q.d81`; the FTP
+  listing was checked so no older experiment D81 from this series remained.
+- F3/load-selected ReadyShell path passed:
+  `READYOS_READYSHELL_OVERLAY_SMOKE_PASS`. The captured loading screen showed
+  `OK - 27 KB`, then ReadyShell passed `VER`, `LST "RSHELP"`,
+  `CAT "RSHELP" ! TOP 1`, and another `VER`.
+- Enter on unloaded ReadyShell path passed:
+  `READYOS_READYSHELL_ENTER_SMOKE_PASS`. The five-second early capture showed
+  `LOADING TO REU` with the ReadyShell selection and a UCI stage marker, then
+  ReadyShell passed the same overlay command smoke.
