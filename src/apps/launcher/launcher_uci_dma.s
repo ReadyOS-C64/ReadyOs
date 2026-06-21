@@ -113,6 +113,7 @@ _launcher_uci_dma_load_prg:
         sta _launcher_uci_dma_loaded_size
         sta _launcher_uci_dma_loaded_size+1
         sta _launcher_uci_dma_last_error
+        sta clipped_load
         jsr _launcher_uci_dma_detect
         bne load_have_uci
         lda #ERR_NO_UCI
@@ -286,7 +287,31 @@ cd_image_status_ok:
         cmp remaining_lo
         bcs load_size_ok
 load_size_fail_local:
-        jmp load_size_fail
+        lda _launcher_uci_dma_expected_load_addr
+        cmp #$00
+        BNE_FAR load_size_fail
+        lda _launcher_uci_dma_expected_load_addr+1
+        cmp #$8E
+        BNE_FAR load_size_fail
+        lda _launcher_uci_dma_max_len
+        BNE_FAR load_size_fail
+        lda _launcher_uci_dma_max_len+1
+        cmp #$38
+        BNE_FAR load_size_fail
+        lda remaining_hi
+        cmp #$3A
+        bcc load_size_clip_overlay
+        BNE_FAR load_size_fail
+        lda remaining_lo
+        BNE_FAR load_size_fail
+load_size_clip_overlay:
+        lda #$00
+        sta remaining_lo
+        lda #$38
+        sta remaining_hi
+        lda #$01
+        sta clipped_load
+        jmp load_size_ok
 load_size_ok:
         lda #$00
         sta _launcher_uci_dma_loaded_size
@@ -332,7 +357,10 @@ load_loop:
         jsr dos_load_reu_chunk
         BCC_FAR load_load_fail
         jsr status_ok
-        BCC_FAR load_load_fail
+        bcs load_chunk_status_ok
+        lda clipped_load
+        BEQ_FAR load_load_fail
+load_chunk_status_ok:
 
         lda current_off_lo
         clc
@@ -370,8 +398,16 @@ load_stat_fail:
         lda #ERR_STAT
         jmp load_fail_close
 load_size_fail:
+        lda data_buf
+        sta _launcher_uci_dma_dbg_stat0
+        lda data_buf+1
+        sta _launcher_uci_dma_dbg_stat1
+        jsr dos_close
         lda #ERR_SIZE
-        jmp load_fail_close
+        sta _launcher_uci_dma_last_error
+        lda #$00
+        tax
+        rts
 load_open_fail:
         lda #ERR_OPEN
         jmp load_fail_close
@@ -1032,6 +1068,7 @@ chunk_lo:          .res 1
 chunk_hi:          .res 1
 current_off_lo:    .res 1
 current_off_hi:    .res 1
+clipped_load:      .res 1
 dma_stage_breadcrumb: .res 1
 data_buf:          .res 32
 stat_buf:          .res 8

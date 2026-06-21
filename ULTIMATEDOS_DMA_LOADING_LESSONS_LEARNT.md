@@ -219,13 +219,14 @@ are different pieces of state:
 Current intentional guardrail:
 
 - Ultimate DOS DMA remains enabled for normal main app PRGs.
-- ReadyShell main PRG DMA is disabled by default behind
-  `LAUNCHER_DMA_LOAD_READYSHELL=0`.
-- ReadyShell overlay/resource PRG DMA is disabled by default behind
-  `LAUNCHER_DMA_LOAD_RESOURCES=0`.
-- ReadyShell therefore uses the existing KERNAL/chunked preload path until its
-  DMA-specific resident/overlay startup issue is understood and proven on
-  hardware.
+- ReadyShell main PRG DMA is enabled when the experimental launcher is built
+  with `LAUNCHER_DMA_LOAD=1`; the top-level build gate still defaults off for
+  normal builds.
+- ReadyShell overlay/resource PRG DMA is also enabled under
+  `LAUNCHER_DMA_LOAD=1`, with KERNAL/chunked fallback if the Ultimate DOS call
+  fails.
+- This must stay covered by C64U hardware UI automation. VICE can prove normal
+  launcher behavior, but not the Ultimate DOS timing and mounted-image path.
 
 ## Temporary Launcher Config Bridge
 
@@ -527,6 +528,22 @@ Rules for future changes:
   and leaves the pre-zeroed tail alone. The DMA path must query Ultimate DOS
   `FILE_INFO`, subtract the two-byte PRG header, then `SEEK 2` and `LOAD_REU`
   exactly that payload length.
+- A launcher experiment with named `FILE_STAT` failed on C64U firmware 3.14 in
+  the mounted-D81 path with stage `6`, `ERR_STAT`, debug `84`, before the main
+  ReadyShell PRG opened. Do not switch the launcher sizing path from
+  open-handle `FILE_INFO` back to named `FILE_STAT` without reproving it on
+  hardware.
+- ReadyShell has edge-of-slot overlays such as `rsfops`, whose real PRG payload
+  fits in `$3800` but is close enough that rounded/allocated-size answers can
+  trip the size guard. Preserve reported size bytes in diagnostics before
+  closing the Ultimate DOS handle; `CLOSE` can overwrite the status/debug bytes.
+- On the C64U D81 run, `rsfops` failed at stage `7` with `ERR_SIZE` and
+  reported size bytes `$8E,$38` (`$388E`). That matches 57 D81 blocks times
+  254 bytes, not the actual host PRG size. The launcher therefore allows an
+  overlay-only clipped transfer when the target is the ReadyShell overlay slot
+  (`load address $8E00`, slot `$3800`) and the reported size is within the
+  next 512-byte rounding window. Main app PRGs still require exact reported
+  sizes.
 - Do not trust restored `app_resource_loaded` state when a main app is freshly
   preloaded. A C64U reboot can preserve launcher bank-0 state while the REU
   cache banks contain stale contents from a previous experiment/session. The
