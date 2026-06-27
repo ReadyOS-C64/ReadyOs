@@ -22,6 +22,7 @@
         .export _launcher_uci_dma_image_dir
         .export _launcher_uci_dma_image_name
         .export _launcher_uci_dma_mount_name
+        .export _launcher_uci_dma_assume_mounted
 
 CPU_PORT    = $0001
 
@@ -142,6 +143,12 @@ load_path_missing:
         lda #ERR_PATH
         jmp load_fail
 load_have_image_path:
+        lda _launcher_uci_dma_assume_mounted
+        beq load_mount_image_path
+        lda #'5'
+        jsr debug_stage
+        jmp load_open_current_dir
+load_mount_image_path:
         lda #<root_name
         sta cd_name_abs+1
         lda #>root_name
@@ -251,6 +258,7 @@ cd_image_status_ok:
         lda #'5'
         jsr debug_stage
 
+load_open_current_dir:
         jsr dos_open_read
         BCC_FAR load_open_fail
         jsr status_ok
@@ -1053,6 +1061,7 @@ _launcher_uci_dma_dbg_stat1:           .res 1
 _launcher_uci_dma_image_dir:           .res 2
 _launcher_uci_dma_image_name:          .res 2
 _launcher_uci_dma_mount_name:          .res 2
+_launcher_uci_dma_assume_mounted:      .res 1
 
 uci_base_lo:       .res 1
 uci_base_hi:       .res 1

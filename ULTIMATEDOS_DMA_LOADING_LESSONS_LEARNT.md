@@ -637,3 +637,10 @@ Verification:
   Only no-UCI/path/mount/image errors should flip global status to unavailable.
   Size/header/open/read errors should fall back for that file while allowing
   later files to attempt DMA.
+- Repeatedly remounting the same configured D81 for every app and overlay is
+  risky on the tested C64U. After one successful Ultimate DOS DMA load, the
+  launcher keeps a volatile in-session "image is mounted" flag and subsequent
+  DMA transfers open the next file from the current image directory instead of
+  issuing another root/CD/mount/CD-image sequence. The flag is not saved in the
+  resume payload and is cleared on startup and on any DMA transfer failure, so a
+  retry can fall back to the full mount path.

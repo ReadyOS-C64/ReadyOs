@@ -321,6 +321,7 @@ extern unsigned char launcher_uci_dma_dbg_stat1;
 extern const char *launcher_uci_dma_image_dir;
 extern const char *launcher_uci_dma_image_name;
 extern const char *launcher_uci_dma_mount_name;
+extern unsigned char launcher_uci_dma_assume_mounted;
 static char launcher_c64u_image_path[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
 static char launcher_uci_dma_name_buf[MAX_FILE_LEN + 1];
 static char launcher_uci_dma_dir_buf[LAUNCHER_C64U_IMAGE_DIR_LEN + 1];
@@ -329,6 +330,7 @@ static char launcher_uci_dma_mount_buf[LAUNCHER_C64U_IMAGE_NAME_LEN + 1];
 static unsigned char launcher_dma_checked;
 static unsigned char launcher_dma_available;
 static unsigned char launcher_dma_used;
+static unsigned char launcher_dma_image_ready;
 static volatile unsigned char launcher_dma_breadcrumb;
 #endif
 #endif
@@ -1186,6 +1188,8 @@ static void catalog_init_defaults(void) {
     launcher_dma_checked = 0u;
     launcher_dma_available = 0u;
     launcher_dma_used = 0u;
+    launcher_dma_image_ready = 0u;
+    launcher_uci_dma_assume_mounted = 0u;
     launcher_dma_breadcrumb = 0u;
 #endif
     launcher_notice[0] = 0;
@@ -2410,6 +2414,8 @@ static void launcher_dma_prime_available(void) {
     launcher_dma_checked = 0u;
     launcher_dma_available = 0u;
     launcher_dma_used = 0u;
+    launcher_dma_image_ready = 0u;
+    launcher_uci_dma_assume_mounted = 0u;
     (void)launcher_dma_check_available();
 }
 
@@ -2521,13 +2527,18 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     launcher_uci_dma_reu_offset = reu_off;
     launcher_uci_dma_max_len = max_len;
     launcher_uci_dma_expected_load_addr = load_addr;
+    launcher_uci_dma_assume_mounted = launcher_dma_image_ready;
     launcher_dma_breadcrumb = 0x35u;
     (*(volatile unsigned char*)0x052D) = 0x35;
     if (launcher_uci_dma_load_prg()) {
         launcher_dma_available = 1u;
         launcher_dma_used = 1u;
+        launcher_dma_image_ready = 1u;
+        launcher_uci_dma_assume_mounted = 1u;
         return 1u;
     }
+    launcher_dma_image_ready = 0u;
+    launcher_uci_dma_assume_mounted = 0u;
     launcher_dma_breadcrumb = launcher_uci_dma_last_error;
     (*(volatile unsigned char*)0x052E) =
         launcher_dma_hex((unsigned char)(launcher_uci_dma_last_error >> 4));
