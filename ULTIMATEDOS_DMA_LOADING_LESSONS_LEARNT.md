@@ -26,6 +26,10 @@ UCI technique; the launcher integration remains gated behind
 - Prime the launcher DMA UI state from the configured image path at launcher
   startup. Do not show a lazy `DMA:??` state that depends on whichever action
   happens to ask about DMA first.
+- The launcher startup check is intentionally path/config-only. A hardware run
+  that probed the UCI command-interface ID during launcher init cleared the
+  screen and never reached the first launcher draw. The actual load path still
+  probes UCI before using Ultimate DOS; startup must not touch UCI.
 
 The official Ultimate UCI documentation matters for the boundary here:
 
@@ -195,10 +199,17 @@ aligned with the proven probe sequence, with any deviation verified on hardware.
 - Start from the working D81 probe sequence, not from a new interpretation.
 - Keep all launcher changes behind a small, obvious feature boundary until
   hardware proof exists.
-- Do not probe UCI during the launcher’s first paint or startup path.
-- Treat the config path as the capability gate at startup (`DMA:YES`/`DMA:NO`).
-  The first actual app/resource load performs the Ultimate DOS transaction and
-  changes the status to `DMA:ON` only after a successful DMA load.
+- Treat the config path as the startup UI gate (`DMA:YES`/`DMA:NO`). The first
+  actual app/resource load probes UCI, performs the Ultimate DOS transaction,
+  and changes the status to `DMA:ON` only after a successful DMA load.
+- Persist the `DMA:ON` display bit through the launcher resume payload. The
+  mounted-image-ready bit stays process-local and is re-established by the next
+  Ultimate DOS load, because apps may leave the DOS target in a different
+  state.
+- When DMA is positively available, do not silently fall back to KERNAL/chunked
+  loading after an Ultimate DOS load failure. Falling back is still correct when
+  UCI is unavailable, but on C64U hardware a DMA failure must stay visible so we
+  do not confuse a slow disk preload with a working DMA preload.
 - Do not insert helper routines into the middle of the proven UCI transaction
   code. One hardware build hung on the first cold DMA load at stage `250.3834`
   after a helper was inserted before the DOS identify path. Moving helper code

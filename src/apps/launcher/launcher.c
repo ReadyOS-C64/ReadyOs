@@ -55,6 +55,7 @@
 #define SHIM_LAUNCHER_FLAGS ((unsigned char*)0xC83C) /* Launcher one-shot flags */
 #define SHIM_LOAD_DISK_DEV_IMM ((unsigned char*)0xC84D) /* A2 xx at $C84C */
 #define SHIM_PRELOAD_DEV_IMM   ((unsigned char*)0xC89C) /* A2 xx at $C89B */
+#define KERNAL_BLNSW           ((unsigned char*)0x00CC) /* nonzero disables cursor blink */
 
 /* REU registers for direct access */
 #define REU_COMMAND  (*(unsigned char*)0xDF01)
@@ -157,7 +158,7 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #ifndef LAUNCHER_DMA_LOAD_RESOURCES
 #define LAUNCHER_DMA_LOAD_RESOURCES 1
 #endif
-#define RESOURCE_IO_CHUNK 128
+#define RESOURCE_IO_CHUNK 96
 #define LAUNCHER_C64U_IMAGE_PATH_LEN 95
 #define LAUNCHER_C64U_IMAGE_DIR_LEN 63
 #define LAUNCHER_C64U_IMAGE_NAME_LEN 47
@@ -1221,7 +1222,11 @@ static void launcher_resume_save(unsigned char selected,
     launcher_resume_blob.selected = selected;
     launcher_resume_blob.scroll_offset = scroll_offset;
     launcher_resume_blob.suppress_startup_once = suppress_startup_once;
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    launcher_resume_blob.reserved = launcher_dma_used;
+#else
     launcher_resume_blob.reserved = 0;
+#endif
 
     segs[0].ptr = &launcher_resume_blob;
     segs[0].len = sizeof(launcher_resume_blob);
@@ -2402,17 +2407,7 @@ static unsigned char launcher_dma_hex(unsigned char value) {
                                        : ('A' + (value - 10u)));
 }
 
-static unsigned char launcher_dma_check_available(void) {
-    return launcher_dma_available;
-}
-
-static void launcher_dma_prime_available(void) {
-    launcher_dma_available = (unsigned char)(launcher_c64u_image_path[0] != 0u);
-    launcher_dma_used = 0u;
-    launcher_dma_image_ready = 0u;
-    launcher_uci_dma_assume_mounted = 0u;
-    launcher_uci_dma_clear_stage();
-}
+#define launcher_dma_check_available() (launcher_dma_available)
 
 static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
                                                  const char *name,
@@ -2573,11 +2568,14 @@ static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
     int n;
 
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD && LAUNCHER_DMA_LOAD_RESOURCES
-    launcher_zero_reu_range(bank, reu_off, READYSHELL_OVERLAY_SLOT_LEN);
-    if (launcher_dma_try_prg_to_reu(drive, name, bank, reu_off,
-                                    READYSHELL_OVERLAY_SLOT_LEN,
-                                    READYSHELL_OVERLAY_LOAD_ADDR)) {
-        return 1u;
+    if (launcher_dma_check_available()) {
+        launcher_zero_reu_range(bank, reu_off, READYSHELL_OVERLAY_SLOT_LEN);
+        if (launcher_dma_try_prg_to_reu(drive, name, bank, reu_off,
+                                        READYSHELL_OVERLAY_SLOT_LEN,
+                                        READYSHELL_OVERLAY_LOAD_ADDR)) {
+            return 1u;
+        }
+        return 0u;
     }
 #endif
 
@@ -2914,6 +2912,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
         launcher_dma_breadcrumb = 0x42u;
         (*(volatile unsigned char*)0x052C) = 0x32;
         if (physical != 0xFFu &&
+            launcher_dma_check_available() &&
             (app_resource_sets[index] != APP_RESOURCE_READYSHELL_OVL ||
              LAUNCHER_DMA_LOAD_READYSHELL)) {
             launcher_dma_breadcrumb = 0x43u;
@@ -2943,6 +2942,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
                 launcher_mirror_reu_control();
                 return file_size;
             }
+            return 0;
         }
     }
 #endif
@@ -3772,47 +3772,6 @@ static void launch_from_reu(unsigned char index) {
 }
 
 /*---------------------------------------------------------------------------
- * Launch app from disk (slow)
- *---------------------------------------------------------------------------*/
-#if !READYOS_LAUNCHER_VARIANT_EASYFLASH
-static void launch_from_disk(unsigned char index) {
-    const char *filename;
-    unsigned char bank;
-
-    if (catalog_file_for_index(index)[0] == 0) return;
-    bank = launcher_resolve_snapshot_bank(index);
-    if (bank == 0) return;
-    if (!launcher_prepare_app_resources(index)) {
-        launcher_set_notice_if_empty("app resources failed", TUI_COLOR_LIGHTRED);
-        return;
-    }
-    launcher_bind_default_hotkey_for_index(index);
-
-    tui_clear(TUI_COLOR_BLUE);
-    tui_puts(4, 5, "LOADING FROM DISK:", TUI_COLOR_WHITE);
-    draw_drive_prefixed_name(23, 5, index, TUI_COLOR_CYAN, 12);
-    tui_puts(4, 7, "PLEASE WAIT...", TUI_COLOR_YELLOW);
-
-    /* Set filename in shim */
-    filename = catalog_file_for_index(index);
-    set_shim_name(filename);
-    set_shim_drive(app_drives[index]);
-
-    launcher_set_startup_suppressed();
-    launcher_resume_save(launcher_app_to_menu_index(index), menu.scroll_offset, 1);
-
-    /* Save launcher to REU first so we can return to it */
-    save_launcher_to_reu();
-
-    /* Set current app bank so apps can return to launcher */
-    *SHIM_CURRENT_BANK = bank;
-
-    /* Call shim to load and run - use jump table entry at $C800 */
-    __asm__("jmp $C800");
-}
-#endif
-
-/*---------------------------------------------------------------------------
  * Launch app (from REU if available, else disk)
  *---------------------------------------------------------------------------*/
 static void launch_app(unsigned char index) {
@@ -4278,6 +4237,7 @@ static void launcher_init(void) {
     unsigned char detail_c;
 
     tui_init();
+    *KERNAL_BLNSW = 1u;
     reu_phys_apply_to_alloc_table(reu_phys_detect_bank_count());
     shim_suppress_startup_once =
         (unsigned char)((*SHIM_LAUNCHER_FLAGS & SHIM_LAUNCHER_FLAG_SUPPRESS_STARTUP) != 0u);
@@ -4334,7 +4294,11 @@ static void launcher_init(void) {
         slot_contract_ok = 1;
     }
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-    launcher_dma_prime_available();
+    launcher_dma_available = (unsigned char)(launcher_c64u_image_path[0] != 0u);
+    if (used_cached_catalog && launcher_dma_available &&
+        launcher_resume_blob.reserved) {
+        launcher_dma_used = 1u;
+    }
 #endif
     if (shim_suppress_startup_once) {
         saved_suppress_startup_once = 1;

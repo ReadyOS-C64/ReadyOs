@@ -1101,6 +1101,5 @@ chunk_hi:          .res 1
 current_off_lo:    .res 1
 current_off_hi:    .res 1
 clipped_load:      .res 1
-dma_stage_breadcrumb: .res 1
 data_buf:          .res 32
 stat_buf:          .res 8

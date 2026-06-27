@@ -70,9 +70,9 @@ steps:
 - id: wait_dma_available
   type: screen.wait_contains
   params:
-    text: "DMA:??"
+    text: "DMA:YES"
     wait_timeout_s: 20
-    capture_label: launcher_dma_unknown
+    capture_label: launcher_dma_available
 - id: load_all_dma
   type: input.sequence
   params:
