@@ -159,60 +159,15 @@ load_mount_image_path:
         BCC_FAR load_cd_root_fail
 
         lda _launcher_uci_dma_image_dir
-        sta cd_check_abs+1
-        sta cd_root_check_abs+1
-        sta cd_retry_slash_check_abs+1
-        sta cd_retry_nonroot_check_abs+1
-        sta cd_name_abs+1
+        sta cd_path_read_abs+1
+        sta cd_path_seg_read_abs+1
         lda _launcher_uci_dma_image_dir+1
-        sta cd_check_abs+2
-        sta cd_root_check_abs+2
-        sta cd_retry_slash_check_abs+2
-        sta cd_retry_nonroot_check_abs+2
-        sta cd_name_abs+2
-        ldy #$00
-cd_empty_check:
-cd_check_abs:
-        lda $FFFF,y
-        bne cd_path_has_text
-        lda #ERR_PATH
-        jmp load_fail
-cd_path_has_text:
-        cmp #'/'
-        bne cd_path_not_root
-        iny
-cd_root_check_abs:
-        lda $FFFF,y
-        beq cd_dir_ready
-cd_path_not_root:
+        sta cd_path_read_abs+2
+        sta cd_path_seg_read_abs+2
         lda #'2'
         jsr debug_stage
-        jsr dos_cd
-        BCC_FAR load_cd_dir_fail
-        jsr status_ok
-        bcs cd_dir_ready
-        ldy #$00
-cd_retry_slash_check_abs:
-        lda $FFFF,y
-        cmp #'/'
-        bne cd_dir_status_retry_fail
-        iny
-cd_retry_nonroot_check_abs:
-        lda $FFFF,y
-        beq cd_dir_status_retry_fail
-        lda cd_check_abs+1
-        clc
-        adc #$01
-        sta cd_name_abs+1
-        lda cd_check_abs+2
-        adc #$00
-        sta cd_name_abs+2
-        jsr dos_cd
-        BCC_FAR load_cd_dir_fail
-        jsr status_ok
-        bcs cd_dir_ready
-cd_dir_status_retry_fail:
-        jmp load_cd_dir_status_fail
+        jsr dos_cd_path
+        BCC_FAR load_cd_dir_status_fail
 
 cd_dir_ready:
         lda _launcher_uci_dma_image_name
@@ -523,6 +478,60 @@ cd_name_abs:
 dos_cd_push:
         jsr uci_push_cmd
         jmp drain_response
+
+dos_cd_path:
+        ldy #$00
+cd_path_read_abs:
+        lda $FFFF,y
+        beq dos_cd_path_done
+        cmp #'/'
+        bne dos_cd_path_segment
+        lda #$01
+        jsr cd_path_advance
+        jmp dos_cd_path
+dos_cd_path_segment:
+        jsr sync_interface
+        BCC_FAR command_fail
+        lda #$01
+        jsr uci_write_cmd
+        lda #$11
+        jsr uci_write_cmd
+        ldy #$00
+dos_cd_path_seg_loop:
+cd_path_seg_read_abs:
+        lda $FFFF,y
+        beq dos_cd_path_seg_push
+        cmp #'/'
+        beq dos_cd_path_seg_push
+        jsr uci_write_cmd
+        iny
+        bne dos_cd_path_seg_loop
+dos_cd_path_seg_push:
+        jsr uci_push_cmd
+        jsr drain_response
+        bcc dos_cd_path_fail
+        jsr status_ok
+        bcc dos_cd_path_fail
+        tya
+        jsr cd_path_advance
+        jmp dos_cd_path
+dos_cd_path_done:
+        sec
+        rts
+dos_cd_path_fail:
+        clc
+        rts
+
+cd_path_advance:
+        clc
+        adc cd_path_read_abs+1
+        sta cd_path_read_abs+1
+        sta cd_path_seg_read_abs+1
+        lda cd_path_read_abs+2
+        adc #$00
+        sta cd_path_read_abs+2
+        sta cd_path_seg_read_abs+2
+        rts
 
 dos_mount_image:
         jsr sync_interface

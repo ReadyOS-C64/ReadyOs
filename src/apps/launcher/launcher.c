@@ -326,10 +326,7 @@ extern const char *launcher_uci_dma_image_name;
 extern const char *launcher_uci_dma_mount_name;
 extern unsigned char launcher_uci_dma_assume_mounted;
 static char launcher_c64u_image_path[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
-static char launcher_uci_dma_name_buf[MAX_FILE_LEN + 1];
-static char launcher_uci_dma_dir_buf[LAUNCHER_C64U_IMAGE_DIR_LEN + 1];
-static char launcher_uci_dma_image_buf[LAUNCHER_C64U_IMAGE_NAME_LEN + 1];
-static char launcher_uci_dma_mount_buf[LAUNCHER_C64U_IMAGE_NAME_LEN + 1];
+static const char launcher_dma_root_dir[] = "/";
 static unsigned char launcher_dma_available;
 static unsigned char launcher_dma_used;
 static unsigned char launcher_dma_image_ready;
@@ -2404,7 +2401,7 @@ static void launcher_zero_reu_range(unsigned char bank,
 static unsigned char launcher_dma_hex(unsigned char value) {
     value &= 0x0Fu;
     return (unsigned char)(value < 10u ? ('0' + value)
-                                       : ('A' + (value - 10u)));
+                                       : (1u + (value - 10u)));
 }
 
 #define launcher_dma_check_available() (launcher_dma_available)
@@ -2419,8 +2416,8 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     char *cursor;
     char *dir_start;
     unsigned char i;
-    unsigned char dir_len;
-    unsigned char img_len;
+    unsigned char restore_slash;
+    unsigned char dma_ok;
 
     /* Hardware note: these screen breadcrumbs are not just cosmetic.
      * The C64U UCI/DOS transaction proved code-shape/pacing sensitive;
@@ -2433,12 +2430,10 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         return 0u;
     }
     for (i = 0u; i < MAX_FILE_LEN && name[i] != 0; ++i) {
-        launcher_uci_dma_name_buf[i] = name[i];
     }
     if (name[i] != 0) {
         return 0u;
     }
-    launcher_uci_dma_name_buf[i] = 0;
     launcher_dma_breadcrumb = 0x32u;
     (*(volatile unsigned char*)0x052D) = 0x32;
     if (launcher_c64u_image_path[0] == 0u) {
@@ -2463,56 +2458,21 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     if (slash == 0 || slash[1] == 0) {
         return 0u;
     }
-    if (launcher_c64u_image_path[0] == '/') {
-        if (slash == launcher_c64u_image_path) {
-            launcher_uci_dma_dir_buf[0] = '/';
-            launcher_uci_dma_dir_buf[1] = 0;
-        } else {
-            dir_start = launcher_c64u_image_path + 1;
-            dir_len = (unsigned char)(slash - dir_start);
-            if (dir_len == 0u || dir_len >= sizeof(launcher_uci_dma_dir_buf)) {
-                return 0u;
-            }
-            for (i = 0u; i < dir_len; ++i) {
-                launcher_uci_dma_dir_buf[i] = dir_start[i];
-            }
-            launcher_uci_dma_dir_buf[dir_len] = 0;
-        }
-        img_len = (unsigned char)(cursor - (slash + 1));
-        if (img_len == 0u || img_len >= sizeof(launcher_uci_dma_image_buf)) {
-            return 0u;
-        }
-        for (i = 0u; i < img_len; ++i) {
-            launcher_uci_dma_image_buf[i] = slash[1 + i];
-            launcher_uci_dma_mount_buf[i] = slash[1 + i];
-        }
-        launcher_uci_dma_image_buf[img_len] = 0;
-        launcher_uci_dma_mount_buf[img_len] = 0;
+    restore_slash = 0u;
+    if (slash == launcher_c64u_image_path) {
+        dir_start = (char*)launcher_dma_root_dir;
     } else {
         dir_start = launcher_c64u_image_path;
-        dir_len = (unsigned char)(slash - dir_start);
-        if (dir_len == 0u || dir_len >= sizeof(launcher_uci_dma_dir_buf)) {
+        if (slash == dir_start) {
             return 0u;
         }
-        for (i = 0u; i < dir_len; ++i) {
-            launcher_uci_dma_dir_buf[i] = dir_start[i];
-        }
-        launcher_uci_dma_dir_buf[dir_len] = 0;
-        img_len = (unsigned char)(cursor - (slash + 1));
-        if (img_len == 0u || img_len >= sizeof(launcher_uci_dma_image_buf)) {
-            return 0u;
-        }
-        for (i = 0u; i < img_len; ++i) {
-            launcher_uci_dma_image_buf[i] = slash[1 + i];
-            launcher_uci_dma_mount_buf[i] = slash[1 + i];
-        }
-        launcher_uci_dma_image_buf[img_len] = 0;
-        launcher_uci_dma_mount_buf[img_len] = 0;
+        *slash = 0;
+        restore_slash = 1u;
     }
-    launcher_uci_dma_image_dir = launcher_uci_dma_dir_buf;
-    launcher_uci_dma_image_name = launcher_uci_dma_image_buf;
-    launcher_uci_dma_mount_name = launcher_uci_dma_mount_buf;
-    launcher_uci_dma_name = launcher_uci_dma_name_buf;
+    launcher_uci_dma_image_dir = dir_start;
+    launcher_uci_dma_image_name = slash + 1;
+    launcher_uci_dma_mount_name = slash + 1;
+    launcher_uci_dma_name = name;
     launcher_uci_dma_reu_bank = bank;
     launcher_uci_dma_reu_offset = reu_off;
     launcher_uci_dma_max_len = max_len;
@@ -2520,7 +2480,11 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     launcher_uci_dma_assume_mounted = launcher_dma_image_ready;
     launcher_dma_breadcrumb = 0x35u;
     (*(volatile unsigned char*)0x052D) = 0x35;
-    if (launcher_uci_dma_load_prg()) {
+    dma_ok = launcher_uci_dma_load_prg();
+    if (restore_slash) {
+        *slash = '/';
+    }
+    if (dma_ok) {
         launcher_dma_available = 1u;
         launcher_dma_used = 1u;
         launcher_dma_image_ready = 1u;
@@ -3845,6 +3809,14 @@ static void draw_status(void) {
         tui_puts(16, STATUS_Y + 1, "YES", TUI_COLOR_LIGHTGREEN);
     } else {
         tui_puts(16, STATUS_Y + 1, "NO ", TUI_COLOR_GRAY2);
+        if (launcher_dma_breadcrumb < 0x20u && launcher_dma_breadcrumb != 0u) {
+            tui_putc(19, STATUS_Y + 1, 5, TUI_COLOR_LIGHTRED);
+            tui_putc(20, STATUS_Y + 1,
+                     launcher_dma_hex((unsigned char)(launcher_dma_breadcrumb >> 4)),
+                     TUI_COLOR_LIGHTRED);
+            tui_putc(21, STATUS_Y + 1, launcher_dma_hex(launcher_dma_breadcrumb),
+                     TUI_COLOR_LIGHTRED);
+        }
     }
 
     /* Legend for REU indicator */
