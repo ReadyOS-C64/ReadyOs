@@ -673,3 +673,61 @@ Verification:
   ReadyShell can legitimately fall back to KERNAL for an overlay/resource while
   Ultimate DOS is still positioned inside the D81, and forcing the next app back
   through the full mount path reproduced the `330.3834` C64U stall.
+
+## 2026-06-27 Launcher DMA Verification
+
+- Current tested branch build: `readyos-v0.2.5z-d81.d81`.
+  Local and FTP-downloaded `USB1/readyos-v0.2.5z-d81.d81` both hashed to
+  `42fd4f6e148aa5cab95972199324174acb807e219ff102c71b0eb444dab87c54`
+  before the hardware editor-direct run and again after the dotnet C64U suite.
+- `apps.cfg` for this run deliberately used
+  `c64u_image_path=/usb1/readyos-v0.2.5z-d81.d81` and
+  `load_all_to_reu=0`, so the booter did not auto-preload everything. The
+  human/user-world rule remains: the D81 can be mounted normally by the user,
+  while launcher DMA only needs a configured C64U storage path when it must
+  remount/recover the image itself.
+- The C64U path handling now sends Ultimate DOS storage path bytes in uppercase
+  for `CD`/`MOUNT` only, and leaves D81 file names for `OPEN` untouched. That
+  preserves the PETSCII/lowercase app/resource filename discipline inside the
+  mounted image while satisfying C64U storage-path matching for `/USB1`.
+- The working mount recovery shape is `CD /`, then try `CD <dir>` exactly as
+  configured, and if that status fails and the configured directory starts with
+  `/`, retry once without the leading slash. This fixed the previous
+  `ERR_PATH`/status `84` failure for `/usb1/...`.
+- Do not add temporary top-left screen markers to launcher startup. They helped
+  diagnose draw progress, but they are not part of the working loader and can
+  look like the classic C64 blinking-cursor failure symptom. The remaining
+  `$052C-$0533` writes are the proven UCI pacing/status breadcrumbs inside the
+  loading screen area and are cleared on successful DMA.
+
+Measured launcher map for the verified `0.2.5Z` build:
+
+```text
+LAUNCHER_DMA_LOAD=1 verified build:
+  SHA256 bin/launcher.prg 50e00ec57be0f2905ae25a003c2bcc58c539110fe22d630031a49ccb8ebd7ceb
+  CODE   $1033..$B380
+  RODATA $B381..$B957
+  DATA   $B958..$B989
+  INIT   $B98A..$B9A5
+  ONCE   $B9A6..$B9CB
+  BSS    $B9CC..$C3F6
+```
+
+Verification on C64U:
+
+- Static gates passed: `python3 build_support/verify_memory_map.py` and
+  `python3 build_support/verify_launcher_dma_gate.py`.
+- Shell/REST editor-direct smoke passed with
+  `READYOS_EDITOR_DIRECT_PASS`. It booted the fresh D81 from `USB1`, reached
+  the launcher with `DMA:YES`, pressed Enter on Editor, showed the REU loading
+  progress, and landed in Editor.
+- Dotnet C64U cross-app suite passed with `"Status": "success"` using
+  `/tmp/readyos_c64u_readyshell_dotnet_z3_20260627_131943` and trace
+  `logs/ultimate_auto_20260627_131952/trace.md`. It verified launcher
+  `DMA:YES`, direct Editor load returning to launcher as `DMA:ON`, ReadyBASIC
+  load returning as `DMA:ON`, and ReadyShell reaching its prompt after
+  ReadyBASIC.
+- The same dotnet suite exercised ReadyShell overlays with `VER`,
+  `LST "RSHELP"`, another `VER`, and `CAT "RSHELP" . TOP 1`; the decoded
+  capture showed `NAME:RSHELP,BLOCKS:5,TYPE:SEQ` and `VERSION 0.2`, so the
+  previous ReadyShell overlay preload hang was not reproduced in this build.
