@@ -159,6 +159,8 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #endif
 #define RESOURCE_IO_CHUNK 128
 #define LAUNCHER_C64U_IMAGE_PATH_LEN 95
+#define LAUNCHER_C64U_IMAGE_DIR_LEN 63
+#define LAUNCHER_C64U_IMAGE_NAME_LEN 47
 #define LAUNCHER_C64U_IMAGE_PATH_DEFAULT "/usb1/readyos.d81"
 
 #ifndef LAUNCHER_CFG_VERBOSE
@@ -241,7 +243,12 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #define REU_LOGICAL_TO_PHYSICAL(bank) \
     ((unsigned char)(*SHIM_REU_BANK_SKIP + \
      (((unsigned char)(bank) == 0u) ? 1u : (1u + (unsigned char)(bank)))))
-#define LAUNCHER_RESUME_SCHEMA 9
+#define LAUNCHER_RESUME_SCHEMA 10
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+#define LAUNCHER_RESUME_SEG_COUNT 16
+#else
+#define LAUNCHER_RESUME_SEG_COUNT 15
+#endif
 
 /* App save size - must include code + data + BSS */
 #define APP_SAVE_SIZE 0xB600  /* $1000-$C5FF (46KB) */
@@ -296,6 +303,9 @@ static DirPageEntry launcher_manifest_entry;
 static char launcher_manifest_open_spec[24];
 static char launcher_resource_open_spec[18];
 #if LAUNCHER_DMA_LOAD
+#define LAUNCHER_DMA_ERR_NO_UCI   0x01u
+#define LAUNCHER_DMA_ERR_PATH_MIN 0x08u
+#define LAUNCHER_DMA_ERR_PATH_MAX 0x10u
 extern unsigned char launcher_uci_dma_detect(void);
 extern unsigned char launcher_uci_dma_load_prg(void);
 extern unsigned char launcher_uci_dma_available;
@@ -313,9 +323,9 @@ extern const char *launcher_uci_dma_image_name;
 extern const char *launcher_uci_dma_mount_name;
 static char launcher_c64u_image_path[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
 static char launcher_uci_dma_name_buf[MAX_FILE_LEN + 1];
-static char launcher_uci_dma_dir_buf[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
-static char launcher_uci_dma_image_buf[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
-static char launcher_uci_dma_mount_buf[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
+static char launcher_uci_dma_dir_buf[LAUNCHER_C64U_IMAGE_DIR_LEN + 1];
+static char launcher_uci_dma_image_buf[LAUNCHER_C64U_IMAGE_NAME_LEN + 1];
+static char launcher_uci_dma_mount_buf[LAUNCHER_C64U_IMAGE_NAME_LEN + 1];
 static unsigned char launcher_dma_checked;
 static unsigned char launcher_dma_available;
 static unsigned char launcher_dma_used;
@@ -1173,6 +1183,10 @@ static void catalog_init_defaults(void) {
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
     copy_text_limit(launcher_c64u_image_path, sizeof(launcher_c64u_image_path),
                     LAUNCHER_C64U_IMAGE_PATH_DEFAULT);
+    launcher_dma_checked = 0u;
+    launcher_dma_available = 0u;
+    launcher_dma_used = 0u;
+    launcher_dma_breadcrumb = 0u;
 #endif
     launcher_notice[0] = 0;
     launcher_notice_color = TUI_COLOR_GRAY3;
@@ -1194,7 +1208,7 @@ static void catalog_rebind_views(void) {
 static void launcher_resume_save(unsigned char selected,
                                  unsigned char scroll_offset,
                                  unsigned char suppress_startup_once) {
-    static ResumeWriteSegment segs[15];
+    static ResumeWriteSegment segs[LAUNCHER_RESUME_SEG_COUNT];
 
     if (!resume_ready) {
         return;
@@ -1235,14 +1249,18 @@ static void launcher_resume_save(unsigned char selected,
     segs[13].len = sizeof(app_rs_bank3);
     segs[14].ptr = &app_rs_bank4[0];
     segs[14].len = sizeof(app_rs_bank4);
-    (void)resume_save_segments(segs, 15);
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    segs[15].ptr = &launcher_c64u_image_path[0];
+    segs[15].len = sizeof(launcher_c64u_image_path);
+#endif
+    (void)resume_save_segments(segs, LAUNCHER_RESUME_SEG_COUNT);
 }
 
 static unsigned char launcher_resume_restore(unsigned char *out_selected,
                                              unsigned char *out_scroll_offset,
                                              unsigned char *out_suppress_startup_once) {
     unsigned int payload_len = 0;
-    static ResumeReadSegment segs[15];
+    static ResumeReadSegment segs[LAUNCHER_RESUME_SEG_COUNT];
     if (!resume_ready) {
         return 0;
     }
@@ -1276,7 +1294,11 @@ static unsigned char launcher_resume_restore(unsigned char *out_selected,
     segs[13].len = sizeof(app_rs_bank3);
     segs[14].ptr = &app_rs_bank4[0];
     segs[14].len = sizeof(app_rs_bank4);
-    if (!resume_load_segments(segs, 15, &payload_len)) {
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    segs[15].ptr = &launcher_c64u_image_path[0];
+    segs[15].len = sizeof(launcher_c64u_image_path);
+#endif
+    if (!resume_load_segments(segs, LAUNCHER_RESUME_SEG_COUNT, &payload_len)) {
         return 0;
     }
     if (payload_len != (sizeof(launcher_resume_blob) +
@@ -1293,7 +1315,11 @@ static unsigned char launcher_resume_restore(unsigned char *out_selected,
                         sizeof(app_rs_bank1) +
                         sizeof(app_rs_bank2) +
                         sizeof(app_rs_bank3) +
-                        sizeof(app_rs_bank4))) {
+                        sizeof(app_rs_bank4)
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+                        + sizeof(launcher_c64u_image_path)
+#endif
+                        )) {
         return 0;
     }
 
@@ -2375,13 +2401,16 @@ static unsigned char launcher_dma_hex(unsigned char value) {
 static unsigned char launcher_dma_check_available(void) {
     if (!launcher_dma_checked) {
         launcher_dma_checked = 1u;
-        if (launcher_c64u_image_path[0] == 0u) {
-            launcher_dma_available = 0u;
-        } else {
-            launcher_dma_available = 1u;
-        }
+        launcher_dma_available = (unsigned char)(launcher_c64u_image_path[0] != 0u);
     }
     return launcher_dma_available;
+}
+
+static void launcher_dma_prime_available(void) {
+    launcher_dma_checked = 0u;
+    launcher_dma_available = 0u;
+    launcher_dma_used = 0u;
+    (void)launcher_dma_check_available();
 }
 
 static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
@@ -2512,7 +2541,11 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         launcher_dma_hex((unsigned char)(launcher_uci_dma_dbg_stat1 >> 4));
     (*(volatile unsigned char*)0x0533) =
         launcher_dma_hex(launcher_uci_dma_dbg_stat1);
-    launcher_dma_available = 0u;
+    if (launcher_uci_dma_last_error == LAUNCHER_DMA_ERR_NO_UCI ||
+        (launcher_uci_dma_last_error >= LAUNCHER_DMA_ERR_PATH_MIN &&
+         launcher_uci_dma_last_error <= LAUNCHER_DMA_ERR_PATH_MAX)) {
+        launcher_dma_available = 0u;
+    }
     return 0u;
 }
 #endif
@@ -4290,6 +4323,9 @@ static void launcher_init(void) {
         }
         slot_contract_ok = 1;
     }
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    launcher_dma_prime_available();
+#endif
     if (shim_suppress_startup_once) {
         saved_suppress_startup_once = 1;
     }

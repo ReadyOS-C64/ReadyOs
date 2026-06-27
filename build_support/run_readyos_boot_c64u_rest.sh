@@ -167,6 +167,12 @@ screen_has() {
   grep -q "$text" "${out_dir}/${label}/screen.txt"
 }
 
+screen_matches() {
+  local label="$1"
+  local pattern="$2"
+  grep -Eq "$pattern" "${out_dir}/${label}/screen.txt"
+}
+
 wait_for_screen() {
   local label="$1"
   local text="$2"
@@ -175,6 +181,22 @@ wait_for_screen() {
     if capture_screen "$label"; then
       if screen_has "$label" "$text"; then
         echo "screen matched ${text} at poll ${i}" >> "$log"
+        return 0
+      fi
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+wait_for_screen_re() {
+  local label="$1"
+  local pattern="$2"
+  local count="$3"
+  for i in $(seq 1 "$count"); do
+    if capture_screen "$label"; then
+      if screen_matches "$label" "$pattern"; then
+        echo "screen matched regex ${pattern} at poll ${i}" >> "$log"
         return 0
       fi
     fi
@@ -267,6 +289,13 @@ sleep "${READYOS_BOOT_INITIAL_WAIT_S:-90}"
 
 if wait_for_screen "launcher_wait" "READY OS" 180; then
   capture_screen "launcher_final"
+  if [[ "${READYOS_EXPECT_DMA_READY:-0}" != "0" ]]; then
+    if ! wait_for_screen_re "launcher_dma_ready_wait" "DMA:(YES|ON)" 60; then
+      capture_screen "launcher_dma_ready_failure"
+      echo "READYOS_DMA_READY_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+  fi
   if [[ "${READYOS_BOOT_ACTION:-}" == "editor-direct" ]]; then
     select_editor
     type_key 13
@@ -282,6 +311,7 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
 
   if [[ "${READYOS_BOOT_ACTION:-}" == "loadall-editor" || "${READYOS_BOOT_ACTION:-}" == "loadall-editor-any" ]]; then
     type_key 133
+    sleep "${READYOS_LOADALL_QUIET_WAIT_S:-240}"
     if ! wait_for_screen "loadall_wait" "PRESS ANY KEY" 240; then
       capture_screen "loadall_failure"
       echo "READYOS_LOADALL_FAIL" | tee "${out_dir}/status"

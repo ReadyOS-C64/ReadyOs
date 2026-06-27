@@ -614,3 +614,26 @@ Verification:
   `READYOS_READYSHELL_ENTER_SMOKE_PASS`. The five-second early capture showed
   `LOADING TO REU` with the ReadyShell selection and a UCI stage marker, then
   ReadyShell passed the same overlay command smoke.
+
+## Launcher Startup/Resume Lessons
+
+- The launcher may reuse its cached catalog/resume payload instead of rereading
+  `apps.cfg` on every entry. Any config value that changes DMA behavior must be
+  part of that resume payload, or the cached path can silently fall back to the
+  compiled default. This specifically bit `c64u_image_path`: after a cached
+  launcher resume, first Enter/F1 paths could try the wrong image path and then
+  fall back to KERNAL disk I/O.
+- Bump the launcher resume schema whenever the resume payload layout changes.
+  That forces old hardware REU cache state to be discarded and makes the next
+  launcher run reread `apps.cfg` before it saves a new payload.
+- DMA status should be initialized during launcher startup without touching the
+  UCI registers. A real startup UCI detect can run too early in the
+  boot-to-launcher lifecycle and hang before the first menu draw. `DMA:YES`
+  therefore means a C64U image path is configured and the launcher will attempt
+  DMA; `DMA:ON` means at least one Ultimate DOS DMA transfer has succeeded in
+  the current launcher session; `DMA:NO` means no path is configured or a later
+  no-UCI/path/mount/image error disabled the DMA path.
+- A failed per-file transfer should not automatically disable DMA globally.
+  Only no-UCI/path/mount/image errors should flip global status to unavailable.
+  Size/header/open/read errors should fall back for that file while allowing
+  later files to attempt DMA.
