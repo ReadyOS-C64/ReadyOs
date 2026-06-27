@@ -244,7 +244,7 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #define REU_LOGICAL_TO_PHYSICAL(bank) \
     ((unsigned char)(*SHIM_REU_BANK_SKIP + \
      (((unsigned char)(bank) == 0u) ? 1u : (1u + (unsigned char)(bank)))))
-#define LAUNCHER_RESUME_SCHEMA 10
+#define LAUNCHER_RESUME_SCHEMA 11
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
 #define LAUNCHER_RESUME_SEG_COUNT 16
 #else
@@ -2406,6 +2406,37 @@ static unsigned char launcher_dma_hex(unsigned char value) {
 
 #define launcher_dma_check_available() (launcher_dma_available)
 
+static void launcher_dma_reset_runtime_state(void) {
+    launcher_dma_used = 0u;
+    launcher_dma_image_ready = 0u;
+    launcher_uci_dma_assume_mounted = 0u;
+    launcher_dma_breadcrumb = 0u;
+}
+
+static void launcher_dma_init_from_config(void) {
+    launcher_dma_reset_runtime_state();
+    launcher_dma_available = (unsigned char)(launcher_c64u_image_path[0] != 0u);
+}
+
+static void launcher_dma_probe_after_draw(void) {
+    if (launcher_c64u_image_path[0] == 0u) {
+        launcher_dma_available = 0u;
+        launcher_dma_reset_runtime_state();
+        return;
+    }
+    if (launcher_uci_dma_detect()) {
+        launcher_dma_available = 1u;
+        if (launcher_dma_breadcrumb == LAUNCHER_DMA_ERR_NO_UCI) {
+            launcher_dma_breadcrumb = 0u;
+        }
+        launcher_uci_dma_quiesce();
+    } else {
+        launcher_dma_available = 0u;
+        launcher_dma_reset_runtime_state();
+        launcher_dma_breadcrumb = LAUNCHER_DMA_ERR_NO_UCI;
+    }
+}
+
 static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
                                                  const char *name,
                                                  unsigned char bank,
@@ -4208,6 +4239,7 @@ static void launcher_init(void) {
     unsigned char detail_b;
     unsigned char detail_c;
 
+    *KERNAL_BLNSW = 1u;
     tui_init();
     *KERNAL_BLNSW = 1u;
     reu_phys_apply_to_alloc_table(reu_phys_detect_bank_count());
@@ -4223,8 +4255,11 @@ static void launcher_init(void) {
     resume_init_for_app(REU_BANK_LAUNCHER, REU_BANK_LAUNCHER,
                         LAUNCHER_RESUME_SCHEMA);
     resume_ready = 1;
-    restored_resume = launcher_resume_restore(&saved_selected, &saved_scroll_offset,
-                                              &saved_suppress_startup_once);
+    if (shim_suppress_startup_once) {
+        restored_resume = launcher_resume_restore(&saved_selected,
+                                                  &saved_scroll_offset,
+                                                  &saved_suppress_startup_once);
+    }
 
     if (restored_resume) {
         err = validate_slot_contract(&detail_a, &detail_b, &detail_c);
@@ -4266,7 +4301,7 @@ static void launcher_init(void) {
         slot_contract_ok = 1;
     }
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-    launcher_dma_available = (unsigned char)(launcher_c64u_image_path[0] != 0u);
+    launcher_dma_init_from_config();
     if (used_cached_catalog && launcher_dma_available &&
         launcher_resume_blob.reserved) {
         launcher_dma_used = 1u;
@@ -4326,6 +4361,10 @@ static void launcher_loop(void) {
     }
 
     launcher_draw();
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    launcher_dma_probe_after_draw();
+    draw_status();
+#endif
 
     while (running) {
         key = tui_getkey();
