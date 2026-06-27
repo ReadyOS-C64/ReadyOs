@@ -642,5 +642,9 @@ Verification:
   launcher keeps a volatile in-session "image is mounted" flag and subsequent
   DMA transfers open the next file from the current image directory instead of
   issuing another root/CD/mount/CD-image sequence. The flag is not saved in the
-  resume payload and is cleared on startup and on any DMA transfer failure, so a
-  retry can fall back to the full mount path.
+  resume payload and is cleared on startup and on no-UCI/path/mount/image
+  failures, so a retry can fall back to the full mount path when the mounted
+  image is genuinely suspect. File-level failures keep the mounted-image state:
+  ReadyShell can legitimately fall back to KERNAL for an overlay/resource while
+  Ultimate DOS is still positioned inside the D81, and forcing the next app back
+  through the full mount path reproduced the `330.3834` C64U stall.

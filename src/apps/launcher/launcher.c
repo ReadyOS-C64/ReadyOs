@@ -2537,8 +2537,6 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         launcher_uci_dma_assume_mounted = 1u;
         return 1u;
     }
-    launcher_dma_image_ready = 0u;
-    launcher_uci_dma_assume_mounted = 0u;
     launcher_dma_breadcrumb = launcher_uci_dma_last_error;
     (*(volatile unsigned char*)0x052E) =
         launcher_dma_hex((unsigned char)(launcher_uci_dma_last_error >> 4));
@@ -2556,6 +2554,11 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         (launcher_uci_dma_last_error >= LAUNCHER_DMA_ERR_PATH_MIN &&
          launcher_uci_dma_last_error <= LAUNCHER_DMA_ERR_PATH_MAX)) {
         launcher_dma_available = 0u;
+        launcher_dma_image_ready = 0u;
+        launcher_uci_dma_assume_mounted = 0u;
+    } else {
+        launcher_dma_image_ready = 1u;
+        launcher_uci_dma_assume_mounted = 1u;
     }
     return 0u;
 }
