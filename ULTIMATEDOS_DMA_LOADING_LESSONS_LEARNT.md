@@ -23,6 +23,9 @@ UCI technique; the launcher integration remains gated behind
   uppercase ASCII spellings (`USB1`, `READYOS.D81`, `EDITOR`) that the C64U
   storage view and disk entries resolve. Do not force ASCII lowercase.
 - Use fresh image names during automation to avoid stale mounted-image state.
+- Prime the launcher DMA UI state from the configured image path at launcher
+  startup. Do not show a lazy `DMA:??` state that depends on whichever action
+  happens to ask about DMA first.
 
 The official Ultimate UCI documentation matters for the boundary here:
 
@@ -193,6 +196,17 @@ aligned with the proven probe sequence, with any deviation verified on hardware.
 - Keep all launcher changes behind a small, obvious feature boundary until
   hardware proof exists.
 - Do not probe UCI during the launcher’s first paint or startup path.
+- Treat the config path as the capability gate at startup (`DMA:YES`/`DMA:NO`).
+  The first actual app/resource load performs the Ultimate DOS transaction and
+  changes the status to `DMA:ON` only after a successful DMA load.
+- Do not insert helper routines into the middle of the proven UCI transaction
+  code. One hardware build hung on the first cold DMA load at stage `250.3834`
+  after a helper was inserted before the DOS identify path. Moving helper code
+  to the end of the code segment restored the original transaction layout and
+  keeps future diffs easier to audit.
+- Any settle/quiesce helper should run only after a transaction path has
+  returned. It should synchronize the command interface and wait for idle; it
+  is not a startup probe and it should not touch the mount/path state.
 - Do not mark an app as loaded unless the Ultimate DOS command status and REU
   verification path prove the data landed.
 - Keep the shim, boot, and app binaries out of scope.

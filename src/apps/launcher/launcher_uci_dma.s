@@ -9,6 +9,8 @@
 
         .export _launcher_uci_dma_detect
         .export _launcher_uci_dma_load_prg
+        .export _launcher_uci_dma_quiesce
+        .export _launcher_uci_dma_clear_stage
         .export _launcher_uci_dma_available
         .export _launcher_uci_dma_name
         .export _launcher_uci_dma_reu_bank
@@ -1040,6 +1042,27 @@ uci_clear_abs:
         pla
         sta CPU_PORT
         plp
+        rts
+
+_launcher_uci_dma_quiesce:
+        lda _launcher_uci_dma_available
+        beq quiesce_done
+        jsr sync_interface
+        bcc quiesce_done
+        jsr wait_idle
+quiesce_done:
+        rts
+
+_launcher_uci_dma_clear_stage:
+        lda #' '
+        sta $052C
+        sta $052D
+        sta $052E
+        sta $052F
+        sta $0530
+        sta $0531
+        sta $0532
+        sta $0533
         rts
 
         .segment "RODATA"

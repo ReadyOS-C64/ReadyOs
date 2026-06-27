@@ -308,6 +308,8 @@ static char launcher_resource_open_spec[18];
 #define LAUNCHER_DMA_ERR_PATH_MAX 0x10u
 extern unsigned char launcher_uci_dma_detect(void);
 extern unsigned char launcher_uci_dma_load_prg(void);
+extern void launcher_uci_dma_quiesce(void);
+extern void launcher_uci_dma_clear_stage(void);
 extern unsigned char launcher_uci_dma_available;
 extern const char *launcher_uci_dma_name;
 extern unsigned char launcher_uci_dma_reu_bank;
@@ -327,7 +329,6 @@ static char launcher_uci_dma_name_buf[MAX_FILE_LEN + 1];
 static char launcher_uci_dma_dir_buf[LAUNCHER_C64U_IMAGE_DIR_LEN + 1];
 static char launcher_uci_dma_image_buf[LAUNCHER_C64U_IMAGE_NAME_LEN + 1];
 static char launcher_uci_dma_mount_buf[LAUNCHER_C64U_IMAGE_NAME_LEN + 1];
-static unsigned char launcher_dma_checked;
 static unsigned char launcher_dma_available;
 static unsigned char launcher_dma_used;
 static unsigned char launcher_dma_image_ready;
@@ -1185,7 +1186,6 @@ static void catalog_init_defaults(void) {
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
     copy_text_limit(launcher_c64u_image_path, sizeof(launcher_c64u_image_path),
                     LAUNCHER_C64U_IMAGE_PATH_DEFAULT);
-    launcher_dma_checked = 0u;
     launcher_dma_available = 0u;
     launcher_dma_used = 0u;
     launcher_dma_image_ready = 0u;
@@ -2403,20 +2403,15 @@ static unsigned char launcher_dma_hex(unsigned char value) {
 }
 
 static unsigned char launcher_dma_check_available(void) {
-    if (!launcher_dma_checked) {
-        launcher_dma_checked = 1u;
-        launcher_dma_available = (unsigned char)(launcher_c64u_image_path[0] != 0u);
-    }
     return launcher_dma_available;
 }
 
 static void launcher_dma_prime_available(void) {
-    launcher_dma_checked = 0u;
-    launcher_dma_available = 0u;
+    launcher_dma_available = (unsigned char)(launcher_c64u_image_path[0] != 0u);
     launcher_dma_used = 0u;
     launcher_dma_image_ready = 0u;
     launcher_uci_dma_assume_mounted = 0u;
-    (void)launcher_dma_check_available();
+    launcher_uci_dma_clear_stage();
 }
 
 static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
@@ -2535,6 +2530,8 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         launcher_dma_used = 1u;
         launcher_dma_image_ready = 1u;
         launcher_uci_dma_assume_mounted = 1u;
+        launcher_uci_dma_quiesce();
+        launcher_uci_dma_clear_stage();
         return 1u;
     }
     launcher_dma_breadcrumb = launcher_uci_dma_last_error;
@@ -2560,6 +2557,7 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         launcher_dma_image_ready = 1u;
         launcher_uci_dma_assume_mounted = 1u;
     }
+    launcher_uci_dma_quiesce();
     return 0u;
 }
 #endif
@@ -3884,8 +3882,6 @@ static void draw_status(void) {
     tui_puts(12, STATUS_Y + 1, "DMA:", TUI_COLOR_GRAY3);
     if (launcher_dma_used) {
         tui_puts(16, STATUS_Y + 1, "ON ", TUI_COLOR_LIGHTGREEN);
-    } else if (!launcher_dma_checked) {
-        tui_puts(16, STATUS_Y + 1, "?? ", TUI_COLOR_GRAY2);
     } else if (launcher_dma_available) {
         tui_puts(16, STATUS_Y + 1, "YES", TUI_COLOR_LIGHTGREEN);
     } else {
