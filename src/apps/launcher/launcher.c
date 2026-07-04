@@ -56,6 +56,8 @@
 #define SHIM_LOAD_DISK_DEV_IMM ((unsigned char*)0xC84D) /* A2 xx at $C84C */
 #define SHIM_PRELOAD_DEV_IMM   ((unsigned char*)0xC89C) /* A2 xx at $C89B */
 #define KERNAL_BLNSW           ((unsigned char*)0x00CC) /* nonzero disables cursor blink */
+#define LAUNCHER_DMA_PROGRESS_OFF    960u
+#define LAUNCHER_DMA_PROGRESS_SCREEN (TUI_SCREEN + LAUNCHER_DMA_PROGRESS_OFF)
 
 /* REU registers for direct access */
 #define REU_COMMAND  (*(unsigned char*)0xDF01)
@@ -105,7 +107,7 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #define MENU_NO_APP 0xFFu
 #define SHIM_LAUNCHER_FLAG_SUPPRESS_STARTUP 0x01u
 #define LOAD_ALL_LIST_Y 4
-#define LOAD_ALL_LIST_ROWS 19
+#define LOAD_ALL_LIST_ROWS 18
 
 /* REU indicator character */
 #define REU_INDICATOR 0x2A  /* '*' in PETSCII screen code */
@@ -325,6 +327,10 @@ extern const char *launcher_uci_dma_image_dir;
 extern const char *launcher_uci_dma_image_name;
 extern const char *launcher_uci_dma_mount_name;
 extern unsigned char launcher_uci_dma_assume_mounted;
+extern unsigned char launcher_uci_dma_stage_col;
+extern unsigned char launcher_uci_dma_progress_current;
+extern unsigned char launcher_uci_dma_progress_total;
+extern void launcher_uci_dma_draw_progress(void);
 static char launcher_c64u_image_path[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
 static const char launcher_dma_root_dir[] = "/";
 static unsigned char launcher_dma_available;
@@ -2406,6 +2412,14 @@ static unsigned char launcher_dma_hex(unsigned char value) {
 }
 
 #define launcher_dma_check_available() (launcher_dma_available && launcher_dma_probe_ok)
+#define launcher_dma_stage_put(ch) \
+    (LAUNCHER_DMA_PROGRESS_SCREEN[launcher_uci_dma_stage_col] = (ch))
+#define launcher_dma_progress_draw(current, total) \
+    do { \
+        launcher_uci_dma_progress_current = (current); \
+        launcher_uci_dma_progress_total = (total); \
+        launcher_uci_dma_draw_progress(); \
+    } while (0)
 
 static void launcher_dma_reset_runtime_state(void) {
     launcher_dma_probe_ok = 0u;
@@ -2456,10 +2470,10 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     /* Hardware note: these screen breadcrumbs are not just cosmetic.
      * The C64U UCI/DOS transaction proved code-shape/pacing sensitive;
      * replacing them with private RAM breadcrumbs made DMA fall back to
-     * the KERNAL path on hardware. The success dialog clears this row
-     * before drawing OK, while failures leave useful diagnostics. */
+     * the KERNAL path on hardware. Keep them in a single bottom-left cell so
+     * they do not look like loading-progress text. */
     launcher_dma_breadcrumb = 0x31u;
-    (*(volatile unsigned char*)0x052D) = 0x31;
+    launcher_dma_stage_put(0x31);
     if ((drive != 8u && drive != 9u) || name[0] == 0u) {
         return 0u;
     }
@@ -2469,17 +2483,17 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         return 0u;
     }
     launcher_dma_breadcrumb = 0x32u;
-    (*(volatile unsigned char*)0x052D) = 0x32;
+    launcher_dma_stage_put(0x32);
     if (launcher_c64u_image_path[0] == 0u) {
         return 0u;
     }
     launcher_dma_breadcrumb = 0x33u;
-    (*(volatile unsigned char*)0x052D) = 0x33;
+    launcher_dma_stage_put(0x33);
     if (!launcher_dma_check_available()) {
         return 0u;
     }
     launcher_dma_breadcrumb = 0x34u;
-    (*(volatile unsigned char*)0x052D) = 0x34;
+    launcher_dma_stage_put(0x34);
 
     slash = 0;
     cursor = launcher_c64u_image_path;
@@ -2513,7 +2527,7 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     launcher_uci_dma_expected_load_addr = load_addr;
     launcher_uci_dma_assume_mounted = launcher_dma_image_ready;
     launcher_dma_breadcrumb = 0x35u;
-    (*(volatile unsigned char*)0x052D) = 0x35;
+    launcher_dma_stage_put(0x35);
     dma_ok = launcher_uci_dma_load_prg();
     if (restore_slash) {
         *slash = '/';
@@ -2528,18 +2542,6 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         return 1u;
     }
     launcher_dma_breadcrumb = launcher_uci_dma_last_error;
-    (*(volatile unsigned char*)0x052E) =
-        launcher_dma_hex((unsigned char)(launcher_uci_dma_last_error >> 4));
-    (*(volatile unsigned char*)0x052F) =
-        launcher_dma_hex(launcher_uci_dma_last_error);
-    (*(volatile unsigned char*)0x0530) =
-        launcher_dma_hex((unsigned char)(launcher_uci_dma_dbg_stat0 >> 4));
-    (*(volatile unsigned char*)0x0531) =
-        launcher_dma_hex(launcher_uci_dma_dbg_stat0);
-    (*(volatile unsigned char*)0x0532) =
-        launcher_dma_hex((unsigned char)(launcher_uci_dma_dbg_stat1 >> 4));
-    (*(volatile unsigned char*)0x0533) =
-        launcher_dma_hex(launcher_uci_dma_dbg_stat1);
     if (launcher_uci_dma_last_error == LAUNCHER_DMA_ERR_NO_UCI ||
         (launcher_uci_dma_last_error >= LAUNCHER_DMA_ERR_PATH_MIN &&
          launcher_uci_dma_last_error <= LAUNCHER_DMA_ERR_PATH_MAX)) {
@@ -2558,7 +2560,9 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
 static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
                                                 const char *name,
                                                 unsigned char bank,
-                                                unsigned int reu_off) {
+                                                unsigned int reu_off,
+                                                unsigned char dma_current,
+                                                unsigned char dma_total) {
     unsigned char load_hdr[2];
     unsigned int load_addr;
     unsigned int pos;
@@ -2567,12 +2571,14 @@ static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
 
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD && LAUNCHER_DMA_LOAD_RESOURCES
     if (launcher_dma_check_available()) {
+        launcher_dma_progress_draw(dma_current, dma_total);
         launcher_zero_reu_range(bank, reu_off, READYSHELL_OVERLAY_SLOT_LEN);
         if (launcher_dma_try_prg_to_reu(drive, name, bank, reu_off,
                                         READYSHELL_OVERLAY_SLOT_LEN,
                                         READYSHELL_OVERLAY_LOAD_ADDR)) {
             return 1u;
         }
+        launcher_uci_dma_clear_stage();
         /* DMA is an accelerator only. If UCI is absent in VICE, or the
          * Ultimate path is not usable, fall through to the normal chunked
          * loader. */
@@ -2707,7 +2713,10 @@ static unsigned char launcher_load_readyshell_resources(unsigned char index) {
         }
         bank = launcher_readyshell_physical_bank(index, ordinal);
         if (bank == 0u ||
-            !launcher_stream_prg_to_reu(app_drives[index], name, bank, reu_off)) {
+            !launcher_stream_prg_to_reu(
+                app_drives[index], name, bank, reu_off,
+                (unsigned char)(overlay_num + 1u),
+                (unsigned char)(READYSHELL_OVERLAY_COUNT + 1u))) {
             launcher_set_notice("rs fail load", TUI_COLOR_LIGHTRED);
             return 0u;
         }
@@ -2908,17 +2917,21 @@ static unsigned int load_app_to_reu(unsigned char index) {
         unsigned char physical;
         /* See launcher_dma_try_prg_to_reu(): these volatile stores preserve
          * the hardware-proven UCI transaction shape. */
+        launcher_dma_progress_draw(1u,
+            (app_resource_sets[index] == APP_RESOURCE_READYSHELL_OVL &&
+             LAUNCHER_DMA_LOAD_READYSHELL)
+                ? (unsigned char)(READYSHELL_OVERLAY_COUNT + 1u) : 1u);
         launcher_dma_breadcrumb = 0x41u;
-        (*(volatile unsigned char*)0x052C) = 0x31;
+        launcher_dma_stage_put(0x31);
         physical = launcher_logical_to_physical(bank);
         launcher_dma_breadcrumb = 0x42u;
-        (*(volatile unsigned char*)0x052C) = 0x32;
+        launcher_dma_stage_put(0x32);
         if (physical != 0xFFu &&
             launcher_dma_check_available() &&
             (app_resource_sets[index] != APP_RESOURCE_READYSHELL_OVL ||
              LAUNCHER_DMA_LOAD_READYSHELL)) {
             launcher_dma_breadcrumb = 0x43u;
-            (*(volatile unsigned char*)0x052C) = 0x33;
+            launcher_dma_stage_put(0x33);
             if (launcher_dma_try_prg_to_reu(app_drives[index], filename,
                                             physical, 0u, APP_SAVE_SIZE,
                                             APP_LOAD_START)) {
@@ -2947,6 +2960,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
             /* DMA is optional. On VICE and non-Ultimate hardware this must
              * fall back to the existing shim/KERNAL preload path. */
         }
+        launcher_uci_dma_clear_stage();
     }
 #endif
 
@@ -3126,8 +3140,8 @@ static unsigned char load_all_to_reu_internal(unsigned char interactive) {
     }
 
     /* Keep progress fixed; reuse list rows for catalogs larger than the screen. */
-    counter_y = 23;
-    bar_y = 24;
+    counter_y = 22;
+    bar_y = 23;
 
     /* Draw empty unified progress bar */
     tui_progress_bar(4, bar_y, 32, 0, total_to_load,
