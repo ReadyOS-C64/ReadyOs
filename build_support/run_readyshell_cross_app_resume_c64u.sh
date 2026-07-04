@@ -26,8 +26,6 @@ READYSHELL_C64U_ASSUME_MOUNTED="${READYSHELL_C64U_ASSUME_MOUNTED:-0}"
 READYSHELL_C64U_BOOT_LOAD_WAIT_S="${READYSHELL_C64U_BOOT_LOAD_WAIT_S:-45}"
 READYSHELL_C64U_KEY_DELAY_S="${READYSHELL_C64U_KEY_DELAY_S:-0.25}"
 READYSHELL_C64U_POLL_S="${READYSHELL_C64U_POLL_S:-1.0}"
-READYSHELL_C64U_PROGRESS_POLL_S="${READYSHELL_C64U_PROGRESS_POLL_S:-0.25}"
-READYSHELL_C64U_EXPECT_DMA_PROGRESS="${READYSHELL_C64U_EXPECT_DMA_PROGRESS:-0}"
 READYSHELL_C64U_POST_RUN_QUIET_S="${READYSHELL_C64U_POST_RUN_QUIET_S:-120}"
 READYSHELL_C64U_APP_LOAD_QUIET_S="${READYSHELL_C64U_APP_LOAD_QUIET_S:-90}"
 
@@ -345,21 +343,6 @@ steps:
       keys: [19,17,17,13]
       inter_key_delay_s: $READYSHELL_C64U_KEY_DELAY_S
       post_delay_s: 2.0
-YAML
-
-if [ "$READYSHELL_C64U_EXPECT_DMA_PROGRESS" != "0" ]; then
-cat >>"$PLAN" <<YAML
-  - id: wait_editor_dma_progress
-    type: screen.wait_contains
-    params:
-      text: "1/1 -"
-      wait_timeout_s: 90
-      poll_s: $READYSHELL_C64U_PROGRESS_POLL_S
-      capture_label: editor_dma_progress_c64u
-YAML
-fi
-
-cat >>"$PLAN" <<YAML
   - id: wait_editor_initial
     type: screen.wait_contains
     params:
@@ -440,19 +423,6 @@ cat >>"$PLAN" <<YAML
       keys: [13]
       inter_key_delay_s: $READYSHELL_C64U_KEY_DELAY_S
       post_delay_s: 2.0
-YAML
-if [ "$READYSHELL_C64U_EXPECT_DMA_PROGRESS" != "0" ]; then
-cat >>"$PLAN" <<YAML
-  - id: wait_readyshell_dma_progress_$i
-    type: screen.wait_contains
-    params:
-      text: "/10 -"
-      wait_timeout_s: 120
-      poll_s: $READYSHELL_C64U_PROGRESS_POLL_S
-      capture_label: readyshell_dma_progress_$i
-YAML
-fi
-cat >>"$PLAN" <<YAML
   - id: wait_readyshell_loaded_after_readybasic_$i
     type: screen.wait_contains
     params:

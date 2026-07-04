@@ -25,10 +25,6 @@
         .export _launcher_uci_dma_image_name
         .export _launcher_uci_dma_mount_name
         .export _launcher_uci_dma_assume_mounted
-        .export _launcher_uci_dma_stage_col
-        .export _launcher_uci_dma_progress_current
-        .export _launcher_uci_dma_progress_total
-        .export _launcher_uci_dma_draw_progress
 
 CPU_PORT    = $0001
 
@@ -40,8 +36,6 @@ UCI_STATE_LAST = $20
 UCI_STATE_MORE = $30
 UCI_STAT_ABORT = $04
 UCI_STAT_ERROR = $08
-DMA_STAGE_BASE = $07C0
-DMA_STAGE_LEN  = 9
 
 ERR_NO_UCI  = $01
 ERR_OPEN    = $02
@@ -694,56 +688,7 @@ debug_stage:
         ; C64U-proven UCI transaction shape. Replacing the stage writes with
         ; private BSS stores made the same logical loader fall back on real
         ; hardware, so do not "clean this up" without retesting on C64U.
-        ldx _launcher_uci_dma_stage_col
-        sta DMA_STAGE_BASE,x
-        rts
-
-clear_progress:
-        lda #' '
-        ldx #DMA_STAGE_LEN-1
-clear_progress_loop:
-        sta DMA_STAGE_BASE,x
-        dex
-        bpl clear_progress_loop
-        rts
-
-draw_progress_num:
-        cmp #10
-        bne draw_progress_single
-        lda #'1'
-        sta DMA_STAGE_BASE,x
-        inx
-        lda #'0'
-        sta DMA_STAGE_BASE,x
-        inx
-        rts
-draw_progress_single:
-        clc
-        adc #'0'
-        sta DMA_STAGE_BASE,x
-        inx
-        rts
-
-_launcher_uci_dma_draw_progress:
-        jsr clear_progress
-        ldx #0
-        lda _launcher_uci_dma_progress_current
-        jsr draw_progress_num
-        lda #'/'
-        sta DMA_STAGE_BASE,x
-        inx
-        lda _launcher_uci_dma_progress_total
-        jsr draw_progress_num
-        lda #' '
-        sta DMA_STAGE_BASE,x
-        inx
-        lda #'-'
-        sta DMA_STAGE_BASE,x
-        inx
-        lda #' '
-        sta DMA_STAGE_BASE,x
-        inx
-        stx _launcher_uci_dma_stage_col
+        sta $052C
         rts
 
 sync_interface:
@@ -1157,7 +1102,16 @@ quiesce_done:
         rts
 
 _launcher_uci_dma_clear_stage:
-        jmp clear_progress
+        lda #' '
+        sta $052C
+        sta $052D
+        sta $052E
+        sta $052F
+        sta $0530
+        sta $0531
+        sta $0532
+        sta $0533
+        rts
 
         .segment "RODATA"
 
@@ -1179,9 +1133,6 @@ _launcher_uci_dma_image_dir:           .res 2
 _launcher_uci_dma_image_name:          .res 2
 _launcher_uci_dma_mount_name:          .res 2
 _launcher_uci_dma_assume_mounted:      .res 1
-_launcher_uci_dma_stage_col:           .res 1
-_launcher_uci_dma_progress_current:    .res 1
-_launcher_uci_dma_progress_total:      .res 1
 
 uci_base_lo:       .res 1
 uci_base_hi:       .res 1
