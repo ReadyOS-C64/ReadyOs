@@ -1,0 +1,350 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_state_probe_easyflash
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 2
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 180
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    cart_crt: "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-easyflash/readyos_easyflash.crt"
+    autostart_enabled: false
+    disk8: "/Users/karlprosserpp/dev/c64projects/readyosprecog/agentworking/easyflash_full_vice_plans/readyos_data.easyflash-vice.d64"
+    drive8_enabled: true
+    drive8_type: 1541
+    drive9_enabled: false
+    true_drive: true
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: easyflash_wait_launcher
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      pre_delay_s: 4
+      poll_s: 0.5
+      wait_timeout_s: 420
+      capture_label: easyflash_readybasic_launcher
+  - id: easyflash_start_readybasic
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 2.5
+  - id: wait_readybasic_prompt
+    type: screen.wait_contains
+    params:
+      text: "READY."
+      wait_timeout_s: 180
+      capture_label: readybasic_prompt
+  - id: dump_initial_state
+    type: dump.memory_ranges
+    params:
+      ranges: &state_ranges
+        - { label: basic_zp_002b, start: 0x002B, end: 0x003F }
+        - { label: chrget_0073, start: 0x0073, end: 0x008A }
+        - { label: stack_0100, start: 0x0100, end: 0x01FF }
+        - { label: basic_text_1200, start: 0x1200, end: 0x1300 }
+        - { label: runtime_9500, start: 0x9500, end: 0x9A00 }
+        - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
+        - { label: screen_0400, start: 0x0400, end: 0x07E7 }
+
+  - id: direct_string_assignment
+    type: input.sequence
+    params:
+      keys: [78,69,87,13,65,36,61,34,72,69,76,76,79,34,13,80,82,73,78,84,32,65,36,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_direct_string_before_exit
+    type: assert.screen
+    params:
+      contains: "HELLO"
+  - id: dump_direct_string_before_exit
+    type: dump.memory_ranges
+    params:
+      ranges: *state_ranges
+  - id: exit_direct_string
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_direct_string_exit
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: resume_direct_string
+    type: input.sequence
+    params:
+      keys: [13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: wait_prompt_after_direct_string_resume
+    type: screen.wait_contains
+    params:
+      text: "READY."
+      wait_timeout_s: 30
+  - id: print_direct_string_after_resume
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,65,36,43,34,33,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_direct_string_after_resume
+    type: assert.screen
+    params:
+      contains: "HELLO!"
+  - id: allocate_second_direct_string
+    type: input.sequence
+    params:
+      keys: [66,36,61,34,87,79,82,76,68,34,13,80,82,73,78,84,32,65,36,43,34,50,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_direct_string_after_second_allocation
+    type: assert.screen
+    params:
+      contains: "HELLO2"
+  - id: dump_direct_string_after_resume
+    type: dump.memory_ranges
+    params:
+      ranges: *state_ranges
+  - id: reset_after_direct_string_case
+    type: input.sequence
+    params:
+      keys: [78,69,87,13,80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+
+  - id: type_multiline_program
+    type: input.sequence
+    params:
+      keys: [49,48,32,80,82,73,78,84,32,34,72,69,76,76,79,34,13,50,48,32,80,82,73,78,84,32,34,66,34,13,51,48,32,80,82,73,78,84,32,34,67,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.5
+  - id: list_multiline_before_exit
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_multiline_before_exit
+    type: assert.screen
+    params:
+      contains: "30 PRINT"
+  - id: exit_multiline
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_multiline_exit
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: resume_multiline
+    type: input.sequence
+    params:
+      keys: [13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: wait_prompt_after_multiline_resume
+    type: screen.wait_contains
+    params:
+      text: "READY."
+      wait_timeout_s: 30
+  - id: list_multiline_after_resume
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: capture_multiline_after_resume
+    type: screen.capture
+    params:
+      label: multiline_after_resume
+  - id: assert_multiline_after_resume
+    type: assert.screen
+    params:
+      contains: "30 PRINT"
+  - id: dump_multiline_after_resume
+    type: dump.memory_ranges
+    params:
+      ranges: *state_ranges
+
+  - id: new_and_clear_screen
+    type: input.sequence
+    params:
+      keys: [78,69,87,13,80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: list_after_new
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_new_empty
+    type: assert.screen_not_contains
+    params:
+      not_contains: "10 PRINT"
+  - id: exit_after_new
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_new_exit
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: resume_after_new
+    type: input.sequence
+    params:
+      keys: [13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: wait_prompt_after_new_resume
+    type: screen.wait_contains
+    params:
+      text: "READY."
+      wait_timeout_s: 30
+  - id: clear_and_list_after_new_resume
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_new_still_empty
+    type: assert.screen_not_contains
+    params:
+      not_contains: "10 PRINT"
+
+  - id: type_variable_program
+    type: input.sequence
+    params:
+      keys: [49,48,32,65,61,52,50,13,50,48,32,66,36,61,34,89,79,34,13,51,48,32,68,73,77,32,88,40,50,41,13,52,48,32,88,40,49,41,61,55,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: print_variables_before_exit
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,65,13,80,82,73,78,84,32,66,36,13,80,82,73,78,84,32,88,40,49,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_variables_before_exit
+    type: assert.screen
+    params:
+      contains: "YO"
+  - id: exit_variables
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_variables_exit
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: resume_variables
+    type: input.sequence
+    params:
+      keys: [13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: wait_prompt_after_variables_resume
+    type: screen.wait_contains
+    params:
+      text: "READY."
+      wait_timeout_s: 30
+  - id: print_variables_after_resume
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,65,13,80,82,73,78,84,32,66,36,13,80,82,73,78,84,32,88,40,49,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_string_after_resume
+    type: assert.screen
+    params:
+      contains: "YO"
+  - id: assert_numeric_after_resume
+    type: assert.screen
+    params:
+      contains: "42"
+  - id: clr_then_list
+    type: input.sequence
+    params:
+      keys: [67,76,82,13,80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_clr_keeps_program
+    type: assert.screen
+    params:
+      contains: "40 X"
+
+  - id: new_rb_program
+    type: input.sequence
+    params:
+      keys: [78,69,87,13,49,48,32,80,82,73,78,84,32,34,65,34,13,50,48,32,65,37,61,90,65,68,68,49,54,40,53,44,49,48,41,13,51,48,32,80,82,73,78,84,32,34,83,65,68,68,34,59,65,37,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: assert_rb_program_output
+    type: assert.screen
+    params:
+      contains: "SADD 15"
+  - id: exit_rb_program
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_rb_exit
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: resume_rb_program
+    type: input.sequence
+    params:
+      keys: [13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: wait_prompt_after_rb_resume
+    type: screen.wait_contains
+    params:
+      text: "READY."
+      wait_timeout_s: 30
+  - id: list_rb_after_resume
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_rb_line_after_resume
+    type: assert.screen
+    params:
+      contains: "20 A%=ZADD16"
+  - id: dump_final_state
+    type: dump.memory_ranges
+    params:
+      ranges: *state_ranges

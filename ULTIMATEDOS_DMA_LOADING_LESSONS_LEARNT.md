@@ -731,3 +731,81 @@ Verification on C64U:
   `LST "RSHELP"`, another `VER`, and `CAT "RSHELP" . TOP 1`; the decoded
   capture showed `NAME:RSHELP,BLOCKS:5,TYPE:SEQ` and `VERSION 0.2`, so the
   previous ReadyShell overlay preload hang was not reproduced in this build.
+
+## 2026-06-29 Launcher-Shape UCI Timing Probe
+
+- The timing probe must use the launcher loader shape, not the older standalone
+  named `FILE_STAT` probe. The working shape is still: detect UCI, identify,
+  drive-info, optional root/CD/mount/CD-image, open filename inside the mounted
+  image, `FILE_INFO` on the open handle, read the two-byte PRG load header,
+  seek to payload offset 2, `LOAD_REU`, close.
+- For per-stage timing, the probe now generates an instrumented copy of
+  `src/apps/launcher/launcher_uci_dma.s` at build time. The product launcher
+  source is not modified. The instrumented wrappers preserve the underlying
+  carry result with `php`/`plp`, so the launcher loader control flow remains
+  equivalent while accumulating stage timings in the probe result block.
+- Use the low/mid jiffy bytes (`$A2/$A1`) for timing. Reading `$A0/$A1`
+  produced coarse `$0100`-tick steps and made stage timings look falsely
+  quantized.
+- C64U run `USB1/UTV201111.D81` completed 29/29 launcher-style DMA loads:
+  `DONE:01`, `FAIL:00`, `SUCCESS:1D`, `loaded_kb=611`, `total_ms=83167`.
+- Stage timing for the 29 loads, including the first-load mount path and
+  subsequent mounted-image opens:
+
+```text
+load_reu       11.883s  14.3%
+open           10.733s  12.9%
+file_info      10.583s  12.7%
+identify        9.717s  11.7%
+read_header     9.683s  11.6%
+drvinfo         9.667s  11.6%
+close           9.650s  11.6%
+seek_payload    9.650s  11.6%
+mount           0.533s   0.6%
+cd_image        0.367s   0.4%
+cd_dir          0.350s   0.4%
+cd_root         0.333s   0.4%
+detect          0.000s   0.0%
+```
+
+- Interpretation: fixed per-file UCI command overhead dominates. The actual
+  `LOAD_REU` transfer was only about 14% of measured loader time for this
+  workload. The currently expensive per-file steps are open, file-info,
+  read-header, seek, close, and the repeated identify/drive-info calls. The
+  one-time path/mount/CD work is tiny after the launcher keeps the image
+  mounted for the session.
+
+## 2026-06-29 Fast-Raw Timing Variant
+
+- A second probe variant tested the aggressive hot path: after the image is
+  mounted, skip repeated detect/identify/drive-info and skip per-file
+  `FILE_INFO`, PRG header read, and seek. Each file uses the known PRG file
+  length from the build side, then does `OPEN`, one `LOAD_REU` from file offset
+  0, and `CLOSE`. This deliberately loads the two-byte PRG address header into
+  REU too; it is a timing experiment, not a valid launcher contract yet.
+- C64U run `USB1/UTF201821.D81` completed 29/29 fast-raw DMA loads:
+  `DONE:01`, `FAIL:00`, `SUCCESS:1D`, `loaded_kb=607`, `total_ms=33300`.
+- Fast-raw stage timing for the 29 loads:
+
+```text
+load_reu       11.483s  34.5%
+open           10.233s  30.7%
+close           9.367s  28.1%
+mount           0.517s   1.6%
+cd_image        0.367s   1.1%
+cd_dir          0.350s   1.1%
+drvinfo         0.333s   1.0%
+cd_root         0.317s   1.0%
+identify        0.317s   1.0%
+detect          0.000s   0.0%
+file_info       0.000s   0.0%
+read_header     0.000s   0.0%
+seek_payload    0.000s   0.0%
+```
+
+- Interpretation: `LOAD_REU` is not a standalone filename-based operation in
+  the command shape we are using; the file still has to be selected/opened
+  first. So the practical minimal per-file hot path is `OPEN + LOAD_REU +
+  CLOSE`, not just `LOAD_REU`. This cut total measured load time from 83.167s
+  to 33.300s for the same 29-item workload, about a 2.5x improvement, before
+  any future contract change to handle the two-byte PRG header correctly.

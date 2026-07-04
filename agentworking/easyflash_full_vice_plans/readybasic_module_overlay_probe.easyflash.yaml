@@ -1,0 +1,198 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_module_overlay_probe_easyflash
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 2
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 180
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    cart_crt: "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-easyflash/readyos_easyflash.crt"
+    autostart_enabled: false
+    disk8: "/Users/karlprosserpp/dev/c64projects/readyosprecog/agentworking/easyflash_full_vice_plans/readyos_data.easyflash-vice.d64"
+    drive8_enabled: true
+    drive8_type: 1541
+    drive9_enabled: false
+    true_drive: true
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: easyflash_wait_launcher
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      pre_delay_s: 4
+      poll_s: 0.5
+      wait_timeout_s: 420
+      capture_label: easyflash_readybasic_launcher
+  - id: easyflash_start_readybasic
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,13]
+      inter_key_delay_s: 0.08
+      post_delay_s: 2.5
+  - id: wait_readybasic_prompt
+    type: screen.wait_contains
+    params:
+      text: "READY."
+      wait_timeout_s: 180
+      capture_label: readybasic_module_overlay_prompt
+  - id: builtin_overlay_bank_probe
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,77,69,77,65,86,76,40,41,13,80,82,73,78,84,32,34,83,76,79,84,83,34,59,90,83,76,79,84,48,40,41,59,34,47,34,59,90,83,76,79,84,49,40,41,59,34,47,34,59,90,83,76,79,84,50,40,41,13,80,82,73,78,84,32,34,83,80,65,78,34,59,90,83,80,65,78,40,41,13,80,82,73,78,84,32,34,79,86,76,34,59,90,79,86,76,49,40,41,59,34,47,34,59,90,79,86,76,50,40,41,13,80,82,73,78,84,32,34,67,80,89,34,59,90,67,80,89,82,83,84,40,41,59,34,47,34,59,90,67,79,80,89,40,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.5
+  - id: capture_builtin_overlay_bank_probe
+    type: screen.capture
+    params:
+      label: after_builtin_overlay_bank_probe
+  - id: assert_builtin_slots
+    type: assert.screen
+    params:
+      contains: "SLOTS 30 / 31 / 32"
+  - id: assert_builtin_span
+    type: assert.screen
+    params:
+      contains: "SPAN 40"
+  - id: assert_builtin_overlays
+    type: assert.screen
+    params:
+      contains: "OVL 51 / 52"
+  - id: rbm_sample1_2_probe
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,80,82,73,78,84,32,34,76,68,49,34,59,90,77,79,68,76,68,40,34,82,66,77,46,83,65,77,80,76,69,49,34,41,13,80,82,73,78,84,32,34,68,77,49,34,59,90,68,77,49,40,41,13,80,82,73,78,84,32,34,76,68,50,34,59,90,77,79,68,76,68,40,34,82,66,77,46,83,65,77,80,76,69,50,34,41,13,80,82,73,78,84,32,34,68,77,50,34,59,90,68,77,50,83,40,41,13,80,82,73,78,84,32,34,68,79,86,34,59,90,68,79,86,49,40,41,59,34,47,34,59,90,68,79,86,50,40,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.5
+  - id: assert_ld1
+    type: assert.screen
+    params:
+      contains: "LD1 1"
+  - id: assert_dm1
+    type: assert.screen
+    params:
+      contains: "DM1 61"
+  - id: assert_ld2
+    type: assert.screen
+    params:
+      contains: "LD2 3"
+  - id: assert_dm2
+    type: assert.screen
+    params:
+      contains: "DM2 74"
+  - id: assert_dov
+    type: assert.screen
+    params:
+      contains: "DOV 72 / 73"
+  - id: rbm_sample3_load
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,80,82,73,78,84,32,34,76,68,51,34,59,90,77,79,68,76,68,40,34,82,66,77,46,83,65,77,80,76,69,51,34,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.5
+  - id: capture_rbm_sample3_load
+    type: screen.capture
+    params:
+      label: after_rbm_sample3_load
+  - id: assert_ld3
+    type: assert.screen
+    params:
+      contains: "LD3 30"
+  - id: rbm_sample3_probe
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,69,77,32,82,66,77,51,32,70,73,82,83,84,32,67,65,76,76,83,58,32,69,65,67,72,32,79,86,69,82,76,65,89,32,83,84,65,84,69,32,83,84,65,82,84,83,32,65,84,32,90,69,82,79,32,65,70,84,69,82,32,76,79,65,68,13,80,82,73,78,84,32,34,77,51,65,34,59,90,83,65,65,40,41,59,34,47,34,59,90,83,69,66,40,41,13,80,82,73,78,84,32,34,77,51,66,34,59,90,84,65,65,40,41,59,34,47,34,59,90,84,69,66,40,41,13,80,82,73,78,84,32,34,77,51,67,34,59,90,85,65,65,40,41,59,34,47,34,59,90,85,69,66,40,41,13,77,69,77,65,86,76,40,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_rbm_sample3
+    type: screen.capture
+    params:
+      label: after_rbm_sample3
+  - id: assert_m3a
+    type: assert.screen
+    params:
+      contains: "M3A 4 / 13"
+  - id: assert_m3b
+    type: assert.screen
+    params:
+      contains: "M3B 54 / 63"
+  - id: assert_m3c
+    type: assert.screen
+    params:
+      contains: "M3C 104 / 113"
+  - id: assert_free_same
+    type: assert.screen
+    params:
+      contains: "31113"
+  - id: rbm_sample3_copy_same_overlay_probe
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,69,77,32,83,65,77,69,32,79,86,69,82,76,65,89,58,32,90,83,65,65,32,76,79,65,68,83,44,32,90,83,65,66,32,82,69,85,83,69,83,32,82,69,83,73,68,69,78,84,32,73,77,65,71,69,13,80,82,73,78,84,32,34,82,49,34,59,90,67,80,89,82,83,84,40,41,13,65,61,90,83,65,65,40,41,13,66,61,90,83,65,66,40,41,13,80,82,73,78,84,32,34,83,49,34,59,65,59,34,47,34,59,66,13,80,82,73,78,84,32,34,67,49,34,59,90,67,79,80,89,40,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.5
+  - id: capture_rbm_sample3_copy_same_overlay
+    type: screen.capture
+    params:
+      label: after_rbm_sample3_copy_same_overlay
+  - id: assert_copy_same_overlay_no_reload
+    type: assert.screen
+    params:
+      contains: "C1 2"
+  - id: assert_state_same_overlay_kept
+    type: assert.screen
+    params:
+      contains: "S1 4 / 6"
+  - id: rbm_sample3_copy_different_overlay_probe
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,69,77,32,68,73,70,70,69,82,69,78,84,32,79,86,69,82,76,65,89,58,32,90,83,66,65,32,82,69,80,76,65,67,69,83,32,90,83,65,65,32,83,76,79,84,32,73,77,65,71,69,13,80,82,73,78,84,32,34,82,50,34,59,90,67,80,89,82,83,84,40,41,13,65,61,90,83,65,65,40,41,13,66,61,90,83,66,65,40,41,13,67,61,90,83,65,65,40,41,13,80,82,73,78,84,32,34,83,50,34,59,65,59,34,47,34,59,66,59,34,47,34,59,67,13,80,82,73,78,84,32,34,67,50,34,59,90,67,79,80,89,40,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.5
+  - id: capture_rbm_sample3_copy_different_overlay
+    type: screen.capture
+    params:
+      label: after_rbm_sample3_copy_different_overlay
+  - id: assert_copy_different_overlay_reload
+    type: assert.screen
+    params:
+      contains: "C2 4"
+  - id: assert_state_different_overlay_reloaded
+    type: assert.screen
+    params:
+      contains: "S2 4 / 6 / 4"
+  - id: rbm_sample3_copy_different_submodule_probe
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,69,77,32,68,73,70,70,69,82,69,78,84,32,83,85,66,77,79,68,85,76,69,58,32,90,84,65,65,32,82,69,80,76,65,67,69,83,32,90,83,65,65,32,83,76,79,84,32,73,77,65,71,69,13,80,82,73,78,84,32,34,82,51,34,59,90,67,80,89,82,83,84,40,41,13,65,61,90,83,65,65,40,41,13,66,61,90,84,65,65,40,41,13,67,61,90,83,65,65,40,41,13,80,82,73,78,84,32,34,83,51,34,59,65,59,34,47,34,59,66,59,34,47,34,59,67,13,80,82,73,78,84,32,34,67,51,34,59,90,67,79,80,89,40,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.5
+  - id: capture_rbm_sample3_copy_different_submodule
+    type: screen.capture
+    params:
+      label: after_rbm_sample3_copy_different_submodule
+  - id: assert_copy_different_submodule_reload
+    type: assert.screen
+    params:
+      contains: "C3 4"
+  - id: assert_state_different_submodule_reloaded
+    type: assert.screen
+    params:
+      contains: "S3 4 / 54 / 4"

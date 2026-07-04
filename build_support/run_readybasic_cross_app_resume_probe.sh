@@ -88,6 +88,11 @@ steps:
       text: "ready."
       wait_timeout_s: 180
       capture_label: readybasic_prompt
+  - id: clear_keyboard_buffer_before_program_entry
+    type: memory.write
+    params:
+      start: 198
+      bytes_hex: "00"
   - id: build_program_lines
     type: input.sequence
     params:

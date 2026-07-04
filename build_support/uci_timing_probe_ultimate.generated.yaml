@@ -1,0 +1,88 @@
+version: 1
+kind: ultimate_task_plan
+plan_id: uci_timing_probe
+run_mode: ultimate64
+global_defaults:
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 500
+    jitter: false
+  timeouts:
+    launch_s: 60
+    step_s: 360
+    read_s: 60
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: true
+  ultimate:
+    host: 10.0.0.79
+    password: null
+    ftp_user: anonymous
+    ftp_password: anonymous@
+    remote_root: USB1
+    disk8: /Users/karlprosserpp/dev/c64projects/readyosprecog/build/uci_timing/readyos.d81
+    disk9: null
+    autostart_prg: null
+    drive_a_bus_id: 8
+    drive_b_bus_id: 11
+    drive_a_type: '1581'
+    drive_b_type: '1581'
+    drive_a_enabled: true
+    drive_b_enabled: false
+    mount_mode: readwrite
+    boot_drive: 8
+    capture_video_stream: true
+    stream_port: 11000
+    stream_timeout_s: 4.0
+    default_speed_mhz: 1
+    warp_equivalent_mhz: 8
+steps:
+- id: launch_probe
+  type: ultimate.launch
+  params:
+    boot_mode: prg
+    prg: /Users/karlprosserpp/dev/c64projects/readyosprecog/build/uci_timing/uci_timing_probe.prg
+    drives:
+    - slot: a
+      bus_id: 8
+      drive_type: '1581'
+      enabled: true
+      disk: /Users/karlprosserpp/dev/c64projects/readyosprecog/build/uci_timing/readyos.d81
+      remote_disk: USB1/readyos.d81
+      mount_mode: readwrite
+    - slot: b
+      bus_id: 11
+      drive_type: '1581'
+      enabled: false
+      disk: /Users/karlprosserpp/dev/c64projects/readyosprecog/build/uci_timing/readyos.d81
+      remote_disk: USB1/readyos.d81
+      mount_mode: readwrite
+    boot_drive: 8
+- id: wait_probe_started
+  type: screen.wait_contains
+  params:
+    text: "uci timing probe"
+    wait_timeout_s: 360
+    capture_label: uci_timing_started
+- id: wait_probe_done
+  type: screen.wait_contains
+  criticality: observe
+  params:
+    text: "PROBE DONE"
+    wait_timeout_s: 420
+    capture_label: uci_timing_done
+- id: capture_final
+  type: screen.capture
+  criticality: observe
+  params:
+    label: uci_timing_final
+    note: Final UCI timing probe screen
+    capture_state: true
+- id: dump_results
+  type: dump.memory_ranges
+  criticality: observe
+  params:
+    ranges:
+    - { label: uci_timing_results_3000, start: 0x3000, end: 0x306F }
+    - { label: screen_0400, start: 0x0400, end: 0x07E7 }

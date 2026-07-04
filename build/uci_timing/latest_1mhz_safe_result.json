@@ -1,0 +1,68 @@
+{
+  "avg_header_tax_ms": 0,
+  "dir_probe": {
+    "data_len": 0,
+    "data_prefix_hex": "00000000",
+    "status_len": 0,
+    "status_prefix": ""
+  },
+  "done": 1,
+  "dump": "/private/tmp/uci_timing_probe_c64u_rest_capture/probe_results_3000.bin",
+  "failures": 0,
+  "first_failure": {
+    "debug_status0": 0,
+    "debug_status1": 0,
+    "item": 0,
+    "launcher_error": 0,
+    "name": ""
+  },
+  "header_tax_ms": 0,
+  "items": 29,
+  "loaded_kb": 611,
+  "max_load_ms": 4417,
+  "max_load_name": "editor",
+  "phases_ms": {
+    "first_load": 4417,
+    "subsequent_loads": 79050
+  },
+  "raw_phase_ticks": {
+    "first_load": 265,
+    "subsequent_loads": 4743
+  },
+  "raw_stage_ticks": {
+    "cd_dir": 21,
+    "cd_image": 23,
+    "cd_root": 20,
+    "close": 580,
+    "detect": 0,
+    "drvinfo": 579,
+    "file_info": 634,
+    "identify": 589,
+    "load_reu": 724,
+    "mount": 32,
+    "open": 640,
+    "read_header": 582,
+    "seek_payload": 579
+  },
+  "raw_subsequent_stage_ticks": null,
+  "raw_total_ticks": 5008,
+  "stages_ms": {
+    "cd_dir": 350,
+    "cd_image": 383,
+    "cd_root": 333,
+    "close": 9667,
+    "detect": 0,
+    "drvinfo": 9650,
+    "file_info": 10567,
+    "identify": 9817,
+    "load_reu": 12067,
+    "mount": 533,
+    "open": 10667,
+    "read_header": 9700,
+    "seek_payload": 9650
+  },
+  "subsequent_stages_ms": null,
+  "successes": 29,
+  "total_ms": 83467,
+  "version": 4
+}

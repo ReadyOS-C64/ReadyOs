@@ -328,6 +328,7 @@ extern unsigned char launcher_uci_dma_assume_mounted;
 static char launcher_c64u_image_path[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
 static const char launcher_dma_root_dir[] = "/";
 static unsigned char launcher_dma_available;
+static unsigned char launcher_dma_probe_ok;
 static unsigned char launcher_dma_used;
 static unsigned char launcher_dma_image_ready;
 static volatile unsigned char launcher_dma_breadcrumb;
@@ -2404,9 +2405,10 @@ static unsigned char launcher_dma_hex(unsigned char value) {
                                        : (1u + (value - 10u)));
 }
 
-#define launcher_dma_check_available() (launcher_dma_available)
+#define launcher_dma_check_available() (launcher_dma_available && launcher_dma_probe_ok)
 
 static void launcher_dma_reset_runtime_state(void) {
+    launcher_dma_probe_ok = 0u;
     launcher_dma_used = 0u;
     launcher_dma_image_ready = 0u;
     launcher_uci_dma_assume_mounted = 0u;
@@ -2426,6 +2428,7 @@ static void launcher_dma_probe_after_draw(void) {
     }
     if (launcher_uci_dma_detect()) {
         launcher_dma_available = 1u;
+        launcher_dma_probe_ok = 1u;
         if (launcher_dma_breadcrumb == LAUNCHER_DMA_ERR_NO_UCI) {
             launcher_dma_breadcrumb = 0u;
         }
@@ -2570,7 +2573,9 @@ static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
                                         READYSHELL_OVERLAY_LOAD_ADDR)) {
             return 1u;
         }
-        return 0u;
+        /* DMA is an accelerator only. If UCI is absent in VICE, or the
+         * Ultimate path is not usable, fall through to the normal chunked
+         * loader. */
     }
 #endif
 
@@ -2783,7 +2788,9 @@ static unsigned char launcher_prepare_app_resources(unsigned char index) {
 #endif
     if (app_resource_loaded[index]) {
         if (app_resource_sets[index] == APP_RESOURCE_READYSHELL_OVL) {
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH
             launcher_mark_readyshell_banks(index);
+#endif
             *READYSHELL_STATE_BANK_CACHE = app_rs_bank4[index];
             return launcher_restore_readyshell_meta(index);
         } else if (app_resource_sets[index] == APP_RESOURCE_READYBASIC_CORE) {
@@ -2937,7 +2944,8 @@ static unsigned int load_app_to_reu(unsigned char index) {
                 launcher_mirror_reu_control();
                 return file_size;
             }
-            return 0;
+            /* DMA is optional. On VICE and non-Ultimate hardware this must
+             * fall back to the existing shim/KERNAL preload path. */
         }
     }
 #endif
