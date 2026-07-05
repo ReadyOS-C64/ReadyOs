@@ -3,10 +3,10 @@
   "display_name": "precog (d81)",
   "kind": "d81",
   "variant_boot_name": "precog d81",
-  "version_text": "0.2.5W",
+  "version_text": "0.2.5E",
   "reu_size_kb": 16384,
-  "catalog_source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/cfg/profiles/precog-d81.ini",
-  "autostart_prg": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5w-d81-preboot.prg",
+  "catalog_source": "build_support/readyshell_cross_app_resume_c64u.generated.ini",
+  "autostart_prg": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5e-d81-preboot.prg",
   "autostart_disk_prg": "preboot.prg",
   "preboot_mode": "boot",
   "disks": [
@@ -16,7 +16,7 @@
       "image_type": "d81",
       "vice_drive_type": "1581",
       "true_drive": true,
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5w-d81.d81"
+      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5e-d81.d81"
     }
   ],
   "boot_prgs": [
@@ -24,13 +24,13 @@
       "stem": "preboot",
       "disk_name": "preboot",
       "source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/bin/preboot.prg",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5w-d81-preboot.prg"
+      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5e-d81-preboot.prg"
     },
     {
       "stem": "boot",
       "disk_name": "boot",
       "source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/bin/boot.prg",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5w-d81-boot.prg"
+      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5e-d81-boot.prg"
     }
   ],
   "apps": [

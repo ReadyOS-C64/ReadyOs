@@ -20,7 +20,7 @@ global_defaults:
     password: null
     ftp_user: anonymous
     ftp_password: anonymous@
-    remote_root: USB1/automation/vice_tasks_dotnet
+    remote_root: USB1
     disk8: ""
     disk9: null
     autostart_prg: null
@@ -76,7 +76,7 @@ steps:
       text: "READY OS"
       wait_timeout_s: 360
       poll_s: 1.0
-      pre_delay_s: 120
+      pre_delay_s: 90
       capture_label: launcher_initial_c64u
   - id: select_editor_from_launcher_initial
     type: input.sequence
@@ -84,13 +84,20 @@ steps:
       keys: [19,17,17,13]
       inter_key_delay_s: 0.25
       post_delay_s: 2.0
+  - id: wait_editor_dma_progress
+    type: screen.wait_contains
+    params:
+      text: "DMA LOADING 1/1"
+      wait_timeout_s: 90
+      poll_s: 0.25
+      capture_label: editor_dma_progress_c64u
   - id: wait_editor_initial
     type: screen.wait_contains
     params:
       text: "F1:CPY"
       wait_timeout_s: 300
       poll_s: 1.0
-      pre_delay_s: 90
+      pre_delay_s: 10
       capture_label: editor_initial_c64u
   - id: editor_touch_1
     type: input.sequence
@@ -123,7 +130,7 @@ steps:
       text: "ready."
       wait_timeout_s: 120
       poll_s: 1.0
-      pre_delay_s: 90
+      pre_delay_s: 10
       capture_label: readybasic_from_editor_1
   - id: readybasic_touch_1
     type: input.sequence
@@ -160,13 +167,20 @@ steps:
       keys: [13]
       inter_key_delay_s: 0.25
       post_delay_s: 2.0
+  - id: wait_readyshell_dma_progress_1
+    type: screen.wait_contains
+    params:
+      text: "DMA LOADING"
+      wait_timeout_s: 120
+      poll_s: 0.25
+      capture_label: readyshell_dma_progress_1
   - id: wait_readyshell_loaded_after_readybasic_1
     type: screen.wait_contains
     params:
       text: "run: cat"
       wait_timeout_s: 180
       poll_s: 1.0
-      pre_delay_s: 90
+      pre_delay_s: 10
       capture_label: readyshell_after_readybasic_1
   - id: readyshell_ver_after_readybasic_1
     type: input.sequence

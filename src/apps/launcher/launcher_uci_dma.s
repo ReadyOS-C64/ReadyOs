@@ -688,7 +688,7 @@ debug_stage:
         ; C64U-proven UCI transaction shape. Replacing the stage writes with
         ; private BSS stores made the same logical loader fall back on real
         ; hardware, so do not "clean this up" without retesting on C64U.
-        sta $052C
+        sta $07AE
         rts
 
 sync_interface:
@@ -1103,14 +1103,7 @@ quiesce_done:
 
 _launcher_uci_dma_clear_stage:
         lda #' '
-        sta $052C
-        sta $052D
-        sta $052E
-        sta $052F
-        sta $0530
-        sta $0531
-        sta $0532
-        sta $0533
+        sta $07AE
         rts
 
         .segment "RODATA"

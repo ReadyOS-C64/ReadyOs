@@ -809,3 +809,81 @@ seek_payload    0.000s   0.0%
   CLOSE`, not just `LOAD_REU`. This cut total measured load time from 83.167s
   to 33.300s for the same 29-item workload, about a 2.5x improvement, before
   any future contract change to handle the two-byte PRG header correctly.
+
+## 2026-07-04 Launcher UI And C64U Verification
+
+- Current deployed manual-test artifact: `USB1/readyos-v0.2.5e-d81.d81`.
+  The release-side config for this build uses
+  `c64u_image_path=/usb1/readyos-v0.2.5e-d81.d81`, so the launcher and the
+  automation are testing the same fresh-named D81 rather than a reused
+  `readyos.d81` mount.
+- The C64U automation deletes the same remote filename before upload, uploads
+  by FTP, verifies the FTP listing, sets Drive A to 1581, clears all 256 REU
+  banks with a tiny REST-run PRG, resets before mount, mounts the D81 as drive
+  A with `type=d81`, resets again, and only then starts ReadyOS.
+- The boot path used by the shell harness is not an autoload configuration
+  path. After the hard reset it reaches BASIC and types `LOAD"BOOT",8` then
+  `RUN`; app loading is triggered later by launcher UI actions.
+- Do not poll REST screen/RAM during the active booter/launcher disk load. The
+  harness waits through the boot window first, then captures screens. During
+  app DMA loads it is safe to capture screen RAM because the C64 side is showing
+  the launcher loading UI.
+- The visible UCI breadcrumb was reduced to one stage digit on the bottom
+  loading line. The working UI form is now:
+  `DMA LOADING  1/1   -  9` for simple apps and
+  `DMA LOADING  6/10  -  1` style progress for ReadyShell main plus overlays.
+  The old second debug digit in the middle of the screen was removed.
+- The bottom loading line explicitly says `DMA LOADING` or `DISK LOADING`.
+  A hardware regression run should search for `DISK LOADING` in captured
+  screens/logs when DMA is expected; none appeared in the verified `0.2.5E`
+  runs below.
+
+Measured launcher map for the verified `0.2.5E` build:
+
+```text
+LAUNCHER_DMA_LOAD=1 verified build:
+  CODE   $1033..$B482 size $A450
+  RODATA $B483..$BA6F
+  DATA   $BA70..$BAA1
+  INIT   $BAA2..$BABD
+  ONCE   $BABE..$BAE3
+  BSS    $BAE4..$C514 size $0A31
+```
+
+Verification on C64U, all from Terminal-owned/background shells:
+
+- Static checks passed:
+  `python3 build_support/verify_launcher_dma_gate.py`,
+  `python3 build_support/verify_memory_map.py`,
+  `python3 build_support/verify_resume_contract.py`,
+  and `bash -n build_support/run_readyos_boot_c64u_rest.sh`.
+- Enter on Editor passed:
+  `READYOS_EDITOR_DIRECT_DMA_RETURN_PASS`. Captures showed
+  `DMA LOADING  1/1   -  2`, then `- 7`, then `- 9`, Editor opened, STOP
+  returned to the launcher, and the launcher showed `DMA:ON`.
+- F3/load-selected Editor passed:
+  `READYOS_EDITOR_LOAD_SELECTED_PASS`. The load-selected screen showed
+  `DMA LOADING  1/1   -  9`, then `PRESS ANY KEY`; the launcher returned with
+  `DMA:ON`, and Enter opened Editor from REU.
+- Load-all plus ReadyShell overlays passed:
+  `READYOS_LOADALL_READYSHELL_OVERLAY_PASS`. Captures showed ReadyShell
+  overlay progress such as `DMA LOADING  6/10`, `7/10`, `8/10`, `9/10`, and
+  `10/10`, then later simple apps as `1/1`. ReadyShell reached
+  `READYOS READYSHELL` / `LOADING DONE` and passed `VER`, `LST "RSHELP"`,
+  `CAT "RSHELP" . TOP 1`, and another `VER`.
+- Browse/app-manifest load passed:
+  `READYOS_MANIFEST_SIDETRIS_PASS`. The manifest browser selected Sidetris,
+  the load screen showed `DMA LOADING  1/1   -  9`, the launcher returned with
+  `DMA:ON`, and Sidetris launched.
+- ReadyBASIC F3/load-selected passed:
+  `READYOS_READYBASIC_LOAD_SELECTED_PASS`. The load-selected screen showed
+  `DMA LOADING  1/1   -  9`, the launcher returned with `DMA:ON`, and
+  ReadyBASIC reached its `READY.` prompt.
+
+Current automation caveat:
+
+- The harness can briefly look like it is still at BASIC after `LOAD"BOOT",8`
+  because it intentionally sleeps through the boot window before capturing the
+  launcher. Do not classify that as a launcher crash unless the later
+  `launcher_wait` capture fails and the final screen/memory dump also show no
+  ReadyOS progress.

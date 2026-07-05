@@ -13,6 +13,8 @@ tmp_dir="${out_dir}/tmp"
 connect_wait_s="${C64U_CONNECT_WAIT_S:-300}"
 skip_upload="${C64U_SKIP_UPLOAD:-0}"
 skip_config="${C64U_SKIP_CONFIG:-0}"
+clear_reu="${READYOS_CLEAR_REU:-0}"
+clear_reu_banks="${READYOS_CLEAR_REU_BANKS:-256}"
 mkdir -p "$out_dir" "$tmp_dir"
 log="${out_dir}/run.log"
 : > "$log"
@@ -53,6 +55,70 @@ wait_for_ftp() {
   now="$(date)"
   echo "FTP not reachable after ${connect_wait_s}s at ${now}" >> "$log"
   return 1
+}
+
+delete_remote_image() {
+  echo "delete remote /${remote}" >> "$log"
+  curl --silent --show-error --max-time 20 \
+    -Q "DELE /${remote}" "ftp://${host}/" --user anonymous:anonymous@ \
+    >> "$log" 2>&1 || true
+}
+
+verify_remote_image() {
+  run curl --fail --silent --show-error --max-time 20 \
+    "ftp://${host}/${remote_root}/" --user anonymous:anonymous@ \
+    -o "${tmp_dir}/ftp-list-after-upload.txt"
+  if ! grep -F -i -q "$remote_name" "${tmp_dir}/ftp-list-after-upload.txt"; then
+    echo "remote image not found after upload: ${remote_name}" >> "$log"
+    return 1
+  fi
+}
+
+reset_machine() {
+  local label="$1"
+  echo "reset ${label}" >> "$log"
+  run curl --fail --silent --show-error --max-time 10 -X PUT "${api}/machine:reset"
+  sleep "${READYOS_RESET_WAIT_S:-3}"
+  run curl --fail --silent --show-error --max-time 10 -X PUT "${api}/machine:resume"
+  sleep "${READYOS_RESUME_WAIT_S:-7}"
+}
+
+clear_reu_data() {
+  python3 - "${tmp_dir}/clear_reu.prg" "$clear_reu_banks" <<'PY'
+import pathlib
+import sys
+
+banks = int(sys.argv[2], 0)
+if not 1 <= banks <= 256:
+    raise SystemExit("READYOS_CLEAR_REU_BANKS must be 1..256")
+
+prg = bytearray([
+    0x01, 0x08, 0x0B, 0x08, 0x0A, 0x00, 0x9E, 0x32,
+    0x30, 0x36, 0x31, 0x00, 0x00, 0x00, 0x78, 0xA9,
+    0x00, 0x8D, 0x0A, 0xDF, 0xA2, 0x20, 0x8E, 0x1E,
+    0x08, 0xA0, 0x00, 0xA9, 0x00, 0x99, 0x00, 0x20,
+    0xC8, 0xD0, 0xFA, 0xE8, 0xE0, 0x30, 0xD0, 0xEE,
+    0xA9, 0x00, 0x8D, 0x79, 0x08, 0xAD, 0x79, 0x08,
+    0x8D, 0x06, 0xDF, 0xA9, 0x00, 0x8D, 0x7A, 0x08,
+    0xA9, 0x00, 0x8D, 0x02, 0xDF, 0xA9, 0x20, 0x8D,
+    0x03, 0xDF, 0xA9, 0x00, 0x8D, 0x04, 0xDF, 0xAD,
+    0x7A, 0x08, 0x8D, 0x05, 0xDF, 0xAD, 0x79, 0x08,
+    0x8D, 0x06, 0xDF, 0xA9, 0x00, 0x8D, 0x07, 0xDF,
+    0xA9, 0x10, 0x8D, 0x08, 0xDF, 0xA9, 0x90, 0x8D,
+    0x01, 0xDF, 0x18, 0xAD, 0x7A, 0x08, 0x69, 0x10,
+    0x8D, 0x7A, 0x08, 0xD0, 0xCB, 0xEE, 0x79, 0x08,
+    0xAD, 0x79, 0x08, 0xCD, 0x7B, 0x08, 0xD0, 0xB5,
+    0x58, 0x60, 0x00, 0x00, 0x00,
+])
+prg[-1] = banks & 0xFF
+pathlib.Path(sys.argv[1]).write_bytes(prg)
+PY
+  echo "clear REU banks=${clear_reu_banks}" >> "$log"
+  run curl --fail --silent --show-error --max-time 30 \
+    -H "Content-Type: application/octet-stream" \
+    --data-binary "@${tmp_dir}/clear_reu.prg" \
+    "${api}/runners:run_prg"
+  sleep "${READYOS_CLEAR_REU_WAIT_S:-20}"
 }
 
 post_bytes() {
@@ -254,12 +320,15 @@ echo "host=${host}" >> "$log"
 echo "connect_wait_s=${connect_wait_s}" >> "$log"
 echo "skip_upload=${skip_upload}" >> "$log"
 echo "skip_config=${skip_config}" >> "$log"
+echo "clear_reu=${clear_reu}" >> "$log"
 if [[ "$skip_upload" == "1" ]]; then
   wait_for_http
 else
   wait_for_ftp
+  delete_remote_image
   run curl --fail --silent --show-error --ftp-create-dirs \
     -T "$image" "ftp://${host}/${remote}" --user anonymous:anonymous@
+  verify_remote_image
   wait_for_http
 fi
 
@@ -273,12 +342,14 @@ JSON
     "${api}/configs"
 fi
 
-run curl --fail --silent --show-error --max-time 10 -X PUT "${api}/machine:reset"
-sleep 2
+if [[ "$clear_reu" == "1" ]]; then
+  clear_reu_data
+fi
+
+reset_machine "pre-mount"
 run curl --fail --silent --show-error --max-time 10 \
   -X PUT "${api}/drives/a:mount?image=%2F${remote_root}%2F${remote_name}&type=d81&mode=readwrite"
-run curl --fail --silent --show-error --max-time 10 -X PUT "${api}/machine:reset"
-sleep 2
+reset_machine "post-mount"
 wait_for_screen "basic_after_reset" "READY" 30
 
 type_text $'LOAD"BOOT",8\r'
@@ -286,6 +357,30 @@ sleep 45
 capture_screen "after_boot_load"
 type_text $'RUN\r'
 sleep "${READYOS_BOOT_INITIAL_WAIT_S:-90}"
+
+if [[ "${READYOS_BOOT_ACTION:-}" == "autorun-editor" ]]; then
+  if ! wait_for_screen "editor_wait" "EDITOR:" 240; then
+    capture_screen "editor_failure"
+    echo "READYOS_AUTORUN_EDITOR_FAIL" | tee "${out_dir}/status"
+    exit 1
+  fi
+  type_key 2
+  if ! wait_for_screen "launcher_after_editor_wait" "READY OS" 120; then
+    capture_screen "launcher_after_editor_failure"
+    echo "READYOS_AUTORUN_EDITOR_RETURN_FAIL" | tee "${out_dir}/status"
+    exit 1
+  fi
+  if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+    if ! wait_for_screen "dma_on_wait" "DMA:ON" 60; then
+      capture_screen "dma_on_failure"
+      echo "READYOS_AUTORUN_EDITOR_DMA_ON_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+  fi
+  capture_screen "autorun_editor_final"
+  echo "READYOS_AUTORUN_EDITOR_PASS" | tee "${out_dir}/status"
+  exit 0
+fi
 
 if wait_for_screen "launcher_wait" "READY OS" 180; then
   capture_screen "launcher_final"
@@ -309,7 +404,35 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
     exit 0
   fi
 
-  if [[ "${READYOS_BOOT_ACTION:-}" == "loadall-editor" || "${READYOS_BOOT_ACTION:-}" == "loadall-editor-any" ]]; then
+  if [[ "${READYOS_BOOT_ACTION:-}" == "editor-direct-dma-return" ]]; then
+    select_editor
+    type_key 13
+    if ! wait_for_screen "editor_wait" "EDITOR:" 180; then
+      capture_screen "editor_failure"
+      echo "READYOS_EDITOR_DIRECT_DMA_RETURN_EDITOR_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    type_key 2
+    if ! wait_for_screen "launcher_after_editor_wait" "READY OS" 120; then
+      capture_screen "launcher_after_editor_failure"
+      echo "READYOS_EDITOR_DIRECT_DMA_RETURN_LAUNCHER_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      if ! wait_for_screen "dma_on_wait" "DMA:ON" 60; then
+        capture_screen "dma_on_failure"
+        echo "READYOS_EDITOR_DIRECT_DMA_RETURN_DMA_ON_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
+    fi
+    capture_screen "editor_direct_dma_return_final"
+    echo "READYOS_EDITOR_DIRECT_DMA_RETURN_PASS" | tee "${out_dir}/status"
+    exit 0
+  fi
+
+  if [[ "${READYOS_BOOT_ACTION:-}" == "loadall-editor" ||
+        "${READYOS_BOOT_ACTION:-}" == "loadall-editor-any" ||
+        "${READYOS_BOOT_ACTION:-}" == "loadall-readyshell-overlay-smoke" ]]; then
     type_key 133
     sleep "${READYOS_LOADALL_QUIET_WAIT_S:-240}"
     if ! wait_for_screen "loadall_wait" "PRESS ANY KEY" 240; then
@@ -318,7 +441,8 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
       exit 1
     fi
     type_key 13
-    if [[ "${READYOS_BOOT_ACTION:-}" == "loadall-editor" ]]; then
+    if [[ "${READYOS_BOOT_ACTION:-}" == "loadall-editor" ||
+          "${READYOS_BOOT_ACTION:-}" == "loadall-readyshell-overlay-smoke" ]]; then
       if ! wait_for_screen "dma_on_wait" "DMA:ON" 60; then
         capture_screen "dma_on_failure"
         echo "READYOS_DMA_ON_FAIL" | tee "${out_dir}/status"
@@ -330,6 +454,19 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
         echo "READYOS_LOADALL_DONE_FAIL" | tee "${out_dir}/status"
         exit 1
       fi
+    fi
+    if [[ "${READYOS_BOOT_ACTION:-}" == "loadall-readyshell-overlay-smoke" ]]; then
+      select_menu_downs "${READYOS_SELECT_DOWNS:-3}"
+      type_key 13
+      if ! wait_for_screen "readyshell_wait" "READYOS READYSHELL" 180; then
+        capture_screen "readyshell_failure"
+        echo "READYOS_LOADALL_READYSHELL_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
+      readyshell_overlay_smoke
+      capture_screen "readyshell_final"
+      echo "READYOS_LOADALL_READYSHELL_OVERLAY_PASS" | tee "${out_dir}/status"
+      exit 0
     fi
     select_editor
     type_key 13
@@ -344,6 +481,46 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
     else
       echo "READYOS_LOADALL_EDITOR_ANY_PASS" | tee "${out_dir}/status"
     fi
+    exit 0
+  fi
+
+  if [[ "${READYOS_BOOT_ACTION:-}" == "manifest-sidetris" ]]; then
+    type_key 135
+    if ! wait_for_screen "manifest_dialog_wait" "BROWSE APP MANIFEST" 120; then
+      capture_screen "manifest_dialog_failure"
+      echo "READYOS_MANIFEST_DIALOG_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    select_relative_downs "${READYOS_MANIFEST_DOWNS:-4}"
+    type_key 13
+    sleep "${READYOS_LOAD_SELECTED_QUIET_WAIT_S:-20}"
+    if ! wait_for_screen "manifest_load_wait" "PRESS ANY KEY" 180; then
+      capture_screen "manifest_load_failure"
+      echo "READYOS_MANIFEST_LOAD_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if ! screen_has "manifest_load_wait" "OK" &&
+       ! screen_has "manifest_load_wait" "LOADED TO REU"; then
+      capture_screen "manifest_load_not_ok"
+      echo "READYOS_MANIFEST_LOAD_NOT_OK" | tee "${out_dir}/status"
+      exit 1
+    fi
+    type_key 13
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      if ! wait_for_screen "manifest_dma_on_wait" "DMA:ON" 60; then
+        capture_screen "manifest_dma_on_failure"
+        echo "READYOS_MANIFEST_DMA_ON_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
+    fi
+    type_key 13
+    if ! wait_for_screen "sidetris_wait" "SIDETRIS" 120; then
+      capture_screen "sidetris_failure"
+      echo "READYOS_MANIFEST_SIDETRIS_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    capture_screen "sidetris_final"
+    echo "READYOS_MANIFEST_SIDETRIS_PASS" | tee "${out_dir}/status"
     exit 0
   fi
 
