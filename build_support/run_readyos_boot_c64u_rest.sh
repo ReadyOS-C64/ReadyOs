@@ -271,6 +271,77 @@ wait_for_screen_re() {
   return 1
 }
 
+wait_for_loader_done() {
+  local label_prefix="$1"
+  local count="$2"
+  local fail_on_disk="${3:-0}"
+  local context="${4:-loader}"
+  local failure_file="${5:-${label_prefix}_disk_loading_failure.txt}"
+  local label
+  local saw_dma=0
+
+  for i in $(seq 1 "$count"); do
+    label="${label_prefix}_${i}"
+    if capture_screen "$label"; then
+      if screen_has "$label" "DMA LOADING"; then
+        saw_dma=1
+        echo "${context} saw DMA LOADING at poll ${i}" >> "$log"
+      fi
+      if screen_has "$label" "DISK LOADING"; then
+        echo "${context} saw DISK LOADING at poll ${i}" >> "$log"
+        if [[ "$fail_on_disk" == "1" ]]; then
+          cp "${out_dir}/${label}/screen.txt" "${out_dir}/${failure_file}" 2>/dev/null || true
+          return 2
+        fi
+      fi
+      if screen_has "$label" "PRESS ANY KEY"; then
+        echo "${context} done at poll ${i}; saw_dma=${saw_dma}" >> "$log"
+        return 0
+      fi
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+wait_for_loadall_done() {
+  wait_for_loader_done "$1" "$2" "${3:-0}" "loadall" "loadall_disk_loading_failure.txt"
+}
+
+wait_for_app_or_disk() {
+  local label_prefix="$1"
+  local expected_text="$2"
+  local count="$3"
+  local fail_on_disk="${4:-0}"
+  local context="${5:-app-load}"
+  local failure_file="${6:-${label_prefix}_disk_loading_failure.txt}"
+  local label
+  local saw_dma=0
+
+  for i in $(seq 1 "$count"); do
+    label="${label_prefix}_${i}"
+    if capture_screen "$label"; then
+      if screen_has "$label" "DMA LOADING"; then
+        saw_dma=1
+        echo "${context} saw DMA LOADING at poll ${i}" >> "$log"
+      fi
+      if screen_has "$label" "DISK LOADING"; then
+        echo "${context} saw DISK LOADING at poll ${i}" >> "$log"
+        if [[ "$fail_on_disk" == "1" ]]; then
+          cp "${out_dir}/${label}/screen.txt" "${out_dir}/${failure_file}" 2>/dev/null || true
+          return 2
+        fi
+      fi
+      if screen_has "$label" "$expected_text"; then
+        echo "${context} matched ${expected_text} at poll ${i}; saw_dma=${saw_dma}" >> "$log"
+        return 0
+      fi
+    fi
+    sleep 1
+  done
+  return 1
+}
+
 readyshell_overlay_smoke() {
   if ! wait_for_screen "readyshell_prompt_wait" "RUN: CAT" 120; then
     capture_screen "readyshell_prompt_failure"
@@ -407,7 +478,22 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
   if [[ "${READYOS_BOOT_ACTION:-}" == "editor-direct-dma-return" ]]; then
     select_editor
     type_key 13
-    if ! wait_for_screen "editor_wait" "EDITOR:" 180; then
+    fail_on_disk=0
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      fail_on_disk="${READYOS_FAIL_ON_DISK_LOADING_WHEN_DMA:-1}"
+    fi
+    if wait_for_app_or_disk "editor_direct_watch" "EDITOR:" 180 "$fail_on_disk" \
+      "editor-direct" "editor_direct_disk_loading_failure.txt"; then
+      editor_direct_watch_rc=0
+    else
+      editor_direct_watch_rc=$?
+    fi
+    if [[ "$editor_direct_watch_rc" == "2" ]]; then
+      capture_screen "editor_direct_disk_loading_failure"
+      echo "READYOS_EDITOR_DIRECT_DISK_LOADING_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if [[ "$editor_direct_watch_rc" != "0" ]]; then
       capture_screen "editor_failure"
       echo "READYOS_EDITOR_DIRECT_DMA_RETURN_EDITOR_FAIL" | tee "${out_dir}/status"
       exit 1
@@ -434,8 +520,21 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
         "${READYOS_BOOT_ACTION:-}" == "loadall-editor-any" ||
         "${READYOS_BOOT_ACTION:-}" == "loadall-readyshell-overlay-smoke" ]]; then
     type_key 133
-    sleep "${READYOS_LOADALL_QUIET_WAIT_S:-240}"
-    if ! wait_for_screen "loadall_wait" "PRESS ANY KEY" 240; then
+    fail_on_disk=0
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      fail_on_disk="${READYOS_FAIL_ON_DISK_LOADING_WHEN_DMA:-1}"
+    fi
+    if wait_for_loadall_done "loadall_watch" "${READYOS_LOADALL_WATCH_POLLS:-360}" "$fail_on_disk"; then
+      loadall_watch_rc=0
+    else
+      loadall_watch_rc=$?
+    fi
+    if [[ "$loadall_watch_rc" == "2" ]]; then
+      capture_screen "loadall_disk_loading_failure"
+      echo "READYOS_LOADALL_DISK_LOADING_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if [[ "$loadall_watch_rc" != "0" ]]; then
       capture_screen "loadall_failure"
       echo "READYOS_LOADALL_FAIL" | tee "${out_dir}/status"
       exit 1
@@ -493,14 +592,27 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
     fi
     select_relative_downs "${READYOS_MANIFEST_DOWNS:-4}"
     type_key 13
-    sleep "${READYOS_LOAD_SELECTED_QUIET_WAIT_S:-20}"
-    if ! wait_for_screen "manifest_load_wait" "PRESS ANY KEY" 180; then
+    fail_on_disk=0
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      fail_on_disk="${READYOS_FAIL_ON_DISK_LOADING_WHEN_DMA:-1}"
+    fi
+    if wait_for_loader_done "manifest_load_watch" 180 "$fail_on_disk" \
+      "manifest-load" "manifest_disk_loading_failure.txt"; then
+      manifest_load_watch_rc=0
+    else
+      manifest_load_watch_rc=$?
+    fi
+    if [[ "$manifest_load_watch_rc" == "2" ]]; then
+      capture_screen "manifest_disk_loading_failure"
+      echo "READYOS_MANIFEST_DISK_LOADING_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if [[ "$manifest_load_watch_rc" != "0" ]]; then
       capture_screen "manifest_load_failure"
       echo "READYOS_MANIFEST_LOAD_FAIL" | tee "${out_dir}/status"
       exit 1
     fi
-    if ! screen_has "manifest_load_wait" "OK" &&
-       ! screen_has "manifest_load_wait" "LOADED TO REU"; then
+    if ! grep -ERq "OK|LOADED TO REU" "${out_dir}"/manifest_load_watch_*/screen.txt 2>/dev/null; then
       capture_screen "manifest_load_not_ok"
       echo "READYOS_MANIFEST_LOAD_NOT_OK" | tee "${out_dir}/status"
       exit 1
@@ -527,13 +639,27 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
   if [[ "${READYOS_BOOT_ACTION:-}" == "editor-load-selected" ]]; then
     select_editor
     type_key 134
-    sleep "${READYOS_LOAD_SELECTED_QUIET_WAIT_S:-20}"
-    if ! wait_for_screen "load_selected_wait" "PRESS ANY KEY" 120; then
+    fail_on_disk=0
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      fail_on_disk="${READYOS_FAIL_ON_DISK_LOADING_WHEN_DMA:-1}"
+    fi
+    if wait_for_loader_done "load_selected_watch" 120 "$fail_on_disk" \
+      "editor-load-selected" "load_selected_disk_loading_failure.txt"; then
+      load_selected_watch_rc=0
+    else
+      load_selected_watch_rc=$?
+    fi
+    if [[ "$load_selected_watch_rc" == "2" ]]; then
+      capture_screen "load_selected_disk_loading_failure"
+      echo "READYOS_LOAD_SELECTED_DISK_LOADING_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if [[ "$load_selected_watch_rc" != "0" ]]; then
       capture_screen "load_selected_failure"
       echo "READYOS_LOAD_SELECTED_FAIL" | tee "${out_dir}/status"
       exit 1
     fi
-    if ! screen_has "load_selected_wait" "OK"; then
+    if ! grep -R -q "OK" "${out_dir}"/load_selected_watch_*/screen.txt 2>/dev/null; then
       capture_screen "load_selected_not_ok"
       echo "READYOS_LOAD_SELECTED_NOT_OK" | tee "${out_dir}/status"
       exit 1
@@ -566,13 +692,22 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
   if [[ "${READYOS_BOOT_ACTION:-}" == "readyshell-enter-smoke" ]]; then
     select_menu_downs "${READYOS_SELECT_DOWNS:-3}"
     type_key 13
-    sleep "${READYOS_ENTER_QUIET_WAIT_S:-5}"
-    capture_screen "enter_after_quiet"
-    if ! screen_has "enter_after_quiet" "READYOS READYSHELL" &&
-       ! screen_has "enter_after_quiet" "LOADING TO REU"; then
-      echo "READYOS_READYSHELL_ENTER_EARLY_STATE_UNEXPECTED" >> "$log"
+    fail_on_disk=0
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      fail_on_disk="${READYOS_FAIL_ON_DISK_LOADING_WHEN_DMA:-1}"
     fi
-    if ! wait_for_screen "app_wait" "${READYOS_EXPECT_TEXT:-READYOS READYSHELL}" 180; then
+    if wait_for_app_or_disk "enter_watch" "${READYOS_EXPECT_TEXT:-READYOS READYSHELL}" 180 \
+      "$fail_on_disk" "readyshell-enter" "enter_disk_loading_failure.txt"; then
+      enter_watch_rc=0
+    else
+      enter_watch_rc=$?
+    fi
+    if [[ "$enter_watch_rc" == "2" ]]; then
+      capture_screen "enter_disk_loading_failure"
+      echo "READYOS_READYSHELL_ENTER_DISK_LOADING_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if [[ "$enter_watch_rc" != "0" ]]; then
       capture_screen "app_failure"
       echo "READYOS_READYSHELL_ENTER_FAIL" | tee "${out_dir}/status"
       exit 1
@@ -598,13 +733,27 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
       pass_status="READYOS_READYBASIC_LOAD_SELECTED_PASS"
     fi
     type_key 134
-    sleep "${READYOS_LOAD_SELECTED_QUIET_WAIT_S:-20}"
-    if ! wait_for_screen "load_selected_wait" "PRESS ANY KEY" 180; then
+    fail_on_disk=0
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      fail_on_disk="${READYOS_FAIL_ON_DISK_LOADING_WHEN_DMA:-1}"
+    fi
+    if wait_for_loader_done "load_selected_watch" 180 "$fail_on_disk" \
+      "${READYOS_BOOT_ACTION:-load-selected}" "load_selected_disk_loading_failure.txt"; then
+      load_selected_watch_rc=0
+    else
+      load_selected_watch_rc=$?
+    fi
+    if [[ "$load_selected_watch_rc" == "2" ]]; then
+      capture_screen "load_selected_disk_loading_failure"
+      echo "READYOS_LOAD_SELECTED_DISK_LOADING_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if [[ "$load_selected_watch_rc" != "0" ]]; then
       capture_screen "load_selected_failure"
       echo "READYOS_LOAD_SELECTED_FAIL" | tee "${out_dir}/status"
       exit 1
     fi
-    if ! screen_has "load_selected_wait" "OK"; then
+    if ! grep -R -q "OK" "${out_dir}"/load_selected_watch_*/screen.txt 2>/dev/null; then
       capture_screen "load_selected_not_ok"
       echo "READYOS_LOAD_SELECTED_NOT_OK" | tee "${out_dir}/status"
       exit 1

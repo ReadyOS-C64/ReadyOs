@@ -38,6 +38,8 @@ steps:
     type: screen.wait_contains
     params:
       text: "READY OS"
+      pre_delay_s: 4
+      poll_s: 0.5
       wait_timeout_s: 420
       capture_label: chain_launcher_initial
   - id: launch_readybasic_from_launcher

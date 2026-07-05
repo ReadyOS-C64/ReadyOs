@@ -340,6 +340,7 @@ static volatile unsigned char launcher_dma_breadcrumb;
 #endif
 static unsigned char launcher_load_step;
 static unsigned char launcher_load_step_total;
+static unsigned char launcher_load_last_dma_attempt;
 
 /* Menu state */
 static TuiMenu menu;
@@ -1976,6 +1977,53 @@ static unsigned int launcher_control_rsrc_rec_off(unsigned char rec_index) {
                           ((unsigned int)rec_index * REUCB_RSRC_REC_SIZE));
 }
 
+static unsigned char launcher_digit_width(unsigned char value) {
+    if (value >= 100u) return 3u;
+    if (value >= 10u) return 2u;
+    return 1u;
+}
+
+static unsigned char launcher_load_total_for_app(unsigned char index) {
+    unsigned char total;
+
+    total = 1u;
+    if (launcher_is_app_slot(index) &&
+        app_resource_sets[index] == APP_RESOURCE_READYSHELL_OVL) {
+        total = (unsigned char)(total + READYSHELL_OVERLAY_COUNT);
+    }
+    return total;
+}
+
+static void launcher_load_progress_set(unsigned char step,
+                                       unsigned char total) {
+    launcher_load_step = step ? step : 1u;
+    launcher_load_step_total = total ? total : 1u;
+}
+
+static void launcher_load_progress_draw(unsigned char dma) {
+    unsigned char slash_x;
+
+    tui_puts_n(0u, LOAD_STATUS_Y, "", TUI_SCREEN_WIDTH, TUI_COLOR_WHITE);
+#if LAUNCHER_DMA_LOAD
+    if (dma) {
+        tui_puts(0u, LOAD_STATUS_Y, "DMA LOADING  ", TUI_COLOR_LIGHTGREEN);
+    } else
+#endif
+    {
+        tui_puts(0u, LOAD_STATUS_Y, "DISK LOADING ", TUI_COLOR_YELLOW);
+    }
+
+    tui_print_uint(LOAD_STATUS_COUNT_X, LOAD_STATUS_Y,
+                   launcher_load_step, TUI_COLOR_WHITE);
+    slash_x = (unsigned char)(LOAD_STATUS_COUNT_X +
+                              launcher_digit_width(launcher_load_step));
+    tui_putc(slash_x, LOAD_STATUS_Y, '/', TUI_COLOR_WHITE);
+    tui_print_uint((unsigned char)(slash_x + 1u), LOAD_STATUS_Y,
+                   launcher_load_step_total, TUI_COLOR_WHITE);
+    tui_putc(LOAD_STATUS_MARK_X, LOAD_STATUS_Y, '-', TUI_COLOR_GRAY3);
+    tui_putc(LOAD_STATUS_STAGE_X, LOAD_STATUS_Y, ' ', TUI_COLOR_WHITE);
+}
+
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH
 static void launcher_control_write_dep_line(unsigned char index,
                                             const char *line) {
@@ -2404,53 +2452,6 @@ static void launcher_zero_reu_range(unsigned char bank,
     }
 }
 
-static unsigned char launcher_digit_width(unsigned char value) {
-    if (value >= 100u) return 3u;
-    if (value >= 10u) return 2u;
-    return 1u;
-}
-
-static unsigned char launcher_load_total_for_app(unsigned char index) {
-    unsigned char total;
-
-    total = 1u;
-    if (launcher_is_app_slot(index) &&
-        app_resource_sets[index] == APP_RESOURCE_READYSHELL_OVL) {
-        total = (unsigned char)(total + READYSHELL_OVERLAY_COUNT);
-    }
-    return total;
-}
-
-static void launcher_load_progress_set(unsigned char step,
-                                       unsigned char total) {
-    launcher_load_step = step ? step : 1u;
-    launcher_load_step_total = total ? total : 1u;
-}
-
-static void launcher_load_progress_draw(unsigned char dma) {
-    unsigned char slash_x;
-
-    tui_puts_n(0u, LOAD_STATUS_Y, "", TUI_SCREEN_WIDTH, TUI_COLOR_WHITE);
-#if LAUNCHER_DMA_LOAD
-    if (dma) {
-        tui_puts(0u, LOAD_STATUS_Y, "DMA LOADING  ", TUI_COLOR_LIGHTGREEN);
-    } else
-#endif
-    {
-        tui_puts(0u, LOAD_STATUS_Y, "DISK LOADING ", TUI_COLOR_YELLOW);
-    }
-
-    tui_print_uint(LOAD_STATUS_COUNT_X, LOAD_STATUS_Y,
-                   launcher_load_step, TUI_COLOR_WHITE);
-    slash_x = (unsigned char)(LOAD_STATUS_COUNT_X +
-                              launcher_digit_width(launcher_load_step));
-    tui_putc(slash_x, LOAD_STATUS_Y, '/', TUI_COLOR_WHITE);
-    tui_print_uint((unsigned char)(slash_x + 1u), LOAD_STATUS_Y,
-                   launcher_load_step_total, TUI_COLOR_WHITE);
-    tui_putc(LOAD_STATUS_MARK_X, LOAD_STATUS_Y, '-', TUI_COLOR_GRAY3);
-    tui_putc(LOAD_STATUS_STAGE_X, LOAD_STATUS_Y, ' ', TUI_COLOR_WHITE);
-}
-
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
 static unsigned char launcher_dma_hex(unsigned char value) {
     value &= 0x0Fu;
@@ -2609,14 +2610,13 @@ static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
     if (launcher_dma_check_available()) {
         launcher_load_progress_draw(1u);
         launcher_zero_reu_range(bank, reu_off, READYSHELL_OVERLAY_SLOT_LEN);
+        launcher_load_last_dma_attempt = 1u;
         if (launcher_dma_try_prg_to_reu(drive, name, bank, reu_off,
                                         READYSHELL_OVERLAY_SLOT_LEN,
                                         READYSHELL_OVERLAY_LOAD_ADDR)) {
             return 1u;
         }
-        /* DMA is an accelerator only. If UCI is absent in VICE, or the
-         * Ultimate path is not usable, fall through to the normal chunked
-         * loader. */
+        return 0u;
     }
 #endif
     launcher_load_progress_draw(0u);
@@ -2930,6 +2930,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
         return 0;
     }
     launcher_load_progress_set(1u, launcher_load_total_for_app(index));
+    launcher_load_last_dma_attempt = 0u;
 
     filename = catalog_file_for_index(index);
     if (filename[0] == 0) {
@@ -2965,6 +2966,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
             launcher_dma_breadcrumb = 0x43u;
             *LAUNCHER_DMA_STAGE_SCREEN = 0x33;
             launcher_load_progress_draw(1u);
+            launcher_load_last_dma_attempt = 1u;
             if (launcher_dma_try_prg_to_reu(app_drives[index], filename,
                                             physical, 0u, APP_SAVE_SIZE,
                                             APP_LOAD_START)) {
@@ -2990,8 +2992,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
                 launcher_mirror_reu_control();
                 return file_size;
             }
-            /* DMA is optional. On VICE and non-Ultimate hardware this must
-             * fall back to the existing shim/KERNAL preload path. */
+            return 0;
         }
     }
 #endif
@@ -3202,7 +3203,7 @@ static unsigned char load_all_to_reu_internal(unsigned char interactive) {
         size = load_app_to_reu(i);
         sync_from_reu_bitmap();
         loaded_ok = apps_loaded[i];
-        if (!loaded_ok) {
+        if (!loaded_ok && !launcher_load_last_dma_attempt) {
             size = load_app_to_reu(i);
             sync_from_reu_bitmap();
             loaded_ok = apps_loaded[i];

@@ -887,3 +887,83 @@ Current automation caveat:
   launcher. Do not classify that as a launcher crash unless the later
   `launcher_wait` capture fails and the final screen/memory dump also show no
   ReadyOS progress.
+
+## 2026-07-05 DMA Must Not Fall Through To Disk
+
+The C64U manual test exposed a launcher integration bug that the earlier UI
+checks were too weak to catch. The launcher showed `DMA:YES`, then a selected
+app showed `DMA LOADING`, but after the Ultimate DOS attempt returned failure
+the same load fell through to the normal disk/KERNAL loader. To a human this
+looked like:
+
+- Editor: `DMA LOADING`, then slow `DISK LOADING` for the same app.
+- ReadyShell: each `1/10`, `2/10`, etc. overlay could show a DMA stage and
+  then load the same file through disk, making the overlay preload extremely
+  slow and ambiguous.
+
+Correct launcher behavior:
+
+- If DMA is not available at all, the normal disk/chunked loader remains the
+  right fallback. This keeps regular VICE and non-Ultimate hardware working.
+- If the launcher actually attempts an Ultimate DOS DMA load for the current
+  app/resource, a failure must be a failure for that item. Do not continue into
+  the disk path for the same item, and do not let `load all to REU` retry that
+  same item through disk.
+- ReadyShell resources must follow the same rule as the main app PRG. A failed
+  DMA attempt for an overlay must not silently fall through to the chunked disk
+  resource loader.
+- The UI distinction matters: `DMA:YES` means configured/available, `DMA:ON`
+  means at least one successful DMA transfer has completed, `DMA LOADING` means
+  the current transfer is using the Ultimate DOS path, and `DISK LOADING` means
+  the normal disk loader is active.
+
+Implementation lesson:
+
+- Keep one small launcher-local flag for "the current load attempted DMA".
+  Clear it when starting `load_app_to_reu()`, set it immediately before calling
+  the Ultimate DOS loader for either the main PRG or a resource PRG, and use it
+  to suppress load-all's historical retry path after a DMA-attempted failure.
+  This cost one BSS byte and kept the behavior contained inside the launcher.
+- Do not mark an app/resource as loaded unless the DMA path completed and the
+  expected REU/control metadata was updated. Showing a DMA progress digit is
+  not proof that the app is usable.
+
+Automation lesson:
+
+- A quiet sleep followed by "did the app eventually load?" is not enough for
+  this feature. It can pass while hiding the exact bug we care about.
+- Hardware tests must capture the loading screen repeatedly and treat
+  `DISK LOADING` as a failure whenever DMA is expected. They should also retain
+  the screen text that caused the failure.
+- The useful C64U checks are now:
+  - Load all to REU plus ReadyShell overlay smoke.
+  - Enter on a single-file app such as Editor.
+  - F3/load-selected or equivalent background load for ReadyShell overlays.
+  - Browse/app-manifest load, then launch the selected app.
+- A post-run grep across captured screens is a good sanity check: successful
+  DMA runs should have many `DMA LOADING` sightings and zero `DISK LOADING`
+  sightings.
+
+Verified C64U regression evidence for the corrected launcher:
+
+```text
+READYOS_LOADALL_READYSHELL_OVERLAY_PASS
+READYOS_EDITOR_DIRECT_DMA_RETURN_PASS
+READYOS_READYSHELL_OVERLAY_SMOKE_PASS
+READYOS_MANIFEST_SIDETRIS_PASS
+```
+
+The captured hardware artifacts for that run contained 267 `DMA LOADING`
+matches and 0 `DISK LOADING` matches across the load-all, Enter, F3/load-
+selected, and manifest-load paths.
+
+Fresh DMA launcher map after the fix:
+
+```text
+LAUNCHER_DMA_LOAD=1 verified build:
+  CODE   $1033..$B49E size $A46C
+  RODATA $B49F..$BA8B
+  DATA   $BA8C..$BABD
+  ONCE   $BADA..$BAFF
+  BSS    $BB00..$C531 size $0A32
+```

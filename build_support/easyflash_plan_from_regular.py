@@ -165,19 +165,35 @@ def harden_readybasic_prompt_waits(text: str) -> str:
 def harden_easyflash_launcher_waits(text: str) -> str:
     """Give cartridge preload enough time to reach the launcher."""
     lines = text.splitlines()
+    output = []
     in_launcher_wait = False
-    for i, line in enumerate(lines):
+    saw_pre_delay = False
+    saw_poll = False
+    for line in lines:
         stripped = line.strip()
         if line.startswith("  - id: "):
             step_id = line.split(":", 1)[1].strip()
             in_launcher_wait = step_id in ("easyflash_wait_launcher", "wait_launcher_initial")
+            saw_pre_delay = False
+            saw_poll = False
+            output.append(line)
             continue
+        if in_launcher_wait and stripped.startswith("pre_delay_s: "):
+            saw_pre_delay = True
+        if in_launcher_wait and stripped.startswith("poll_s: "):
+            saw_poll = True
         if in_launcher_wait and stripped.startswith("wait_timeout_s: "):
             indent = line[: len(line) - len(line.lstrip())]
             current = int(stripped.split(":", 1)[1].strip())
-            lines[i] = f"{indent}wait_timeout_s: {max(current, 420)}"
+            if not saw_pre_delay:
+                output.append(f"{indent}pre_delay_s: 4")
+            if not saw_poll:
+                output.append(f"{indent}poll_s: 0.5")
+            output.append(f"{indent}wait_timeout_s: {max(current, 420)}")
             in_launcher_wait = False
-    return "\n".join(lines) + "\n"
+            continue
+        output.append(line)
+    return "\n".join(output) + "\n"
 
 
 def main() -> int:
