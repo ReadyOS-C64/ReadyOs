@@ -8,6 +8,7 @@
 ;
 
         .export _launcher_uci_dma_detect
+        .export _launcher_uci_dma_probe_image
         .export _launcher_uci_dma_load_prg
         .export _launcher_uci_dma_quiesce
         .export _launcher_uci_dma_clear_stage
@@ -23,7 +24,6 @@
         .export _launcher_uci_dma_dbg_stat1
         .export _launcher_uci_dma_image_dir
         .export _launcher_uci_dma_image_name
-        .export _launcher_uci_dma_mount_name
         .export _launcher_uci_dma_assume_mounted
 
 CPU_PORT    = $0001
@@ -137,9 +137,6 @@ load_have_uci:
         beq load_path_missing
         lda _launcher_uci_dma_image_name
         ora _launcher_uci_dma_image_name+1
-        beq load_path_missing
-        lda _launcher_uci_dma_mount_name
-        ora _launcher_uci_dma_mount_name+1
         bne load_have_image_path
 load_path_missing:
         lda #ERR_PATH
@@ -151,97 +148,8 @@ load_have_image_path:
         jsr debug_stage
         jmp load_open_current_dir
 load_mount_image_path:
-        lda #<root_name
-        sta cd_name_abs+1
-        lda #>root_name
-        sta cd_name_abs+2
-        jsr dos_cd
-        BCC_FAR load_cd_root_fail
-
-        lda _launcher_uci_dma_image_dir
-        sta cd_dir_check_abs+1
-        sta cd_dir_retry_slash_abs+1
-        sta cd_name_abs+1
-        lda _launcher_uci_dma_image_dir+1
-        sta cd_dir_check_abs+2
-        sta cd_dir_retry_slash_abs+2
-        sta cd_name_abs+2
-        ldy #$00
-cd_dir_check_abs:
-        lda $FFFF,y
-        bne cd_dir_has_text
-        lda #ERR_PATH
-        jmp load_fail
-cd_dir_has_text:
-        lda #'2'
-        jsr debug_stage
-        jsr dos_cd
-        BCC_FAR load_cd_dir_fail
-        jsr status_ok
-        bcs cd_dir_ready
-        ldy #$00
-cd_dir_retry_slash_abs:
-        lda $FFFF,y
-        cmp #'/'
-        bne cd_dir_status_retry_fail
-        iny
-        lda _launcher_uci_dma_image_dir
-        clc
-        adc #$01
-        sta cd_name_abs+1
-        lda _launcher_uci_dma_image_dir+1
-        adc #$00
-        sta cd_name_abs+2
-        jsr dos_cd
-        BCC_FAR load_cd_dir_fail
-        jsr status_ok
-        bcs cd_dir_ready
-cd_dir_status_retry_fail:
-        jmp load_cd_dir_status_fail
-
-cd_dir_ready:
-        lda _launcher_uci_dma_image_name
-        sta cd_image_check_abs+1
-        sta cd_name_abs+1
-        lda _launcher_uci_dma_image_name+1
-        sta cd_image_check_abs+2
-        sta cd_name_abs+2
-        lda _launcher_uci_dma_mount_name
-        sta cd_mount_name_abs+1
-        lda _launcher_uci_dma_mount_name+1
-        sta cd_mount_name_abs+2
-        ldy #$00
-cd_image_empty_check:
-cd_image_check_abs:
-        lda $FFFF,y
-        bne cd_image_has_text
-        lda #ERR_PATH
-        jmp load_fail
-cd_image_has_text:
-        lda #'3'
-        jsr debug_stage
-        jsr dos_mount_image
-        BCC_FAR load_mount_fail
-        lda #'4'
-        jsr debug_stage
-        jsr dos_cd
-        BCC_FAR load_cd_image_fail
-        jsr status_ok
-        bcs cd_image_status_ok
-        lda stat_len
-        BEQ_FAR cd_image_status_ok
-        lda _launcher_uci_dma_mount_name
-        sta cd_name_abs+1
-        lda _launcher_uci_dma_mount_name+1
-        sta cd_name_abs+2
-        jsr dos_cd
-        BCC_FAR load_cd_image_fail
-        jsr status_ok
-        bcs cd_image_status_ok
-        lda stat_len
-        BEQ_FAR cd_image_status_ok
-        jmp load_cd_image_status_fail
-cd_image_status_ok:
+        jsr mount_image_path
+        BCC_FAR load_mount_sequence_fail
         lda #'5'
         jsr debug_stage
 
@@ -415,29 +323,7 @@ load_seek_fail:
 load_load_fail:
         lda #ERR_LOAD
         jmp load_fail_close
-load_cd_root_fail:
-        lda #ERR_CD_ROOT
-        jmp load_fail_close
-load_cd_root_status_fail:
-        lda #ERR_CD_ROOT_STATUS
-        jmp load_fail_close
-load_cd_dir_fail:
-        lda #ERR_CD_DIR
-        jmp load_fail_close
-load_cd_dir_status_fail:
-        lda #ERR_CD_DIR_STATUS
-        jmp load_fail_close
-load_mount_fail:
-        lda #ERR_MOUNT
-        jmp load_fail_close
-load_mount_status_fail:
-        lda #ERR_MOUNT_STATUS
-        jmp load_fail_close
-load_cd_image_fail:
-        lda #ERR_CD_IMAGE
-        jmp load_fail_close
-load_cd_image_status_fail:
-        lda #ERR_CD_IMAGE_STATUS
+load_mount_sequence_fail:
         jmp load_fail_close
 load_path_fail:
         lda #ERR_PATH
@@ -457,6 +343,145 @@ load_fail:
 load_no_uci_fail:
         lda #ERR_NO_UCI
         jmp load_fail
+
+_launcher_uci_dma_probe_image:
+        lda #$00
+        sta _launcher_uci_dma_last_error
+        jsr _launcher_uci_dma_detect
+        bne probe_have_uci
+        lda #ERR_NO_UCI
+        jmp probe_fail
+probe_have_uci:
+        jsr dos_identify
+        bcc probe_no_uci_fail
+        jsr ctrl_get_drvinfo
+        bcc probe_no_uci_fail
+        lda _launcher_uci_dma_image_dir
+        ora _launcher_uci_dma_image_dir+1
+        beq probe_path_fail
+        lda _launcher_uci_dma_image_name
+        ora _launcher_uci_dma_image_name+1
+        beq probe_path_fail
+        jsr mount_image_path
+        bcc probe_fail
+        lda #$00
+        sta _launcher_uci_dma_last_error
+        lda #$01
+        tax
+        rts
+probe_path_fail:
+        lda #ERR_PATH
+        jmp probe_fail
+probe_no_uci_fail:
+        lda #ERR_NO_UCI
+probe_fail:
+        sta _launcher_uci_dma_last_error
+        lda stat_buf
+        sta _launcher_uci_dma_dbg_stat0
+        lda stat_buf+1
+        sta _launcher_uci_dma_dbg_stat1
+        lda #$00
+        tax
+        rts
+
+mount_image_path:
+        lda #<root_name
+        sta cd_name_abs+1
+        lda #>root_name
+        sta cd_name_abs+2
+        jsr dos_cd
+        BCC_FAR mount_cd_root_fail
+
+        lda _launcher_uci_dma_image_dir
+        sta mount_cd_dir_check_abs+1
+        sta mount_cd_dir_retry_slash_abs+1
+        sta cd_name_abs+1
+        lda _launcher_uci_dma_image_dir+1
+        sta mount_cd_dir_check_abs+2
+        sta mount_cd_dir_retry_slash_abs+2
+        sta cd_name_abs+2
+        ldy #$00
+mount_cd_dir_check_abs:
+        lda $FFFF,y
+        bne mount_cd_dir_has_text
+        lda #ERR_PATH
+        jmp mount_fail
+mount_cd_dir_has_text:
+        lda #'2'
+        jsr debug_stage
+        jsr dos_cd
+        BCC_FAR mount_cd_dir_fail
+        jsr status_ok
+        bcs mount_cd_dir_ready
+        ldy #$00
+mount_cd_dir_retry_slash_abs:
+        lda $FFFF,y
+        cmp #'/'
+        BNE_FAR mount_cd_dir_status_fail
+        iny
+        lda _launcher_uci_dma_image_dir
+        clc
+        adc #$01
+        sta cd_name_abs+1
+        lda _launcher_uci_dma_image_dir+1
+        adc #$00
+        sta cd_name_abs+2
+        jsr dos_cd
+        BCC_FAR mount_cd_dir_fail
+        jsr status_ok
+        bcs mount_cd_dir_ready
+        jmp mount_cd_dir_status_fail
+
+mount_cd_dir_ready:
+        lda _launcher_uci_dma_image_name
+        sta mount_cd_image_check_abs+1
+        sta cd_name_abs+1
+        lda _launcher_uci_dma_image_name+1
+        sta mount_cd_image_check_abs+2
+        sta cd_name_abs+2
+        ldy #$00
+mount_cd_image_check_abs:
+        lda $FFFF,y
+        bne mount_cd_image_has_text
+        lda #ERR_PATH
+        jmp mount_fail
+mount_cd_image_has_text:
+        lda #'3'
+        jsr debug_stage
+        jsr dos_mount_image
+        BCC_FAR mount_mount_fail
+        lda #'4'
+        jsr debug_stage
+        jsr dos_cd
+        BCC_FAR mount_cd_image_fail
+        jsr status_ok
+        bcs mount_success
+        lda stat_len
+        beq mount_success
+        jmp mount_cd_image_status_fail
+mount_success:
+        sec
+        rts
+mount_cd_root_fail:
+        lda #ERR_CD_ROOT
+        jmp mount_fail
+mount_cd_dir_fail:
+        lda #ERR_CD_DIR
+        jmp mount_fail
+mount_cd_dir_status_fail:
+        lda #ERR_CD_DIR_STATUS
+        jmp mount_fail
+mount_mount_fail:
+        lda #ERR_MOUNT
+        jmp mount_fail
+mount_cd_image_fail:
+        lda #ERR_CD_IMAGE
+        jmp mount_fail
+mount_cd_image_status_fail:
+        lda #ERR_CD_IMAGE_STATUS
+mount_fail:
+        clc
+        rts
 
 dos_identify:
         jsr sync_interface
@@ -574,12 +599,17 @@ dos_mount_image:
         jsr uci_write_cmd
         ldy #$00
 dos_mount_name:
-cd_mount_name_abs:
+        lda cd_name_abs+1
+        sta dos_mount_name_abs+1
+        lda cd_name_abs+2
+        sta dos_mount_name_abs+2
+dos_mount_name_loop:
+dos_mount_name_abs:
         lda $FFFF,y
         beq dos_mount_push
         jsr uci_write_path_cmd
         iny
-        bne dos_mount_name
+        bne dos_mount_name_loop
 dos_mount_push:
         jsr uci_push_cmd
         jmp drain_response
@@ -1124,7 +1154,6 @@ _launcher_uci_dma_dbg_stat0:           .res 1
 _launcher_uci_dma_dbg_stat1:           .res 1
 _launcher_uci_dma_image_dir:           .res 2
 _launcher_uci_dma_image_name:          .res 2
-_launcher_uci_dma_mount_name:          .res 2
 _launcher_uci_dma_assume_mounted:      .res 1
 
 uci_base_lo:       .res 1
