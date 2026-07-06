@@ -295,6 +295,7 @@ wait_for_loader_done() {
   local failure_file="${5:-${label_prefix}_disk_loading_failure.txt}"
   local label
   local saw_dma=0
+  local saw_disk=0
 
   for i in $(seq 1 "$count"); do
     label="${label_prefix}_${i}"
@@ -309,6 +310,7 @@ wait_for_loader_done() {
         return 3
       fi
       if screen_has "$label" "DISK LOADING"; then
+        saw_disk=1
         echo "${context} saw DISK LOADING at poll ${i}" >> "$log"
         if [[ "$fail_on_disk" == "1" ]]; then
           cp "${out_dir}/${label}/screen.txt" "${out_dir}/${failure_file}" 2>/dev/null || true
@@ -316,6 +318,10 @@ wait_for_loader_done() {
         fi
       fi
       if screen_has "$label" "PRESS ANY KEY"; then
+        if [[ "${READYOS_EXPECT_DISK_LOADING:-0}" != "0" && "$saw_disk" != "1" ]]; then
+          echo "${context} did not see expected DISK LOADING before completion" >> "$log"
+          return 4
+        fi
         echo "${context} done at poll ${i}; saw_dma=${saw_dma}" >> "$log"
         return 0
       fi
@@ -338,6 +344,7 @@ wait_for_app_or_disk() {
   local failure_file="${6:-${label_prefix}_disk_loading_failure.txt}"
   local label
   local saw_dma=0
+  local saw_disk=0
 
   for i in $(seq 1 "$count"); do
     label="${label_prefix}_${i}"
@@ -352,6 +359,7 @@ wait_for_app_or_disk() {
         return 3
       fi
       if screen_has "$label" "DISK LOADING"; then
+        saw_disk=1
         echo "${context} saw DISK LOADING at poll ${i}" >> "$log"
         if [[ "$fail_on_disk" == "1" ]]; then
           cp "${out_dir}/${label}/screen.txt" "${out_dir}/${failure_file}" 2>/dev/null || true
@@ -359,6 +367,10 @@ wait_for_app_or_disk() {
         fi
       fi
       if screen_has "$label" "$expected_text"; then
+        if [[ "${READYOS_EXPECT_DISK_LOADING:-0}" != "0" && "$saw_disk" != "1" ]]; then
+          echo "${context} did not see expected DISK LOADING before ${expected_text}" >> "$log"
+          return 4
+        fi
         echo "${context} matched ${expected_text} at poll ${i}; saw_dma=${saw_dma}" >> "$log"
         return 0
       fi
@@ -485,6 +497,20 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
     if ! wait_for_screen_re "launcher_dma_ready_wait" "DMA:(YES|ON)" 60; then
       capture_screen "launcher_dma_ready_failure"
       echo "READYOS_DMA_READY_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+  fi
+  if [[ "${READYOS_EXPECT_DMA_OFF:-0}" != "0" ]]; then
+    if ! wait_for_screen "launcher_dma_off_wait" "DMA:NO" 60; then
+      capture_screen "launcher_dma_off_failure"
+      echo "READYOS_DMA_OFF_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+  fi
+  if [[ -n "${READYOS_EXPECT_NOTICE_RE:-}" ]]; then
+    if ! wait_for_screen_re "launcher_notice_wait" "${READYOS_EXPECT_NOTICE_RE}" 60; then
+      capture_screen "launcher_notice_failure"
+      echo "READYOS_NOTICE_FAIL" | tee "${out_dir}/status"
       exit 1
     fi
   fi
@@ -684,7 +710,7 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
     if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
       fail_on_disk="${READYOS_FAIL_ON_DISK_LOADING_WHEN_DMA:-1}"
     fi
-    if wait_for_loader_done "load_selected_watch" 120 "$fail_on_disk" \
+    if wait_for_loader_done "load_selected_watch" "${READYOS_LOAD_SELECTED_WATCH_POLLS:-120}" "$fail_on_disk" \
       "editor-load-selected" "load_selected_disk_loading_failure.txt"; then
       load_selected_watch_rc=0
     else

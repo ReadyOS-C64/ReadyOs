@@ -718,6 +718,14 @@ debug_stage:
         ; C64U-proven UCI transaction shape. Replacing the stage writes with
         ; private BSS stores made the same logical loader fall back on real
         ; hardware, so do not "clean this up" without retesting on C64U.
+        pha
+        lda _launcher_uci_dma_name
+        ora _launcher_uci_dma_name+1
+        bne debug_stage_visible
+        pla
+        rts
+debug_stage_visible:
+        pla
         sta $07AE
         rts
 
