@@ -15,6 +15,7 @@ skip_upload="${C64U_SKIP_UPLOAD:-0}"
 skip_config="${C64U_SKIP_CONFIG:-0}"
 clear_reu="${READYOS_CLEAR_REU:-0}"
 clear_reu_banks="${READYOS_CLEAR_REU_BANKS:-256}"
+machine_reboot="${C64U_MACHINE_REBOOT:-0}"
 mkdir -p "$out_dir" "$tmp_dir"
 log="${out_dir}/run.log"
 : > "$log"
@@ -76,8 +77,12 @@ verify_remote_image() {
 
 reset_machine() {
   local label="$1"
-  echo "reset ${label}" >> "$log"
-  run curl --fail --silent --show-error --max-time 10 -X PUT "${api}/machine:reset"
+  local action="reset"
+  if [[ "$machine_reboot" == "1" ]]; then
+    action="reboot"
+  fi
+  echo "${action} ${label}" >> "$log"
+  run curl --fail --silent --show-error --max-time 10 -X PUT "${api}/machine:${action}"
   sleep "${READYOS_RESET_WAIT_S:-3}"
   run curl --fail --silent --show-error --max-time 10 -X PUT "${api}/machine:resume"
   sleep "${READYOS_RESUME_WAIT_S:-7}"
@@ -430,6 +435,7 @@ echo "connect_wait_s=${connect_wait_s}" >> "$log"
 echo "skip_upload=${skip_upload}" >> "$log"
 echo "skip_config=${skip_config}" >> "$log"
 echo "clear_reu=${clear_reu}" >> "$log"
+echo "machine_reboot=${machine_reboot}" >> "$log"
 if [[ "$skip_upload" == "1" ]]; then
   wait_for_http
 else

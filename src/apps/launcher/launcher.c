@@ -312,6 +312,7 @@ static char launcher_manifest_open_spec[24];
 static char launcher_resource_open_spec[18];
 #if LAUNCHER_DMA_LOAD
 #define LAUNCHER_DMA_ERR_NO_UCI   0x01u
+#define LAUNCHER_DMA_ERR_OPEN     0x02u
 #define LAUNCHER_DMA_ERR_PATH_MIN 0x08u
 #define LAUNCHER_DMA_ERR_PATH_MAX 0x10u
 extern unsigned char launcher_uci_dma_detect(void);
@@ -2604,6 +2605,7 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     }
     launcher_dma_breadcrumb = launcher_uci_dma_last_error;
     if (launcher_uci_dma_last_error == LAUNCHER_DMA_ERR_NO_UCI ||
+        launcher_uci_dma_last_error == LAUNCHER_DMA_ERR_OPEN ||
         (launcher_uci_dma_last_error >= LAUNCHER_DMA_ERR_PATH_MIN &&
          launcher_uci_dma_last_error <= LAUNCHER_DMA_ERR_PATH_MAX)) {
         launcher_dma_available = 0u;
@@ -2638,7 +2640,7 @@ static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
                                         READYSHELL_OVERLAY_LOAD_ADDR)) {
             return 1u;
         }
-        return 0u;
+        launcher_load_last_dma_attempt = 0u;
     }
 #endif
     launcher_load_progress_draw(0u);
@@ -3009,7 +3011,7 @@ static unsigned int load_app_to_reu(unsigned char index) {
                 launcher_mirror_reu_control();
                 return file_size;
             }
-            return 0;
+            launcher_load_last_dma_attempt = 0u;
         }
     }
 #endif

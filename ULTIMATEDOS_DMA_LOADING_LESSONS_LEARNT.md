@@ -1030,3 +1030,44 @@ Bad-path note:
 - That same bad-path test then hung after beginning the normal disk fallback
   for Editor (`DISK LOADING 1/1 -`). Treat this as a separate follow-up before
   claiming the UCI-failure fallback is fully robust.
+
+## 2026-07-06 DMA Open Failure Fallback
+
+The C64U hardware can report a usable UCI/DMA path during launcher startup and
+still fail the later per-file Ultimate DOS open. In the reproduced Editor case,
+the launcher reached the app menu with `DMA:YES`, but the direct DMA load failed
+at the `OPEN "editor"` stage with Ultimate DOS status `84,NO FILE`. The same D81
+was mounted as drive 8 and the regular disk loader could load the app, so this
+must be treated as an Ultimate DOS context/open failure rather than proof that
+the image or app catalog is missing.
+
+The robust launcher behavior is therefore:
+
+- Probe UCI and the configured image path at startup, so the UI can still show
+  whether the DMA path appears available.
+- Attempt DMA first when enabled and configured.
+- If the actual file open fails (`launcher_uci_dma_last_error == $02`, with the
+  debug status bytes showing the Ultimate DOS error), disable the current DMA
+  attempt and fall through to the normal disk/shim loader.
+- Do not surface this as `APP LOAD FAILED` unless the normal disk fallback also
+  fails.
+
+The first hardware-confirmed fallback build was `0.2.5T`:
+
+```text
+/USB1/READYOS.D81 = readyos-v0.2.5t-d81.d81
+READYOS_EDITOR_DIRECT_DMA_RETURN_PASS
+Observed sequence: DMA LOADING 1/1 - 5, then DISK LOADING 1/1 -, then Editor.
+```
+
+This does not solve the root cause of the intermittent `84,NO FILE` response
+from Ultimate DOS, but it restores the user-facing happy path: selecting an app
+loads it instead of bouncing back to the launcher with `APP LOAD FAILED`.
+
+Automation note:
+
+- `build_support/run_readyos_boot_c64u_rest.sh` now accepts
+  `C64U_MACHINE_REBOOT=1`. With that set, the harness uses
+  `PUT /v1/machine:reboot` instead of only `machine:reset` before the run. This
+  gives cleaner C64U hardware state for reproducing DMA/open behavior, while the
+  default remains the older reset path.
