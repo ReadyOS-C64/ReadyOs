@@ -54,6 +54,11 @@ steps:
       text: "FREE:"
       wait_timeout_s: 180
       capture_label: demo_readybasic_prompt
+  - id: warp_off_for_visible_demo
+    type: warp.set
+    params:
+      enabled: false
+      capture_after: false
   - id: demo_01_intro
     type: input.sequence
     params:
