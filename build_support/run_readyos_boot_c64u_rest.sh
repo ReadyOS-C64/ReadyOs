@@ -239,6 +239,22 @@ screen_matches() {
   grep -Eq "$pattern" "${out_dir}/${label}/screen.txt"
 }
 
+wait_for_loaded_marker() {
+  local label="$1"
+  local app_text="$2"
+  local count="$3"
+  for i in $(seq 1 "$count"); do
+    if capture_screen "$label"; then
+      if screen_matches "$label" "${app_text}.*\\*"; then
+        echo "screen matched loaded marker for ${app_text} at poll ${i}" >> "$log"
+        return 0
+      fi
+    fi
+    sleep 1
+  done
+  return 1
+}
+
 wait_for_screen() {
   local label="$1"
   local text="$2"
@@ -287,6 +303,11 @@ wait_for_loader_done() {
         saw_dma=1
         echo "${context} saw DMA LOADING at poll ${i}" >> "$log"
       fi
+      if screen_has "$label" "FAIL" || screen_has "$label" "INCOMPLETE LOAD"; then
+        echo "${context} saw load failure at poll ${i}" >> "$log"
+        cp "${out_dir}/${label}/screen.txt" "${out_dir}/${label_prefix}_load_failure.txt" 2>/dev/null || true
+        return 3
+      fi
       if screen_has "$label" "DISK LOADING"; then
         echo "${context} saw DISK LOADING at poll ${i}" >> "$log"
         if [[ "$fail_on_disk" == "1" ]]; then
@@ -324,6 +345,11 @@ wait_for_app_or_disk() {
       if screen_has "$label" "DMA LOADING"; then
         saw_dma=1
         echo "${context} saw DMA LOADING at poll ${i}" >> "$log"
+      fi
+      if screen_has "$label" "FAIL" || screen_has "$label" "INCOMPLETE LOAD"; then
+        echo "${context} saw load failure at poll ${i}" >> "$log"
+        cp "${out_dir}/${label}/screen.txt" "${out_dir}/${label_prefix}_load_failure.txt" 2>/dev/null || true
+        return 3
       fi
       if screen_has "$label" "DISK LOADING"; then
         echo "${context} saw DISK LOADING at poll ${i}" >> "$log"
@@ -510,6 +536,11 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
         echo "READYOS_EDITOR_DIRECT_DMA_RETURN_DMA_ON_FAIL" | tee "${out_dir}/status"
         exit 1
       fi
+      if ! wait_for_loaded_marker "editor_direct_loaded_marker_wait" "EDITOR" 30; then
+        capture_screen "editor_direct_loaded_marker_failure"
+        echo "READYOS_EDITOR_DIRECT_LOADED_MARKER_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
     fi
     capture_screen "editor_direct_dma_return_final"
     echo "READYOS_EDITOR_DIRECT_DMA_RETURN_PASS" | tee "${out_dir}/status"
@@ -534,6 +565,11 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
       echo "READYOS_LOADALL_DISK_LOADING_FAIL" | tee "${out_dir}/status"
       exit 1
     fi
+    if [[ "$loadall_watch_rc" == "3" ]]; then
+      capture_screen "loadall_reported_failure"
+      echo "READYOS_LOADALL_REPORTED_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
     if [[ "$loadall_watch_rc" != "0" ]]; then
       capture_screen "loadall_failure"
       echo "READYOS_LOADALL_FAIL" | tee "${out_dir}/status"
@@ -545,6 +581,11 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
       if ! wait_for_screen "dma_on_wait" "DMA:ON" 60; then
         capture_screen "dma_on_failure"
         echo "READYOS_DMA_ON_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
+      if ! wait_for_loaded_marker "editor_loaded_marker_wait" "EDITOR" 30; then
+        capture_screen "editor_loaded_marker_failure"
+        echo "READYOS_EDITOR_LOADED_MARKER_FAIL" | tee "${out_dir}/status"
         exit 1
       fi
     else
@@ -654,6 +695,11 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
       echo "READYOS_LOAD_SELECTED_DISK_LOADING_FAIL" | tee "${out_dir}/status"
       exit 1
     fi
+    if [[ "$load_selected_watch_rc" == "3" ]]; then
+      capture_screen "load_selected_reported_failure"
+      echo "READYOS_LOAD_SELECTED_REPORTED_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
     if [[ "$load_selected_watch_rc" != "0" ]]; then
       capture_screen "load_selected_failure"
       echo "READYOS_LOAD_SELECTED_FAIL" | tee "${out_dir}/status"
@@ -671,6 +717,11 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
         echo "READYOS_DMA_ON_FAIL" | tee "${out_dir}/status"
         exit 1
       fi
+      if ! wait_for_loaded_marker "editor_loaded_marker_wait" "EDITOR" 30; then
+        capture_screen "editor_loaded_marker_failure"
+        echo "READYOS_EDITOR_LOADED_MARKER_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
     else
       if ! wait_for_screen "load_selected_done_wait" "READY OS" 60; then
         capture_screen "load_selected_done_failure"
@@ -686,6 +737,59 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
     fi
     capture_screen "editor_final"
     echo "READYOS_EDITOR_LOAD_SELECTED_PASS" | tee "${out_dir}/status"
+    exit 0
+  fi
+
+  if [[ "${READYOS_BOOT_ACTION:-}" == "app-load-selected-marker" ]]; then
+    selected_downs="${READYOS_SELECT_DOWNS:-2}"
+    selected_marker="${READYOS_EXPECT_MARKER:-EDITOR}"
+    select_menu_downs "$selected_downs"
+    type_key 134
+    fail_on_disk=0
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      fail_on_disk="${READYOS_FAIL_ON_DISK_LOADING_WHEN_DMA:-1}"
+    fi
+    if wait_for_loader_done "load_selected_watch" 180 "$fail_on_disk" \
+      "app-load-selected-marker" "load_selected_disk_loading_failure.txt"; then
+      load_selected_watch_rc=0
+    else
+      load_selected_watch_rc=$?
+    fi
+    if [[ "$load_selected_watch_rc" == "2" ]]; then
+      capture_screen "load_selected_disk_loading_failure"
+      echo "READYOS_LOAD_SELECTED_DISK_LOADING_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if [[ "$load_selected_watch_rc" == "3" ]]; then
+      capture_screen "load_selected_reported_failure"
+      echo "READYOS_LOAD_SELECTED_REPORTED_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if [[ "$load_selected_watch_rc" != "0" ]]; then
+      capture_screen "load_selected_failure"
+      echo "READYOS_LOAD_SELECTED_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    if ! grep -R -q "OK" "${out_dir}"/load_selected_watch_*/screen.txt 2>/dev/null; then
+      capture_screen "load_selected_not_ok"
+      echo "READYOS_LOAD_SELECTED_NOT_OK" | tee "${out_dir}/status"
+      exit 1
+    fi
+    type_key 13
+    if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
+      if ! wait_for_screen "dma_on_wait" "DMA:ON" 60; then
+        capture_screen "dma_on_failure"
+        echo "READYOS_DMA_ON_FAIL" | tee "${out_dir}/status"
+        exit 1
+      fi
+    fi
+    if ! wait_for_loaded_marker "loaded_marker_wait" "$selected_marker" 30; then
+      capture_screen "loaded_marker_failure"
+      echo "READYOS_LOADED_MARKER_FAIL" | tee "${out_dir}/status"
+      exit 1
+    fi
+    capture_screen "load_selected_marker_final"
+    echo "READYOS_LOAD_SELECTED_MARKER_PASS" | tee "${out_dir}/status"
     exit 0
   fi
 
