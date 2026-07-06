@@ -967,3 +967,66 @@ LAUNCHER_DMA_LOAD=1 verified build:
   ONCE   $BADA..$BAFF
   BSS    $BB00..$C531 size $0A32
 ```
+
+## 2026-07-06 DMA Launcher Headroom Cliff
+
+The hardware blank-screen regression after the boot animation was not a boot,
+preboot, or shim failure. The launcher had loaded and begun initialization, but
+the DMA-enabled build had become too tight at the top of app RAM. It could
+reach screen-clear/draw work and then fall over before the launcher menu became
+visible.
+
+The important lesson is that the linker map's apparent end address is not the
+whole safety story on C64/cc65. The launcher also needs real runtime stack
+headroom below the ReadyOS app ceiling. A small assembler guard added during
+the progress-display cleanup was enough to expose the cliff, but the underlying
+problem was the DMA launcher's total footprint.
+
+Corrective approach:
+
+- Keep the Ultimate DOS stage-write code in the C64U-proven shape unless a new
+  hardware test proves a replacement. The visible write to `$07AE` is ugly, but
+  it has timing/transaction value on the real Ultimate hardware path.
+- For `LAUNCHER_DMA_LOAD=1`, reduce the launcher catalog capacity from 64 app
+  slots to 32 app slots. The current D81 catalog has 20 apps, so this preserves
+  the SKU's practical behavior while freeing enough BSS for stable stack space.
+- Leave non-DMA launcher builds at 64 app slots.
+- Do not touch boot, preboot, shim, or app binaries for this class of fix; the
+  instability was in the launcher's own initialization/runtime footprint.
+
+Verified headroom build:
+
+```text
+0.2.5X LAUNCHER_DMA_LOAD=1:
+  CODE   $1033..$B4B7 size $A485
+  RODATA $B4B8..$BAD6 size $061F
+  DATA   $BAD7..$BB08 size $0032
+  ONCE   $BB25..$BB4A size $0026
+  BSS    $BB4B..$C3DA size $0890
+  margin to $C590: 437 bytes
+  margin to $C600: 549 bytes
+```
+
+C64U verification for this corrected build:
+
+```text
+/USB1/READYOS.D81 = readyos-v0.2.5x-d81.d81
+READYOS_EDITOR_DIRECT_DMA_RETURN_PASS
+READYOS_BOOT_PASS
+```
+
+The packaged `apps.cfg` for the deployed D81 had:
+
+```text
+LOAD_ALL_TO_REU=0
+RUNAPPFIRST=
+C64U_IMAGE_PATH=/USB1/READYOS.D81
+```
+
+Bad-path note:
+
+- A deliberately wrong `C64U_IMAGE_PATH` correctly produced `DMA:NO` and the
+  visible notice `UDOS MOUNT FAILED; DMA OFF`.
+- That same bad-path test then hung after beginning the normal disk fallback
+  for Editor (`DISK LOADING 1/1 -`). Treat this as a separate follow-up before
+  claiming the UCI-failure fallback is fully robust.

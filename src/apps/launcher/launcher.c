@@ -115,8 +115,12 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #define REU_INDICATOR 0x2A  /* '*' in PETSCII screen code */
 
 /* App catalog limits */
+#if LAUNCHER_DMA_LOAD
+#define APP_SLOT_CAPACITY 32
+#else
 #define APP_SLOT_CAPACITY 64
-#define MAX_APPS (APP_SLOT_CAPACITY + 1)  /* optional slot 0 + 64 app slots */
+#endif
+#define MAX_APPS (APP_SLOT_CAPACITY + 1)  /* optional slot 0 + app slots */
 #define MAX_FILE_LEN 12      /* shim filename buffer is 12 bytes */
 #define MAX_NAME_LEN 31
 #define MAX_DESC_LEN 38
