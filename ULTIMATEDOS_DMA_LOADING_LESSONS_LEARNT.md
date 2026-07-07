@@ -1221,5 +1221,8 @@ Focused regression evidence from this restore:
   `/tmp/readyos_c64u_positive_p_20260706_220449`
 - VICE no-DMA disk Editor plus ReadyShell:
   `/Users/karlprosserpp/dev/c64projects/readyosprecog/logs/vice_auto_20260706_220237`
+- VICE current `0.2.5P` no-UCI/no-DMA Editor plus ReadyShell, with
+  `$00CC == $01` proving the KERNAL cursor blink is disabled on the launcher:
+  `/Users/karlprosserpp/dev/c64projects/readyosprecog/logs/vice_auto_20260706_221238`
 - EasyFlash ReadyShell cross-app suite:
   `/Users/karlprosserpp/dev/c64projects/readyosprecog/logs/vice_auto_20260706_220333`
