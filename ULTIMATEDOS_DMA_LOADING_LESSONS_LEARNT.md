@@ -1071,3 +1071,108 @@ Automation note:
   `PUT /v1/machine:reboot` instead of only `machine:reset` before the run. This
   gives cleaner C64U hardware state for reproducing DMA/open behavior, while the
   default remains the older reset path.
+
+## 2026-07-06 Reverted UCI-Failure Fallback
+
+The later hardware repro showed the `DMA open failed -> normal KERNAL disk
+fallback` path was not actually robust. After an Ultimate DOS open failure with
+status `84`, the launcher could enter the shim/KERNAL load markers and then hang
+at `DISK LOADING 1/1 -`. That means the failed UCI transaction can leave enough
+device/channel state behind that immediately falling into the normal disk path
+is unsafe on the C64U.
+
+Corrected rule:
+
+- Keep the verified DMA load path from the `7107bef` hardware run intact.
+- Do not alter `_launcher_uci_dma_load_prg` for UI niceties.
+- Do not fall through to KERNAL disk loading after a real UCI file-open error
+  unless a future probe proves the cleanup sequence is safe on hardware.
+- The only safe UX improvement at this stage is a startup mount probe: if UCI is
+  present but the configured `c64u_image_path` cannot be mounted, disable DMA and
+  display `UDOS MOUNT FAILED; DMA OFF` before the user tries to load an app.
+- Even after a successful startup mount probe, leave
+  `launcher_dma_image_ready=0` so the real app/resource load still follows the
+  verified mount-and-load path rather than a new "already mounted" shortcut.
+
+Memory note for the restored launcher in the current tree:
+
+- The old 64-slot catalog shape now overflows the DMA-enabled launcher BSS.
+  Keep `APP_SLOT_CAPACITY=32` when `LAUNCHER_DMA_LOAD=1`; this is a memory
+  containment change, not a DMA transaction change.
+
+## 2026-07-06 Verified Restore: Versioned Path Matters
+
+The current branch was restored to a passing C64U Editor DMA smoke only after
+matching all of these constraints:
+
+- Restore `src/apps/launcher/launcher_uci_dma.s` to the exact UCI load path from
+  the verified `7107bef` build. The later shared mount/probe helper looked
+  equivalent, but the hardware still failed at stage `55` with Ultimate DOS
+  status `84,NO FILE`.
+- Do not let startup probing set `launcher_dma_image_ready=1`; skipping the
+  load-side mount/open sequence is not the verified path.
+- Keep the volatile screen stage writes in both C and assembler. They are part
+  of the hardware-proven transaction shape, not disposable debug UI.
+- Copy the DMA filename into launcher-owned RAM before calling the UCI loader.
+  The catalog text buffer is shared and may later contain app descriptions.
+- The configured `c64u_image_path` must exactly match the actual file placed on
+  the C64U USB drive. The passing run used:
+
+```text
+/USB1/readyos-v0.2.5g-d81.d81
+C64U_IMAGE_PATH=/usb1/readyos-v0.2.5g-d81.d81
+READYOS_EDITOR_DIRECT_DMA_RETURN_PASS
+```
+
+The generic `/usb1/readyos.d81` path repeatedly failed the restored current
+branch at the UCI open stage. Treat the config/deployed-name match as a required
+precondition for DMA until a smaller probe proves otherwise.
+
+Bad-path status:
+
+- The earlier negative startup mount probe is not currently safe to keep in the
+  launcher. It changed enough UCI/load state to break the good path.
+- Reintroduce bad-path UI only after a standalone probe proves the sequence can
+  detect a missing image without altering the subsequent real app load path.
+
+## 2026-07-06 Hardware Restore Follow-up: Do Not Replace Mounted Images
+
+The fresh positive C64U smoke for `0.2.5K` passed with:
+
+```text
+/USB1/readyos-v0.2.5k-d81.d81
+C64U_IMAGE_PATH=/usb1/readyos-v0.2.5k-d81.d81
+READYOS_EDITOR_DIRECT_DMA_RETURN_PASS
+```
+
+After that, a safe-looking negative build with an empty `c64u_image_path` did
+not prove safe on hardware. It booted past BASIC `LOAD"BOOT",8`/`RUN` into a
+blank ReadyOS-colored screen and never reached the launcher. Treat the empty
+path negative as failed/unproven until it has its own smaller C64U probe or a
+launcher-side diagnosis. Do not use it as evidence that the good path is safe.
+
+The important artifact-handling lesson came next. Rebuilding another `0.2.5K`
+and letting the REST runner delete/re-upload `/USB1/readyos-v0.2.5k-d81.d81`
+while that filename had recently been mounted produced the same blank boot
+screen. Captured launcher/code memory matched the previous passing run, which
+can simply be stale C64 RAM after reboot; screen state is the authority here.
+
+Using a new versioned remote filename avoided the problem:
+
+```text
+/USB1/readyos-v0.2.5m-d81.d81
+C64U_IMAGE_PATH=/usb1/readyos-v0.2.5m-d81.d81
+READYOS_EDITOR_DIRECT_DMA_RETURN_PASS
+```
+
+Operational rule for C64U hardware automation:
+
+- Clear REU with the standalone automation program before boot.
+- Hard reboot and remount the image after REU clear.
+- Do not delete/re-upload the same D81 path if it may still be mounted or cached
+  by the C64U drive emulation.
+- Prefer a fresh versioned D81 filename for each hardware proof, or explicitly
+  unmount/eject the previous image by a known-good C64U API/menu path before
+  replacing it.
+- Keep the `c64u_image_path` inside `apps.cfg` matched exactly to the remote
+  filename being mounted.
