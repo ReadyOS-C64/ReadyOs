@@ -1176,3 +1176,50 @@ Operational rule for C64U hardware automation:
   replacing it.
 - Keep the `c64u_image_path` inside `apps.cfg` matched exactly to the remote
   filename being mounted.
+
+## 2026-07-06 Restore Verification: Positive Path vs Empty-Path Negative
+
+After reverting the fragile fallback/UI work, the restored launcher path was
+proved again on fresh C64U filenames:
+
+```text
+/USB1/readyos-v0.2.5n-d81.d81
+C64U_IMAGE_PATH=/usb1/readyos-v0.2.5n-d81.d81
+READYOS_EDITOR_DIRECT_DMA_RETURN_PASS
+
+/USB1/readyos-v0.2.5p-d81.d81
+C64U_IMAGE_PATH=/usb1/readyos-v0.2.5p-d81.d81
+READYOS_EDITOR_DIRECT_DMA_RETURN_PASS
+```
+
+Both runs used the standalone automation REU clear before reboot/mount/boot.
+`READYOS_CLEAR_REU=1` is a harness environment variable, not an `apps.cfg`
+setting and not a ReadyOS runtime feature.
+
+The launcher screen for the passing hardware build showed `DMA:YES` before the
+first app load, then `DMA:ON` after Editor returned to the launcher with the
+loaded marker. This is the current hardware proof of the restored DMA path.
+
+The empty `C64U_IMAGE_PATH=` negative remains nuanced:
+
+- The exact `0.2.5O` D81 with `C64U_IMAGE_PATH=` booted in VICE, displayed
+  `DMA:NO`, loaded Editor through the normal disk path, returned to the
+  launcher, then loaded ReadyShell through the normal disk/resource path and
+  reached the ReadyShell prompt.
+- The same empty-path style still blanked on C64U after `LOAD"BOOT",8` and
+  `RUN`. That reproduces the hardware-side blank symptom, but VICE proves the
+  launcher parser/startup path itself is not generally broken by the empty
+  value.
+
+Do not use the C64U empty-path failure to justify changing the proven DMA
+transaction. Treat it as a separate hardware/mount/runner investigation unless
+it can be reduced to a launcher-only repro.
+
+Focused regression evidence from this restore:
+
+- C64U positive DMA Editor direct-load/return:
+  `/tmp/readyos_c64u_positive_p_20260706_220449`
+- VICE no-DMA disk Editor plus ReadyShell:
+  `/Users/karlprosserpp/dev/c64projects/readyosprecog/logs/vice_auto_20260706_220237`
+- EasyFlash ReadyShell cross-app suite:
+  `/Users/karlprosserpp/dev/c64projects/readyosprecog/logs/vice_auto_20260706_220333`
