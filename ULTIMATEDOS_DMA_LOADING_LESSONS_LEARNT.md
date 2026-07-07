@@ -674,6 +674,59 @@ Verification:
   Ultimate DOS is still positioned inside the D81, and forcing the next app back
   through the full mount path reproduced the `330.3834` C64U stall.
 
+## 2026-07-07 Acceptance Verification
+
+This acceptance pass used fresh C64U runs with `READYOS_CLEAR_REU=1` before
+each reboot. C64U REST/FTP orchestration was launched from a Terminal-owned
+background bash, not from the foreground Codex shell.
+
+Hardware evidence:
+
+- Valid configured path, current-source DMA build:
+  `/tmp/readyos_c64u_accept_valid_y_20260707_001219`.
+  D81 `readyos-v0.2.5y-d81.d81` contained
+  `C64U_IMAGE_PATH=/USB1/READYOS-V0.2.5Y-D81.D81`.
+  Result: `READYOS_EDITOR_DIRECT_DMA_RETURN_PASS`, rc `0`; launcher returned
+  with Editor marked loaded and `DMA:ON`. Captured screens contained `DMA:ON`
+  four times.
+- Empty configured path, current-source DMA-capable build:
+  `/tmp/readyos_c64u_accept_empty_z_quietboot_20260707_002532`.
+  D81 `readyos-v0.2.5z-d81.d81` contained `C64U_IMAGE_PATH=`.
+  Result: `READYOS_EDITOR_DIRECT_DMA_RETURN_PASS`, rc `0`; launcher showed
+  `DMA:NO`, Editor loaded by the normal disk path, and the launcher returned
+  still showing `DMA:NO`. Captured screens contained no `DMA:ON`.
+- Short invalid configured path, current-source DMA-capable build:
+  `/tmp/readyos_c64u_accept_bad_b_quietboot_20260707_003405`.
+  D81 `readyos-v0.2.5b-d81.d81` contained
+  `C64U_IMAGE_PATH=/USB1/MISS.D81`.
+  Result: `READYOS_EDITOR_DIRECT_DMA_RETURN_PASS`, rc `0`; Editor opened and
+  returned to the launcher, `editor-direct matched EDITOR: ... saw_dma=0`, and
+  captured screens contained no `DMA:ON` or `DMA LOADING`.
+
+Automation lesson:
+
+- For non-DMA/fallback paths, give the C64U a long quiet window before the
+  first launcher screen poll and before app-ready polling. A current empty-path
+  D81 booted in VICE immediately, but on hardware the same image could sit on a
+  blank/boot-loading state when REST polled screen RAM too early. The passing
+  hardware fallback runs used `READYOS_BOOT_INITIAL_WAIT_S=220` and
+  `READYOS_QUIET_AFTER_APP_ENTER_S=95`.
+- The quiet waits are test-harness discipline, not ReadyOS product behavior.
+  They avoid REST/memory reads while the C64 side may be inside KERNAL disk I/O.
+- A long bad path is a separate config-parser failure mode. A 47-character
+  `C64U_IMAGE_PATH=...` line produced `CFG ERROR`/`ERR:2`; use a short invalid
+  path such as `/usb1/miss.d81` when testing missing-image fallback.
+
+Focused VICE regressions after these launcher/harness changes:
+
+- Regular D81 ReadyShell cross-app/overlay probe passed:
+  `logs/vice_auto_20260707_004150`, `"Status": "success"`.
+- EasyFlash ReadyShell-only converted probe passed:
+  `logs/vice_auto_20260707_004251`, `"Status": "success"`.
+- Empty-path D81 startup sanity in VICE passed:
+  `logs/vice_auto_20260707_002512`, `"Status": "success"`, asserting launcher
+  `DMA:NO`.
+
 ## 2026-06-27 Launcher DMA Verification
 
 - Current tested branch build: `readyos-v0.2.5z-d81.d81`.

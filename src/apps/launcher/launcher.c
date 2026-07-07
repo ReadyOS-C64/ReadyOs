@@ -55,6 +55,8 @@
 #define SHIM_LAUNCHER_FLAGS ((unsigned char*)0xC83C) /* Launcher one-shot flags */
 #define SHIM_LOAD_DISK_DEV_IMM ((unsigned char*)0xC84D) /* A2 xx at $C84C */
 #define SHIM_PRELOAD_DEV_IMM   ((unsigned char*)0xC89C) /* A2 xx at $C89B */
+#define SHIM_LOAD_END_LO       ((unsigned char*)0xC830)
+#define SHIM_LOAD_END_HI       ((unsigned char*)0xC831)
 #define KERNAL_BLNSW           ((unsigned char*)0x00CC) /* nonzero disables cursor blink */
 
 /* REU registers for direct access */
@@ -2608,6 +2610,16 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     launcher_uci_dma_quiesce();
     return 0u;
 }
+
+static void launcher_disk_fallback_after_dma_failure(unsigned char bank) {
+    cbm_k_clrch();
+    cbm_k_clall();
+    *SHIM_LOAD_END_LO = 0u;
+    *SHIM_LOAD_END_HI = 0u;
+    if (bank < 24u) {
+        shim_bitmap_clear_bank(bank);
+    }
+}
 #endif
 
 static unsigned char launcher_stream_prg_to_reu(unsigned char drive,
@@ -2934,6 +2946,9 @@ static unsigned int load_app_to_reu(unsigned char index) {
     unsigned char loaded_in_bitmap;
     unsigned int end_addr;
     unsigned int file_size;
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    unsigned char clean_disk_fallback = 0u;
+#endif
 
     if (!launcher_is_app_slot(index)) {
         return 0;
@@ -2997,8 +3012,19 @@ static unsigned int load_app_to_reu(unsigned char index) {
                 launcher_mirror_reu_control();
                 return file_size;
             }
-            return 0;
+            if (launcher_dma_check_available()) {
+                return 0;
+            }
+            clean_disk_fallback = 1u;
         }
+    }
+#endif
+
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    if (clean_disk_fallback) {
+        launcher_disk_fallback_after_dma_failure(bank);
+        set_shim_name(filename);
+        set_shim_drive(app_drives[index]);
     }
 #endif
 

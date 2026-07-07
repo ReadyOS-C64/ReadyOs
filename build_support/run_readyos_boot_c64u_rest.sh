@@ -523,6 +523,10 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
   if [[ "${READYOS_BOOT_ACTION:-}" == "editor-direct" ]]; then
     select_editor
     type_key 13
+    # C64U REST screen/memory polling can stall active KERNAL disk loads.
+    if [[ -n "${READYOS_QUIET_AFTER_APP_ENTER_S:-}" ]]; then
+      sleep "${READYOS_QUIET_AFTER_APP_ENTER_S}"
+    fi
     if ! wait_for_screen "editor_wait" "EDITOR:" 120; then
       capture_screen "editor_failure"
       echo "READYOS_EDITOR_FAIL" | tee "${out_dir}/status"
@@ -536,6 +540,10 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
   if [[ "${READYOS_BOOT_ACTION:-}" == "editor-direct-dma-return" ]]; then
     select_editor
     type_key 13
+    # C64U REST screen/memory polling can stall active KERNAL disk loads.
+    if [[ -n "${READYOS_QUIET_AFTER_APP_ENTER_S:-}" ]]; then
+      sleep "${READYOS_QUIET_AFTER_APP_ENTER_S}"
+    fi
     fail_on_disk=0
     if [[ "${READYOS_EXPECT_DMA:-1}" != "0" ]]; then
       fail_on_disk="${READYOS_FAIL_ON_DISK_LOADING_WHEN_DMA:-1}"
