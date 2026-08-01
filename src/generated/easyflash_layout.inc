@@ -6,8 +6,8 @@ READYOS_REU_BANK_SKIP = 32
 EASYFLASH_LAUNCHER_BANK = 1
 EASYFLASH_LAUNCHER_BANK_SPAN = 2
 EASYFLASH_LAUNCHER_LOAD_ADDR = $1000
-EASYFLASH_LAUNCHER_PAYLOAD_LEN = $6AF4
-EASYFLASH_LAUNCHER_CHECKSUM16 = $67A1
+EASYFLASH_LAUNCHER_PAYLOAD_LEN = $69BB
+EASYFLASH_LAUNCHER_CHECKSUM16 = $5B97
 READYSHELL_CACHE_BANK = $37
 READYSHELL_CACHE_BANK2 = $38
 READYSHELL_CACHE_BANK3 = $39
@@ -21,7 +21,7 @@ easyflash_app_table:
     .byte 3, 7, 2, <$1000, >$1000, <$7377, >$7377, <$B029, >$B029
     .byte 4, 9, 2, <$1000, >$1000, <$7ABA, >$7ABA, <$D890, >$D890
     .byte 5, 11, 2, <$1000, >$1000, <$7000, >$7000, <$D978, >$D978
-    .byte 6, 13, 2, <$1000, >$1000, <$7FC1, >$7FC1, <$B96E, >$B96E
+    .byte 6, 13, 2, <$1000, >$1000, <$7FC1, >$7FC1, <$B95C, >$B95C
     .byte 7, 15, 2, <$1000, >$1000, <$7A1F, >$7A1F, <$0C8B, >$0C8B
     .byte 8, 17, 2, <$1000, >$1000, <$420D, >$420D, <$A4DB, >$A4DB
     .byte 9, 19, 1, <$1000, >$1000, <$3FA6, >$3FA6, <$1E9B, >$1E9B
@@ -32,7 +32,7 @@ easyflash_app_table:
     .byte 14, 29, 2, <$1000, >$1000, <$41A9, >$41A9, <$A519, >$A519
     .byte 15, 31, 1, <$1000, >$1000, <$3C26, >$3C26, <$EAAB, >$EAAB
     .byte 16, 32, 2, <$1000, >$1000, <$4EB5, >$4EB5, <$DCB5, >$DCB5
-    .byte 17, 34, 3, <$1000, >$1000, <$961F, >$961F, <$89A6, >$89A6
+    .byte 17, 34, 3, <$1000, >$1000, <$961F, >$961F, <$8994, >$8994
     .byte 18, 37, 1, <$1000, >$1000, <$3BF4, >$3BF4, <$FDCC, >$FDCC
     .byte 19, 38, 2, <$1000, >$1000, <$587E, >$587E, <$2696, >$2696
     .byte 20, 40, 2, <$1000, >$1000, <$5534, >$5534, <$BC71, >$BC71
