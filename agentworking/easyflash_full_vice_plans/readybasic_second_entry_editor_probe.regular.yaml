@@ -1,0 +1,850 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_second_entry_editor_probe
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 2
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 240
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81-preboot.prg"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_first_readybasic_prompt
+    type: screen.wait_contains
+    params:
+      text: "FREE:"
+      wait_timeout_s: 180
+      capture_label: first_readybasic_prompt
+  - id: first_entry_print_hello
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,72,69,76,76,79,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: first_entry_print_dirty
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,68,73,82,84,89,32,70,73,82,83,84,32,69,78,84,82,89,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: first_entry_assign_x
+    type: input.sequence
+    params:
+      keys: [88,61,55,55,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: first_entry_print_x
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,88,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_first_entry_print_hello
+    type: assert.screen
+    params:
+      contains: "HELLO"
+  - id: assert_first_entry_print_dirty
+    type: assert.screen
+    params:
+      contains: "DIRTY FIRST ENTRY"
+  - id: assert_first_entry_print_x
+    type: assert.screen
+    params:
+      contains: " 77"
+  - id: first_readybasic_exit
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 1.2
+  - id: wait_launcher_after_first_exit
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_readybasic_to_editor_before_setup
+    type: input.sequence
+    params:
+      keys: [145,145,145,145,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_editor_before_setup
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      wait_timeout_s: 60
+  - id: type_editor_chars_before_setup
+    type: input.sequence
+    params:
+      keys: [80,82,79,66,69,32,76,73,78,69,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: ctrl_b_editor_before_setup
+    type: input.sequence
+    params:
+      keys: [2]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_editor_before_setup
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_editor_to_readybasic_before_setup
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_readybasic_after_tour_before_setup
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      wait_timeout_s: 60
+      capture_label: readybasic_after_tour_before_setup
+  - id: enter_line_10
+    type: input.sequence
+    params:
+      keys: [49,48,32,80,82,73,78,84,32,34,72,69,76,76,79,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: enter_line_20
+    type: input.sequence
+    params:
+      keys: [50,48,32,80,82,73,78,84,32,34,66,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: enter_line_30
+    type: input.sequence
+    params:
+      keys: [51,48,32,80,82,73,78,84,32,34,67,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: enter_line_40
+    type: input.sequence
+    params:
+      keys: [52,48,32,80,82,73,78,84,32,34,68,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: enter_line_50
+    type: input.sequence
+    params:
+      keys: [53,48,32,80,82,73,78,84,32,34,69,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: list_before_run
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_program_before_run
+    type: assert.screen
+    params:
+      contains: "50 PRINT"
+  - id: run_program
+    type: input.sequence
+    params:
+      keys: [82,85,78,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_run_output
+    type: assert.screen
+    params:
+      contains: "HELLO"
+  - id: assign_a
+    type: input.sequence
+    params:
+      keys: [65,36,61,34,65,45,48,49,50,51,52,53,54,55,56,57,48,49,50,51,52,53,54,55,56,57,48,49,50,51,52,53,54,55,56,57,48,49,50,51,52,53,54,55,56,57,48,49,50,51,52,53,54,55,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: print_a_before_exit
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,65,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_a_before_exit
+    type: assert.screen
+    params:
+      contains: "A-0123456789"
+  - id: assign_b
+    type: input.sequence
+    params:
+      keys: [66,36,61,34,66,45,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: print_b_before_exit
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,66,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_b_before_exit
+    type: assert.screen
+    params:
+      contains: "B-ABCDEFGHIJ"
+  - id: assign_c
+    type: input.sequence
+    params:
+      keys: [67,36,61,34,67,45,82,69,65,68,89,66,65,83,73,67,45,83,84,82,73,78,71,45,83,84,65,84,69,45,83,72,79,85,76,68,45,83,85,82,86,73,86,69,45,69,68,73,84,79,82,45,48,48,49,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: print_c_before_exit
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_c_before_exit
+    type: assert.screen
+    params:
+      contains: "C-READYBASIC"
+  - id: assign_d
+    type: input.sequence
+    params:
+      keys: [68,36,61,34,68,45,83,69,67,79,78,68,45,69,78,84,82,89,45,69,68,73,84,79,82,45,82,79,85,78,68,84,82,73,80,45,76,79,78,71,45,83,84,82,73,78,71,45,83,84,65,84,69,34,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: print_d_before_exit
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,68,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_d_before_exit
+    type: assert.screen
+    params:
+      contains: "D-SECOND"
+  - id: dim_e
+    type: input.sequence
+    params:
+      keys: [68,73,77,32,69,40,50,48,48,41,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assign_e199
+    type: input.sequence
+    params:
+      keys: [69,40,49,57,57,41,61,53,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: print_e_before_exit
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,69,40,49,57,57,41,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 1.2
+  - id: assert_e_before_exit
+    type: assert.screen
+    params:
+      contains: " 5"
+  - id: dump_before_editor_roundtrip
+    type: dump.memory_ranges
+    params:
+      ranges: &state_ranges
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_text_and_vars_1200, start: 0x1200, end: 0x1800 }
+        - { label: string_heap_9300, start: 0x9300, end: 0x9600 }
+        - { label: runtime_state_9600, start: 0x9600, end: 0x9A00 }
+        - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
+  - id: exit_readybasic_1
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 1.2
+  - id: wait_launcher_after_exit_1
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_readybasic_to_editor_verify_1
+    type: input.sequence
+    params:
+      keys: [145,145,145,145,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_editor_verify_1
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      wait_timeout_s: 60
+  - id: type_editor_chars_verify_1
+    type: input.sequence
+    params:
+      keys: [80,82,79,66,69,32,76,73,78,69,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: ctrl_b_editor_verify_1
+    type: input.sequence
+    params:
+      keys: [2]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_editor_verify_1
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_editor_to_readybasic_verify_1
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_readybasic_after_tour_verify_1
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      wait_timeout_s: 60
+      capture_label: readybasic_after_tour_verify_1
+  - id: list_after_editor_1
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_program_after_editor_1
+    type: assert.screen
+    params:
+      contains: "50 PRINT"
+  - id: print_a_after_editor_1
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,65,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_a_after_editor_1
+    type: assert.screen
+    params:
+      contains: "A-0123456789"
+  - id: print_b_after_editor_1
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,66,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_b_after_editor_1
+    type: assert.screen
+    params:
+      contains: "B-ABCDEFGHIJ"
+  - id: print_c_after_editor_1
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_c_after_editor_1
+    type: assert.screen
+    params:
+      contains: "C-READYBASIC"
+  - id: print_d_after_editor_1
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,68,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_d_after_editor_1
+    type: assert.screen
+    params:
+      contains: "D-SECOND"
+  - id: print_e_after_editor_1
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,69,40,49,57,57,41,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_e_after_editor_1
+    type: assert.screen
+    params:
+      contains: " 5"
+  - id: exit_readybasic_2
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 1.2
+  - id: wait_launcher_after_exit_2
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_readybasic_to_editor_verify_2
+    type: input.sequence
+    params:
+      keys: [145,145,145,145,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_editor_verify_2
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      wait_timeout_s: 60
+  - id: type_editor_chars_verify_2
+    type: input.sequence
+    params:
+      keys: [80,82,79,66,69,32,76,73,78,69,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: ctrl_b_editor_verify_2
+    type: input.sequence
+    params:
+      keys: [2]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_editor_verify_2
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_editor_to_readybasic_verify_2
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_readybasic_after_tour_verify_2
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      wait_timeout_s: 60
+      capture_label: readybasic_after_tour_verify_2
+  - id: list_after_editor_2
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_program_after_editor_2
+    type: assert.screen
+    params:
+      contains: "50 PRINT"
+  - id: print_a_after_editor_2
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,65,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_a_after_editor_2
+    type: assert.screen
+    params:
+      contains: "A-0123456789"
+  - id: print_b_after_editor_2
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,66,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_b_after_editor_2
+    type: assert.screen
+    params:
+      contains: "B-ABCDEFGHIJ"
+  - id: print_c_after_editor_2
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_c_after_editor_2
+    type: assert.screen
+    params:
+      contains: "C-READYBASIC"
+  - id: print_d_after_editor_2
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,68,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_d_after_editor_2
+    type: assert.screen
+    params:
+      contains: "D-SECOND"
+  - id: print_e_after_editor_2
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,69,40,49,57,57,41,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_e_after_editor_2
+    type: assert.screen
+    params:
+      contains: " 5"
+  - id: exit_readybasic_3
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 1.2
+  - id: wait_launcher_after_exit_3
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_readybasic_to_editor_verify_3
+    type: input.sequence
+    params:
+      keys: [145,145,145,145,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_editor_verify_3
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      wait_timeout_s: 60
+  - id: type_editor_chars_verify_3
+    type: input.sequence
+    params:
+      keys: [80,82,79,66,69,32,76,73,78,69,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: ctrl_b_editor_verify_3
+    type: input.sequence
+    params:
+      keys: [2]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_editor_verify_3
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_editor_to_readybasic_verify_3
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_readybasic_after_tour_verify_3
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      wait_timeout_s: 60
+      capture_label: readybasic_after_tour_verify_3
+  - id: list_after_editor_3
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_program_after_editor_3
+    type: assert.screen
+    params:
+      contains: "50 PRINT"
+  - id: print_a_after_editor_3
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,65,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_a_after_editor_3
+    type: assert.screen
+    params:
+      contains: "A-0123456789"
+  - id: print_b_after_editor_3
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,66,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_b_after_editor_3
+    type: assert.screen
+    params:
+      contains: "B-ABCDEFGHIJ"
+  - id: print_c_after_editor_3
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_c_after_editor_3
+    type: assert.screen
+    params:
+      contains: "C-READYBASIC"
+  - id: print_d_after_editor_3
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,68,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_d_after_editor_3
+    type: assert.screen
+    params:
+      contains: "D-SECOND"
+  - id: print_e_after_editor_3
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,69,40,49,57,57,41,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_e_after_editor_3
+    type: assert.screen
+    params:
+      contains: " 5"
+  - id: exit_readybasic_4
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 1.2
+  - id: wait_launcher_after_exit_4
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_readybasic_to_editor_verify_4
+    type: input.sequence
+    params:
+      keys: [145,145,145,145,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_editor_verify_4
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      wait_timeout_s: 60
+  - id: type_editor_chars_verify_4
+    type: input.sequence
+    params:
+      keys: [80,82,79,66,69,32,76,73,78,69,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: ctrl_b_editor_verify_4
+    type: input.sequence
+    params:
+      keys: [2]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_editor_verify_4
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_editor_to_readybasic_verify_4
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_readybasic_after_tour_verify_4
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      wait_timeout_s: 60
+      capture_label: readybasic_after_tour_verify_4
+  - id: list_after_editor_4
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_program_after_editor_4
+    type: assert.screen
+    params:
+      contains: "50 PRINT"
+  - id: print_a_after_editor_4
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,65,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_a_after_editor_4
+    type: assert.screen
+    params:
+      contains: "A-0123456789"
+  - id: print_b_after_editor_4
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,66,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_b_after_editor_4
+    type: assert.screen
+    params:
+      contains: "B-ABCDEFGHIJ"
+  - id: print_c_after_editor_4
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_c_after_editor_4
+    type: assert.screen
+    params:
+      contains: "C-READYBASIC"
+  - id: print_d_after_editor_4
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,68,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_d_after_editor_4
+    type: assert.screen
+    params:
+      contains: "D-SECOND"
+  - id: print_e_after_editor_4
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,69,40,49,57,57,41,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_e_after_editor_4
+    type: assert.screen
+    params:
+      contains: " 5"
+  - id: exit_readybasic_5
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 1.2
+  - id: wait_launcher_after_exit_5
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_readybasic_to_editor_verify_5
+    type: input.sequence
+    params:
+      keys: [145,145,145,145,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_editor_verify_5
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      wait_timeout_s: 60
+  - id: type_editor_chars_verify_5
+    type: input.sequence
+    params:
+      keys: [80,82,79,66,69,32,76,73,78,69,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: ctrl_b_editor_verify_5
+    type: input.sequence
+    params:
+      keys: [2]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_editor_verify_5
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: move_editor_to_readybasic_verify_5
+    type: input.sequence
+    params:
+      keys: [17,17,17,17,13]
+      pre_delay_s: 0
+      inter_key_delay_s: 0.10
+      post_delay_s: 1.0
+  - id: wait_readybasic_after_tour_verify_5
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      wait_timeout_s: 60
+      capture_label: readybasic_after_tour_verify_5
+  - id: list_after_editor_5
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_program_after_editor_5
+    type: assert.screen
+    params:
+      contains: "50 PRINT"
+  - id: print_a_after_editor_5
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,65,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_a_after_editor_5
+    type: assert.screen
+    params:
+      contains: "A-0123456789"
+  - id: print_b_after_editor_5
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,66,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_b_after_editor_5
+    type: assert.screen
+    params:
+      contains: "B-ABCDEFGHIJ"
+  - id: print_c_after_editor_5
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_c_after_editor_5
+    type: assert.screen
+    params:
+      contains: "C-READYBASIC"
+  - id: print_d_after_editor_5
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,68,36,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_d_after_editor_5
+    type: assert.screen
+    params:
+      contains: "D-SECOND"
+  - id: print_e_after_editor_5
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,69,40,49,57,57,41,13]
+      inter_key_delay_s: 0.035
+      post_delay_s: 0.6
+  - id: assert_e_after_editor_5
+    type: assert.screen
+    params:
+      contains: " 5"
+  - id: dump_final_state
+    type: dump.memory_ranges
+    params:
+      ranges: *state_ranges

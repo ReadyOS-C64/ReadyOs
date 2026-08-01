@@ -1,0 +1,126 @@
+version: 1
+kind: ultimate_task_plan
+plan_id: launcher_dma_ultimate_smoke
+run_mode: ultimate64
+global_defaults:
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 500
+    jitter: false
+  timeouts:
+    launch_s: 60
+    step_s: 180
+    read_s: 60
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: true
+  ultimate:
+    host: 10.0.0.79
+    password: null
+    ftp_user: anonymous
+    ftp_password: anonymous@
+    remote_root: USB1
+    disk8: /Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5c-d81.d81
+    disk9: null
+    autostart_prg: null
+    drive_a_bus_id: 8
+    drive_b_bus_id: 9
+    drive_a_type: '1581'
+    drive_b_type: '1581'
+    drive_a_enabled: true
+    drive_b_enabled: false
+    mount_mode: readwrite
+    boot_drive: 8
+    capture_video_stream: true
+    stream_port: 11000
+    stream_timeout_s: 4.0
+    default_speed_mhz: 1
+    warp_equivalent_mhz: 8
+steps:
+- id: launch_readyos_d81
+  type: ultimate.launch
+  params:
+    boot_mode: disk
+    drives:
+    - slot: a
+      bus_id: 8
+      drive_type: '1581'
+      enabled: true
+      disk: /Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5c-d81.d81
+      remote_disk: USB1/READY25C.D81
+      mount_mode: readwrite
+    - slot: b
+      bus_id: 9
+      drive_type: '1581'
+      enabled: false
+      disk: /Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-d81/readyos-v0.2.5c-d81.d81
+      remote_disk: USB1/READY25C.D81
+      mount_mode: readwrite
+    boot_drive: 8
+    boot_command: "load\"boot\",8\nrun\n"
+    reset_before_boot: true
+    post_reset_delay_s: 2.0
+- id: wait_launcher
+  type: screen.wait_contains
+  params:
+    text: "READY OS"
+    wait_timeout_s: 180
+    capture_label: launcher_initial
+- id: wait_dma_available
+  type: screen.wait_contains
+  params:
+    text: "DMA:YES"
+    wait_timeout_s: 20
+    capture_label: launcher_dma_available
+- id: load_all_dma
+  type: input.sequence
+  params:
+    keys: [133]
+    inter_key_delay_s: 0.04
+    post_delay_s: 0.5
+- id: wait_load_all_done
+  type: screen.wait_contains
+  params:
+    text: "PRESS ANY KEY"
+    wait_timeout_s: 120
+    capture_label: load_all_done
+- id: ack_load_all
+  type: input.sequence
+  params:
+    keys: [13]
+    inter_key_delay_s: 0.04
+    post_delay_s: 0.5
+- id: wait_launcher_after_load_all
+  type: screen.wait_contains
+  params:
+    text: "DMA:ON"
+    wait_timeout_s: 30
+    capture_label: launcher_dma_on
+- id: launch_editor_from_menu
+  type: input.sequence
+  params:
+    keys: [17,17,13]
+    inter_key_delay_s: 0.08
+    post_delay_s: 1.0
+- id: wait_editor
+  type: screen.wait_contains
+  params:
+    text: "EDITOR"
+    wait_timeout_s: 60
+    capture_label: editor_launched_after_dma
+- id: capture_final
+  type: screen.capture
+  criticality: observe
+  params:
+    label: final_editor
+    note: Final editor screen after C64U DMA load-all smoke
+    capture_state: true
+- id: dump_shim_state
+  type: dump.memory_ranges
+  criticality: observe
+  params:
+    ranges:
+    - { label: shim_hot_state_c834, start: 0xC834, end: 0xC83F }
+    - { label: reu_metadata_c600, start: 0xC600, end: 0xC7FF }
+    - { label: screen_0400, start: 0x0400, end: 0x07E7 }

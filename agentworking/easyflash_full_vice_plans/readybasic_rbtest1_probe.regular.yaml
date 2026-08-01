@@ -1,0 +1,87 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_rbtest1_probe
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 2
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 180
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81-preboot.prg"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_readybasic_prompt
+    type: screen.wait_contains
+    params:
+      text: "readybasic"
+      wait_timeout_s: 180
+      capture_label: readybasic_prompt
+  - id: load_rbtest1
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,84,69,83,84,49,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.5
+  - id: capture_after_load
+    type: screen.capture
+    params:
+      label: after_rbtest1_load
+  - id: assert_load_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: list_rbtest1
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: capture_after_list
+    type: screen.capture
+    params:
+      label: after_rbtest1_list
+  - id: assert_list_line_10
+    type: assert.screen
+    params:
+      contains: "10 ZECHO1"
+  - id: assert_list_line_30
+    type: assert.screen
+    params:
+      contains: "40 ZADD16"
+  - id: run_rbtest1
+    type: input.sequence
+    params:
+      keys: [82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_after_run
+    type: screen.capture
+    params:
+      label: after_rbtest1_run
+  - id: assert_run_output
+    type: assert.screen
+    params:
+      contains: "LOOP 13"

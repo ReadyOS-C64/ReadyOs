@@ -44,7 +44,13 @@ SIMPLEFILES_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_simplefiles.cfg
 SIMPLECELLS_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_simplecells.cfg -Os
 CAL26_CFLAGS = $(APP_CFLAGS) -Os
 LAUNCHER_CFG_VERBOSE ?= 0
-LAUNCHER_CFLAGS = $(APP_CFLAGS) -Os -DLAUNCHER_CFG_VERBOSE=$(LAUNCHER_CFG_VERBOSE)
+LAUNCHER_DMA_LOAD ?= 0
+LAUNCHER_CFLAGS = $(APP_CFLAGS) -Os -DLAUNCHER_CFG_VERBOSE=$(LAUNCHER_CFG_VERBOSE) -DLAUNCHER_DMA_LOAD=$(LAUNCHER_DMA_LOAD)
+ifeq ($(LAUNCHER_DMA_LOAD),1)
+LAUNCHER_DMA_SRCS = $(APPS_DIR)/launcher/launcher_uci_dma.s
+else
+LAUNCHER_DMA_SRCS =
+endif
 
 # Output files
 BOOT = $(BIN_DIR)/boot.prg
@@ -228,6 +234,7 @@ REU_CONTROL_REGISTRY_SRC = $(LIB_DIR)/reu_control_registry.c
 STORAGE_DEVICE_SRC = $(LIB_DIR)/storage_device.c
 FILE_BROWSER_SRC = $(LIB_DIR)/file_browser.c
 DIR_PAGE_SRC = $(LIB_DIR)/dir_page.c
+LAUNCHER_DIR_PAGE_SRC = $(APPS_DIR)/launcher/launcher_dir_page.c
 FILE_DIALOG_SRC = $(LIB_DIR)/file_dialog.c
 CLIP_COPY_SRC = $(LIB_DIR)/clipboard_copy.c
 CLIP_PASTE_SRC = $(LIB_DIR)/clipboard_paste.c
@@ -368,7 +375,7 @@ TUI_BASE_MENU_INPUT_NAV_MISC = $(TUI_BASE) $(TUI_MENU_SRC) $(TUI_INPUT_SRC) $(TU
 TUI_UCITEST = $(TUI_BASE_NAV) $(TUI_CONTROLS_SRC) $(TUI_SPLIT_SRC) $(TUI_OUTPUT_SRC)
 
 LIB_LAUNCHER = $(TUI_BASE_MENU_MISC) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(REU_PHYS_SRC) $(REU_PHYS_PROBE_SRC) $(REU_CONTROL_BANK_SRC) $(REU_CONTROL_REGISTRY_SRC) $(RESUME_STATE_SEGMENT_SRCS)
-LIB_LAUNCHER_DISK = $(LIB_LAUNCHER) $(STORAGE_DEVICE_SRC) $(DIR_PAGE_SRC) $(FILE_DIALOG_SRC)
+LIB_LAUNCHER_DISK = $(LIB_LAUNCHER) $(STORAGE_DEVICE_SRC) $(LAUNCHER_DIR_PAGE_SRC) $(FILE_DIALOG_SRC)
 LIB_REU_BASE = $(REU_INIT_SRC)
 LIB_REU_DMA = $(REU_INIT_SRC) $(REU_ALLOC_SRC) $(REU_DMA_SRC)
 LIB_REU_STATS = $(REU_INIT_SRC) $(REU_STATS_SRC)
@@ -498,8 +505,8 @@ $(TEST_REU): $(SRC_DIR)/test_reu.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 # Launcher app (loads at $1000)
-$(LAUNCHER): $(APPS_DIR)/launcher/launcher.c $(LIB_LAUNCHER_DISK) $(VERSION_HEADER)
-	$(CC) $(LAUNCHER_CFLAGS) -m $(OBJ_DIR)/launcher.map -o $@ $(APPS_DIR)/launcher/launcher.c $(LIB_LAUNCHER_DISK)
+$(LAUNCHER): $(APPS_DIR)/launcher/launcher.c $(LAUNCHER_DMA_SRCS) $(LIB_LAUNCHER_DISK) $(VERSION_HEADER)
+	$(CC) $(LAUNCHER_CFLAGS) -m $(OBJ_DIR)/launcher.map -o $@ $(APPS_DIR)/launcher/launcher.c $(LAUNCHER_DMA_SRCS) $(LIB_LAUNCHER_DISK)
 
 $(LAUNCHER_EASYFLASH): $(APPS_DIR)/launcher/launcher_easyflash.c $(LIB_LAUNCHER) $(VERSION_HEADER) $(EASYFLASH_LAUNCHER_HEADER)
 	$(CC) $(LAUNCHER_CFLAGS) $(EASYFLASH_LAUNCHER_CPPFLAGS) -m $(OBJ_DIR)/launcher_easyflash.map -o $@ $(APPS_DIR)/launcher/launcher_easyflash.c $(LIB_LAUNCHER)
@@ -743,6 +750,9 @@ quicknotes-owned-reu-vice: $(BUILD_SUPPORT_DIR)/run_quicknotes_owned_reu_probe.s
 
 readyshell-cross-app-resume-vice: $(BUILD_SUPPORT_DIR)/run_readyshell_cross_app_resume_probe.sh
 	$(BUILD_SUPPORT_DIR)/run_readyshell_cross_app_resume_probe.sh
+
+readyshell-cross-app-resume-c64u: $(BUILD_SUPPORT_DIR)/run_readyshell_cross_app_resume_c64u.sh
+	$(BUILD_SUPPORT_DIR)/run_readyshell_cross_app_resume_c64u.sh
 
 readybasic-second-entry-editor-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_second_entry_editor_probe.sh
 	$(BUILD_SUPPORT_DIR)/run_readybasic_second_entry_editor_probe.sh
@@ -1287,6 +1297,7 @@ help:
 	@echo "  launcher-reu-state-vice - Run focused launcher unload/reload REU-state VICE probe"
 	@echo "  quicknotes-owned-reu-vice - Run QuickNotes app-owned REU unload/viewer VICE probe"
 	@echo "  readyshell-cross-app-resume-vice - Run ReadyShell cross-app resume VICE probe"
+	@echo "  readyshell-cross-app-resume-c64u - Run ReadyShell cross-app resume probe on C64 Ultimate"
 	@echo "  readybasic-vice-plans - Regenerate tracked ReadyBASIC VICE YAML plans"
 	@echo "  readybasic-vice-suites - Run all repo-owned ReadyBASIC VICE suites"
 	@echo "  readybasic-full-vice - Run the full ReadyBASIC VICE visual suite"
@@ -1347,5 +1358,5 @@ probe-rel:
 launcher-verbose:
 	$(MAKE) LAUNCHER_CFG_VERBOSE=1 $(LAUNCHER)
 
-.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-gfx-phase1-vice readybasic-gfx-phase2-vice readybasic-gfx-phase3-vice readybasic-gfx-phase4-vice readybasic-gfx-phase5-vice readybasic-gfx-mbitmap-vice readybasic-sound-phase1-vice readybasic-sprite-steps-vice readybasic-readyos-loaded-apps-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
+.PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readyshell-cross-app-resume-c64u readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-gfx-phase1-vice readybasic-gfx-phase2-vice readybasic-gfx-phase3-vice readybasic-gfx-phase4-vice readybasic-gfx-phase5-vice readybasic-gfx-mbitmap-vice readybasic-sound-phase1-vice readybasic-sprite-steps-vice readybasic-readyos-loaded-apps-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
 EASYFLASH_LAUNCHER_CPPFLAGS ?=

@@ -1,0 +1,96 @@
+{
+  "avg_header_tax_ms": 0,
+  "dir_probe": {
+    "data_len": 0,
+    "data_prefix_hex": "00000000",
+    "status_len": 0,
+    "status_prefix": ""
+  },
+  "done": 1,
+  "dump": "/private/tmp/uci_timing_probe_c64u_rest_capture/probe_results_3000.bin",
+  "failures": 0,
+  "first_failure": {
+    "debug_status0": 0,
+    "debug_status1": 0,
+    "item": 0,
+    "launcher_error": 0,
+    "name": ""
+  },
+  "header_tax_ms": 0,
+  "items": 2,
+  "loaded_kb": 27,
+  "max_load_ms": 3367,
+  "max_load_name": "editor",
+  "phases_ms": {
+    "first_load": 3367,
+    "subsequent_loads": 1033
+  },
+  "raw_phase_ticks": {
+    "first_load": 202,
+    "subsequent_loads": 62
+  },
+  "raw_stage_ticks": {
+    "cd_dir": 21,
+    "cd_image": 23,
+    "cd_root": 20,
+    "close": 39,
+    "detect": 0,
+    "drvinfo": 20,
+    "file_info": 0,
+    "identify": 20,
+    "load_reu": 46,
+    "mount": 31,
+    "open": 44,
+    "read_header": 0,
+    "seek_payload": 0
+  },
+  "raw_subsequent_stage_ticks": {
+    "cd_dir": 0,
+    "cd_image": 0,
+    "cd_root": 0,
+    "close": 19,
+    "detect": 0,
+    "drvinfo": 0,
+    "file_info": 0,
+    "identify": 0,
+    "load_reu": 21,
+    "mount": 0,
+    "open": 22,
+    "read_header": 0,
+    "seek_payload": 0
+  },
+  "raw_total_ticks": 264,
+  "stages_ms": {
+    "cd_dir": 350,
+    "cd_image": 383,
+    "cd_root": 333,
+    "close": 650,
+    "detect": 0,
+    "drvinfo": 333,
+    "file_info": 0,
+    "identify": 333,
+    "load_reu": 767,
+    "mount": 517,
+    "open": 733,
+    "read_header": 0,
+    "seek_payload": 0
+  },
+  "subsequent_stages_ms": {
+    "cd_dir": 0,
+    "cd_image": 0,
+    "cd_root": 0,
+    "close": 317,
+    "detect": 0,
+    "drvinfo": 0,
+    "file_info": 0,
+    "identify": 0,
+    "load_reu": 350,
+    "mount": 0,
+    "open": 367,
+    "read_header": 0,
+    "seek_payload": 0
+  },
+  "successes": 2,
+  "total_ms": 4400,
+  "version": 6
+}

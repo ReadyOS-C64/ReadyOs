@@ -9,7 +9,7 @@ real-world C64 environments without pretending every machine, cartridge,
 loader, or emulator mounts the same media.
 
 - Public release line: `0.2.5`
-- Current artifact build in this tree: `0.2.5K`
+- Current artifact build in this tree: `0.2.5X`
 - Main site: [readyos64.com](https://readyos64.com)
 - Wiki / working knowledge base: [readyos.notion.site](https://readyos.notion.site)
 - GitHub source and issues: [ReadyOS-C64/ReadyOs](https://github.com/ReadyOS-C64/ReadyOs)
@@ -37,7 +37,7 @@ C64 workflow should feel immediate once the machine is up:
   single-program-at-a-time disk menu
 
 The current public release line is `0.2.5`. Full-content ReadyOS
-profiles currently expose `17` launcher-visible apps, with
+profiles currently expose `16` launcher-visible apps, with
 the exact app mix depending on the variant you choose.
 
 ## Why There Are Multiple Variants

@@ -1,5 +1,9 @@
 # Local Agent Notes
 
+- C64 Ultimate REST/FTP access from Codex must be run from a separate
+  Terminal-owned/background bash, for example via `osascript` opening Terminal
+  and writing logs/status files. Plain foreground `exec_command` curls can fail
+  with false "no route"/connection errors even when the C64U is reachable.
 - REL file access debugging: do **not** use `src/apps/dizzy/dizzy.c` as a reference implementation for REL open/position/read/write behavior.
 - For CAL26 REL work, use the `xrelchk` harness and proven CAL26-specific test results as the source of truth.
 
@@ -34,6 +38,9 @@
 - Headless ReadyBASIC regular automation: `make readybasic-vice-suites`; focused hotkey probe: `/bin/bash build_support/run_readybasic_hotkey_probe.sh`.
 - Headless ReadyBASIC cartridge automation: `make easyflash-readybasic-vice-suites`.
 - Harness scripts close VICE by default; only use their `KEEP_VICE`/non-headless options when deliberately debugging automation, not for normal interactive launch.
+- C64 Ultimate hardware automation must be launched from a long-running/background
+  bash shell. One-shot foreground shell calls from Codex may not reach the C64U
+  REST/FTP endpoints even when the device is reachable.
 
 ## CAL26 REL Debugging Discipline
 

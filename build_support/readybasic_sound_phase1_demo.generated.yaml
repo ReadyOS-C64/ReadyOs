@@ -1,0 +1,175 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_sound_phase1_demo
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 240
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5s-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5s-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5s-d81-preboot.prg"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_readyos_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_readybasic_loaded_by_readyos
+    type: screen.wait_contains
+    params:
+      text: "FREE:"
+      wait_timeout_s: 180
+      capture_on_success: true
+      capture_label: readybasic_sound_phase1_prompt
+  - id: load_rbsnd01_for_list
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,83,78,68,48,49,34,44,56,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: list_rbsnd01
+    type: input.sequence
+    params:
+      keys: [76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: capture_list_rbsnd01
+    type: screen.capture
+    params:
+      label: readybasic_sound_phase1_list_rbsnd01
+      pitch: "RBSND01 listed inside ReadyBASIC under ReadyOS"
+  - id: assert_list_rbsnd01
+    type: assert.screen
+    params:
+      contains: "SID BASICS"
+  - id: run_rbsnd01
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_rbsnd01
+    type: screen.capture
+    params:
+      label: readybasic_sound_phase1_sid_basics
+      pitch: "Human audio: triangle, saw, pulse, then noise"
+  - id: wait_rbsnd01_done
+    type: screen.wait_contains
+    params:
+      text: "RBSND01 DONE"
+      wait_timeout_s: 120
+      capture_on_success: true
+      capture_label: readybasic_sound_phase1_sid_basics_done
+  - id: run_rbsnd02
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,83,78,68,48,50,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_rbsnd02
+    type: screen.capture
+    params:
+      label: readybasic_sound_phase1_voice_state
+      pitch: "Human audio: pulse width and ADSR changes"
+  - id: wait_rbsnd02_done
+    type: screen.wait_contains
+    params:
+      text: "RBSND02 DONE"
+      wait_timeout_s: 120
+      capture_on_success: true
+      capture_label: readybasic_sound_phase1_voice_state_done
+  - id: run_rbsnd03
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,83,78,68,48,51,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_rbsnd03
+    type: screen.capture
+    params:
+      label: readybasic_sound_phase1_pitchs
+      pitch: "Human audio: chromatic PITCH command"
+  - id: wait_rbsnd03_done
+    type: screen.wait_contains
+    params:
+      text: "RBSND03 DONE"
+      wait_timeout_s: 120
+      capture_on_success: true
+      capture_label: readybasic_sound_phase1_pitchs_done
+  - id: run_rbsnd04
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,83,78,68,48,52,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_rbsnd04
+    type: screen.capture
+    params:
+      label: readybasic_sound_phase1_filter
+      pitch: "Human audio: filter mode and cutoff changes"
+  - id: wait_rbsnd04_done
+    type: screen.wait_contains
+    params:
+      text: "RBSND04 DONE"
+      wait_timeout_s: 120
+      capture_on_success: true
+      capture_label: readybasic_sound_phase1_filter_done
+  - id: run_rbsnd05
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,83,78,68,48,53,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_rbsnd05
+    type: screen.capture
+    params:
+      label: readybasic_sound_phase1_voice_batch
+      pitch: "Human audio: VOICE packed fast path"
+  - id: wait_rbsnd05_done
+    type: screen.wait_contains
+    params:
+      text: "RBSND05 DONE"
+      wait_timeout_s: 120
+      capture_on_success: true
+      capture_label: readybasic_sound_phase1_voice_batch_done
+  - id: run_rbsnd06
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,83,78,68,48,54,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_rbsnd06
+    type: screen.capture
+    params:
+      label: readybasic_sound_phase1_three_voice
+      pitch: "Human audio: three SID voices and chord changes"
+  - id: wait_rbsnd06_done
+    type: screen.wait_contains
+    params:
+      text: "RBSND06 DONE"
+      wait_timeout_s: 120
+      capture_on_success: true
+      capture_label: readybasic_sound_phase1_three_voice_done
+  - id: assert_no_basic_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"

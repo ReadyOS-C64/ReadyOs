@@ -18,7 +18,6 @@
       "true_drive": true,
       "contents": [
         { "artifact": "preboot.prg", "name": "preboot", "type": "prg" },
-        { "artifact": "showcfg.prg", "name": "showcfg", "type": "prg" },
         { "artifact": "boot.prg", "name": "boot", "type": "prg" },
         { "artifact": "launcher.prg", "name": "launcher", "type": "prg" },
         { "artifact": "tasklist.prg", "name": "tasklist", "type": "prg" },

@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5v-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5v-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5v-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5s-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5s-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5s-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -39,6 +39,11 @@ steps:
       text: "ready."
       wait_timeout_s: 180
       capture_label: readybasic_prompt
+  - id: clear_keyboard_buffer_before_program_entry
+    type: memory.write
+    params:
+      start: 198
+      bytes_hex: "00"
   - id: build_program_lines
     type: input.sequence
     params:
@@ -1151,7 +1156,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: basic_pointers_002b, start: 0x002B, end: 0x003F }
+        - { label: basic_pnters_002b, start: 0x002B, end: 0x003F }
         - { label: basic_text_and_vars_1200, start: 0x1200, end: 0x1700 }
         - { label: string_heap_9400, start: 0x9400, end: 0x9600 }
         - { label: runtime_state_9600, start: 0x9600, end: 0x9A00 }

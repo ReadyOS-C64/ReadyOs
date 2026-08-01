@@ -178,9 +178,14 @@ steps:
   - id: wait_editor_initial
     type: screen.wait_contains
     params:
-      text: "editor"
+      text: "EDITOR:"
       wait_timeout_s: 180
       capture_label: editor_initial
+  - id: clear_keyboard_buffer_before_editor_entry
+    type: memory.write
+    params:
+      start: 198
+      bytes_hex: "00"
 YAML
 
 for i in $(seq 1 "$REPEAT_COUNT"); do
@@ -244,7 +249,7 @@ cat >>"$PLAN" <<YAML
   - id: wait_editor_after_readybasic_$i
     type: screen.wait_contains
     params:
-      text: "editor"
+      text: "EDITOR:"
       wait_timeout_s: 60
       capture_label: editor_after_readybasic_$i
   - id: ctrl_b_editor_to_launcher_before_readyshell_$i

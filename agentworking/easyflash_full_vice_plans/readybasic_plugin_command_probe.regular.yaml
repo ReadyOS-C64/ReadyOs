@@ -1,0 +1,656 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_plugin_command_probe
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 2
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 180
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81-preboot.prg"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_readybasic_prompt
+    type: screen.wait_contains
+    params:
+      text: "readybasic"
+      wait_timeout_s: 180
+      capture_label: readybasic_plugin_prompt
+  - id: dump_initial_plugin_state
+    type: dump.memory_ranges
+    params:
+      ranges: &plugin_ranges
+        - { label: entry_1000, start: 0x1000, end: 0x1120 }
+        - { label: resident_1200, start: 0x1200, end: 0x1BFF }
+        - { label: low_overlay_1c00, start: 0x1C00, end: 0x23FF }
+        - { label: shared_frames_2400, start: 0x2400, end: 0x27FF }
+        - { label: hidden_shadow_9a00, start: 0x9A00, end: 0x9FFF }
+        - { label: hidden_visible_a000, start: 0xA000, end: 0xA5FF }
+        - { label: hidden_overlay_a800, start: 0xA800, end: 0xA8FF }
+        - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
+        - { label: reu_alloc_table_c600, start: 0xC600, end: 0xC6FF }
+
+  - id: probe_01_ping
+    type: input.sequence
+    params:
+      keys: [90,69,67,72,79,49,40,80,37,41,13,80,82,73,78,84,32,34,90,69,67,72,79,34,59,80,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: capture_01_ping
+    type: screen.capture
+    params:
+      label: after_zecho1
+  - id: assert_01_ping
+    type: assert.screen
+    params:
+      contains: "ZECHO 1"
+  - id: dump_01_ping
+    type: dump.memory_ranges
+    params:
+      ranges: *plugin_ranges
+
+  - id: probe_02_add16
+    type: input.sequence
+    params:
+      keys: [65,37,61,90,65,68,68,49,54,40,53,44,49,48,41,13,80,82,73,78,84,32,34,65,68,68,34,59,65,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_02_add16
+    type: assert.screen
+    params:
+      contains: "ADD 15"
+
+  - id: probe_02a_if_then_direct
+    type: input.sequence
+    params:
+      keys: [80,37,61,48,13,73,70,32,49,32,84,72,69,78,32,80,37,61,90,65,68,68,49,54,40,48,44,49,41,13,80,82,73,78,84,32,34,73,70,68,73,82,34,59,80,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: capture_02a_if_then_direct
+    type: screen.capture
+    params:
+      label: after_if_then_direct
+  - id: assert_02a_if_then_direct
+    type: assert.screen
+    params:
+      contains: "IFDIR 1"
+
+  - id: probe_03_strup_variable
+    type: input.sequence
+    params:
+      keys: [83,36,61,34,97,98,99,34,13,84,36,61,85,80,80,69,82,40,83,36,41,13,80,82,73,78,84,32,34,83,84,82,34,59,84,36,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_03_strup_variable
+    type: assert.screen
+    params:
+      contains: "STRABC"
+
+  - id: probe_04_strup_literal
+    type: input.sequence
+    params:
+      keys: [85,36,61,85,80,80,69,82,40,34,100,101,102,34,41,13,80,82,73,78,84,32,34,76,73,84,34,59,85,36,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_04_strup_literal
+    type: assert.screen
+    params:
+      contains: "LITDEF"
+
+  - id: probe_04a_lower_variable
+    type: input.sequence
+    params:
+      keys: [83,36,61,34,65,66,67,34,13,76,36,61,76,79,87,69,82,40,83,36,41,13,80,82,73,78,84,32,34,76,79,87,65,83,67,34,59,65,83,67,40,76,36,41,59,65,83,67,40,77,73,68,36,40,76,36,44,50,44,49,41,41,59,65,83,67,40,77,73,68,36,40,76,36,44,51,44,49,41,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_04a_lower_variable
+    type: assert.screen
+    params:
+      contains: "LOWASC 97  98  99"
+
+  - id: probe_04b_lower_literal
+    type: input.sequence
+    params:
+      keys: [76,36,61,76,79,87,69,82,40,34,71,72,73,34,41,13,80,82,73,78,84,32,34,76,73,84,76,79,87,65,83,67,34,59,65,83,67,40,76,36,41,59,65,83,67,40,77,73,68,36,40,76,36,44,50,44,49,41,41,59,65,83,67,40,77,73,68,36,40,76,36,44,51,44,49,41,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_04b_lower_literal
+    type: assert.screen
+    params:
+      contains: "LITLOWASC 103  104  105"
+
+  - id: probe_05_hcrc_hidden
+    type: input.sequence
+    params:
+      keys: [72,37,61,90,72,73,68,68,69,78,82,65,77,40,34,65,66,34,41,13,80,82,73,78,84,32,34,90,72,73,68,68,69,78,82,65,77,34,59,72,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_05_hcrc_hidden
+    type: assert.screen
+    params:
+      contains: "ZHIDDENRAM 131"
+  - id: dump_05_hidden_worker
+    type: dump.memory_ranges
+    params:
+      ranges: *plugin_ranges
+
+  - id: probe_06_sumai
+    type: input.sequence
+    params:
+      keys: [68,73,77,32,65,37,40,51,41,13,65,37,40,48,41,61,49,58,65,37,40,49,41,61,50,58,65,37,40,50,41,61,51,13,83,37,61,90,83,85,77,78,85,77,65,82,82,65,89,40,65,37,40,48,41,44,51,41,13,80,82,73,78,84,32,34,83,85,77,34,59,83,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: assert_06_sumai
+    type: assert.screen
+    params:
+      contains: "SUM 6"
+
+  - id: probe_07_rangeai
+    type: input.sequence
+    params:
+      keys: [68,73,77,32,82,37,40,52,41,13,90,82,65,78,71,69,78,85,77,65,82,82,65,89,40,55,44,52,44,82,37,40,48,41,41,13,80,82,73,78,84,32,34,82,65,78,71,69,34,59,82,37,40,48,41,59,82,37,40,51,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: assert_07_rangeai
+    type: assert.screen
+    params:
+      contains: "RANGE 7  10"
+
+  - id: probe_08_bufmake
+    type: input.sequence
+    params:
+      keys: [72,37,61,66,85,70,77,65,75,69,40,51,48,48,41,13,80,82,73,78,84,32,34,66,85,70,77,65,75,69,34,59,72,37,59,34,58,69,78,68,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_08_bufmake
+    type: assert.screen
+    params:
+      contains: "BUFMAKE 1 :END"
+  - id: dump_08_bufmake
+    type: dump.memory_ranges
+    params:
+      ranges: *plugin_ranges
+
+  - id: probe_09_buffill
+    type: input.sequence
+    params:
+      keys: [66,85,70,70,73,76,76,40,72,37,44,49,55,48,41,13,80,82,73,78,84,32,34,70,73,76,76,32,79,75,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_09_buffill
+    type: assert.screen
+    params:
+      contains: "FILL OK"
+  - id: assert_09_buffill_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_10_bufdrop
+    type: input.sequence
+    params:
+      keys: [66,85,70,68,82,79,80,40,72,37,41,13,80,82,73,78,84,32,34,70,82,69,69,32,79,75,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10_bufdrop
+    type: assert.screen
+    params:
+      contains: "FREE OK"
+  - id: assert_10_bufdrop_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_10a_scrcap_scrput_slot128
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,83,67,82,77,65,82,75,34,13,83,37,61,83,67,82,67,65,80,40,41,13,80,82,73,78,84,32,34,67,72,65,78,71,69,68,34,13,83,67,82,80,85,84,40,83,37,41,13,80,82,73,78,84,32,34,83,67,82,80,85,84,34,59,83,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: assert_10a_scrcap_restored_text
+    type: assert.screen
+    params:
+      contains: "SCRMARK"
+  - id: assert_10a_scrput_slot128
+    type: assert.screen
+    params:
+      contains: "SCRPUT 1"
+  - id: probe_10b_buffill_rejects_screen_handle
+    type: input.sequence
+    params:
+      keys: [66,85,70,70,73,76,76,40,83,37,44,49,55,48,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10b_buffill_rejects_screen_handle
+    type: assert.screen
+    params:
+      contains: "?RB ERROR 40"
+  - id: probe_10c_bufdrop_screen_handle
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,66,85,70,68,82,79,80,40,83,37,41,13,80,82,73,78,84,32,34,83,67,82,70,82,69,69,34,59,83,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10c_bufdrop_screen_handle
+    type: assert.screen
+    params:
+      contains: "SCRFREE 1"
+  - id: assert_10c_bufdrop_screen_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+  - id: probe_10d_scrput_rejects_buffer_handle
+    type: input.sequence
+    params:
+      keys: [66,37,61,66,85,70,77,65,75,69,40,51,48,48,41,13,83,67,82,80,85,84,40,66,37,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10d_scrput_rejects_buffer_handle
+    type: assert.screen
+    params:
+      contains: "?RB ERROR 40"
+  - id: probe_10e_free_buffer_after_type_error
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,66,85,70,68,82,79,80,40,66,37,41,13,80,82,73,78,84,32,34,66,85,70,82,69,69,34,59,66,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10e_free_buffer_after_type_error
+    type: assert.screen
+    params:
+      contains: "BUFREE 1"
+  - id: assert_10e_free_buffer_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_10f_allocate_128_handles
+    type: input.sequence
+    params:
+      keys: [78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,49,50,56,13,50,48,32,72,37,61,66,85,70,77,65,75,69,40,49,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,72,77,65,88,34,59,72,37,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 4.0
+  - id: assert_10f_allocate_128_handles
+    type: assert.screen
+    params:
+      contains: "HMAX 128"
+  - id: assert_10f_allocate_128_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_10g_handle_129_rejected
+    type: input.sequence
+    params:
+      keys: [69,37,61,66,85,70,77,65,75,69,40,49,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10g_handle_129_rejected
+    type: assert.screen
+    params:
+      contains: "?RB ERROR 33"
+
+  - id: probe_10h_free_128_handles
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,49,50,56,13,50,48,32,66,85,70,68,82,79,80,40,73,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,72,70,82,69,69,68,34,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 4.0
+  - id: assert_10h_free_128_handles
+    type: assert.screen
+    params:
+      contains: "HFREED"
+  - id: assert_10h_free_128_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_10i_reuse_low_handle
+    type: input.sequence
+    params:
+      keys: [82,37,61,66,85,70,77,65,75,69,40,49,41,13,80,82,73,78,84,32,34,72,82,69,85,83,69,34,59,82,37,13,66,85,70,68,82,79,80,40,82,37,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10i_reuse_low_handle
+    type: assert.screen
+    params:
+      contains: "HREUSE 1"
+  - id: assert_10i_reuse_low_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_10j_allocate_48k_heap
+    type: input.sequence
+    params:
+      keys: [77,37,61,66,85,70,77,65,75,69,40,52,57,49,53,50,41,13,80,82,73,78,84,32,34,72,77,65,88,66,85,70,34,59,77,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: assert_10j_allocate_48k_heap
+    type: assert.screen
+    params:
+      contains: "HMAXBUF 1"
+  - id: assert_10j_allocate_48k_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_10k_heap_full_rejected
+    type: input.sequence
+    params:
+      keys: [69,37,61,66,85,70,77,65,75,69,40,49,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10k_heap_full_rejected
+    type: assert.screen
+    params:
+      contains: "?RB ERROR 34"
+
+  - id: probe_10l_free_48k_heap
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,66,85,70,68,82,79,80,40,77,37,41,13,80,82,73,78,84,32,34,72,77,65,88,70,82,69,69,34,59,77,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10l_free_48k_heap
+    type: assert.screen
+    params:
+      contains: "HMAXFREE 1"
+  - id: assert_10l_free_48k_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_10m_screen_handles_fill_heap
+    type: input.sequence
+    params:
+      keys: [78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,50,52,13,50,48,32,83,37,61,83,67,82,67,65,80,40,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,83,77,65,88,34,59,83,37,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 4.0
+  - id: assert_10m_screen_handles_fill_heap
+    type: assert.screen
+    params:
+      contains: "SMAX 24"
+  - id: assert_10m_screen_handles_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_10n_screen_heap_full_rejected
+    type: input.sequence
+    params:
+      keys: [83,37,61,83,67,82,67,65,80,40,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_10n_screen_heap_full_rejected
+    type: assert.screen
+    params:
+      contains: "?RB ERROR 34"
+
+  - id: probe_10o_free_screen_handles
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,78,69,87,13,49,48,32,70,79,82,32,73,61,49,32,84,79,32,50,52,13,50,48,32,66,85,70,68,82,79,80,40,73,41,13,51,48,32,78,69,88,84,32,73,13,52,48,32,80,82,73,78,84,32,34,83,70,82,69,69,68,34,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 4.0
+  - id: assert_10o_free_screen_handles
+    type: assert.screen
+    params:
+      contains: "SFREED"
+  - id: assert_10o_free_screen_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_11_tempscratch
+    type: input.sequence
+    params:
+      keys: [84,37,61,90,84,69,77,80,83,67,82,65,84,67,72,40,53,49,51,41,13,80,82,73,78,84,32,34,84,69,77,80,34,59,84,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_11_tempscratch
+    type: assert.screen
+    params:
+      contains: "TEMP 3"
+
+  - id: probe_12_fail_clears_output
+    type: input.sequence
+    params:
+      keys: [88,37,61,57,57,13,90,70,65,73,76,40,55,44,88,37,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_12_fail_error
+    type: assert.screen
+    params:
+      contains: "?RB ERROR 7"
+  - id: probe_12_print_cleared_output
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,70,65,73,76,67,76,82,34,59,88,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_12_fail_cleared_output
+    type: assert.screen
+    params:
+      contains: "FAILCLR 0"
+
+  - id: probe_13_unknown_command
+    type: input.sequence
+    params:
+      keys: [78,79,80,69,40,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13_unknown_command
+    type: assert.screen
+    params:
+      contains: "SYNTAX"
+
+  - id: probe_13_old_ping_rejected
+    type: input.sequence
+    params:
+      keys: [83,67,65,76,65,82,40,80,37,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13_old_ping_rejected
+    type: assert.screen
+    params:
+      contains: "ERROR"
+
+  - id: probe_13_old_add16_rejected
+    type: input.sequence
+    params:
+      keys: [65,68,68,49,54,40,49,44,50,44,65,37,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13_old_add16_rejected
+    type: assert.screen
+    params:
+      contains: "ERROR"
+
+  - id: probe_13_old_strup_rejected
+    type: input.sequence
+    params:
+      keys: [83,84,82,85,80,40,34,97,98,99,34,44,84,36,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13_old_strup_rejected
+    type: assert.screen
+    params:
+      contains: "ERROR"
+
+  - id: probe_13_old_hcrc_rejected
+    type: input.sequence
+    params:
+      keys: [72,67,82,67,40,34,65,66,34,44,72,37,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13_old_hcrc_rejected
+    type: assert.screen
+    params:
+      contains: "ERROR"
+
+  - id: probe_13_old_sumai_rejected
+    type: input.sequence
+    params:
+      keys: [83,85,77,65,73,40,65,37,40,48,41,44,49,44,83,37,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13_old_sumai_rejected
+    type: assert.screen
+    params:
+      contains: "ERROR"
+
+  - id: probe_13_old_rangeai_rejected
+    type: input.sequence
+    params:
+      keys: [82,65,78,71,69,65,73,40,49,44,49,44,65,37,40,48,41,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13_old_rangeai_rejected
+    type: assert.screen
+    params:
+      contains: "ERROR"
+
+  - id: probe_13a_command_name_in_string
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,78,79,80,69,40,41,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13a_command_name_in_string
+    type: assert.screen
+    params:
+      contains: "NOPE()"
+  - id: assert_13a_no_rb_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_13b_command_name_in_rem
+    type: input.sequence
+    params:
+      keys: [82,69,77,32,78,79,80,69,40,41,13,80,82,73,78,84,32,34,82,69,77,79,75,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13b_command_name_in_rem
+    type: assert.screen
+    params:
+      contains: "REMOK"
+  - id: assert_13b_no_rb_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?RB ERROR"
+
+  - id: probe_13c_first_comma_rejected
+    type: input.sequence
+    params:
+      keys: [90,65,68,68,49,54,40,44,49,44,50,44,65,37,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13c_first_comma_rejected
+    type: assert.screen
+    params:
+      contains: "SYNTAX"
+
+  - id: probe_13d_missing_out_marker_rejected
+    type: input.sequence
+    params:
+      keys: [90,65,68,68,49,54,32,49,44,50,44,65,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_13d_missing_out_marker_rejected
+    type: assert.screen
+    params:
+      contains: "SYNTAX"
+
+  - id: probe_14_seed_resume_vars
+    type: input.sequence
+    params:
+      keys: [86,37,61,51,50,49,58,86,83,36,61,34,79,75,34,13,80,82,73,78,84,32,34,83,69,69,68,69,68,34,59,86,37,59,34,58,34,59,86,83,36,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: assert_14_seed_resume_vars
+    type: assert.screen
+    params:
+      contains: "SEEDED 321 :OK"
+
+  - id: probe_15_exit_to_launcher
+    type: input.sequence
+    params:
+      keys: [69,88,73,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: wait_launcher_after_exit
+    type: screen.wait_contains
+    params:
+      text: "READY OS"
+      wait_timeout_s: 30
+  - id: resume_after_exit
+    type: input.sequence
+    params:
+      keys: [145,17,13]
+      inter_key_delay_s: 0.10
+      post_delay_s: 3.0
+  - id: wait_readybasic_after_resume
+    type: screen.wait_contains
+    params:
+      text: "READY."
+      wait_timeout_s: 30
+      capture_label: readybasic_after_plugin_resume
+  - id: probe_16_registry_after_resume
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,34,83,84,65,84,69,34,59,86,37,59,34,58,34,59,86,83,36,13,80,37,61,90,65,68,68,49,54,40,48,44,49,41,13,80,82,73,78,84,32,34,82,69,83,85,77,69,34,59,80,37,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 0.8
+  - id: capture_16_registry_after_resume
+    type: screen.capture
+    params:
+      label: after_registry_resume
+  - id: dump_16_vectors_after_resume
+    type: dump.memory_ranges
+    params:
+      ranges:
+        - { label: page3_vectors, start: 0x0304, end: 0x030B }
+        - { label: desc_buf, start: 0xC480, end: 0xC49F }
+        - { label: bridge_tail, start: 0xC1D0, end: 0xC20F }
+        - { label: low_slot_head, start: 0xA800, end: 0xA83F }
+  - id: assert_16_basic_state_after_resume
+    type: assert.screen
+    params:
+      contains: "STATE 321 :OK"
+  - id: assert_16_registry_after_resume
+    type: assert.screen
+    params:
+      contains: "RESUME 1"
+  - id: dump_final_plugin_state
+    type: dump.memory_ranges
+    params:
+      ranges: *plugin_ranges
+  - id: regs_final
+    type: monitor.command
+    params:
+      command: "r"
