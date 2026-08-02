@@ -26,11 +26,11 @@
 #define REU_MAX_LINES  512u
 #define RAM_MAX_LINES  OUTPUT_H
 #define INPUT_MAX      96u
-#define IRC_IN_MAX     150u
+#define IRC_IN_MAX     510u
 #define NET_READ_CHUNK 64u
 #define NET_READ_BURST 2u
 
-#define READYIRC_RESUME_APP_SCHEMA 2u
+#define READYIRC_RESUME_APP_SCHEMA 3u
 
 #define UI_MODE_SETUP 0u
 #define UI_MODE_CHAT  1u
@@ -59,7 +59,7 @@ typedef struct ReadyIrcResumeV2 {
     unsigned int port;
     unsigned char input_len;
     unsigned char input_cursor;
-    unsigned char partial_len;
+    unsigned int partial_len;
     unsigned char dropping_line;
     unsigned char scroll_back;
     unsigned char scroll_bank;
@@ -97,7 +97,7 @@ static char input_buf[INPUT_MAX + 1u];
 static unsigned char input_len;
 static unsigned char input_cursor;
 static char in_line[IRC_IN_MAX + 1u];
-static unsigned char in_len;
+static unsigned int in_len;
 static unsigned char dropping_line;
 
 static char build_chars[IRC_LINE_W];
@@ -116,6 +116,10 @@ static unsigned char ram_colors[RAM_MAX_LINES][IRC_LINE_W];
 static void draw_shell(void);
 static void draw_header(void);
 static void draw_output(void);
+static void draw_output_row(unsigned char row, unsigned int rel_index);
+static unsigned int output_start_rel(void);
+static void shift_output_up(void);
+static void shift_output_down(void);
 static void draw_input(void);
 static void draw_setup(void);
 static void draw_status(const char *msg, unsigned char color);
@@ -161,6 +165,7 @@ static void handle_chat_key(unsigned char key);
 static void setup_inputs_init(void);
 static void load_defaults(void);
 static unsigned char validate_settings(void);
+static unsigned char valid_channel(const char *channel);
 static unsigned char parse_port_text(unsigned int *value_out);
 static void resume_save_state(void);
 static unsigned char resume_restore_state(void);
@@ -397,6 +402,23 @@ static unsigned char parse_port_text(unsigned int *value_out) {
     return 1u;
 }
 
+static unsigned char valid_channel(const char *channel) {
+    unsigned char i;
+    unsigned char ch;
+
+    if ((channel[0] != '#' && channel[0] != '&') ||
+        channel[1] == 0 || strlen(channel) > CHANNEL_MAX) {
+        return 0u;
+    }
+    for (i = 1u; channel[i] != 0; ++i) {
+        ch = (unsigned char)channel[i];
+        if (ch < 33u || ch == ',') {
+            return 0u;
+        }
+    }
+    return 1u;
+}
+
 static unsigned char validate_settings(void) {
     unsigned char i;
     unsigned char ch;
@@ -439,12 +461,9 @@ static unsigned char validate_settings(void) {
         strcpy(setup_status, "channel must start with # or &");
         return 0u;
     }
-    for (i = 1u; channel_buf[i] != 0; ++i) {
-        ch = (unsigned char)channel_buf[i];
-        if (ch < 33u || ch == ',') {
-            strcpy(setup_status, "invalid channel");
-            return 0u;
-        }
+    if (!valid_channel(channel_buf)) {
+        strcpy(setup_status, "invalid channel");
+        return 0u;
     }
     setup_status[0] = 0;
     return 1u;
@@ -543,46 +562,66 @@ static void fetch_line(unsigned int rel_index) {
     }
 }
 
-static void draw_output(void) {
-    unsigned char row;
-    unsigned char col;
+static unsigned int output_start_rel(void) {
     unsigned int start;
-    unsigned int rel;
+
+    if (line_count <= OUTPUT_H) {
+        return 0u;
+    }
+    start = (unsigned int)(line_count - OUTPUT_H);
+    if (scroll_back > start) {
+        scroll_back = (unsigned char)start;
+    }
+    return (unsigned int)(start - scroll_back);
+}
+
+static void draw_output_row(unsigned char row, unsigned int rel_index) {
+    unsigned char col;
     unsigned int offset;
 
-    for (row = 0u; row < OUTPUT_H; ++row) {
-        offset = (unsigned int)(OUTPUT_TOP + row) * 40u;
+    offset = (unsigned int)(OUTPUT_TOP + row) * 40u;
+    if (rel_index >= line_count) {
         for (col = 0u; col < 40u; ++col) {
             TUI_SCREEN[offset + col] = 32u;
             TUI_COLOR_RAM[offset + col] = TUI_COLOR_WHITE;
         }
-    }
-
-    if (line_count == 0u) {
         return;
     }
-    if (line_count > OUTPUT_H) {
-        start = (unsigned int)(line_count - OUTPUT_H);
-        if (scroll_back > start) {
-            scroll_back = (unsigned char)start;
-        }
-        start = (unsigned int)(start - scroll_back);
-    } else {
-        start = 0u;
-        scroll_back = 0u;
-    }
 
+    fetch_line(rel_index);
+    for (col = 0u; col < 40u; ++col) {
+        TUI_SCREEN[offset + col] = screen_ch(line_chars[col]);
+    }
+    memcpy(TUI_COLOR_RAM + offset, line_colors, IRC_LINE_W);
+}
+
+static void shift_output_up(void) {
+    unsigned int offset;
+
+    offset = (unsigned int)OUTPUT_TOP * 40u;
+    memmove(TUI_SCREEN + offset, TUI_SCREEN + offset + 40u,
+            (unsigned int)(OUTPUT_H - 1u) * 40u);
+    memmove(TUI_COLOR_RAM + offset, TUI_COLOR_RAM + offset + 40u,
+            (unsigned int)(OUTPUT_H - 1u) * 40u);
+}
+
+static void shift_output_down(void) {
+    unsigned int offset;
+
+    offset = (unsigned int)OUTPUT_TOP * 40u;
+    memmove(TUI_SCREEN + offset + 40u, TUI_SCREEN + offset,
+            (unsigned int)(OUTPUT_H - 1u) * 40u);
+    memmove(TUI_COLOR_RAM + offset + 40u, TUI_COLOR_RAM + offset,
+            (unsigned int)(OUTPUT_H - 1u) * 40u);
+}
+
+static void draw_output(void) {
+    unsigned char row;
+    unsigned int start;
+
+    start = output_start_rel();
     for (row = 0u; row < OUTPUT_H; ++row) {
-        rel = (unsigned int)(start + row);
-        if (rel >= line_count) {
-            break;
-        }
-        fetch_line(rel);
-        offset = (unsigned int)(OUTPUT_TOP + row) * 40u;
-        for (col = 0u; col < 40u; ++col) {
-            TUI_SCREEN[offset + col] = screen_ch(line_chars[col]);
-            TUI_COLOR_RAM[offset + col] = line_colors[col];
-        }
+        draw_output_row(row, (unsigned int)(start + row));
     }
 }
 
@@ -658,6 +697,12 @@ static void line_text(const char *msg, unsigned char color) {
 
 static void store_line(const char *chars, const unsigned char *colors) {
     unsigned int idx;
+    unsigned int old_count;
+    unsigned int start;
+    unsigned char old_scroll;
+
+    old_count = line_count;
+    old_scroll = scroll_back;
 
     if (line_count < max_lines) {
         idx = physical_line(line_count);
@@ -677,8 +722,28 @@ static void store_line(const char *chars, const unsigned char *colors) {
         memcpy(ram_colors[idx], colors, IRC_LINE_W);
     }
 
-    scroll_back = 0u;
-    draw_output();
+    if (old_scroll != 0u) {
+        start = line_count > OUTPUT_H ?
+                (unsigned int)(line_count - OUTPUT_H) : 0u;
+        if (scroll_back < start && scroll_back < 255u) {
+            ++scroll_back;
+            return;
+        }
+        shift_output_up();
+        start = output_start_rel();
+        draw_output_row((unsigned char)(OUTPUT_H - 1u),
+                        (unsigned int)(start + OUTPUT_H - 1u));
+        return;
+    }
+
+    if (old_count < OUTPUT_H) {
+        draw_output_row((unsigned char)old_count, old_count);
+        return;
+    }
+    shift_output_up();
+    start = output_start_rel();
+    draw_output_row((unsigned char)(OUTPUT_H - 1u),
+                    (unsigned int)(start + OUTPUT_H - 1u));
 }
 
 static void add_text_line(const char *msg, unsigned char color) {
@@ -834,6 +899,7 @@ static void parse_irc_line(char *line) {
     char *cmd;
     char *target;
     char *msg;
+    char *channel;
     char *end;
     char nick[32];
     unsigned char i;
@@ -883,6 +949,52 @@ static void parse_irc_line(char *line) {
     }
     *target = 0;
     ++target;
+
+    if (text_eq(cmd, "353")) {
+        msg = find_substr(target, " :");
+        if (msg == 0) {
+            return;
+        }
+        *msg = 0;
+        msg += 2;
+        channel = target;
+        while (*channel != 0 && *channel != '#' && *channel != '&') {
+            ++channel;
+        }
+        end = channel;
+        while (*end != 0 && *end != ' ') {
+            ++end;
+        }
+        if (*end != 0) {
+            *end = 0;
+        }
+        line_begin();
+        line_text("names ", TUI_COLOR_GRAY3);
+        line_text(*channel != 0 ? channel : channel_buf, TUI_COLOR_CYAN);
+        line_text(": ", TUI_COLOR_GRAY3);
+        line_text(msg, TUI_COLOR_WHITE);
+        line_flush();
+        return;
+    }
+
+    if (text_eq(cmd, "366")) {
+        channel = target;
+        while (*channel != 0 && *channel != '#' && *channel != '&') {
+            ++channel;
+        }
+        end = channel;
+        while (*end != 0 && *end != ' ' && *end != ':') {
+            ++end;
+        }
+        if (*end != 0) {
+            *end = 0;
+        }
+        line_begin();
+        line_text("end names ", TUI_COLOR_GRAY3);
+        line_text(*channel != 0 ? channel : channel_buf, TUI_COLOR_CYAN);
+        line_flush();
+        return;
+    }
 
     if (text_eq(cmd, "privmsg")) {
         msg = find_substr(target, " :");
@@ -1015,6 +1127,8 @@ static void probe_resumed_connection(void) {
 }
 
 static void handle_input_submit(void) {
+    char *arg;
+
     if (input_len == 0u) {
         return;
     }
@@ -1026,6 +1140,76 @@ static void handle_input_submit(void) {
         input_cursor = 0u;
         input_buf[0] = 0;
         disconnect_to_setup();
+        return;
+    }
+
+    if (text_eq(input_buf, "/join") || starts_with(input_buf, "/join ")) {
+        if (!connected) {
+            add_status_line("not connected");
+        } else {
+            arg = input_buf + 5;
+            if (*arg == ' ') {
+                ++arg;
+            }
+            if (!valid_channel(arg)) {
+                add_status_line("usage /join #channel");
+            } else if (text_eq(arg, channel_buf)) {
+                add_status_line("already in channel");
+            } else {
+                send_buf[0] = 0;
+                append_fit(send_buf, sizeof(send_buf), "part ");
+                append_wire_lower(send_buf, sizeof(send_buf), channel_buf);
+                append_fit(send_buf, sizeof(send_buf), " :changing channel");
+                append_wire_eol(send_buf, sizeof(send_buf));
+                send_raw(send_buf);
+
+                strcpy(channel_buf, arg);
+                lowercase_in_place(channel_buf);
+                send_buf[0] = 0;
+                append_fit(send_buf, sizeof(send_buf), "join ");
+                append_wire_lower(send_buf, sizeof(send_buf), channel_buf);
+                append_wire_eol(send_buf, sizeof(send_buf));
+                send_raw(send_buf);
+                draw_header();
+
+                send_buf[0] = 0;
+                append_fit(send_buf, sizeof(send_buf), "joining ");
+                append_fit(send_buf, sizeof(send_buf), channel_buf);
+                add_status_line(send_buf);
+            }
+        }
+        input_len = 0u;
+        input_cursor = 0u;
+        input_buf[0] = 0;
+        draw_input();
+        return;
+    }
+
+    if (text_eq(input_buf, "/names") || starts_with(input_buf, "/names ")) {
+        if (!connected) {
+            add_status_line("not connected");
+        } else {
+            arg = input_buf + 6;
+            if (*arg == ' ') {
+                ++arg;
+            }
+            if (*arg == 0) {
+                arg = channel_buf;
+            }
+            if (!valid_channel(arg)) {
+                add_status_line("usage /names #channel");
+            } else {
+                send_buf[0] = 0;
+                append_fit(send_buf, sizeof(send_buf), "names ");
+                append_wire_lower(send_buf, sizeof(send_buf), arg);
+                append_wire_eol(send_buf, sizeof(send_buf));
+                send_raw(send_buf);
+            }
+        }
+        input_len = 0u;
+        input_cursor = 0u;
+        input_buf[0] = 0;
+        draw_input();
         return;
     }
 
@@ -1115,14 +1299,18 @@ static void handle_chat_key(unsigned char key) {
                 max_scroll = (unsigned int)(line_count - OUTPUT_H);
                 if (scroll_back < max_scroll && scroll_back < 255u) {
                     ++scroll_back;
-                    draw_output();
+                    shift_output_down();
+                    draw_output_row(0u, output_start_rel());
                 }
             }
             break;
         case TUI_KEY_DOWN:
             if (scroll_back > 0u) {
                 --scroll_back;
-                draw_output();
+                shift_output_up();
+                max_scroll = output_start_rel();
+                draw_output_row((unsigned char)(OUTPUT_H - 1u),
+                                (unsigned int)(max_scroll + OUTPUT_H - 1u));
             }
             break;
         default:

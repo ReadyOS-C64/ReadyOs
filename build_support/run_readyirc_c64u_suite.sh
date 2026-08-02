@@ -10,6 +10,7 @@ PROJECT="$HARNESS_REPO/tools/vice_tasks_dotnet/src/ViceTasks.Binary/ViceTasks.Bi
 C64U_HOST="${C64U_HOST:-10.0.0.79}"
 FIXTURE_PORT="${READYIRC_FIXTURE_PORT:-16667}"
 FIXTURE_CHANNEL="${READYIRC_FIXTURE_CHANNEL:-#readyostest}"
+SWITCH_CHANNEL="${READYIRC_SWITCH_CHANNEL:-#secondtest}"
 FIXTURE_NICK="${READYIRC_FIXTURE_NICK:-autonick}"
 OUT_DIR="${READYIRC_C64U_OUT_DIR:-$READYOS_ROOT/logs/readyirc_c64u}"
 PLAN="$OUT_DIR/readyirc_c64u.generated.yaml"
@@ -74,7 +75,8 @@ cd "$READYOS_ROOT"
 
 FIXTURE_HOST="$(discover_fixture_host)"
 
-if [ "${READYIRC_C64U_SKIP_BUILD:-0}" != "1" ]; then
+if [ "${READYIRC_C64U_GENERATE_PLAN_ONLY:-0}" != "1" ] &&
+   [ "${READYIRC_C64U_SKIP_BUILD:-0}" != "1" ]; then
   VERSION_TEXT="$(python3 build_support/update_build_version.py --current)"
   make -B \
     BUILD_SUPPORT_DIR=build_support \
@@ -117,6 +119,7 @@ if [ "${READYIRC_C64U_GENERATE_PLAN_ONLY:-0}" != "1" ]; then
   python3 build_support/readyirc_fixture_server.py \
     --port "$FIXTURE_PORT" \
     --channel "$FIXTURE_CHANNEL" \
+    --ultimate-host "$C64U_HOST" \
     --log "$FIXTURE_LOG" \
     --status "$FIXTURE_STATUS" &
   FIXTURE_PID=$!
@@ -240,6 +243,123 @@ steps:
   - id: wait_echo
     type: screen.wait_contains
     params: { text: "echo mixed hello", wait_timeout_s: 30, poll_s: 0.5, capture_label: readyirc_echo }
+  - id: fill_scrollback
+    type: input.sequence
+    params: { keys: [$(keys $'fillscroll\r')], inter_key_delay_s: 0.04, post_delay_s: 0.5 }
+  - id: wait_filled_scrollback
+    type: screen.wait_contains
+    params: { text: "fill line 25", wait_timeout_s: 30, poll_s: 0.25, capture_label: readyirc_scroll_filled }
+  - id: plant_append_sentinel
+    type: input.sequence
+    params: { keys: [$(keys $'plantsentinelappend\r')], inter_key_delay_s: 0.04, post_delay_s: 1.0 }
+  - id: assert_append_screen_sentinel_planted
+    type: assert.memory
+    params: { start: 0x0607, end: 0x0607, equals_hex: "7F" }
+  - id: assert_append_color_sentinel_planted
+    type: assert.memory
+    params: { start: 0xDA07, end: 0xDA07, equals_hex: "0E", mask_hex: "0F" }
+  - id: append_single_local_line
+    type: input.sequence
+    params: { keys: [$(keys $'renderprobe\r')], inter_key_delay_s: 0.04, post_delay_s: 1.0 }
+  - id: assert_append_shifted_screen_once
+    type: assert.memory
+    params: { start: 0x05DF, end: 0x05DF, equals_hex: "7F" }
+  - id: assert_append_shifted_color_once
+    type: assert.memory
+    params: { start: 0xD9DF, end: 0xD9DF, equals_hex: "0E", mask_hex: "0F" }
+  - id: plant_scroll_sentinel
+    type: input.sequence
+    params: { keys: [$(keys $'plantsentinelscroll\r')], inter_key_delay_s: 0.04, post_delay_s: 1.0 }
+  - id: assert_scroll_screen_sentinel_planted
+    type: assert.memory
+    params: { start: 0x0607, end: 0x0607, equals_hex: "7E" }
+  - id: assert_scroll_color_sentinel_planted
+    type: assert.memory
+    params: { start: 0xDA07, end: 0xDA07, equals_hex: "07", mask_hex: "0F" }
+  - id: scroll_up_one
+    type: input.sequence
+    params: { keys: [145], inter_key_delay_s: 0.1, post_delay_s: 0.3 }
+  - id: assert_scroll_up_shifted_screen_down
+    type: assert.memory
+    params: { start: 0x062F, end: 0x062F, equals_hex: "7E" }
+  - id: assert_scroll_up_shifted_color_down
+    type: assert.memory
+    params: { start: 0xDA2F, end: 0xDA2F, equals_hex: "07", mask_hex: "0F" }
+  - id: scroll_down_one
+    type: input.sequence
+    params: { keys: [17], inter_key_delay_s: 0.1, post_delay_s: 0.3 }
+  - id: assert_scroll_down_restored_screen
+    type: assert.memory
+    params: { start: 0x0607, end: 0x0607, equals_hex: "7E" }
+  - id: assert_scroll_down_restored_color
+    type: assert.memory
+    params: { start: 0xDA07, end: 0xDA07, equals_hex: "07", mask_hex: "0F" }
+  - id: enter_history_view
+    type: input.sequence
+    params: { keys: [145], inter_key_delay_s: 0.1, post_delay_s: 0.3 }
+  - id: plant_history_sentinel
+    type: input.sequence
+    params: { keys: [$(keys $'plantsentinelhistory\r')], inter_key_delay_s: 0.04, post_delay_s: 1.0 }
+  - id: assert_history_screen_sentinel_planted
+    type: assert.memory
+    params: { start: 0x0607, end: 0x0607, equals_hex: "7D" }
+  - id: assert_history_color_sentinel_planted
+    type: assert.memory
+    params: { start: 0xDA07, end: 0xDA07, equals_hex: "06", mask_hex: "0F" }
+  - id: append_while_viewing_history
+    type: input.sequence
+    params: { keys: [$(keys $'historyprobe\r')], inter_key_delay_s: 0.04, post_delay_s: 1.0 }
+  - id: assert_history_screen_unchanged
+    type: assert.memory
+    params: { start: 0x0607, end: 0x0607, equals_hex: "7D" }
+  - id: assert_history_color_unchanged
+    type: assert.memory
+    params: { start: 0xDA07, end: 0xDA07, equals_hex: "06", mask_hex: "0F" }
+  - id: return_to_live_tail
+    type: input.sequence
+    params: { keys: [17,17,17], inter_key_delay_s: 0.1, post_delay_s: 0.5 }
+  - id: wait_history_probe_at_tail
+    type: screen.wait_contains
+    params: { text: "historyprobe", wait_timeout_s: 10, poll_s: 0.25, capture_label: readyirc_incremental_render }
+  - id: names_current_channel
+    type: input.sequence
+    params: { keys: [$(keys $'/names\r')], inter_key_delay_s: 0.05, post_delay_s: 0.5 }
+  - id: wait_names_current
+    type: screen.wait_contains
+    params: { text: "names $FIXTURE_CHANNEL: @alpha +beta gamma", wait_timeout_s: 20, poll_s: 0.25, capture_label: readyirc_names_current }
+  - id: wait_names_current_end
+    type: screen.wait_contains
+    params: { text: "end names $FIXTURE_CHANNEL", wait_timeout_s: 10, poll_s: 0.25 }
+  - id: names_long_explicit_channel
+    type: input.sequence
+    params: { keys: [$(keys $'/names #longnames\r')], inter_key_delay_s: 0.05, post_delay_s: 0.5 }
+  - id: wait_long_names_tail
+    type: screen.wait_contains
+    params: { text: "longnick30", wait_timeout_s: 20, poll_s: 0.25, capture_label: readyirc_names_long }
+  - id: wait_long_names_end
+    type: screen.wait_contains
+    params: { text: "end names #longnames", wait_timeout_s: 10, poll_s: 0.25 }
+  - id: invalid_join
+    type: input.sequence
+    params: { keys: [$(keys $'/join invalid\r')], inter_key_delay_s: 0.05, post_delay_s: 0.5 }
+  - id: assert_invalid_join
+    type: assert.screen
+    params: { contains: "usage /join #channel" }
+  - id: switch_channel
+    type: input.sequence
+    params: { keys: [$(keys "/join $SWITCH_CHANNEL"),13], inter_key_delay_s: 0.05, post_delay_s: 0.5 }
+  - id: wait_switched_channel_header
+    type: screen.wait_contains
+    params: { text: "readyirc online $SWITCH_CHANNEL", wait_timeout_s: 20, poll_s: 0.25, capture_label: readyirc_join_switched }
+  - id: wait_switched_channel_message
+    type: screen.wait_contains
+    params: { text: "joined new channel", wait_timeout_s: 20, poll_s: 0.25 }
+  - id: message_after_join
+    type: input.sequence
+    params: { keys: [$(keys $'afterjoin\r')], inter_key_delay_s: 0.05, post_delay_s: 0.5 }
+  - id: wait_echo_after_join
+    type: screen.wait_contains
+    params: { text: "echo mixed afterjoin", wait_timeout_s: 20, poll_s: 0.25, capture_label: readyirc_after_join }
   - id: queue_and_suspend
     type: input.sequence
     params: { keys: [$(keys $'queuewhileaway\r'),2], inter_key_delay_s: 0.06, post_delay_s: 0.5 }
@@ -297,6 +417,9 @@ steps:
   - id: assert_settings_retained
     type: assert.screen
     params: { contains: "$FIXTURE_NICK" }
+  - id: assert_switched_channel_retained
+    type: assert.screen
+    params: { contains: "$SWITCH_CHANNEL" }
   - id: capture_final
     type: screen.capture
     params: { label: readyirc_final_setup }
@@ -318,7 +441,7 @@ dotnet build "$PROJECT" | tee "$OUT_DIR/dotnet-build.log"
 dotnet run --project "$PROJECT" -- run-ultimate-plan \
   --plan "$PLAN" --host "$C64U_HOST" --no-tui | tee "$HARNESS_LOG"
 
-python3 - "$FIXTURE_STATUS" "$FIXTURE_NICK" "$FIXTURE_CHANNEL" <<'PY'
+python3 - "$FIXTURE_STATUS" "$FIXTURE_NICK" "$FIXTURE_CHANNEL" "$SWITCH_CHANNEL" <<'PY'
 import json
 import pathlib
 import sys
@@ -326,6 +449,7 @@ import sys
 status = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
 expected_nick = sys.argv[2]
 expected_channel = sys.argv[3]
+switch_channel = sys.argv[4]
 errors = []
 if status.get("connections") != 3:
     errors.append(f"expected 3 fixture connections, got {status.get('connections')}")
@@ -346,11 +470,45 @@ for connection in range(1, 4):
         errors.append(f"connection {connection} NICK was {item.get('nick')!r}")
     if item.get("user") != expected_nick:
         errors.append(f"connection {connection} USER was {item.get('user')!r}")
-    if item.get("channel") != expected_channel:
-        errors.append(f"connection {connection} JOIN was {item.get('channel')!r}")
+    wanted_channel = expected_channel if connection == 1 else switch_channel
+    if item.get("channel") != wanted_channel:
+        errors.append(
+            f"connection {connection} JOIN was {item.get('channel')!r}, "
+            f"expected {wanted_channel!r}"
+        )
+if status.get("channel_commands") != [
+    f"part {expected_channel}", f"join {switch_channel}"
+]:
+    errors.append(f"unexpected channel command order: {status.get('channel_commands')!r}")
+if status.get("names_requests") != [expected_channel, "#longnames"]:
+    errors.append(f"unexpected NAMES requests: {status.get('names_requests')!r}")
+if switch_channel not in status.get("privmsg_targets", []):
+    errors.append("no PRIVMSG targeted the switched channel")
 if errors:
     raise SystemExit("ReadyIRC fixture assertions failed:\n- " + "\n- ".join(errors))
 print("ReadyIRC fixture assertions passed")
 PY
+
+if [ "${READYIRC_C64U_PRESERVE_TEST_STATE:-0}" != "1" ]; then
+  cleanup
+  FIXTURE_PID=""
+  C64U_HOST="$C64U_HOST" \
+  C64U_SKIP_UPLOAD=1 \
+  C64U_SKIP_CONFIG=1 \
+  READYOS_CLEAR_REU=1 \
+  READYOS_CLEAR_REU_ONLY=1 \
+    /bin/bash build_support/run_readyos_boot_c64u_rest.sh \
+      "$D81" readyirc-clear.d81 "$OUT_DIR/post-suite-reu-clear"
+  /usr/bin/curl --fail --silent --show-error --request PUT \
+    "http://$C64U_HOST/v1/machine:reboot" \
+    --output "$OUT_DIR/post-suite-reboot.json"
+  sleep 8
+  C64U_HOST="$C64U_HOST" \
+  C64U_SKIP_UPLOAD=1 \
+  C64U_SKIP_CONFIG=1 \
+  READYOS_BOOT_INITIAL_WAIT_S=90 \
+    /bin/bash build_support/run_readyos_boot_c64u_rest.sh \
+      "$D81" READYOS.D81 "$OUT_DIR/post-suite-clean-boot"
+fi
 
 echo "ReadyIRC C64 Ultimate suite passed; artifacts: $OUT_DIR"

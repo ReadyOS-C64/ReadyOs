@@ -10,6 +10,7 @@ import socket
 import socketserver
 import threading
 import time
+import urllib.request
 from pathlib import Path
 
 
@@ -24,6 +25,11 @@ class FixtureState:
         self.quit_count = 0
         self.exact_pong = False
         self.registrations: list[dict[str, object]] = []
+        self.part_channels: list[str] = []
+        self.join_switches: list[str] = []
+        self.channel_commands: list[str] = []
+        self.names_requests: list[str] = []
+        self.privmsg_targets: list[str] = []
         self.events: list[str] = []
 
     def record(self, event: str) -> None:
@@ -38,6 +44,11 @@ class FixtureState:
                 "quit_count": self.quit_count,
                 "exact_pong": self.exact_pong,
                 "registrations": self.registrations,
+                "part_channels": self.part_channels,
+                "join_switches": self.join_switches,
+                "channel_commands": self.channel_commands,
+                "names_requests": self.names_requests,
+                "privmsg_targets": self.privmsg_targets,
                 "events": self.events[-40:],
             }
             temp_path = self.status_path.with_suffix(self.status_path.suffix + ".tmp")
@@ -99,7 +110,7 @@ class ReadyIrcHandler(socketserver.StreamRequestHandler):
         )
         self.send_line(f":Fixture.Server 001 {self.nick} :WELCOME MIXED CASE")
         self.send_line(
-            f":UpperNick!user@fixture PRIVMSG {self.server.state.channel} "  # type: ignore[attr-defined]
+            f":UpperNick!user@fixture PRIVMSG {self.join_channel} "
             f":CONNECTION {self.connection_number} MIXED CASE WELCOME"
         )
         self.send_line("PING :MiXeDToken")
@@ -128,6 +139,58 @@ class ReadyIrcHandler(socketserver.StreamRequestHandler):
         timer.daemon = True
         timer.start()
 
+    def write_ultimate_memory(self, address: int, value: int) -> None:
+        host = self.server.ultimate_host  # type: ignore[attr-defined]
+        write_url = (
+            f"http://{host}/v1/machine:writemem?address={address:04X}"
+        )
+        read_url = (
+            f"http://{host}/v1/machine:readmem?address={address:04X}&length=1"
+        )
+        for attempt in range(3):
+            request = urllib.request.Request(
+                write_url,
+                data=bytes((value,)),
+                headers={"Content-Type": "application/octet-stream"},
+                method="POST",
+            )
+            with urllib.request.urlopen(request, timeout=5) as response:
+                response.read()
+            with urllib.request.urlopen(read_url, timeout=5) as response:
+                actual = response.read(1)
+            if actual == bytes((value,)):
+                break
+            if attempt == 2:
+                got = actual.hex() if actual else "no data"
+                raise RuntimeError(
+                    f"Ultimate sentinel readback ${address:04x}: "
+                    f"expected ${value:02x}, got {got}"
+                )
+            time.sleep(0.05)
+        self.server.state.record(  # type: ignore[attr-defined]
+            f"ultimate sentinel ${address:04x}=${value:02x}"
+        )
+
+    def plant_sentinel(self, screen_value: int, color_value: int) -> None:
+        self.write_ultimate_memory(0x0607, screen_value)
+        self.write_ultimate_memory(0xDA07, color_value)
+
+    def schedule_sentinel(self, screen_value: int, color_value: int) -> None:
+        # ReadyIRC adds its local echo after socket_write returns. Plant after
+        # that echo so the following app action, not the setup command itself,
+        # is what moves (or preserves) the sentinel.
+        def plant() -> None:
+            try:
+                self.plant_sentinel(screen_value, color_value)
+            except Exception as exc:  # surfaced by the following readback step
+                self.server.state.record(  # type: ignore[attr-defined]
+                    f"ultimate sentinel failed: {exc}"
+                )
+
+        timer = threading.Timer(0.2, plant)
+        timer.daemon = True
+        timer.start()
+
     def handle(self) -> None:
         while not self.closed:
             raw = self.rfile.readline(1024)
@@ -144,8 +207,52 @@ class ReadyIrcHandler(socketserver.StreamRequestHandler):
                 self.user = line[5:].split(" ", 1)[0].strip()
                 self.got_user = True
             elif upper.startswith("JOIN "):
-                self.join_channel = line[5:].strip()
-                self.got_join = True
+                channel = line[5:].strip().lstrip(":")
+                self.join_channel = channel
+                if self.registered:
+                    with self.server.state.lock:  # type: ignore[attr-defined]
+                        self.server.state.join_switches.append(channel)  # type: ignore[attr-defined]
+                        self.server.state.channel_commands.append(f"join {channel}")  # type: ignore[attr-defined]
+                    self.server.state.record(  # type: ignore[attr-defined]
+                        f"connection {self.connection_number} switched join {channel}"
+                    )
+                    self.send_line(
+                        f":{self.nick}!user@fixture JOIN :{channel}"
+                    )
+                    self.send_line(
+                        f":SwitchBot!user@fixture PRIVMSG {channel} "
+                        ":JOINED NEW CHANNEL"
+                    )
+                else:
+                    self.got_join = True
+            elif upper.startswith("PART "):
+                channel = line[5:].split(" ", 1)[0].strip().lstrip(":")
+                with self.server.state.lock:  # type: ignore[attr-defined]
+                    self.server.state.part_channels.append(channel)  # type: ignore[attr-defined]
+                    self.server.state.channel_commands.append(f"part {channel}")  # type: ignore[attr-defined]
+                self.server.state.record(  # type: ignore[attr-defined]
+                    f"connection {self.connection_number} parted {channel}"
+                )
+                self.send_line(
+                    f":{self.nick}!user@fixture PART {channel} :changing channel"
+                )
+            elif upper.startswith("NAMES "):
+                channel = line[6:].strip().lstrip(":")
+                with self.server.state.lock:  # type: ignore[attr-defined]
+                    self.server.state.names_requests.append(channel)  # type: ignore[attr-defined]
+                self.server.state.record(  # type: ignore[attr-defined]
+                    f"connection {self.connection_number} names requested {channel}"
+                )
+                if channel.lower() == "#longnames":
+                    names = " ".join(f"LongNick{index:02d}" for index in range(1, 31))
+                else:
+                    names = "@Alpha +Beta Gamma"
+                self.send_line(
+                    f":Fixture.Server 353 {self.nick} = {channel} :{names}"
+                )
+                self.send_line(
+                    f":Fixture.Server 366 {self.nick} {channel} :End of /NAMES list."
+                )
             elif line == "PONG :MiXeDToken":
                 with self.server.state.lock:  # type: ignore[attr-defined]
                     self.server.state.exact_pong = True  # type: ignore[attr-defined]
@@ -158,18 +265,35 @@ class ReadyIrcHandler(socketserver.StreamRequestHandler):
                 )
                 break
             elif upper.startswith("PRIVMSG ") and " :" in line:
+                target = line.split(" ", 2)[1]
                 message = line.split(" :", 1)[1]
+                with self.server.state.lock:  # type: ignore[attr-defined]
+                    self.server.state.privmsg_targets.append(target)  # type: ignore[attr-defined]
                 if message.lower() == "queuewhileaway":
                     self.schedule_line(
                         3.0,
-                        f":QueueBot!user@fixture PRIVMSG {self.server.state.channel} "  # type: ignore[attr-defined]
+                        f":QueueBot!user@fixture PRIVMSG {target} "
                         ":QUEUED WHILE SUSPENDED",
                     )
                 elif message.lower() == "dropwhileaway":
                     self.schedule_close(3.0)
+                elif message.lower() == "fillscroll":
+                    for index in range(1, 26):
+                        self.send_line(
+                            f":FillBot!user@fixture PRIVMSG {target} "
+                            f":FILL LINE {index:02d}"
+                        )
+                elif message.lower() == "plantsentinelappend":
+                    self.schedule_sentinel(0x7F, 0x0E)
+                elif message.lower() == "plantsentinelscroll":
+                    self.schedule_sentinel(0x7E, 0x07)
+                elif message.lower() == "plantsentinelhistory":
+                    self.schedule_sentinel(0x7D, 0x06)
+                elif message.lower() in {"renderprobe", "historyprobe"}:
+                    pass
                 else:
                     self.send_line(
-                        f":EchoBot!user@fixture PRIVMSG {self.server.state.channel} "  # type: ignore[attr-defined]
+                        f":EchoBot!user@fixture PRIVMSG {target} "
                         f":ECHO MIXED {message.upper()}"
                     )
             self.finish_registration()
@@ -186,8 +310,11 @@ class FixtureServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
     daemon_threads = True
 
-    def __init__(self, address: tuple[str, int], state: FixtureState) -> None:
+    def __init__(
+        self, address: tuple[str, int], state: FixtureState, ultimate_host: str
+    ) -> None:
         self.state = state
+        self.ultimate_host = ultimate_host
         super().__init__(address, ReadyIrcHandler)
 
 
@@ -196,6 +323,7 @@ def main() -> int:
     parser.add_argument("--bind", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=16667)
     parser.add_argument("--channel", default="#readyostest")
+    parser.add_argument("--ultimate-host", default="10.0.0.79")
     parser.add_argument("--log", type=Path, required=True)
     parser.add_argument("--status", type=Path, required=True)
     args = parser.parse_args()
@@ -204,7 +332,7 @@ def main() -> int:
     args.status.parent.mkdir(parents=True, exist_ok=True)
     args.log.write_text("", encoding="utf-8")
     state = FixtureState(args.log, args.status, args.channel)
-    server = FixtureServer((args.bind, args.port), state)
+    server = FixtureServer((args.bind, args.port), state, args.ultimate_host)
 
     def stop_server(_signum: int, _frame: object) -> None:
         threading.Thread(target=server.shutdown, daemon=True).start()
