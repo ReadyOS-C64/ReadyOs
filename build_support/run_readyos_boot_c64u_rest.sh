@@ -15,6 +15,7 @@ skip_upload="${C64U_SKIP_UPLOAD:-0}"
 skip_config="${C64U_SKIP_CONFIG:-0}"
 clear_reu="${READYOS_CLEAR_REU:-0}"
 clear_reu_banks="${READYOS_CLEAR_REU_BANKS:-256}"
+clear_reu_only="${READYOS_CLEAR_REU_ONLY:-0}"
 machine_reboot="${C64U_MACHINE_REBOOT:-0}"
 mkdir -p "$out_dir" "$tmp_dir"
 log="${out_dir}/run.log"
@@ -435,6 +436,7 @@ echo "connect_wait_s=${connect_wait_s}" >> "$log"
 echo "skip_upload=${skip_upload}" >> "$log"
 echo "skip_config=${skip_config}" >> "$log"
 echo "clear_reu=${clear_reu}" >> "$log"
+echo "clear_reu_only=${clear_reu_only}" >> "$log"
 echo "machine_reboot=${machine_reboot}" >> "$log"
 if [[ "$skip_upload" == "1" ]]; then
   wait_for_http
@@ -459,6 +461,14 @@ fi
 
 if [[ "$clear_reu" == "1" ]]; then
   clear_reu_data
+fi
+if [[ "$clear_reu_only" == "1" ]]; then
+  if [[ "$clear_reu" != "1" ]]; then
+    echo "READYOS_CLEAR_REU_ONLY requires READYOS_CLEAR_REU=1" >> "$log"
+    exit 1
+  fi
+  echo "READYOS_CLEAR_REU_ONLY_OK" | tee "${out_dir}/status"
+  exit 0
 fi
 
 reset_machine "pre-mount"

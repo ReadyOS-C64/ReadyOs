@@ -30,6 +30,7 @@ static unsigned char uci_stat[READYIRC_UCI_STAT_MAX];
 static unsigned char uci_data_len;
 static unsigned char uci_stat_len;
 static char last_status[READYIRC_UCI_STAT_MAX + 1u];
+static unsigned char last_status_code = 0xFFu;
 
 static unsigned char id_matches(unsigned char id) {
     return (unsigned char)((id & UCI_ID_MASK) == UCI_ID_MATCH);
@@ -56,6 +57,12 @@ static void save_status(void) {
         last_status[i] = (char)uci_stat[i];
     }
     last_status[n] = 0;
+    last_status_code = 0xFFu;
+    if (n >= 2u && last_status[0] >= '0' && last_status[0] <= '9' &&
+        last_status[1] >= '0' && last_status[1] <= '9') {
+        last_status_code = (unsigned char)(((unsigned char)(last_status[0] - '0') * 10u) +
+                                           (unsigned char)(last_status[1] - '0'));
+    }
 }
 
 static unsigned char status_ok(void) {
@@ -154,6 +161,7 @@ static unsigned char command(const unsigned char *cmd,
     uci_data_len = 0u;
     uci_stat_len = 0u;
     last_status[0] = 0;
+    last_status_code = 0xFFu;
 
     if (!readyirc_uci_detect() || cmd == 0 || cmd_len == 0u) {
         return 0u;
@@ -264,6 +272,7 @@ unsigned char readyirc_uci_tcp_connect(const char *host,
                                        unsigned int port,
                                        unsigned char *socket_out) {
     static unsigned char cmd[32];
+    unsigned char ch;
     unsigned char i;
 
     if (socket_out != 0) {
@@ -278,7 +287,13 @@ unsigned char readyirc_uci_tcp_connect(const char *host,
     cmd[2] = (unsigned char)(port & 0xFFu);
     cmd[3] = (unsigned char)(port >> 8);
     for (i = 0u; host[i] != 0 && i < 26u; ++i) {
-        cmd[(unsigned char)(4u + i)] = (unsigned char)host[i];
+        ch = (unsigned char)host[i];
+        if (ch >= 0x41u && ch <= 0x5au) {
+            ch = (unsigned char)(ch + 0x20u);
+        } else if (ch >= 0xc1u && ch <= 0xdau) {
+            ch = (unsigned char)(ch - 0x60u);
+        }
+        cmd[(unsigned char)(4u + i)] = ch;
     }
     cmd[(unsigned char)(4u + i)] = 0u;
 
@@ -382,4 +397,8 @@ void readyirc_uci_socket_close(unsigned char socket_id) {
 
 const char *readyirc_uci_last_status(void) {
     return last_status;
+}
+
+unsigned char readyirc_uci_last_status_code(void) {
+    return last_status_code;
 }

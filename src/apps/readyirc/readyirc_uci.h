@@ -22,6 +22,7 @@ unsigned char readyirc_uci_socket_write(unsigned char socket_id,
                                         unsigned int len);
 void readyirc_uci_socket_close(unsigned char socket_id);
 const char *readyirc_uci_last_status(void);
+unsigned char readyirc_uci_last_status_code(void);
 
 void __fastcall__ readyirc_uci_asm_set_base(unsigned int base);
 unsigned char __fastcall__ readyirc_uci_asm_write_cmd(unsigned char value);

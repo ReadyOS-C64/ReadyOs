@@ -10,7 +10,7 @@ _readyirc_config_channel:
         .asciiz "#readyos"
 
 _readyirc_config_nick:
-        .asciiz "readyos64"
+        .asciiz "enteryournick"
 
 _readyirc_config_port:
         .word 6667
