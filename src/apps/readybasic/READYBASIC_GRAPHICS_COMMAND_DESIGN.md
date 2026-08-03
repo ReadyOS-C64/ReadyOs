@@ -64,7 +64,7 @@ uses:
 | Range | Role |
 |---:|---|
 | `$C000-$C5FF` | ReadyBASIC bridge/shared-frame area while BASIC runs. Do not use for visible graphics state. |
-| `$C600-$C7FF` | ReadyOS REU metadata. Never use as graphics scratch. |
+| `$C600-$C7FF` | App-private snapshot tail, intentionally unused by the current ReadyBASIC graphics/layout contract. |
 | `$C800-$C9FF` | ReadyOS shim ABI. Never use as graphics scratch. |
 | `$CA00-$CFFF` | Candidate screen/charset/sprite-pointer area, but must be allocated intentionally. |
 | `$D000-$DFFF` | I/O when CPU sees I/O, but VIC fetches video data from underlying RAM in this bank. Good for bitmap/charset data from the VIC side, awkward for CPU writes unless banking is controlled carefully. |
@@ -72,7 +72,8 @@ uses:
 
 The safest Bank D rule is:
 
-- CPU-visible ReadyBASIC state at `$C000-$C9FF` remains off-limits.
+- CPU-visible graphics state at `$C000-$C9FF` remains off-limits by the current
+  ReadyBASIC contract, although `$C600-$C7FF` is app-owned rather than OS metadata.
 - Screen RAM, bitmaps, charsets, and sprite data are placed at or above `$CA00`,
   preferably with layouts that avoid `$C000-$C9FF`.
 - Commands that write into `$D000-$FFFF` must explicitly manage `$01` banking
@@ -190,7 +191,8 @@ Bank D Phase 1 layout:
 | Range | Phase 1 use |
 |---:|---|
 | `$C000-$C5FF` | ReadyBASIC bridge/shared frames; never used by graphics. |
-| `$C600-$C9FF` | ReadyOS REU metadata and shim ABI; static checks block graphics-owned symbols here. |
+| `$C600-$C7FF` | Intentionally unused ReadyBASIC snapshot tail; static checks keep the custom shape stable. |
+| `$C800-$C9FF` | ReadyOS shim ABI; graphics-owned symbols are forbidden here. |
 | `$CA00-$CBFF` | Hardware sprite data, eight 64-byte definitions. |
 | `$CC00-$CFFF` | Graphics screen RAM and sprite pointer table at `$CFF8`. |
 | `$D800-$DBE7` | Color RAM. |

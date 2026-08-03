@@ -3,26 +3,17 @@
  */
 
 #include "tui.h"
+#include "reu_control_bank.h"
+#include "tui_readyos.h"
 
 #define SHIM_TARGET_BANK ((unsigned char*)0xC820)
-#define SHIM_REU_BITMAP_LO ((unsigned char*)0xC836)
-#define SHIM_REU_BITMAP_HI ((unsigned char*)0xC837)
-#define SHIM_REU_BITMAP_XHI ((unsigned char*)0xC838)
 
 #define APP_BANK_EDITOR   1
-#define APP_BANK_MAX      23
+#define APP_BANK_MAX      TUI_APP_BANK_MAX
 
 static unsigned char tui_bank_loaded(unsigned char bank) {
-    if (bank < 8) {
-        return (unsigned char)((*SHIM_REU_BITMAP_LO & (unsigned char)(1U << bank)) != 0);
-    }
-    if (bank < 16) {
-        return (unsigned char)((*SHIM_REU_BITMAP_HI & (unsigned char)(1U << (bank - 8))) != 0);
-    }
-    if (bank < 24) {
-        return (unsigned char)((*SHIM_REU_BITMAP_XHI & (unsigned char)(1U << (bank - 16))) != 0);
-    }
-    return 0;
+    return (unsigned char)(tui_readyos_read_byte(
+        (unsigned int)(REUCB_TOKEN_STATUS_OFF + bank)) & REUCB_TOKEN_LOADED);
 }
 
 void tui_return_to_launcher(void) {

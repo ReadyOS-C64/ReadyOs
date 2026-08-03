@@ -64,11 +64,13 @@ REU_CMD_STASH = $90
 REU_CMD_FETCH = $91
 
 APP_LOAD_START    = $1000
-APP_WINDOW_LEN    = $B600
+APP_WINDOW_LEN    = $B800
 VERIFY_BUF        = $4000
 VERIFY_CHUNK_LEN  = $2000
 OVL_STAGE_LEN     = $3800
-OVL_META_RAM      = $C760
+; Loader-only staging lives above the resident shim, outside the app snapshot.
+; The block is DMA'd into ReadyShell's assigned state bank before handoff.
+OVL_META_RAM      = $CB60
 SCREEN_RAM        = $0400
 BOOT_LINE0        = SCREEN_RAM + (40 * 0)
 BOOT_LINE1        = SCREEN_RAM + (40 * 1)
@@ -82,13 +84,12 @@ BOOT_BORDER_CART   = $07
 BOOT_BORDER_REU    = $08
 BOOT_BORDER_HANDOFF = $0D
 BOOT_BORDER_ERROR  = $02
-REU_MAGIC_VALUE   = $A5
 SHIM_STORAGE_DRIVE = $C839
 READYSHELL_OVL_META_VERSION = 4
 READYSHELL_OVL_META_VALID_MASK_LO = $FF
 READYSHELL_OVL_META_VALID_MASK_HI = $01
-DBG_RING_BASE = $C7A0
-DBG_RING_HEAD = $C7DF
+DBG_RING_BASE = $CB20
+DBG_RING_HEAD = $CB5F
 DIAG_BASE = $CA00
 DIAG_RECORDS = $CA20
 DIAG_CURSOR_LO = $CA1E
@@ -109,7 +110,7 @@ REU_PROBE_SRC = $CA11
 REU_PROBE_DST = $CA12
 REU_PROBE_BANK = $FE
 APP_TABLE_RAM = $CC00
-APP_TABLE_BYTES = EASYFLASH_APP_COUNT * 9
+APP_TABLE_BYTES = EASYFLASH_APP_COUNT * 10
 OVERLAY_TABLE_BYTES = EASYFLASH_OVERLAY_COUNT * 12
 ; Keep the overlay table immediately after the app table so the EasyFlash
 ; flavor can grow past 16 apps without corrupting the final app entry.
@@ -741,15 +742,8 @@ reu_required_exit_to_basic:
     jmp BASIC_COLD_START
 
 init_reu_state:
-    ldx #$00
-    lda #$00
-@reu_loop:
-    sta $C600,x
-    sta $C700,x
-    inx
-    bne @reu_loop
-    lda #REU_MAGIC_VALUE
-    sta $C700
+    ; $C600-$C7FF belongs to the app snapshot.  Schema-v5 state is initialized
+    ; by the launcher in the ReadyOS bank after the launcher snapshot is live.
     lda #$08
     sta SHIM_STORAGE_DRIVE
     lda #$FF
@@ -813,10 +807,9 @@ preload_app_banks:
     beq @done
     jsr clear_app_window
     ldy #$00
+    iny
+    ; The generated table carries an explicit token-to-physical mapping.
     lda (table_lo),y
-    clc
-    ; Logical app bank N stashes to physical Start+1+N.
-    adc #(READYOS_REU_BANK_SKIP + 1)
     sta reu_bank_zp
     iny
     lda (table_lo),y
@@ -835,7 +828,7 @@ preload_app_banks:
     lda (table_lo),y
     sta rem_hi
     jsr show_app_progress
-    ldy #$03
+    ldy #$04
     lda (table_lo),y
     sta dst_lo
     iny
@@ -854,12 +847,9 @@ preload_app_banks:
     lda #>APP_WINDOW_LEN
     sta rem_hi
     jsr reu_stash_window
-    ldy #$00
-    lda (table_lo),y
-    jsr set_bitmap
     clc
     lda table_lo
-    adc #9
+    adc #10
     sta table_lo
     bcc @no_carry
     inc table_hi
@@ -1216,39 +1206,6 @@ reu_fetch_window:
     pla
     sta $01
     rts
-
-set_bitmap:
-    cmp #8
-    bcc @lo
-    cmp #16
-    bcc @hi
-    cmp #24
-    bcs @done
-    sec
-    sbc #16
-    tax
-    lda bit_masks,x
-    ora $C838
-    sta $C838
-    rts
-@hi:
-    sec
-    sbc #8
-    tax
-    lda bit_masks,x
-    ora $C837
-    sta $C837
-    rts
-@lo:
-    tax
-    lda bit_masks,x
-    ora $C836
-    sta $C836
-@done:
-    rts
-
-bit_masks:
-    .byte $01, $02, $04, $08, $10, $20, $40, $80
 
 .segment "RODATA"
 

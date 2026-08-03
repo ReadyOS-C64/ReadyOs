@@ -1,6 +1,7 @@
 /*
  * reu_mgr.h - REU Memory Manager for Ready OS
- * Manages 256 REU banks (16MB) with allocation table at $C600
+ * Manages 256 REU banks (16MB) with its authoritative allocation table in the
+ * ReadyOS bank at REUCB_BANK_TYPE_OFF.
  */
 
 #ifndef REU_MGR_H
@@ -21,28 +22,18 @@
 #define REU_RB_CORE    14
 #define REU_RB_CODE    15
 
-/* Memory-mapped system area ($C600-$C7FF, persists across app switches) */
-#define REU_ALLOC_TABLE  ((unsigned char*)0xC600)  /* 256 bytes, 1 per bank */
-#define REU_SYS_MAGIC    ((unsigned char*)0xC700)
-#define REU_MAGIC_VALUE  0xA5
 #define REU_TOTAL_BANKS  256
 
 /* Logical app snapshot tokens start at 1. Physical dynamic allocation starts
  * immediately after the ReadyOS global/control bank and launcher snapshot. */
 #define REU_FIRST_DYNAMIC 1
 
-/* Shim bitmap at $C836-$C838 (tracks which app banks are loaded) */
-#define SHIM_REU_BITMAP_LO  ((unsigned char*)0xC836)
-#define SHIM_REU_BITMAP_HI  ((unsigned char*)0xC837)
-#define SHIM_REU_BITMAP_XHI ((unsigned char*)0xC838)
-#define SHIM_REU_BANK_SKIP  ((unsigned char*)0xC83B)
-
-#define REU_READYOS_GLOBAL_PHYSICAL() ((unsigned char)(*SHIM_REU_BANK_SKIP))
-#define REU_LAUNCHER_PHYSICAL()       ((unsigned char)(*SHIM_REU_BANK_SKIP + 1u))
-#define REU_LOGICAL_TO_PHYSICAL(bank) \
-    ((unsigned char)(*SHIM_REU_BANK_SKIP + \
-     (((unsigned char)(bank) == 0u) ? 1u : (1u + (unsigned char)(bank)))))
-#define REU_FIRST_DYNAMIC_PHYSICAL()  ((unsigned char)(*SHIM_REU_BANK_SKIP + 2u))
+/* $C83B contains the direct physical ReadyOS-bank number (Skip+1). */
+#define SHIM_READYOS_BANK ((unsigned char*)0xC83B)
+#define SHIM_REU_BANK_SKIP SHIM_READYOS_BANK /* deprecated source alias */
+#define REU_READYOS_GLOBAL_PHYSICAL() ((unsigned char)(*SHIM_READYOS_BANK))
+#define REU_LAUNCHER_PHYSICAL()       REU_READYOS_GLOBAL_PHYSICAL()
+#define REU_FIRST_DYNAMIC_PHYSICAL()  ((unsigned char)(*SHIM_READYOS_BANK - 1u))
 
 /* Initialize REU manager (safe to call multiple times) */
 void reu_mgr_init(void);
@@ -67,5 +58,12 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
                    unsigned int reu_offset, unsigned int length);
 void reu_dma_fetch(unsigned int c64_addr, unsigned char bank,
                    unsigned int reu_offset, unsigned int length);
+
+/* ReadyOS-bank metadata access.  These routines use the shim's resident
+ * one-byte scratch for byte operations, so callers do not need a BSS mirror. */
+unsigned char readyos_bank_read_byte(unsigned int offset);
+void readyos_bank_write_byte(unsigned int offset, unsigned char value);
+void readyos_bank_read(unsigned int offset, void *dst, unsigned int length);
+void readyos_bank_write(unsigned int offset, const void *src, unsigned int length);
 
 #endif /* REU_MGR_H */

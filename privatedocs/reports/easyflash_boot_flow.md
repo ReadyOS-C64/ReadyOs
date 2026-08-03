@@ -1,5 +1,10 @@
 # ReadyOS EasyFlash Boot Flow
 
+> Preserved older styled-report source. Its 16-app/eight-overlay and fixed-slot
+> measurements describe an earlier cartridge layout. The current public
+> `docs/reports/easyflash_boot_flow.md` and generated HTML counterpart supersede
+> those values; this file remains intact as design history.
+
 This document describes how the current ReadyOS EasyFlash cartridge flavor boots, what executes where, when cartridge banking happens, when it does not, how REU preload works, how the early REU-required guard behaves, and why the machine appears to sit on a blue screen for a long time before the launcher appears.
 
 The description is based on the current source and generated layout in this repository, not on a hypothetical design.

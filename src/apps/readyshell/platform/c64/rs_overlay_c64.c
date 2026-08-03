@@ -20,9 +20,6 @@
 #include <string.h>
 
 #define RS_OVERLAY_COUNT 9u
-#define RS_RAM_DBG_HEAD      (*(unsigned char*)0xC7F0)
-#define RS_RAM_DBG_BASE      ((unsigned char*)0xC7A0)
-#define RS_RAM_DBG_LEN       0x40u
 #define RS_OVL_RC_NOT_BOOTED 0xE3u
 #define RS_OVL_RC_REU_PARSE  0xE4u
 #define RS_OVL_RC_REU_EXEC   0xE5u
@@ -41,7 +38,6 @@ static int g_overlay_cached_reu = 0;
 static unsigned char g_overlay_last_rc = 0u;
 static unsigned char g_overlay_active_phase = RS_OVERLAY_PHASE_NONE;
 static unsigned short g_dbg_pos = 0u;
-static unsigned char g_ram_dbg_pos = 0u;
 static unsigned char g_overlay_meta_buf[RS_REU_OVL_CACHE_META_LEN];
 static unsigned char g_overlay_cache_banks[RS_OVERLAY_COUNT];
 static unsigned short g_overlay_cache_offsets[RS_OVERLAY_COUNT];
@@ -83,38 +79,20 @@ static unsigned long rs_overlay_edit_off(void) {
 
 static void rs_overlay_dbg_reset(void) {
   unsigned char head[2];
-  unsigned char i;
   g_dbg_pos = 0u;
-  g_ram_dbg_pos = 0u;
   head[0] = 0u;
   head[1] = 0u;
   (void)rs_reu_write(RS_REU_DBG_HEAD_OFF, head, 2u);
-  for (i = 0u; i < RS_RAM_DBG_LEN; ++i) {
-    RS_RAM_DBG_BASE[i] = 0u;
-  }
-  RS_RAM_DBG_HEAD = 0u;
 }
 
 static void rs_overlay_dbg_put(unsigned char code) {
   unsigned char b;
   unsigned char head[2];
-  RS_RAM_DBG_BASE[g_ram_dbg_pos] = code;
-  ++g_ram_dbg_pos;
-  if (g_ram_dbg_pos >= RS_RAM_DBG_LEN) {
-    g_ram_dbg_pos = 0u;
-  }
-  RS_RAM_DBG_HEAD = g_ram_dbg_pos;
 
   if (g_dbg_state == 0u) {
     g_dbg_state = rs_reu_available() ? 2u : 1u;
     if (g_dbg_state == 2u) {
       rs_overlay_dbg_reset();
-      RS_RAM_DBG_BASE[g_ram_dbg_pos] = code;
-      ++g_ram_dbg_pos;
-      if (g_ram_dbg_pos >= RS_RAM_DBG_LEN) {
-        g_ram_dbg_pos = 0u;
-      }
-      RS_RAM_DBG_HEAD = g_ram_dbg_pos;
     }
   }
   if (g_dbg_state != 2u) {

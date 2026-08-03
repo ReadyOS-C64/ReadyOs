@@ -6,9 +6,17 @@
 ; Low command overlay: $A900-$BFFF, under BASIC ROM
 ; Shared call/result buffers: $C200-$C5FF
 ; BASIC workspace: $2AC1-$9FFF
-; Runtime zero page/stack snapshot: REU bank $44 offsets $0A00/$0B00
+; Runtime zero page/stack snapshot: loader-assigned core bank, $0A00/$0B00
 ; Hidden helper shadow: ReadyBASIC core REU bank offset $3000
 ; Bridge state/trampolines: $C000-$C1FF
+; $C600-$C7FF: deliberately unused app-private snapshot room
+;
+; BUILD CONTRACT: this source depends on ca65 plus the custom
+; cfg/ready_app_readybasic.cfg load/run layout.  Its cold-load seed is a compact
+; $1000-$7FFF PRG whose bytes are relocated at startup into $A000-$C5FF and
+; loader-assigned REU resource banks.  Do not build it with ready_app.cfg or
+; move a run segment without updating both the seed region and
+; build_support/verify_readybasic_plugin.py.
 ;
 
         .setcpu "6502"
@@ -148,10 +156,7 @@ SHIM_RETURN     = $C80C
 SHIM_SWITCH     = $C80F
 SHIM_TARGET_BANK = $C820
 SHIM_CURRENT_BANK = $C834
-SHIM_REU_BITMAP_LO = $C836
-SHIM_REU_BITMAP_HI = $C837
-SHIM_REU_BITMAP_XHI = $C838
-SHIM_REU_BANK_SKIP = $C83B
+SHIM_READYOS_BANK = $C83B
 SHIM_LAUNCHER_FLAGS = $C83C
 SHIM_LAUNCHER_FLAG_SUPPRESS_STARTUP = $01
 
@@ -184,7 +189,7 @@ SHFLAG_CTRL     = $04
 JIFFY_LOW       = $00A2
 RB_HOTKEY_RELEASE_TIMEOUT = 120
 APP_BANK_MIN    = 1
-APP_BANK_MAX_PLUS_ONE = 24
+APP_BANK_MAX_PLUS_ONE = 65
 
 RAM_UNDER_BASIC = $FD
 RAM_UNDER_BASIC_KEEP_KERNAL = $FE
@@ -281,10 +286,11 @@ RB_SLOT_INVALID = $FF
 
 RB_REU_TYPE_CORE= 14
 RB_REU_TYPE_CODE= 15
-RB_REU_ALLOC_TABLE = $C600
 RB_REU_HEADER_OFF  = $0000
-RB_REUCB_BANK_TYPE_OFF = $0100
-RB_REUCB_APP_REG_OFF = $0300
+RB_REUCB_BANK_TYPE_OFF = $B840
+RB_REUCB_TOKEN_STATUS_OFF = $BA40
+RB_REUCB_TOKEN_APP_OFF = $C000
+RB_REUCB_APP_REG_OFF = $BC00
 RB_REUCB_APP_REG_COUNT = 64
 RB_REU_DESC_OFF    = $1000
 RB_REU_SLOT_STATE_OFF = $2000
@@ -4708,42 +4714,38 @@ hidden_bank_loaded:
         lda rb_tmp_lo
         cmp #APP_BANK_MAX_PLUS_ONE
         bcs @clear
-        and #$07
-        tax
-        lda hidden_bit_masks,x
-        sta rb_lookup_char
-        lda rb_tmp_lo
-        cmp #8
-        bcc @lo
-        cmp #16
-        bcc @hi
-        lda SHIM_REU_BITMAP_XHI
-        bne @test
-        beq @clear
-@hi:
-        lda SHIM_REU_BITMAP_HI
-        bne @test
-        beq @clear
-@lo:
-        lda SHIM_REU_BITMAP_LO
-@test:
-        and rb_lookup_char
+        clc
+        adc #<RB_REUCB_TOKEN_STATUS_OFF
+        sta rb_reu_off_lo
+        lda #>RB_REUCB_TOKEN_STATUS_OFF
+        adc #0
+        sta rb_reu_off_hi
+        lda #<rb_lookup_char
+        sta rb_reu_c64_lo
+        lda #>rb_lookup_char
+        sta rb_reu_c64_hi
+        lda SHIM_READYOS_BANK
+        sta rb_reu_bank
+        lda #1
+        sta rb_reu_len_lo
+        lda #0
+        sta rb_reu_len_hi
+        jsr rb_reu_fetch
+        lda rb_lookup_char
+        and #$02                    ; schema-v5 TOKEN_LOADED
         beq @clear
         lda rb_tmp_lo
         cmp rb_saved_count_lo
         beq @clear
-        cmp rb_reu_core_bank
-        beq @clear
-        cmp rb_reu_code_bank
-        beq @clear
-        jsr hidden_logical_bank_is_registered_app
-        bcc @clear
         sec
         rts
 @clear:
         clc
         rts
 
+.if 0
+; Retired schema-v4 registry scan.  Schema-v5 token status is authoritative,
+; so navigation no longer confuses physical resource-bank numbers with tokens.
 hidden_logical_bank_is_registered_app:
         lda rb_tmp_lo
         sta rb_hidden_next_lo
@@ -4761,7 +4763,7 @@ hidden_logical_bank_is_registered_app:
         lda #>RB_REUCB_APP_REG_OFF
         adc #0
         sta rb_reu_off_hi
-        lda SHIM_REU_BANK_SKIP
+        lda SHIM_READYOS_BANK
         sta rb_reu_bank
         lda #1
         sta rb_reu_len_lo
@@ -4780,9 +4782,7 @@ hidden_logical_bank_is_registered_app:
 @found:
         sec
         rts
-
-hidden_bit_masks:
-        .byte $01,$02,$04,$08,$10,$20,$40,$80
+.endif
 
 hidden_restore_vectors:
         lda rb_vectors_saved
@@ -5158,22 +5158,52 @@ rb_mark_reu_banks_hidden:
         ldx rb_reu_core_bank
         beq :+
         lda #RB_REU_TYPE_CORE
-        sta RB_REU_ALLOC_TABLE,x
+        sta RB_PAGEBUF,x
 :
         ldx rb_reu_code_bank
         beq :+
         lda #RB_REU_TYPE_CODE
-        sta RB_REU_ALLOC_TABLE,x
+        sta RB_PAGEBUF,x
 :
+        lda #<RB_PAGEBUF
+        sta rb_reu_c64_lo
+        lda #>RB_PAGEBUF
+        sta rb_reu_c64_hi
+        lda #<RB_REUCB_BANK_TYPE_OFF
+        sta rb_reu_off_lo
+        lda #>RB_REUCB_BANK_TYPE_OFF
+        sta rb_reu_off_hi
+        lda SHIM_READYOS_BANK
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #1
+        sta rb_reu_len_hi
+        jsr rb_reu_stash
         rts
 
 rb_resolve_reu_banks_hidden:
         lda #0
         sta rb_reu_core_bank
         sta rb_reu_code_bank
-        tax
+        lda #<RB_PAGEBUF
+        sta rb_reu_c64_lo
+        lda #>RB_PAGEBUF
+        sta rb_reu_c64_hi
+        lda #<RB_REUCB_BANK_TYPE_OFF
+        sta rb_reu_off_lo
+        lda #>RB_REUCB_BANK_TYPE_OFF
+        sta rb_reu_off_hi
+        lda SHIM_READYOS_BANK
+        sta rb_reu_bank
+        lda #0
+        sta rb_reu_len_lo
+        lda #1
+        sta rb_reu_len_hi
+        jsr rb_reu_fetch
+        ldx #0
 @scan:
-        lda RB_REU_ALLOC_TABLE,x
+        lda RB_PAGEBUF,x
         cmp #RB_REU_TYPE_CORE
         bne @check_code
         lda rb_reu_core_bank
@@ -5189,45 +5219,6 @@ rb_resolve_reu_banks_hidden:
 @next:
         inx
         bne @scan
-        lda rb_reu_core_bank
-        beq @fetch_mirror
-        lda rb_reu_code_bank
-        beq @fetch_mirror
-        rts
-@fetch_mirror:
-        lda #<RB_PAGEBUF
-        sta rb_reu_c64_lo
-        lda #>RB_PAGEBUF
-        sta rb_reu_c64_hi
-        lda #<RB_REUCB_BANK_TYPE_OFF
-        sta rb_reu_off_lo
-        lda #>RB_REUCB_BANK_TYPE_OFF
-        sta rb_reu_off_hi
-        lda SHIM_REU_BANK_SKIP
-        sta rb_reu_bank
-        lda #0
-        sta rb_reu_len_lo
-        lda #1
-        sta rb_reu_len_hi
-        jsr rb_reu_fetch
-        ldx #0
-@mirror_scan:
-        lda RB_PAGEBUF,x
-        cmp #RB_REU_TYPE_CORE
-        bne @mirror_check_code
-        lda rb_reu_core_bank
-        bne @mirror_next
-        stx rb_reu_core_bank
-        jmp @mirror_next
-@mirror_check_code:
-        cmp #RB_REU_TYPE_CODE
-        bne @mirror_next
-        lda rb_reu_code_bank
-        bne @mirror_next
-        stx rb_reu_code_bank
-@mirror_next:
-        inx
-        bne @mirror_scan
         rts
 
 rb_clear_handle_heap:
@@ -5765,7 +5756,8 @@ rb_prepare_ready_resume:
         jmp call_hidden_common
 
 ; ---------------------------------------------------------------------------
-; Packed command submodule 0. This 2KB slot image is copied from REU bank $45
+; Packed command submodule 0. This 2KB slot image is copied from the
+; loader-assigned ReadyBASIC code bank
 ; into $A800-$AFFF on demand, then reused while residency metadata matches.
 ; ---------------------------------------------------------------------------
 

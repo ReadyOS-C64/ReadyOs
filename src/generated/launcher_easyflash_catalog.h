@@ -8,15 +8,19 @@
 #define READYOS_EASYFLASH_RESOURCE_NONE 0
 #define READYOS_EASYFLASH_RESOURCE_READYSHELL_OVL 1
 #define READYOS_EASYFLASH_RESOURCE_READYBASIC_CORE 2
-#define READYOS_EASYFLASH_RS_CACHE_BANK1 55
-#define READYOS_EASYFLASH_RS_CACHE_BANK2 56
-#define READYOS_EASYFLASH_RS_CACHE_BANK3 57
-#define READYOS_EASYFLASH_RS_STATE_BANK 58
-#define READYOS_EASYFLASH_RB_CORE_BANK 59
-#define READYOS_EASYFLASH_RB_CODE_BANK 60
+#define READYOS_EASYFLASH_RS_CACHE_BANK1 54
+#define READYOS_EASYFLASH_RS_CACHE_BANK2 55
+#define READYOS_EASYFLASH_RS_CACHE_BANK3 56
+#define READYOS_EASYFLASH_RS_STATE_BANK 57
+#define READYOS_EASYFLASH_RB_CORE_BANK 58
+#define READYOS_EASYFLASH_RB_CODE_BANK 59
 
 static const unsigned char readyos_easyflash_app_banks[READYOS_EASYFLASH_APP_COUNT] = {
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
+};
+
+static const unsigned char readyos_easyflash_app_physical_banks[READYOS_EASYFLASH_APP_COUNT] = {
+    32, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53
 };
 
 static const unsigned char readyos_easyflash_default_slots[READYOS_EASYFLASH_APP_COUNT] = {
@@ -29,7 +33,7 @@ static const unsigned char readyos_easyflash_resource_sets[READYOS_EASYFLASH_APP
 
 #define READYOS_EASYFLASH_RS_OVERLAY_COUNT 9
 static const unsigned char readyos_easyflash_rs_overlay_banks[READYOS_EASYFLASH_RS_OVERLAY_COUNT] = {
-    55, 55, 55, 56, 55, 56, 56, 56, 57
+    54, 54, 54, 55, 54, 55, 55, 55, 56
 };
 
 static const unsigned int readyos_easyflash_rs_overlay_offsets[READYOS_EASYFLASH_RS_OVERLAY_COUNT] = {

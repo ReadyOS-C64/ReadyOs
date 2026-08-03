@@ -11,7 +11,7 @@ same ReadyOS and REU discipline.
 - `RESIDENT` is `$1200-$2ABF` (`$18C0`, 6336B).
 - `BRIDGE` is `$C000-$C1FE` (`$01FF`, 511B), still below `$C200`.
 - Under BASIC ROM, `$A000-$A7FF` is the common helper area, currently using
-  `$A000-$A7E8`; `$A800-$AFFF`,
+  `$A000-$A78A`; `$A800-$AFFF`,
   `$B000-$B7FF`, and `$B800-$BFFF` are three 2KB submodule slots.
 - ReadyBASIC uses two launcher-assigned REU resource banks. The core bank is
   registry/runtime storage; the code bank is built-in and disk-loaded module
@@ -282,8 +282,8 @@ The current design includes resident flow control and error introspection:
 
 Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
 `30013` formula empty free bytes. `ENTRY` is `$1000-$11FF` (`512` bytes),
-`RESIDENT` is `$1200-$2ABF` (`6336` bytes), `HIDDEN` is `$A000-$A7E8`
-(`2025` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$07DC`
+`RESIDENT` is `$1200-$2ABF` (`6336` bytes), `HIDDEN` is `$A000-$A78A`
+(`1931` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$07DC`
 (`2012` bytes), `SLOTPACK1` is `$0541` (`1345` bytes), `SLOTPACK2` is `$0738`
 (`1848` bytes), `OVL1PACK` is `$0272` (`626` bytes), `OVL2PACK` is `$006D`
 (`109` bytes), `OVL3PACK` is `$0779` (`1913` bytes), `OVL4PACK` is `$0783`

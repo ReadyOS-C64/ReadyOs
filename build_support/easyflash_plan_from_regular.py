@@ -96,35 +96,17 @@ def insert_launcher_start(text: str, start_app: str | None) -> str:
 
 
 def adapt_screen_reu_probe(text: str) -> str:
-    """The EasyFlash mirror verifies the final screen marker through RAM.
+    """Allow extra cartridge settling time for the screen/REU stress probe.
 
-    This probe intentionally stress-tests SCRCAP/SCRPUT and screen-buffer
-    restoration. On the cartridge path the final screen RAM is correct, but
-    the VICE display poll can miss the last state after the long REU/display
-    churn. Assert the exact bytes at $0400 instead; the regular D81 probe
-    keeps the live screen assertion.
+    The regular plan carries the exact-RAM assertion too: the restored
+    ASCII-shaped screen bytes render correctly in VICE but are not decoded
+    as text by the harness screen decoder.
     """
     if "plan_id: readybasic_screen_reu_temp_probe_easyflash" not in text:
         return text
 
     text = text.replace("      post_delay_s: 30.0", "      post_delay_s: 75.0", 1)
-    old = """  - id: assert_done
-    type: screen.wait_contains
-    params:
-      text: "RBSCRREU DONE"
-      wait_timeout_s: 300
-      capture_label: scrreu_done
-"""
-    new = """  - id: assert_done
-    type: assert.memory
-    params:
-      start: 1024
-      end: 1036
-      equals_hex: "52 42 53 43 52 52 45 55 20 44 4F 4E 45"
-"""
-    if old not in text:
-        raise ValueError("could not locate screen/REU final screen assertion")
-    return text.replace(old, new, 1)
+    return text
 
 
 def adapt_readybasic_reuviewer_chain(text: str) -> str:

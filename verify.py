@@ -6,9 +6,9 @@ Performs structural shim checks plus deep binary/layout checks:
 - boot.prg structure and shim byte layout
 - shim jump table / routine alignment / critical REU instruction sequences
 - app PRG load addresses and binary extents
-- app linker map segment bounds against REU snapshot window ($1000-$C5FF)
-- region conflict checks across app/REU metadata/shim/I/O boundaries
-- app headroom warnings near the $C5FF snapshot ceiling
+- app linker map segment bounds against the `$1000-$C7FF` snapshot window
+- region conflict checks across app/shim/I/O boundaries
+- app headroom warnings near the `$C7FF` snapshot ceiling
 """
 
 import argparse
@@ -44,6 +44,7 @@ APP_PRGS = [
     ("deminer", "deminer.prg"),
     ("cal26", "cal26.prg"),
     ("dizzy", "dizzy.prg"),
+    ("ucitest", "ucitest.prg"),
     ("readme", "readme.prg"),
     ("readyshell", "readyshell.prg"),
 ]
@@ -60,11 +61,9 @@ READYSHELL_OVERLAY_PRGS = [
 ]
 
 APP_LOAD_START = 0x1000
-APP_SNAPSHOT_END = 0xC5FF      # Shim stashes/fetches exactly $1000-$C5FF ($B600 bytes)
+APP_SNAPSHOT_END = 0xC7FF      # Shim stashes/fetches exactly $1000-$C7FF ($B800 bytes)
 APP_SNAPSHOT_SIZE = APP_SNAPSHOT_END - APP_LOAD_START + 1
-APP_LINKER_END = 0xC5FF        # cfg/ready_app.cfg MAIN range upper bound
-REU_META_START = 0xC600        # reu_mgr alloc table area
-REU_META_END = 0xC7FF
+APP_LINKER_END = 0xC7FF        # cfg/ready_app.cfg MAIN range upper bound
 SHIM_START = 0xC800
 SHIM_END = 0xC9FF
 IO_START = 0xD000
@@ -164,9 +163,11 @@ def parse_launcher_runtime_contract(path):
     with open(path, "r", encoding="utf-8", errors="replace") as f:
         src = f.read()
 
-    app_slot_capacity = int(
-        re.search(r"#define\s+APP_SLOT_CAPACITY\s+(\d+)", src).group(1)
-    )
+    capacities = [int(value) for value in
+                  re.findall(r"#define\s+APP_SLOT_CAPACITY\s+(\d+)", src)]
+    if not capacities:
+        raise ValueError("APP_SLOT_CAPACITY definition not found")
+    app_slot_capacity = max(capacities)
     max_apps_m = re.search(r"#define\s+MAX_APPS\s+\(APP_SLOT_CAPACITY\s*\+\s*1\)", src)
 
     return {
@@ -338,9 +339,9 @@ def parse_tui_switch_contract(paths):
         return {
             "source_path": path,
             "app_bank_max": resolve_bank_max_token(path, max_bank_m.group(1)),
-            "uses_bitmap_lo": "SHIM_REU_BITMAP_LO" in src,
-            "uses_bitmap_hi": "SHIM_REU_BITMAP_HI" in src,
-            "uses_bitmap_xhi": "SHIM_REU_BITMAP_XHI" in src,
+            "uses_readyos_status": ("REUCB_TOKEN_STATUS_OFF" in src and
+                                     "tui_readyos_read_byte" in src),
+            "uses_retired_bitmap": "SHIM_REU_BITMAP_" in src,
             "has_bank_loaded_helper": "hotkey_bank_loaded" in src or "tui_bank_loaded" in src,
         }
 
@@ -614,11 +615,11 @@ def main():
     all_ok &= check("target_bank", shim[0x20] == 0x00, f"${shim[0x20]:02X} (expect $00)")
     all_ok &= check("filename_len", shim[0x21] == 0x08, f"${shim[0x21]:02X} (expect $08)")
     all_ok &= check("current_bank", shim[0x34] == 0x00, f"${shim[0x34]:02X} (expect $00)")
-    all_ok &= check("reu_bitmap_lo", shim[0x36] == 0x00, f"${shim[0x36]:02X} (expect $00)")
-    all_ok &= check("reu_bitmap_hi", shim[0x37] == 0x00, f"${shim[0x37]:02X} (expect $00)")
-    all_ok &= check("reu_bitmap_xhi", shim[0x38] == 0x00, f"${shim[0x38]:02X} (expect $00)")
+    all_ok &= check("retired bitmap bytes reserved", shim[0x36:0x39] == bytes(3),
+                    shim[0x36:0x39].hex(" "))
     all_ok &= check("storage_drive", shim[0x39] == 0x08, f"${shim[0x39]:02X} (expect $08)")
-    all_ok &= check("reu_bank_skip", shim[0x3B] <= 39, f"{shim[0x3B]} (expect 0..39)")
+    all_ok &= check("ReadyOS physical bank", shim[0x3B] <= 40,
+                    f"{shim[0x3B]} (compiled Skip+1)")
 
     # --- Routine Alignment ---
     print("\n=== Routine Alignment ===")
@@ -632,8 +633,8 @@ def main():
         (0x140, 0xAD, "switch_app", "LDA abs"),
         (0x160, 0xC9, "reu_setup_logical", "CMP imm"),
         (0x1A0, 0x8D, "reu_setup", "STA abs"),
-        (0x1C0, 0xC9, "set_bitmap", "CMP imm"),
-        (0x1E0, 0x48, "log_byte", "PHA"),
+        (0x1C0, 0x8D, "mark_loaded", "STA abs"),
+        (0x1FF, 0x60, "compatibility_noop", "RTS"),
     ]
     for off, expected, name, desc in routines:
         actual = shim[off]
@@ -642,49 +643,29 @@ def main():
                         f"0x{actual:02X} (expect 0x{expected:02X} = {desc})")
 
     # --- LOAD End Address Save ---
-    print("\n=== LOAD End Address Save ($C8AC) ===")
-    load_end_save = list(shim[0xAC:0xAC + 6])
-    all_ok &= check("$C8AC STX/STY", load_end_save == [0x8E, 0x30, 0xC8, 0x8C, 0x31, 0xC8],
-                    f"{' '.join(f'{b:02X}' for b in load_end_save)} = STX $C830; STY $C831")
+    print("\n=== LOAD End Address Save ===")
+    load_end_pattern = bytes([0x8E, 0x30, 0xC8, 0x8C, 0x31, 0xC8])
+    load_end_at = shim.find(load_end_pattern, 0x80, 0xE0)
+    all_ok &= check("preload saves KERNAL end address", load_end_at >= 0,
+                    f"shim offset ${load_end_at:03X}" if load_end_at >= 0 else "pattern missing")
 
     # --- Critical Instruction Sequences ---
     print("\n=== Critical REU Sequences ===")
     reu = list(shim[0x1A0:0x1A0 + 3])
     all_ok &= check("$C9A0 reu_setup", reu == [0x8D, 0x06, 0xDF],
                     f"{' '.join(f'{b:02X}' for b in reu)} = STA $DF06")
-    reu_logical = list(shim[0x160:0x160 + 60])
-    expected_logical = [
-        0xC9, 0x00,             # CMP #0
-        0xD0, 0x09,             # BNE lookup_app_bank
-        0xAD, 0x3B, 0xC8,       # LDA $C83B
-        0x18,                   # CLC
-        0x69, 0x01,             # ADC #$01
-        0x4C, 0xA0, 0xC9,       # JMP reu_setup
-        0xAA,                   # TAX
-        0xA9, 0x3D,             # LDA #<$C83D
-        0x8D, 0x02, 0xDF,       # STA $DF02
-        0xA9, 0xC8,             # LDA #>$C83D
-        0x8D, 0x03, 0xDF,       # STA $DF03
-        0x8A,                   # TXA
-        0x8D, 0x04, 0xDF,       # STA $DF04
-        0xA9, 0x2F,             # LDA #$2F
-        0x8D, 0x05, 0xDF,       # STA $DF05
-        0xAD, 0x3B, 0xC8,       # LDA $C83B
-        0x8D, 0x06, 0xDF,       # STA $DF06
-        0xA9, 0x01,             # LDA #1
-        0x8D, 0x07, 0xDF,       # STA $DF07
-        0xA9, 0x00,             # LDA #0
-        0x8D, 0x08, 0xDF,       # STA $DF08
-        0xA9, 0x91,             # LDA #FETCH
-        0x8D, 0x01, 0xDF,       # STA $DF01
-        0xAD, 0x3D, 0xC8,       # LDA $C83D
-        0x4C, 0xA0, 0xC9,       # JMP reu_setup
-    ]
-    all_ok &= check("$C960 logical setup", reu_logical == expected_logical,
-                    f"{' '.join(f'{b:02X}' for b in reu_logical)} = token 0 direct, nonzero tokens via bank0 $2F00 lookup")
-    reu_len = list(shim[0x1A0 + 0x18:0x1A0 + 0x1D])
-    all_ok &= check("$C9B5 transfer length", reu_len == [0xA9, 0xB6, 0x8D, 0x08, 0xDF],
-                    f"{' '.join(f'{b:02X}' for b in reu_len)} = LDA #$B6; STA $DF08")
+    reu_logical = shim[0x160:0x1A0]
+    token0_direct = bytes([0xC9, 0x00, 0xD0, 0x06, 0xAD, 0x3B, 0xC8,
+                           0x4C, 0xA0, 0xC9])
+    lookup_b940 = bytes([0x8A, 0x18, 0x69, 0x40, 0x8D, 0x04, 0xDF,
+                         0xA9, 0xB9, 0x69, 0x00, 0x8D, 0x05, 0xDF])
+    all_ok &= check("$C960 token 0 resolves directly to ReadyOS bank",
+                    reu_logical.startswith(token0_direct))
+    all_ok &= check("$C960 nonzero tokens resolve through ReadyOS $B940",
+                    lookup_b940 in reu_logical)
+    reu_len = bytes([0xA9, 0xB8, 0x8D, 0x08, 0xDF])
+    all_ok &= check("$C9A0 transfer length is $B800", reu_len in shim[0x1A0:0x1C0],
+                    "LDA #$B8; STA $DF08")
 
     stash = list(shim[0xE0:0xE0 + 3])
     all_ok &= check("$C8E0 stash→reu_setup_logical", stash == [0x20, 0x60, 0xC9],
@@ -702,19 +683,18 @@ def main():
     all_ok &= check("$C8F3 FETCH cmd", fetch_cmd == [0xA9, 0x91, 0x8D, 0x01, 0xDF],
                     "LDA #$91; STA $DF01")
 
-    bitmap_guard = list(shim[0x1C0:0x1C0 + 4])
-    all_ok &= check("$C9C0 bitmap bank guard", bitmap_guard == [0xC9, 0x18, 0xB0, 0x17],
-                    "CMP #$18; BCS done")
-    bitmap_store = list(shim[0x1D5:0x1D5 + 6])
-    all_ok &= check("$C9D5 bitmap indexed store", bitmap_store == [0x1D, 0x36, 0xC8, 0x9D, 0x36, 0xC8],
-                    "ORA $C836,X; STA $C836,X")
+    mark_loaded = shim[0x1C0:0x1FF]
+    status_ba40 = bytes([0x18, 0x69, 0x40, 0x8D, 0x04, 0xDF,
+                         0xA9, 0xBA, 0x69, 0x00, 0x8D, 0x05, 0xDF])
+    all_ok &= check("$C9C0 commits valid/loaded/resumable status $07",
+                    bytes([0xA9, 0x07, 0x8D, 0x3D, 0xC8]) in mark_loaded)
+    all_ok &= check("$C9C0 writes ReadyOS $BA40 + token",
+                    status_ba40 in mark_loaded)
 
     # --- Region Boundary Invariants ---
     print("\n=== Region Boundary Invariants ===")
-    all_ok &= check("App snapshot before REU metadata", APP_SNAPSHOT_END < REU_META_START,
-                    f"${APP_SNAPSHOT_END:04X} < ${REU_META_START:04X}")
-    all_ok &= check("REU metadata before shim", REU_META_END < SHIM_START,
-                    f"${REU_META_END:04X} < ${SHIM_START:04X}")
+    all_ok &= check("App snapshot before shim", APP_SNAPSHOT_END < SHIM_START,
+                    f"${APP_SNAPSHOT_END:04X} < ${SHIM_START:04X}")
     all_ok &= check("Shim before I/O", SHIM_END < IO_START,
                     f"${SHIM_END:04X} < ${IO_START:04X}")
 
@@ -788,12 +768,9 @@ def main():
         all_ok &= check(f"{app_name}.map runtime end<=linker", runtime_end <= APP_LINKER_END,
                         f"end=${runtime_end:04X}, linker_end=${APP_LINKER_END:04X}")
 
-        overlap_reu_meta = intersects(runtime_start, runtime_end, REU_META_START, REU_META_END)
         overlap_shim = intersects(runtime_start, runtime_end, SHIM_START, SHIM_END)
         overlap_io = intersects(runtime_start, runtime_end, IO_START, 0xFFFF)
 
-        all_ok &= check(f"{app_name}.map no overlap REU metadata", not overlap_reu_meta,
-                        f"${runtime_start:04X}-${runtime_end:04X} vs ${REU_META_START:04X}-${REU_META_END:04X}")
         all_ok &= check(f"{app_name}.map no overlap shim", not overlap_shim,
                         f"${runtime_start:04X}-${runtime_end:04X} vs ${SHIM_START:04X}-${SHIM_END:04X}")
         all_ok &= check(f"{app_name}.map no overlap I/O/ROM", not overlap_io,
@@ -953,8 +930,11 @@ def main():
     except FileNotFoundError:
         all_ok &= check("launcher source exists", False, "src/apps/launcher/launcher.c missing")
     else:
-        all_ok &= check("launcher patches load_disk device", "SHIM_LOAD_DISK_DEV_IMM" in launcher_src)
-        all_ok &= check("launcher patches preload device", "SHIM_PRELOAD_DEV_IMM" in launcher_src)
+        all_ok &= check("launcher writes shim-global storage drive",
+                        "set_shim_drive" in launcher_src and "SHIM_STORAGE_DRIVE" in launcher_src)
+        all_ok &= check("launcher does not patch shim instruction operands",
+                        "SHIM_LOAD_DISK_DEV_IMM" not in launcher_src and
+                        "SHIM_PRELOAD_DEV_IMM" not in launcher_src)
 
     print("\n=== App Switch Contract (F2/F4) ===")
     try:
@@ -968,11 +948,10 @@ def main():
     else:
         all_ok &= check("tui switch contract source exists", os.path.exists(tui_contract["source_path"]),
                         tui_contract["source_path"])
-        all_ok &= check("APP_BANK_MAX", tui_contract["app_bank_max"] == 223,
-                        f'{tui_contract["app_bank_max"]} (expect 223)')
-        all_ok &= check("tui checks bitmap low byte", tui_contract["uses_bitmap_lo"])
-        all_ok &= check("tui checks bitmap high byte", tui_contract["uses_bitmap_hi"])
-        all_ok &= check("tui checks bitmap xhi byte", tui_contract["uses_bitmap_xhi"])
+        all_ok &= check("APP_BANK_MAX", tui_contract["app_bank_max"] == 64,
+                        f'{tui_contract["app_bank_max"]} (expect 64)')
+        all_ok &= check("tui checks ReadyOS token status", tui_contract["uses_readyos_status"])
+        all_ok &= check("tui ignores retired shim bitmap", not tui_contract["uses_retired_bitmap"])
         all_ok &= check("tui has loaded-bank helper", tui_contract["has_bank_loaded_helper"])
 
     # --- REU Allocation Contract ---
@@ -1007,9 +986,8 @@ def main():
             highest_used = len(catalog_entries)
             all_ok &= check("catalog no longer preallocates app-slot pool", highest_used <= 64,
                             f"{highest_used} catalog apps, dynamic snapshots assigned on load")
-            if highest_used > 23:
-                warn("catalog exceeds shim bitmap-visible token count",
-                     f"{highest_used} catalog apps rely on bank-0 loaded state above token 23")
+            all_ok &= check("catalog fits schema-v5 app registry", highest_used <= 64,
+                            f"{highest_used}/64 app records")
 
     # --- Warm Resume Contract ---
     print("\n=== Warm Resume Contract ===")
@@ -1024,8 +1002,8 @@ def main():
         all_ok &= check("resume offset equals snapshot size",
                         resume_contract["resume_off"] == resume_contract["snapshot_size"],
                         f'0x{resume_contract["resume_off"]:04X}')
-        all_ok &= check("resume tail size", resume_contract["resume_tail_size"] == 0x4A00,
-                        f'0x{resume_contract["resume_tail_size"]:04X} (expect 0x4A00)')
+        all_ok &= check("resume tail size", resume_contract["resume_tail_size"] == 0x4800,
+                        f'0x{resume_contract["resume_tail_size"]:04X} (expect 0x4800)')
         all_ok &= check("resume region ends at bank boundary", resume_end == 0x10000,
                         f'0x{resume_end:05X} (expect 0x10000)')
 

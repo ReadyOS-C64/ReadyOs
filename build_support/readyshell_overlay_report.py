@@ -963,7 +963,7 @@ def render_markdown(ctx: dict[str, object]) -> str:
             "",
             "| Region | Range | Size | Notes |",
             "| --- | --- | ---: | --- |",
-            f"| Resident app window | `$1000-$C5FF` | `{0xB600}` | ReadyOS app-owned RAM window for ReadyShell. |",
+            f"| ReadyOS snapshot window | `$1000-$C7FF` | `{0xB800}` | Full app-owned RAM captured by the shim; ReadyShell intentionally keeps its overlay ABI below `$C600`. |",
             f"| Overlay load address bytes | `{fmt_range(ctx['overlay_loadaddr'], ctx['overlay_start'] - 1)}` | `2` | PRG load address emitted ahead of each overlay sidecar file. |",
             f"| Overlay execution window | `{fmt_range(ctx['overlay_start'], ctx['himem'] - 1)}` | `{ctx['window_size']}` | Shared live area for whichever overlay is active. |",
             f"| Resident BSS | `{fmt_range(ctx['bss_start'], ctx['bss_end'])}` | `{ctx['bss_size']}` | Resident writable data below the overlay load address. |",
@@ -1445,7 +1445,7 @@ def render_html(ctx: dict[str, object]) -> str:
     <div>
       <h2>Runtime Memory Map</h2>
       <ul>
-        <li><strong>Resident app window:</strong> <code>$1000-$C5FF</code> ({0xB600} bytes)</li>
+        <li><strong>ReadyOS snapshot window:</strong> <code>$1000-$C7FF</code> ({0xB800} bytes); ReadyShell's proven overlay ABI remains below <code>$C600</code>.</li>
         <li><strong>Overlay load bytes:</strong> <code>{fmt_range(ctx['overlay_loadaddr'], ctx['overlay_start'] - 1)}</code></li>
         <li><strong>Overlay execution window:</strong> <code>{fmt_range(ctx['overlay_start'], ctx['himem'] - 1)}</code> ({ctx['window_size']} bytes)</li>
         <li><strong>Resident BSS:</strong> <code>{fmt_range(ctx['bss_start'], ctx['bss_end'])}</code> ({ctx['bss_size']} bytes)</li>

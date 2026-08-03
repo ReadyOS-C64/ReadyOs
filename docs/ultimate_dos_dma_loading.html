@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ultimate_dos_dma_loading</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current C64 Ultimate DOS DMA behavior. The launcher path is opt-in and disk fallback remains part of the contract.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<h1 id="c64-ultimate-dos-dma-loading">C64 Ultimate DOS DMA Loading</h1>
+<p>ReadyOS has an opt-in launcher path that reads PRG payloads from a
+configured C64 Ultimate disk image directly into their allocated REU
+locations through the Ultimate Command Interface (UCI). This accelerates
+preload and cold app or resource loading without changing the resident
+shim or the <code>$1000-$C7FF</code> snapshot contract.</p>
+<h2 id="availability">Availability</h2>
+<ul>
+<li>Build gate: <code>LAUNCHER_DMA_LOAD=1</code>.</li>
+<li>Default: disabled (<code>LAUNCHER_DMA_LOAD=0</code>). Normal release
+artifacts therefore use KERNAL/disk loading unless explicitly built with
+the gate enabled.</li>
+<li>Launcher variant: regular disk launcher only; EasyFlash does not
+link this path because cartridge preload already supplies its REU
+payloads.</li>
+<li>Hardware target: C64 Ultimate/Ultimate-family UCI with Ultimate DOS
+support.</li>
+<li>Catalog key: <code>c64u_image_path</code>, currently configured by
+<code>cfg/profiles/precog-d81.ini</code> as
+<code>/usb1/readyos.d81</code>.</li>
+</ul>
+<p>Build and run ReadyOS itself through the normal workflow:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="va">LAUNCHER_DMA_LOAD</span><span class="op">=</span>1 <span class="ex">/bin/bash</span> ./run.sh <span class="at">--profile</span> precog-d81 <span class="at">--vice-fast</span></span></code></pre></div>
+<p>VICE does not provide the hardware UCI service. An enabled build
+detects that condition and continues through the normal disk path.</p>
+<h2 id="runtime-flow">Runtime Flow</h2>
+<ol type="1">
+<li>The launcher parses <code>c64u_image_path</code> from
+<code>apps.cfg</code>.</li>
+<li>After drawing the launcher, it probes UCI and validates the image
+path.</li>
+<li>For an app or resource load, Ultimate DOS mounts or reuses the
+configured image, obtains the exact PRG file size, skips the two-byte
+PRG load header, and issues an exact-size <code>LOAD_REU</code> into the
+loader-assigned bank and offset.</li>
+<li>On success the launcher marks the allocation/resource loaded and the
+normal shim later restores app snapshots from REU.</li>
+<li>If UCI is absent, the path is invalid, the image cannot be mounted,
+the file cannot be opened, or transfer verification fails, the launcher
+quiesces UCI state and falls back to its established KERNAL/disk
+loader.</li>
+</ol>
+<p>DMA only changes how a cold PRG reaches REU. App switching still uses
+the same resident shim, logical-token lookup in the ReadyOS bank at
+<code>$B940</code>, and <code>$B800</code> REU stash/fetch
+operations.</p>
+<h2 id="launcher-indicator">Launcher Indicator</h2>
+<ul>
+<li><code>DMA:YES</code>: UCI and the configured path are available, but
+no successful DMA load has yet been recorded.</li>
+<li><code>DMA:ON</code>: at least one current or cached load used the
+DMA path.</li>
+<li><code>DMA:NO</code>: DMA is unavailable; disk fallback remains
+active.</li>
+</ul>
+<p>Transient <code>DMA LOADING n/n</code> progress text is used by
+hardware smoke tests.</p>
+<h2 id="exact-size-rule">Exact-Size Rule</h2>
+<p>Ultimate DOS <code>LOAD_REU</code> must receive the payload’s exact
+byte length (file size minus the two-byte PRG header), not the capacity
+of the destination slot. This is especially important for ReadyShell
+overlays sharing a resource bank: a slot-sized transfer can consume
+bytes belonging to the following packed payload. The loader also
+validates the expected PRG load address before accepting the
+transfer.</p>
+<h2 id="verification">Verification</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_launcher_dma_gate.py</span></code></pre></div>
+<p>Focused protocol work is documented in <a
+href="../probes/uci_dma/README.md"><code>../probes/uci_dma/README.md</code></a>.
+Launcher acceptance fixtures are in <a
+href="../build_support/c64u_dma_acceptance/README.md"><code>../build_support/c64u_dma_acceptance/README.md</code></a>.
+The chronological hardware investigation remains in <a
+href="../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md"><code>../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md</code></a>.</p>
+<p>C64 Ultimate REST/FTP automation must be launched from a separate,
+long-running Terminal-owned/background shell as described in
+<code>AGENTS.md</code>; foreground one-shot probes can report false
+connectivity failures.</p>
+</body>
+</html>

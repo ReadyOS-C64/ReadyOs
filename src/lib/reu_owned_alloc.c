@@ -15,24 +15,16 @@ static unsigned int owned_rec_off(unsigned char rec_index) {
 }
 
 static unsigned char owned_current_app_id(void) {
-    unsigned char i;
     unsigned char logical;
-    unsigned char control_bank;
+    unsigned char app_id;
 
     logical = SHIM_CURRENT_BANK;
     if (logical == 0u) {
         return REUCB_NULL_REC;
     }
 
-    control_bank = REU_READYOS_GLOBAL_PHYSICAL();
-    for (i = 0u; i < REUCB_APP_REG_COUNT; ++i) {
-        reu_dma_fetch((unsigned int)owned_rec, control_bank,
-                      (unsigned int)(REUCB_APP_REG_OFF + i), 1u);
-        if (owned_rec[0] == logical) {
-            return i;
-        }
-    }
-    return REUCB_NULL_REC;
+    app_id = readyos_bank_read_byte((unsigned int)(REUCB_TOKEN_APP_OFF + logical));
+    return (app_id < REUCB_APP_REG_COUNT) ? app_id : REUCB_NULL_REC;
 }
 
 static void owned_clear_record_for_bank(unsigned char bank) {

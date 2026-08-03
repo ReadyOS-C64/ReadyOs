@@ -1,4 +1,7 @@
-/*
+/* RETIRED LEGACY HEADER -- intentionally preserved, never include it.
+ * Its speculative syscall names do not match the current $C800 shim ABI.
+ * See tui.h, reu_mgr.h, reu_control_bank.h, and resume_state.h instead.
+ *
  * ready_os.h - Ready OS API for Applications
  * Syscall wrappers and data structures for app development
  *
@@ -7,6 +10,8 @@
 
 #ifndef READY_OS_H
 #define READY_OS_H
+
+#if 0
 
 /*---------------------------------------------------------------------------
  * Constants
@@ -232,4 +237,5 @@ void ready_open_file(const char *app_name, const char *filename);
         ver \
     }
 
+#endif /* retired legacy header */
 #endif /* READY_OS_H */

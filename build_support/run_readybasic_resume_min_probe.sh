@@ -135,11 +135,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_1
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 3.0
+      command: "keybuf \\\\x0d"
   - id: wait_readybasic_after_resume_1
     type: screen.wait_contains
     params:
@@ -175,11 +173,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_2
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 3.0
+      command: "keybuf \\\\x0d"
   - id: wait_readybasic_after_resume_2
     type: screen.wait_contains
     params:

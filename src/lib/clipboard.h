@@ -6,15 +6,18 @@
 #ifndef CLIPBOARD_H
 #define CLIPBOARD_H
 
+#include "reu_control_bank.h"
+
 /* Clipboard limits */
 #define CLIP_MAX_ITEMS   16
 
 /* Clipboard data types */
 #define CLIP_TYPE_TEXT    1
 
-/* Memory-mapped clipboard state at $C700 area (persists across app switches) */
-#define CLIP_COUNT       ((unsigned char*)0xC702)
-#define CLIP_TABLE       ((unsigned char*)0xC710)  /* 16 items x 8 bytes = 128 bytes */
+/* Authoritative clipboard metadata is in the ReadyOS bank. */
+#define CLIP_COUNT_OFF       REUCB_CLIPBOARD_OFF
+#define CLIP_TABLE_OFF       (REUCB_CLIPBOARD_OFF + 0x10u)
+#define CLIP_ENTRY_SIZE      8u
 
 /* Per-item table layout (8 bytes each):
  *   [0] bank     - REU bank holding this item's data
@@ -36,6 +39,13 @@ unsigned char clip_get_type(unsigned char index);
 
 /* Get size of item at index */
 unsigned int clip_get_size(unsigned char index);
+
+/* Get the physical payload bank for an item, or $FF when out of range. */
+unsigned char clip_get_bank(unsigned char index);
+
+/* Commit an already-populated payload bank as the newest clipboard item. */
+unsigned char clip_insert_bank_item(unsigned char bank, unsigned char type,
+                                    unsigned int size);
 
 /* Paste item at index into buffer. Returns actual bytes copied. */
 unsigned int clip_paste(unsigned char index, void *buffer, unsigned int maxsize);

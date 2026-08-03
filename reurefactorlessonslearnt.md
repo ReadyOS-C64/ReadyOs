@@ -1,5 +1,31 @@
 # REU Refactor Lessons Learnt
 
+## 2026-08-02 final authority cleanup
+
+- ReadyShell's `$C7A0-$C7DF` / `$C7F0` diagnostic mirror was the last live
+  duplicate found in the reclaimed tail. Diagnostics now have one durable
+  source in the loader-assigned ReadyShell state bank; only a live cursor and
+  availability flag remain in BSS.
+- Five unconsumed shim preload trace stores into `$C007-$C00C` were retired,
+  and reserved entry `$C812` became a safe no-op. The exact 512-byte shim now
+  has 129 verifier-checked padding bytes, with a 42-byte largest run.
+- Full REU clients share `reu_mgr_dma.c` through zero-frame assembly aliases;
+  lightweight apps retain a standalone no-BSS byte helper. A unique assembler
+  basename is required so Make cannot regenerate it from the retained C
+  reference adapter as an intermediate.
+
+## 2026-08-01 Schema-v5 completion
+
+- Physical `Skip+1` is now the combined ReadyOS bank and single metadata
+  authority; it contains the launcher snapshot plus schema-v5 state.
+- The earlier `$C600-$C7FF` RAM mirror and separate control bank were useful
+  migration steps, but are superseded. Physical `Skip` is reclaimed as the
+  first dynamic bank and tokens use explicit mapping/status tables.
+- Focused micromodules prevented broad app BSS growth; the complete 24-map
+  comparison is in `agentworking/readyos-bank-refactor/headroom_comparison.md`.
+- The shim stayed exactly 512 bytes, but changing one instruction length proved
+  why byte-anchor verification is mandatory for every disk and cartridge build.
+
 ## 2026-06-02
 
 - The refactor must be treated as a whole-system contract change. Old app,

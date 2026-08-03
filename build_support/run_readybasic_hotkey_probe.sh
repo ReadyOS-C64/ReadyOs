@@ -666,11 +666,9 @@ $(emit_hotkey_step ctrl_b_from_readybasic_after_cycles ctrl_b 1.0 readybasic 3.0
       end: 51252
       equals_hex: "00"
   - id: reenter_readybasic_after_ctrl_b
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
   - id: reenter_readybasic_after_ctrl_b_capture
     type: screen.capture
     params:
@@ -1003,13 +1001,11 @@ $(emit_hotkey_step ctrl_b_from_f4_target ctrl_b 1.0 app)
       text: "READY OS"
       wait_timeout_s: 40
   - id: move_editor_to_readybasic_for_f2
-    type: input.sequence
+    type: monitor.command
     params:
       # F4 switched ReadyBASIC directly to another app, so the launcher's saved
       # selection remains ReadyBASIC when that app returns via CTRL+B.
-      keys: [13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
   - id: wait_readybasic_resume_for_f2
     type: screen.wait_contains
     params:

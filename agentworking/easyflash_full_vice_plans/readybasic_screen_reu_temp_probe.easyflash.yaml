@@ -63,7 +63,7 @@ steps:
         - { label: descriptors_1000, start: 0x1000, end: 0x11FF }
         - { label: resident_1200, start: 0x1200, end: 0x1BFF }
         - { label: command_overlay_a800, start: 0xA800, end: 0xAFFF }
-        - { label: reu_alloc_c600, start: 0xC600, end: 0xC6FF }
+        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC6FF }
   - id: load_temp_program
     type: input.sequence
     params:
@@ -86,6 +86,11 @@ steps:
       keys: [80,82,73,78,84,32,67,72,82,36,40,49,52,55,41,13,82,85,78,13]
       inter_key_delay_s: 0.03
       post_delay_s: 75.0
+  - id: capture_temp_program_progress
+    type: screen.capture
+    params:
+      label: scrreu_progress
+      pitch: screen-backed REU program progress after 30 seconds
   - id: assert_done
     type: assert.memory
     params:

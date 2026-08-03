@@ -41,6 +41,9 @@ def main() -> int:
         encoding="utf-8", errors="replace"
     )
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8", errors="replace")
+    tui_alias = (ROOT / "src/lib/tui_readyos_alias.s").read_text(
+        encoding="utf-8", errors="replace"
+    )
 
     check("launcher exposes 64 app capacity",
           "#define APP_SLOT_CAPACITY 64" in launcher)
@@ -48,9 +51,10 @@ def main() -> int:
           "app_banks[idx] = 0u;" in launcher)
     check("launcher has lazy snapshot allocator",
           "launcher_alloc_snapshot_bank" in launcher and
-          "REU_ALLOC_TABLE[physical] == REU_FREE" in launcher)
-    check("low shim-bitmap banks no longer require reserved placeholders",
-          "bank < 24u && REU_ALLOC_TABLE[physical] == REU_RESERVED" not in launcher)
+          "launcher_bank_type(physical) == REU_FREE" in launcher and
+          "launcher_bind_snapshot_token" in launcher)
+    check("C64 allocation mirror is absent",
+          "REU_ALLOC_TABLE" not in launcher)
     reu_mgr = (ROOT / "src/lib/reu_mgr.h").read_text(
         encoding="utf-8", errors="replace"
     )
@@ -60,37 +64,40 @@ def main() -> int:
     shim = (ROOT / "src/boot/readyos_shim.inc").read_text(
         encoding="utf-8", errors="replace"
     )
-    check("allocator dynamic pool starts after ReadyOS system banks",
+    check("physical Skip is the first dynamic bank",
           "#define REU_FIRST_DYNAMIC 1" in reu_mgr and
-          "*SHIM_REU_BANK_SKIP + 2u" in reu_mgr)
-    check("REU bank 0 publishes shim token lookup page",
-          "REUCB_SHIM_LOOKUP_OFF" in reu_control and
-          "REUCB_SHIM_LOOKUP_SIZE" in reu_control and
-          "reucb_write_shim_lookup" in reu_control)
-    check("shim resolves app tokens through REU bank 0 lookup",
+          "*SHIM_READYOS_BANK - 1u" in reu_mgr)
+    check("ReadyOS bank owns authoritative mapping and status pages",
+          "REUCB_SHIM_LOOKUP_OFF" in
+          (ROOT / "src/lib/reu_control_bank.h").read_text() and
+          "REUCB_TOKEN_STATUS_OFF" in
+          (ROOT / "src/lib/reu_control_bank.h").read_text() and
+          "REU_ALLOC_TABLE" not in reu_control)
+    check("shim resolves app tokens through ReadyOS-bank lookup",
           "lookup_app_bank" in shim and
-          "STA $DF05 (REU offset hi = lookup page)" in shim and
+          "LDA #>$B940" in shim and
           "LDA $C83D (resolved physical bank)" in shim)
-    check("launcher tracks banks above shim bitmap",
-          "bank >= 24u && last_saved == bank" in launcher)
-    check("launcher validates extended loaded state",
-          "app_banks[i] == 0u || !apps_loaded[i]" in launcher)
+    check("shim commits token loaded/resumable state",
+          "mark_loaded" in shim and "LDA #VALID|LOADED|RESUMABLE" in shim)
+    check("launcher validates ReadyOS token loaded state",
+          "REUCB_TOKEN_LOADED" in launcher and "required_slots_loaded" in launcher)
     check("load-all progress rows wrap for 64-app catalogs",
           "#define LOAD_ALL_LIST_ROWS 19" in launcher and
           "loaded_count % LOAD_ALL_LIST_ROWS" in launcher)
-    check("cartridge preloads can be tracked above shim bitmap",
+    check("cartridge preloads publish explicit token mappings",
           "launcher_mark_embedded_preloads_loaded" in launcher and
+          "readyos_easyflash_app_physical_banks" in launcher and
           "app_sizes[i] = APP_SAVE_SIZE;" in launcher)
     check("launcher has unload command",
           "unload_selected_from_reu" in launcher and "case TUI_KEY_F7" in launcher)
-    check("launcher invalidates stale last-saved bank on unload",
+    check("launcher invalidates stale last-saved token on unload",
           "*SHIM_LAST_SAVED == bank" in launcher and
           "*SHIM_LAST_SAVED = 0xFFu;" in launcher and
-          "last_saved < 24 && launcher_catalog_uses_bank(last_saved, 0xFFu)" in launcher)
+          "launcher_set_snapshot_loaded(bank, 0u)" in launcher)
     check("launcher unload frees owner-recorded app allocations",
           "launcher_free_app_owned_alloc_records" in launcher and
           "REUCB_DEP_KIND_APP_ALLOC" in launcher and
-          "REU_ALLOC_TABLE[bank] == REU_APP_ALLOC" in launcher)
+          "launcher_bank_type(bank) == REU_APP_ALLOC" in launcher)
     check("launcher owns ReadyShell overlay resource banks",
           "APP_RESOURCE_READYSHELL_OVL" in launcher and
           "launcher_load_readyshell_resources" in launcher and
@@ -118,6 +125,10 @@ def main() -> int:
           "RS_REU_OVL_CACHE_META_VERSION  4u" in rs_state and
           "g_overlay_cache_offsets" in rs_overlay and
           "rs_cmd_registry_apply_overlay_cache" in rs_overlay)
+    check("ReadyShell diagnostics have no C64-RAM mirror",
+          "RS_RAM_DBG" not in rs_overlay and
+          "RS_REU_DBG_DATA_OFF" in rs_overlay and
+          "RS_REU_DBG_HEAD_OFF" in rs_overlay)
     check("ReadyShell overlay metadata does not overlap UI flags or value arena",
           "RS_REU_UI_FLAGS_REL 0x8114u" in rs_state and
           "RS_REU_UI_FLAGS_OFF rs_reu_state_abs(RS_REU_UI_FLAGS_REL)" in rs_state and
@@ -136,7 +147,16 @@ def main() -> int:
           "len(apps) > 64" in catalog)
     check("global hotkeys allow dynamic logical banks",
           "#define APP_BANK_MAX TUI_APP_BANK_MAX" in hotkeys and
-          "#define TUI_APP_BANK_MAX      223" in tui_header)
+          "#define TUI_APP_BANK_MAX      64" in tui_header and
+          "REUCB_TOKEN_STATUS_OFF" in hotkeys)
+    check("TUI ReadyOS access avoids duplicate DMA micromodules",
+          "TUI_READYOS_SRC = $(LIB_DIR)/tui_readyos_alias.s" in makefile and
+          "TUI_READYOS_LITE_SRC = $(LIB_DIR)/tui_readyos.c" in makefile and
+          "LIB_SYSINFO = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_LITE_SRC)" in makefile and
+          "LIB_UCITEST = $(TUI_UCITEST) $(TUI_HOTKEY_LITE_SRC)" in makefile and
+          "jmp _readyos_bank_read_byte" in tui_alias and
+          "jmp _readyos_bank_write_byte" in tui_alias and
+          not (ROOT / "src/lib/tui_readyos_alias.c").exists())
     check("verify target includes dynamic launcher check",
           "verify_dynamic_launcher.py" in makefile)
 

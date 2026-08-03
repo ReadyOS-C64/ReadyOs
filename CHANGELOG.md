@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.2.5 (development)
+
+### ReadyBASIC Graphics/Sound, C64 Ultimate DMA, Documentation
+
+- Expanded ReadyBASIC through five graphics phases and Sound Phase 1. The
+  built-in module set now covers modes, pixels and primitives, REU surfaces,
+  sprites/input, polygon buffers, display lists, tiles/tilemaps, multicolor
+  bitmap operations, and immediate SID voice/filter commands, accompanied by
+  32 graphics demos and 6 sound demos plus regular/EasyFlash probes.
+- Added the opt-in regular-launcher C64 Ultimate DOS/UCI direct-to-REU loader.
+  It obtains exact PRG payload sizes, supports packed ReadyShell resources,
+  reuses a mounted D81 when possible, exposes `DMA:YES`/`DMA:ON`/`DMA:NO`
+  launcher state, and falls back to KERNAL/disk loading on unavailable or
+  failed DMA paths. The default `LAUNCHER_DMA_LOAD=0` build remains portable.
+- Added focused UCI protocol/timing probes, C64 Ultimate launcher and
+  ReadyShell hardware smoke coverage, valid/empty/bad-path acceptance fixtures,
+  and preserved hardware investigation evidence.
+- Reconciled current public/private documentation with dynamic REU allocation,
+  ReadyOS-bank schema 5, shim token lookup, the nine-overlay ReadyShell layout,
+  current ReadyBASIC memory/modules/examples, the 21-app EasyFlash layout, and
+  opt-in DMA behavior. Historical release and dated evidence documents remain
+  preserved as snapshots.
+- Combined the launcher snapshot and authoritative operating-system metadata in
+  physical `Skip+1`, now named the ReadyOS bank. Physical `Skip` becomes the
+  first dynamic allocation bank, `$C600-$C7FF` becomes app-private, snapshots
+  expand to `$B800`, and the 512-byte shim resolves nonzero tokens through the
+  ReadyOS `$B940` map instead of arithmetic placement or a resident bitmap.
+- Reduced launcher warm-resume duplication to a compact `RSM1` UI record. The
+  launcher reconstructs banks, drives, hotkeys, resources, loaded state, and
+  sizes from the ReadyOS `LS` settings and 64-app registry. Runtime testing
+  also fixed catalog scratch-pointer invalidation during first allocation and
+  delayed menu-selection validation until after registry restoration.
+
 ## 0.2.4
 
 ### ReadyBASIC, REU Control Bank, Dynamic Resources, Cartridge, Apps

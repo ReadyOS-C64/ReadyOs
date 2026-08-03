@@ -1240,6 +1240,7 @@ def build_help_text(profile: Dict[str, object],
         "- Copy the listed disk image files to the target storage.",
         c64_ultimate_reu_line,
         "- The host-side boot PRGs are optional convenience files for emulator launching; the disk-side `PREBOOT` entry is the standard hardware boot path.",
+        "- Choosing a disk SKU does not enable the experimental Ultimate DOS DMA launcher. Normal release artifacts use the portable disk loader; DMA requires an explicit `LAUNCHER_DMA_LOAD=1` source build and retains disk fallback.",
     ])
     if preboot_mode == "setd71":
         lines.extend([

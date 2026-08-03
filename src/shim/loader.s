@@ -1,7 +1,9 @@
 ;
 ; loader.s - Ready OS Loader Shim
 ; Resident at $0800-$0FFF, handles app loading and switching
-; NOTE: Legacy shim source; production shim is generated from src/boot/boot_asm.s.
+; RETIRED LEGACY SOURCE -- intentionally preserved, never assembled or linked.
+; Production uses src/boot/readyos_shim.inc from both boot implementations.
+; This file is archival and is disabled so it cannot become a second shim.
 ;
 ; This shim stays in memory and provides:
 ;   - Load app from disk to $1000
@@ -9,6 +11,8 @@
 ;   - Save/restore launcher state
 ;   - Jump to app entry point
 ;
+
+.if 0
 
 .export _shim_init
 .export _shim_load_disk
@@ -22,7 +26,7 @@ ZP_TMP      = $FD       ; 2 bytes temp
 
 ; App memory layout
 APP_LOAD_ADDR   = $1000     ; Apps load here
-APP_MAX_SIZE    = $B600     ; Current snapshot window max ($1000-$C5FF)
+APP_MAX_SIZE    = $B800     ; Current snapshot window max ($1000-$C7FF)
 
 ; REU registers
 REU_STATUS      = $DF00
@@ -249,3 +253,5 @@ app_bank:       .byte 0         ; REU bank for current app
 app_size_lo:    .byte 0         ; App size low byte
 app_size_hi:    .byte 0         ; App size high byte
 app_loaded:     .byte 0         ; 1 if app is loaded in RAM
+
+.endif ; retired legacy source

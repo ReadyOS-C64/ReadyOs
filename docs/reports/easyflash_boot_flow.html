@@ -1,3 +1,180 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>easyflash_boot_flow</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current EasyFlash boot-flow counterpart generated from easyflash_boot_flow.md.</aside>
+<!-- READYOS-DOC-STATUS:END -->
 <h1 id="readyos-easyflash-boot-flow">ReadyOS EasyFlash Boot Flow</h1>
 <p>This document describes how the current ReadyOS EasyFlash cartridge
 flavor boots, what executes where, when cartridge banking happens, when
@@ -30,7 +207,7 @@ packaging and build purposes.</p>
 <li><code>src/generated/easyflash_layout.inc</code></li>
 </ul>
 <h2 id="high-level-model">High-Level Model</h2>
-<p>The EasyFlash flavor is not a "run directly from cartridge forever"
+<p>The EasyFlash flavor is not a “run directly from cartridge forever”
 design.</p>
 <p>It is a two-stage system:</p>
 <ol type="1">
@@ -48,18 +225,24 @@ apps are restored from REU into RAM and run from RAM.</p>
 <ul>
 <li>bank <code>0</code>: boot bank</li>
 <li>banks <code>1-2</code>: launcher payload</li>
-<li>banks <code>3-34</code>: application payloads</li>
-<li>later banks: ReadyShell overlay/state/resource payloads and unused
-capacity, according to the generated EasyFlash layout</li>
+<li>banks <code>3-43</code>: 21 application payloads in the current
+generated layout</li>
+<li>banks <code>44-52</code>: nine ReadyShell overlay payloads</li>
+<li>banks <code>53-63</code>: unused cartridge capacity in the current
+one-megabyte image</li>
 </ul>
 <p>Current generated constants:</p>
 <ul>
 <li><code>EASYFLASH_LAUNCHER_BANK = 1</code></li>
 <li><code>EASYFLASH_LAUNCHER_BANK_SPAN = 2</code></li>
-<li><code>EASYFLASH_APP_COUNT = 16</code></li>
+<li><code>EASYFLASH_APP_COUNT = 21</code> in the current generated
+layout</li>
 <li>overlay/resource counts are generated from the profile resource
 metadata</li>
 </ul>
+<p>This count is a generated-layout measurement, not an ABI constant.
+Regenerate the report after catalog changes rather than copying the
+number forward.</p>
 <p>Each EasyFlash bank is treated as one 16 KiB payload slot, split
 across:</p>
 <ul>
@@ -77,23 +260,23 @@ bank</li>
 <li><code>$DE00</code>: cart bank register</li>
 <li><code>$DE01</code>, <code>$DE02</code>: cart control registers</li>
 </ul>
-<h3 id="ram-execution--staging-areas">RAM execution / staging areas</h3>
+<h3 id="ram-execution-staging-areas">RAM execution / staging areas</h3>
 <ul>
 <li><code>$0800-$27FF</code>: EasyFlash loader copied from cartridge and
 executed from RAM</li>
-<li><code>$1000-$C5FF</code>: app working window and launcher restore
-window</li>
+<li><code>$1000-$C7FF</code>: <code>$B800</code> app working/launcher
+restore window</li>
 <li><code>$1000-$47FF</code>: upper part of loader tail refresh</li>
 <li><code>$1000-$47FF</code> / full window: temporary staging during
 preload</li>
-<li><code>$C600-$C7FF</code>: REU bookkeeping and loader state</li>
-<li><code>$C7F0-$C7FB</code>: overlay metadata staging block</li>
+<li><code>$C600-$C7FF</code>: app-private snapshot tail (no REU
+bookkeeping mirror)</li>
 <li><code>$C800-$C9FF</code>: historical shim copied into RAM</li>
 <li><code>$CA00+</code>: diagnostic/debug scratch</li>
 <li><code>$CC00-$CC8F</code>: copied app layout table</li>
 <li><code>$CC90-...</code>: copied overlay layout table</li>
 </ul>
-<h3 id="screen--vic-visible-areas">Screen / VIC visible areas</h3>
+<h3 id="screen-vic-visible-areas">Screen / VIC visible areas</h3>
 <ul>
 <li><code>$0400</code>: expected text screen RAM</li>
 <li><code>$D020</code>: border color</li>
@@ -108,6 +291,12 @@ preload</li>
 stage-specific border colors so the machine is visibly doing work during
 the long cold-boot preload.</p>
 <table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
 <thead>
 <tr>
 <th>Visible color</th>
@@ -329,15 +518,14 @@ model</li>
 <li>It is always copied into resident RAM first.</li>
 <li>The border switches to the shim color for this phase.</li>
 </ul>
-<h2 id="stage-5-reu-state-init">Stage 5: REU State Init</h2>
-<p>The loader initializes REU-side bookkeeping in RAM, including:</p>
-<ul>
-<li>zeroing tables around <code>$C600-$C7FF</code></li>
-<li>writing magic at <code>$C700</code></li>
-<li>setting shim default storage drive at <code>$C839</code></li>
-<li>setting <code>last_saved</code> at <code>$C835</code></li>
-</ul>
-<p>This is RAM bookkeeping, not yet the app preload pass itself.</p>
+<h2 id="stage-5-shim-state-init">Stage 5: Shim State Init</h2>
+<p>The loader initializes only the small resident shim fields needed
+during preload: the default storage drive at <code>$C839</code> and
+<code>last_saved</code> at <code>$C835</code>. It does not create a
+<code>$C600-$C7FF</code> mirror. The launcher snapshot is placed in
+physical <code>Skip+1</code> during Stage 7; after handoff, the launcher
+initializes the schema-v5 portion at <code>$B800-$FFFF</code> without
+disturbing that snapshot.</p>
 <h2 id="stage-6-copy-generated-layout-tables-to-ram">Stage 6: Copy
 Generated Layout Tables To RAM</h2>
 <p>The generated tables from
@@ -357,10 +545,10 @@ control path.</li>
 <h2 id="stage-7-preload-launcher-snapshot">Stage 7: Preload Launcher
 Snapshot</h2>
 <p>The launcher payload is copied from EasyFlash into the app window and
-then stashed into its assigned launcher snapshot bank. The current
-runtime also publishes logical REU bank <code>0</code> as the ReadyOS
-control/global bank rather than treating it as only the launcher
-image.</p>
+then stashed into the launcher portion of the ReadyOS bank. Physical
+<code>Skip+1</code> is the single source of truth for both the launcher
+snapshot and schema-v5 runtime metadata; it is not logical app token
+<code>0</code> and is never a dynamic app bank.</p>
 <p>Current launcher layout:</p>
 <ul>
 <li>cart start bank: <code>1</code></li>
@@ -370,17 +558,16 @@ image.</p>
 </ul>
 <p>Detailed flow:</p>
 <ol type="1">
-<li>Clear <code>$1000-$C5FF</code>.</li>
+<li>Clear <code>$1000-$C7FF</code>.</li>
 <li>Set current cart bank to launcher start bank.</li>
 <li>Copy launcher payload from cart to RAM at <code>$1000</code>.</li>
-<li>Stash the full app window <code>$1000-$C5FF</code>
-(<code>$B600</code> bytes) into the assigned launcher snapshot
-bank.</li>
+<li>Stash the full app window <code>$1000-$C7FF</code>
+(<code>$B800</code> bytes) into the ReadyOS bank.</li>
 </ol>
 <p>Important nuance:</p>
 <ul>
 <li>The payload itself is about <code>30.2 KiB</code>.</li>
-<li>The stash is the full <code>46 KiB</code> app window.</li>
+<li>The stash is the full <code>47,104</code> byte app window.</li>
 <li>That means the REU snapshot stores the complete runtime RAM image
 shape expected by the launcher, not just the compressed-on-cart payload
 bytes.</li>
@@ -392,23 +579,23 @@ Application Snapshots</h2>
 <p>The loader then walks every app entry in the app table.</p>
 <p>Per app, it does:</p>
 <ol type="1">
-<li>Clear the full app window <code>$1000-$C5FF</code>.</li>
+<li>Clear the full app window <code>$1000-$C7FF</code>.</li>
 <li>Read app metadata from the copied RAM table at
 <code>$CC00</code>.</li>
-<li>Select the app's EasyFlash start bank by writing
+<li>Select the app’s EasyFlash start bank by writing
 <code>$DE00</code>.</li>
 <li>Copy the app payload from cart to RAM at the specified load address,
 normally <code>$1000</code>.</li>
-<li>Stash the full <code>$B600</code> app window to the app's assigned
+<li>Stash the full <code>$B800</code> app window to the app’s assigned
 REU bank.</li>
-<li>Publish the app token to physical-bank lookup into logical REU bank
-<code>0</code> so the shim can resolve the app token without a fixed
-app-slot gap.</li>
+<li>Leave the explicit app token and physical bank pair in the generated
+catalog for the launcher to publish at ReadyOS
+<code>$B940</code>/<code>$BA40</code> after handoff.</li>
 </ol>
 <p>Current app REU banks are loader-assigned. The cartridge SKU preloads
-the profile's app payloads up front, but the steady-state metadata shape
-matches the disk launcher: app token -&gt; assigned snapshot bank in
-bank <code>0</code>.</p>
+the profile’s app payloads up front, but the steady-state metadata shape
+matches the disk launcher: app token -&gt; explicitly assigned snapshot
+bank in ReadyOS.</p>
 <p>Important nuances:</p>
 <ul>
 <li>This is where most of the long cold-boot time goes.</li>
@@ -420,7 +607,7 @@ bank <code>0</code>.</p>
 <li>stashes a large full-window snapshot to REU</li>
 </ul></li>
 </ul>
-<p>So the long "blue screen pause" is mostly a batch build of all app
+<p>So the long “blue screen pause” is mostly a batch build of all app
 snapshots.</p>
 <p>During this loop, the border repeatedly alternates:</p>
 <ul>
@@ -436,7 +623,7 @@ table.</p>
 <ol type="1">
 <li>Clear the overlay staging region beginning at
 <code>$1000</code>.</li>
-<li>Select the resource payload's EasyFlash bank.</li>
+<li>Select the resource payload’s EasyFlash bank.</li>
 <li>Copy resource payload from cart to RAM.</li>
 <li>Stash the staged bytes to the assigned REU bank and bank-relative
 offset.</li>
@@ -463,20 +650,21 @@ loader-assigned resource bank</li>
 use.</li>
 <li>The loader uses <code>$1000</code> as a temporary staging region for
 this work.</li>
-<li>Logical REU bank <code>0</code> records the owner/resource
-relationships so REU Viewer and launcher unload logic can see which
-banks belong to ReadyShell.</li>
+<li>After handoff, the launcher records the owner/resource relationships
+in the ReadyOS-bank schema so REU Viewer and unload logic see the same
+source of truth.</li>
 <li>The same yellow-then-orange border pattern is used here too.</li>
 </ul>
 <h2 id="stage-10-resource-metadata-write">Stage 10: Resource Metadata
 Write</h2>
-<p>The loader writes compact runtime metadata for assigned ReadyShell
-resources and mirrors the richer relationship records into logical REU
-bank <code>0</code>.</p>
+<p>The loader writes compact runtime metadata into ReadyShell’s assigned
+state bank. After handoff, the launcher writes the richer relationship
+records directly into the ReadyOS bank from the same generated EasyFlash
+catalog.</p>
 <p>The small runtime block is still deliberately tiny so ReadyShell does
-not need to parse the full control bank. ReadyShell consumes the
+not need to parse the full ReadyOS bank. ReadyShell consumes the
 assigned overlay/state bank ids and bank-relative offsets; launcher and
-REU Viewer consume the richer bank <code>0</code> records.</p>
+REU Viewer consume the richer schema-v5 records.</p>
 <p>Metadata includes:</p>
 <ul>
 <li><code>"OV"</code> signature</li>
@@ -488,7 +676,7 @@ REU Viewer consume the richer bank <code>0</code> records.</p>
 </ul>
 <p>This lets the runtime know how the overlay cache has been organized
 without reintroducing fixed physical bank constants.</p>
-<h2 id="stage-11-verify-stage">Stage 11: "Verify" Stage</h2>
+<h2 id="stage-11-verify-stage">Stage 11: “Verify” Stage</h2>
 <p>The boot banner includes a <code>"VERIFYING PRELOADS"</code> stage
 label.</p>
 <p>Important nuance:</p>
@@ -532,20 +720,20 @@ in boot:</p>
 </ul>
 <h2 id="current-reu-physical-placement">Current REU Physical
 Placement</h2>
-<p><code>Start</code> means physical REU bank
-<code>READYOS_REU_BANK_SKIP</code>. <code>Start+0</code> is logical REU
-bank <code>0</code>, the ReadyOS control/global bank.
-<code>Start+1</code> is the launcher snapshot/resume bank for launcher
-token <code>0</code>. <code>Start+2</code> is the first dynamic
-allocation bank. Shim-facing app tokens are resolved through logical REU
-bank <code>0</code>'s lookup page; the current default writer maps token
-<code>1</code> to <code>Start+2</code>.</p>
+<p><code>Skip</code> means physical <code>READYOS_REU_BANK_SKIP</code>.
+Physical <code>Skip</code> is the first dynamic bank. Physical
+<code>Skip+1</code> is the combined ReadyOS bank: launcher snapshot at
+<code>$0000-$B7FF</code>, schema v5 at <code>$B800-$FFFF</code>. The
+allocator skips it and continues at <code>Skip+2</code>. Shim-facing app
+tokens resolve through ReadyOS <code>$B940</code>; the cartridge emits
+explicit token/physical pairs and does not use arithmetic.</p>
 <h2 id="stage-13-restore-launcher-snapshot-and-handoff">Stage 13:
 Restore Launcher Snapshot and Handoff</h2>
 <p>At the end of boot:</p>
 <ol type="1">
-<li>The loader fetches logical launcher bank <code>0</code> (physical
-<code>Start+1</code>) back into <code>$1000-$C5FF</code>.</li>
+<li>The loader fetches the launcher snapshot selected by shim token
+<code>0</code> (physical <code>Skip+1</code>) back into
+<code>$1000-$C7FF</code>.</li>
 <li>It disables unwanted interrupt sources.</li>
 <li>It jumps to <code>$1000</code>.</li>
 </ol>
@@ -555,8 +743,7 @@ image.</p>
 <ul>
 <li>The launcher is not starting directly from cartridge data.</li>
 <li>It is starting from a RAM image restored from the launcher snapshot
-bank (<code>Start+1</code>, launcher token <code>0</code>), not from
-logical REU bank <code>0</code>.</li>
+bank (the ReadyOS bank, launcher token <code>0</code>).</li>
 <li>The border switches to orange for the final restore, then light
 green for the last handoff into launcher code.</li>
 </ul>
@@ -578,9 +765,9 @@ stage</h3>
 <li>shim image at <code>$C800-$C9FF</code>:
 <code>src/boot/readyos_shim.inc</code></li>
 </ul>
-<h3 id="c--cc65-launcher-stage">C / cc65 launcher stage</h3>
+<h3 id="c-cc65-launcher-stage">C / cc65 launcher stage</h3>
 <ul>
-<li>launcher program in <code>$1000-$C5FF</code></li>
+<li>launcher program in <code>$1000-$C7FF</code></li>
 <li>source entry:
 <ul>
 <li><code>src/apps/launcher/launcher_easyflash.c</code></li>
@@ -590,8 +777,8 @@ stage</h3>
 <h3 id="later-app-launches">Later app launches</h3>
 <p>After boot, app launches are usually:</p>
 <ol type="1">
-<li>launcher saves itself back to the launcher snapshot bank
-(<code>Start+1</code>)</li>
+<li>launcher saves itself back to the ReadyOS bank
+(<code>Skip+1</code>)</li>
 <li>shim fetches target app snapshot from REU</li>
 <li>control jumps to <code>$1000</code></li>
 </ol>
@@ -618,7 +805,7 @@ routines.</p>
 <li>increments cart bank</li>
 <li>repeats until payload length is satisfied</li>
 </ol>
-<p>This is the core "read from cartridge" loop used by
+<p>This is the core “read from cartridge” loop used by
 launcher/app/overlay preload.</p>
 <h2 id="where-cartridge-banking-does-not-matter-anymore">Where Cartridge
 Banking Does Not Matter Anymore</h2>
@@ -637,21 +824,22 @@ design.</p>
 <p>What boot is doing during that pause:</p>
 <ul>
 <li>preloading launcher snapshot</li>
-<li>preloading 16 application snapshots</li>
-<li>preloading 8 overlay snapshots</li>
+<li>preloading 21 application snapshots</li>
+<li>preloading 9 ReadyShell overlay/resource payloads</li>
 <li>clearing large RAM windows before each preload</li>
 <li>copying payloads from cartridge into RAM in software loops</li>
 <li>stashing large windows into REU</li>
 </ul>
 <p>Roughly:</p>
 <ul>
-<li>about <code>531 KiB</code> of actual payload content gets copied
-from cartridge</li>
-<li>about <code>885 KiB</code> of snapshot/stage data gets stashed into
-REU</li>
+<li>about <code>635 KiB</code> of current launcher/app/overlay payload
+content gets copied from cartridge</li>
+<li>app snapshots alone account for about <code>956 KiB</code> of REU
+stash traffic, before launcher and ReadyShell resource/state
+transfers</li>
 <li>plus a large amount of repeated RAM clearing</li>
 </ul>
-<p>The visible effect is "nothing happening", but the machine is
+<p>The visible effect is “nothing happening”, but the machine is
 actually building all of the runtime REU state up front.</p>
 <p>With the new stage colors, the more accurate user-facing
 interpretation is:</p>
@@ -683,8 +871,11 @@ current order of operations.</p>
 <li>RAM loader preloads launcher/apps/overlays from EasyFlash</li>
 <li>RAM loader stashes them into REU snapshots</li>
 <li>machine state is normalized</li>
-<li>launcher snapshot is restored from <code>Start+1</code></li>
+<li>launcher snapshot is restored from the ReadyOS bank
+(<code>Skip+1</code>)</li>
 <li>launcher starts in C at <code>$1000</code></li>
 </ol>
 <p>The large cold-boot delay is mostly the price of making later
 launches effectively instant.</p>
+</body>
+</html>

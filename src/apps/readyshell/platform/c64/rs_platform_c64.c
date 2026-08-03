@@ -1,6 +1,7 @@
 #include "../rs_platform.h"
 #include "../../core/rs_ui_state.h"
 #include "reu_mgr.h"
+#include "reu_control_bank.h"
 
 #define RS_REU_STATE_BANK_CACHE (*(unsigned char*)0xCFF2)
 
@@ -25,12 +26,15 @@ unsigned char rs_reu_state_bank(void) {
   unsigned int bank;
 
   if (RS_REU_STATE_BANK_CACHE != 0u &&
-      REU_ALLOC_TABLE[RS_REU_STATE_BANK_CACHE] == REU_RS_SCRATCH) {
+      readyos_bank_read_byte((unsigned int)(REUCB_BANK_TYPE_OFF +
+                                            RS_REU_STATE_BANK_CACHE)) ==
+          REU_RS_SCRATCH) {
     return RS_REU_STATE_BANK_CACHE;
   }
 
   for (bank = 0u; bank < REU_TOTAL_BANKS; ++bank) {
-    if (REU_ALLOC_TABLE[bank] == REU_RS_SCRATCH) {
+    if (readyos_bank_read_byte((unsigned int)(REUCB_BANK_TYPE_OFF + bank)) ==
+        REU_RS_SCRATCH) {
       RS_REU_STATE_BANK_CACHE = (unsigned char)bank;
       return (unsigned char)bank;
     }

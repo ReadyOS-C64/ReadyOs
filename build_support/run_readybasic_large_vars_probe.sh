@@ -232,11 +232,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_readybasic
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
   - id: wait_prompt_after_resume
     type: screen.wait_contains
     params:

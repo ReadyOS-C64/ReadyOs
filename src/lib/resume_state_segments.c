@@ -39,7 +39,7 @@ static unsigned char header_is_valid(unsigned int max_len, unsigned int *out_len
     if (len > max_len) {
         return 0;
     }
-    if (len > (REU_RESUME_TAIL_SIZE - RESUME_HDR_SIZE)) {
+    if (len > (RS_RESUME_TAIL_SIZE() - RESUME_HDR_SIZE)) {
         return 0;
     }
 
@@ -129,13 +129,13 @@ unsigned char resume_save_segments(const ResumeWriteSegment *segments,
     if (!write_segments_len(segments, segment_count, &payload_len)) {
         return 0;
     }
-    if (payload_len == 0 || payload_len > (REU_RESUME_TAIL_SIZE - RESUME_HDR_SIZE)) {
+    if (payload_len == 0 || payload_len > (RS_RESUME_TAIL_SIZE() - RESUME_HDR_SIZE)) {
         return 0;
     }
 
     build_header(payload_len);
 
-    payload_off = (unsigned int)(REU_RESUME_OFF + RESUME_HDR_SIZE);
+    payload_off = (unsigned int)(RS_RESUME_OFF() + RESUME_HDR_SIZE);
     for (i = 0; i < segment_count; ++i) {
         if (segments[i].len == 0) {
             continue;
@@ -143,7 +143,7 @@ unsigned char resume_save_segments(const ResumeWriteSegment *segments,
         reu_dma_stash((unsigned int)segments[i].ptr, rs_resume_bank, payload_off, segments[i].len);
         payload_off = (unsigned int)(payload_off + segments[i].len);
     }
-    reu_dma_stash((unsigned int)rs_resume_hdr, rs_resume_bank, REU_RESUME_OFF, RESUME_HDR_SIZE);
+    reu_dma_stash((unsigned int)rs_resume_hdr, rs_resume_bank, RS_RESUME_OFF(), RESUME_HDR_SIZE);
     return 1;
 }
 
@@ -168,11 +168,11 @@ unsigned char resume_load_segments(const ResumeReadSegment *segments,
     if (!read_segments_len(segments, segment_count, &expected_len)) {
         return 0;
     }
-    if (expected_len == 0 || expected_len > (REU_RESUME_TAIL_SIZE - RESUME_HDR_SIZE)) {
+    if (expected_len == 0 || expected_len > (RS_RESUME_TAIL_SIZE() - RESUME_HDR_SIZE)) {
         return 0;
     }
 
-    reu_dma_fetch((unsigned int)rs_resume_hdr, rs_resume_bank, REU_RESUME_OFF, RESUME_HDR_SIZE);
+    reu_dma_fetch((unsigned int)rs_resume_hdr, rs_resume_bank, RS_RESUME_OFF(), RESUME_HDR_SIZE);
     if (!header_is_valid(expected_len, &stored_len, &stored_seq)) {
         return 0;
     }
@@ -180,7 +180,7 @@ unsigned char resume_load_segments(const ResumeReadSegment *segments,
         return 0;
     }
 
-    payload_off = (unsigned int)(REU_RESUME_OFF + RESUME_HDR_SIZE);
+    payload_off = (unsigned int)(RS_RESUME_OFF() + RESUME_HDR_SIZE);
     for (i = 0; i < segment_count; ++i) {
         if (segments[i].len == 0) {
             continue;

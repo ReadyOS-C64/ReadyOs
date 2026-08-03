@@ -168,7 +168,7 @@ steps:
         - { label: descriptors_1000, start: 0x1000, end: 0x11FF }
         - { label: resident_1200, start: 0x1200, end: 0x1BFF }
         - { label: command_overlay_a800, start: 0xA800, end: 0xAFFF }
-        - { label: reu_alloc_c600, start: 0xC600, end: 0xC6FF }
+        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC6FF }
   - id: load_temp_program
     type: input.sequence
     params:
@@ -191,12 +191,17 @@ steps:
       keys: [$(keys $'PRINT CHR$(147)\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 30.0
-  - id: assert_done
-    type: screen.wait_contains
+  - id: capture_temp_program_progress
+    type: screen.capture
     params:
-      text: "RBSCRREU DONE"
-      wait_timeout_s: 300
-      capture_label: scrreu_done
+      label: scrreu_progress
+      pitch: screen-backed REU program progress after 30 seconds
+  - id: assert_done
+    type: assert.memory
+    params:
+      start: 1024
+      end: 1036
+      equals_hex: "52 42 53 43 52 52 45 55 20 44 4F 4E 45"
   - id: dump_after_done
     type: dump.memory_ranges
     params:

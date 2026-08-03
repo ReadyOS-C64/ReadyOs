@@ -5,12 +5,13 @@
 ;   $0801-$08FF: Boot loader (this code, freed after boot)
 ;   $C800-$C9FF: Shim (512 bytes) - copied here, stays resident
 ;                (Using $C800 to avoid cc65 runtime overwriting $0800)
-;   $1000-$C5FF: App snapshot window ($B600 / 46592 bytes)
+;   $1000-$C7FF: App snapshot window ($B800 / 47104 bytes)
 ;
-; REU Banks are physical = READYOS_REU_BANK_SKIP + offset.
-;   Start:   ReadyOS global bank
-;   Start+1: logical launcher bank 0
-;   Start+2: logical app/resource bank 1
+; READYOS_REU_BANK_SKIP names the first dynamic physical bank.
+;   Skip:   first dynamic app/resource bank
+;   Skip+1: ReadyOS bank (launcher snapshot + schema-v5 state)
+;   Other dynamic banks are assigned through the schema token map; token 1 is
+;   not an arithmetic alias for Skip+2.
 ;-----------------------------------------------------------------------------
 
 .segment "LOADADDR"
@@ -395,18 +396,8 @@ copy_shim:
     lda #(msg_memory_end - msg_memory)
     jsr print_progress
 
-    ; Initialize REU allocation table at $C600-$C7FF
-    ldx #0
-    lda #0
-init_reu_table:
-    sta $C600,x
-    sta $C700,x
-    inx
-    bne init_reu_table
-
-    ; Set magic byte
-    lda #$A5
-    sta $C700
+    ; $C600-$C7FF is now part of the app snapshot window.  The launcher
+    ; initializes authoritative allocation/mapping state in the ReadyOS bank.
 
     ;--- Phase 3: "LOADING LAUNCHER..." ---
     ldx #<msg_launcher

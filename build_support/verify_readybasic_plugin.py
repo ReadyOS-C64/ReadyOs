@@ -9,10 +9,35 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ASM = ROOT / "src/apps/readybasic/readybasic.s"
+CFG = ROOT / "cfg/ready_app_readybasic.cfg"
 MAP = ROOT / "obj/readybasic.map"
 REU_HDR = ROOT / "src/lib/reu_mgr.h"
 PRG = ROOT / "bin/readybasic.prg"
 MODULE_DIR = ROOT / "obj/readybasic_modules"
+MAKEFILE = ROOT / "Makefile"
+
+READYBASIC_VICE_TARGETS = {
+    "readybasic-demo-vice", "readybasic-repeat-label-vice",
+    "readybasic-lifecycle-vice", "readybasic-module-overlay-vice",
+    "readybasic-plugin-command-vice", "readybasic-program-vice",
+    "readybasic-rbtest1-vice", "readybasic-resume-min-vice",
+    "readybasic-screen-reu-temp-vice", "readybasic-state-vice",
+    "readybasic-large-vars-vice", "readybasic-hotkey-vice",
+    "readybasic-keyboard-regression-vice", "readybasic-reuviewer-f2-chain-vice",
+    "readybasic-cross-app-resume-vice", "readybasic-second-entry-editor-vice",
+    "readybasic-gfx-phase1-vice", "readybasic-sprite-steps-vice",
+    "readybasic-gfx-phase2-vice", "readybasic-gfx-phase3-vice",
+    "readybasic-gfx-mbitmap-vice", "readybasic-gfx-phase4-vice",
+    "readybasic-gfx-phase5-vice", "readybasic-sound-phase1-vice",
+    "readybasic-readyos-loaded-apps-vice", "readybasic-full-vice",
+}
+
+READYBASIC_VICE_PLAN_SCRIPTS = {
+    "run_readybasic_gfx_phase5_demo.sh",
+    "run_readybasic_sprite_steps_demo.sh",
+    "run_readybasic_resume_min_probe.sh",
+    "run_readybasic_screen_reu_temp_probe.sh",
+}
 
 
 def fail(message: str) -> None:
@@ -184,12 +209,44 @@ def parse_segments(map_text: str) -> dict[str, tuple[int, int, int]]:
 
 def main() -> None:
     asm = ASM.read_text()
+    cfg = CFG.read_text()
     reu_hdr = REU_HDR.read_text()
+    makefile = MAKEFILE.read_text()
     if not MAP.exists():
         fail("obj/readybasic.map is missing; build bin/readybasic.prg first")
     if not PRG.exists():
         fail("bin/readybasic.prg is missing; build it first")
     segments = parse_segments(MAP.read_text())
+
+    aggregate = re.search(r"^readybasic-vice-suites:\s*(.+)$", makefile, re.MULTILINE)
+    if not aggregate:
+        fail("readybasic-vice-suites aggregate is missing")
+    aggregate_targets = aggregate.group(1).split()
+    if len(aggregate_targets) != len(set(aggregate_targets)):
+        fail("readybasic-vice-suites contains duplicate targets")
+    if set(aggregate_targets) != READYBASIC_VICE_TARGETS:
+        missing = sorted(READYBASIC_VICE_TARGETS - set(aggregate_targets))
+        extra = sorted(set(aggregate_targets) - READYBASIC_VICE_TARGETS)
+        fail(f"26-target VICE aggregate drifted; missing={missing}, extra={extra}")
+    for script_name in READYBASIC_VICE_PLAN_SCRIPTS:
+        if f"$(BUILD_SUPPORT_DIR)/{script_name}" not in makefile:
+            fail(f"READYBASIC_VICE_SCRIPTS is missing {script_name}")
+
+    # The custom ca65/ld65 image is not a conventional contiguous cc65 app.
+    # These checks couple the assembler's run addresses to the linker's exact
+    # cold-load seed shape so either side cannot drift silently.
+    require(r"ENTRY:\s+file\s*=\s*%O,\s*start\s*=\s*\$1000,\s*size\s*=\s*\$0200", cfg,
+            "custom ReadyBASIC ENTRY shape must remain $1000/$0200")
+    require(r"SLOT0:\s+file\s*=\s*\"\",\s*start\s*=\s*\$A800,\s*size\s*=\s*\$0800", cfg,
+            "custom ReadyBASIC slot 0 must remain $A800/$0800")
+    require(r"SLOT1:\s+file\s*=\s*\"\",\s*start\s*=\s*\$B000,\s*size\s*=\s*\$0800", cfg,
+            "custom ReadyBASIC slot 1 must remain $B000/$0800")
+    require(r"SLOT2:\s+file\s*=\s*\"\",\s*start\s*=\s*\$B800,\s*size\s*=\s*\$0800", cfg,
+            "custom ReadyBASIC slot 2 must remain $B800/$0800")
+    require(r"SHARED:\s+file\s*=\s*\"\",\s*start\s*=\s*\$C200,\s*size\s*=\s*\$0400", cfg,
+            "custom ReadyBASIC shared-frame shape must remain $C200-$C5FF")
+    require(r"BRIDGE:\s+file\s*=\s*\"\",\s*start\s*=\s*\$C000,\s*size\s*=\s*\$0600", cfg,
+            "custom ReadyBASIC bridge window must remain $C000-$C5FF")
 
     require(r"^BASIC_START\s*=\s*\$2AC1\b", asm, "BASIC_START must be $2AC1")
     require(r"^BASIC_LIMIT\s*=\s*\$A000\b", asm, "BASIC_LIMIT must be $A000")
@@ -297,8 +354,8 @@ def main() -> None:
             "VOICE must use the existing five-number signature to avoid resident parser growth")
     require(r"CMD_SIDCORE\s+CMD_SOUND,\s+SIG_SPRSET,\s+cmd_sound,\s+\"SOUND\"", asm,
             "SOUND must be a built-in SIDCORE overlay command")
-    if re.search(r"^\s*RB_GFX_[A-Za-z0-9_]+\s*=\s*\$C[6-9][0-9A-Fa-f]{2}\b", asm, re.MULTILINE):
-        fail("graphics-owned Bank D state must not live in the $C600-$C9FF forbidden range")
+    if re.search(r"^\s*RB_GFX_[A-Za-z0-9_]+\s*=\s*\$C[89][0-9A-Fa-f]{2}\b", asm, re.MULTILINE):
+        fail("graphics-owned Bank D state must not live in the resident $C800-$C9FF shim range")
     command_names = parse_command_names(asm)
     removed_present = sorted(set(command_names) & REMOVED_COMMAND_NAMES)
     if removed_present:

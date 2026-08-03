@@ -1,7 +1,9 @@
 ;
 ; context.s - Context Save/Restore for Ready OS
 ; Handles saving and restoring full app state via REU DMA
-; NOTE: Legacy shim module; production shim is generated from src/boot/boot_asm.s.
+; NOTE: Retired legacy module, intentionally not linked.  The canonical shim
+; is src/boot/readyos_shim.inc.  Constants below remain updated for archival
+; comparison and must not be mistaken for a second implementation.
 ;
 
 .export _context_save, _context_restore
@@ -31,8 +33,8 @@ SCREEN_SIZE  = 1000     ; 40x25 = 1000 bytes
 COLOR_START  = $D800
 COLOR_SIZE   = 1000
 APP_START    = $1000
-APP_END      = $C600
-APP_SIZE     = $B600    ; 46,592 bytes ($1000-$C5FF)
+APP_END      = $C800
+APP_SIZE     = $B800    ; 47,104 bytes ($1000-$C7FF)
 
 ; REU offsets for saved state (within app's 64KB bank)
 REU_OFF_CPU      = $0000    ; 8 bytes - CPU registers
@@ -199,7 +201,7 @@ color_buffer:   .res 1000
         sta REU_COMMAND
 
         ;----- Save App Memory via DMA (46KB) -----
-        ; This is the big one - $1000 to $C5FF
+        ; This is the big one - $1000 to $C7FF
         lda #<APP_START
         sta REU_C64_LO
         lda #>APP_START

@@ -23,6 +23,14 @@ That special report is generated from the current ReadyBASIC map/linker/source
 facts and shows the proportional C64 RAM, cold-load seed, steady-state BASIC
 workspace, under-ROM slot, and assigned ReadyBASIC core/code bank pictures.
 
+The current example inventory is build-owned rather than handwritten into disk
+images. `READYBASIC_GFX_DEMO_NAMES` in the Makefile contains 32 programs from
+`rbgfx01_modes` through `rbgfx32_convex_poly`; `READYBASIC_SOUND_DEMO_NAMES`
+contains 6 programs from `rbsnd01_sid_basics` through
+`rbsnd06_three_voice`. Regular and EasyFlash demo/probe wrappers are generated
+from the same sources, so documentation should refer to those lists instead of
+copying an older partial set.
+
 ## Current Module/Submodule Snapshot
 
 This section is the current source of truth for ReadyBASIC's module/submodule
@@ -39,7 +47,7 @@ Measured from the current `obj/readybasic.map`:
 | `ENTRY` | `$1000-$11FF`, `$0200` / 512B |
 | `RESIDENT` | `$1200-$2ABF`, `$18C0` / 6336B |
 | BASIC sentinel | `$2AC0` |
-| Common under-ROM helper | `$A000-$A7E8`, `$07E9` / 2025B |
+| Common under-ROM helper | `$A000-$A78A`, `$078B` / 1931B |
 | Slot 0 / module 1 | `$A800-$AFDB`, `$07DC` / 2012B |
 | Slot 1 / module 2/GFXCORE | `$B000-$B540`, `$0541` / 1345B |
 | Slot 2 / GFXPRIM | `$B800-$BF37`, `$0738` / 1848B |
@@ -105,7 +113,8 @@ consume one runtime strip.
 The graphics Bank D layout intentionally avoids ReadyBASIC/ReadyOS state:
 screen RAM is `$CC00-$CFFF`, sprite data is `$CA00-$CBFF`, bitmap/charset RAM
 is `$E000-$FFFF`, and color RAM is `$D800-$DBE7`. `$C000-$C9FF` remains owned
-by ReadyBASIC bridge/shared frames, ReadyOS REU metadata, and shim ABI.
+by ReadyBASIC bridge/shared frames through `$C5FF`, an intentionally unused
+app-private snapshot tail at `$C600-$C7FF`, and the shim ABI at `$C800-$C9FF`.
 
 The naming nuance matters. A module is the logical command family identified by
 module id. A module package/container is the disk SEQ file that carries
@@ -449,7 +458,7 @@ different:
 | `OVL4PACK` | `$0783` (1.9K, 1923 exact bytes) | Built-in `GFXDL` display-list overlay, prestashed to assigned code-bank offset `$6800`. | Fetched as a replacement overlay into `$B800-$BF82`. |
 | `OVL5PACK` | `$04DA` (1.2K, 1242 exact bytes) | Built-in `GFXTILE` charset/tilemap/multicolor-cell overlay, prestashed to assigned code-bank offset `$7000`. | Fetched as a replacement overlay into `$B800-$BCD9`. |
 | `OVL6PACK` | `$020E` (526B) | Built-in `SIDCORE` immediate sound overlay, prestashed to assigned code-bank offset `$7800`. | Fetched as a replacement overlay into `$B800-$BA0D`. |
-| `HIDLOAD` | `$07E9` (2.0K, 2025 exact bytes) | Load-only hidden helper seed starting at `$4000`. | Copied on cold boot into `$A000-$A7E8` and stashed to the assigned core-bank hidden shadow at `$3000`. |
+| `HIDLOAD` | `$078B` (1.9K, 1931 exact bytes) | Load-only hidden helper seed starting at `$4000`. | Copied on cold boot into `$A000-$A78A` and stashed to the assigned core-bank hidden shadow at `$3000`. |
 | `BRLOAD` | `$01FF` (511B) | Load-only bridge seed starting at `$4800`. | Copied on cold boot into `$C000-$C1FE`. |
 | `REGSEED` | `$1010` (4.0K, 4112 exact bytes) | Load-only registry header and 128 command descriptors at `$5000-$600F`. | Copied on cold boot into assigned core-bank offsets `$0000` and `$1000`. |
 
@@ -476,8 +485,9 @@ to fetch:
 
 ## C64 RAM Layout
 
-ReadyBASIC runs inside the ReadyOS app working region `$1000-$C5FF`. ReadyOS
-metadata and shim space above that are not general ReadyBASIC scratch.
+ReadyBASIC is captured by the ReadyOS `$1000-$C7FF` app snapshot. Its custom
+assembler/linker shape intentionally uses runtime bytes only through `$C5FF`,
+leaving `$C600-$C7FF` unused today; only `$C800-$C9FF` is resident shim space.
 
 | Region | Current range | Size | Owner and role |
 |---|---:|---:|---|
@@ -486,12 +496,12 @@ metadata and shim space above that are not general ReadyBASIC scratch.
 | BASIC sentinel | `$2AC0` | 1 byte | Must stay zero before stored-program `RUN`. |
 | BASIC workspace | `$2AC1-$9FFF` | `$753F` region, `30013` formula free bytes (29.3K) | Program text, variables, arrays, string heap. |
 | Command pack load image | `$2B00-$3FFF` | `$1500` (5.25K) file range | Built-in module/submodule payload seed bytes before cold prestash. |
-| Hidden helper load image | `$4000+` | `$07E9` (2.0K, 2025 exact bytes) load-only | Hidden helper seed copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
+| Hidden helper load image | `$4000+` | `$078B` (1.9K, 1931 exact bytes) load-only | Hidden helper seed copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
 | Bridge load image | `$4800+` | `$01FF` (511B) load-only | Bridge seed copied to `$C000`. |
 | Registry seed load image | `$5000-$600F` | `$1010` (4.0K, 4112 exact bytes) load-only | Header and 128 descriptors copied to the assigned core bank. |
 | Command pack 2 load image | `$6200-$7FFF` | `$1E00` (7.5K) file range | Built-in replacement overlay seed bytes before cold prestash. |
 | Runtime snapshot | Assigned core bank offsets `$0A00-$0BFF` | `$0200` (0.5K) plus bridge metadata | Saved zero page, stack page, SP, resume mode, line-chain guards. |
-| Common under-ROM helper | `$A000-$A7E8` | `$07E9` (2025B) | Helper code run with RAM mapped under BASIC ROM. |
+| Common under-ROM helper | `$A000-$A78A` | `$078B` (1931B) | Helper code run with RAM mapped under BASIC ROM. |
 | Slot 0 module payload | `$A800-$AFDB` | `$07DC` (2012B) | Module 1 system/default payload fetched from the assigned code bank. |
 | Slot 1 module payload | `$B000-$B540` | `$0541` (1345B) | Module 2 proof, streaming `ZMODLD` loader, and `GFXCORE` payload. |
 | Slot 2 `GFXPRIM` image | `$B800-$BF37` | `$0738` (1848B) | Slot-2 base/proof plus `GFXPRIM`; replacement overlays load over this when called. |
@@ -503,8 +513,8 @@ metadata and shim space above that are not general ReadyBASIC scratch.
 | Slot 2 `SIDCORE` overlay image | `$B800-$BA0D` | `$020E` (526B) | Replacement overlay for immediate SID sound commands. |
 | `BRIDGE` | `$C000-$C1FE` | `$01FF` (511B) | Persistent bridge state, saved vectors, overlay variables, current handle scratch, debug bytes, native routine return stack, and flow-control scratch. |
 | Shared frames | `$C200-$C5FF` | `$0400` (1.0K) | Call frame, result frame, descriptor buffer, command-name buffer, page/runtime buffers. |
-| Hidden helper shadow | Assigned core bank `$3000+` | `$07E9` (2025B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
-| ReadyOS REU metadata | `$C600-$C7FF` | `$0200` (0.5K) shared | ReadyBASIC only marks REU bank ownership here. |
+| Hidden helper shadow | Assigned core bank `$3000+` | `$078B` (1931B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
+| App-private snapshot tail | `$C600-$C7FF` | `$0200` (0.5K) | Captured by ReadyOS but intentionally unused so the custom assembler/linker image shape stays stable. ReadyBASIC ownership is published in the ReadyOS bank, not here. |
 | ReadyOS shim ABI | `$C800-$C9FF` | `$0200` (0.5K) shared | ReadyOS jump table and data; not ReadyBASIC RAM. |
 
 The PRG load image is larger than the live resident core. On cold entry,
@@ -823,8 +833,9 @@ On `EXIT`, ReadyBASIC:
 9. Restores the original page-3 BASIC/KERNAL vectors.
 10. Jumps to the ReadyOS shim return entry at `$C80C`.
 
-For `F2`/`F4`, ReadyBASIC scans the shim loaded-bank bitmap `$C836-$C838` from
-the current bank `$C834`. If a neighbor app is found, it performs the same
+For `F2`/`F4`, ReadyBASIC scans the authoritative schema-v5 loaded flags at
+ReadyOS-bank offset `$BA40 + token`, using the direct physical ReadyOS bank in
+`$C83B`, and starts from the current token in `$C834`. If a neighbor app is found, it performs the same
 READY-mode save/restore setup, persists the target bank in bridge state, clears
 editor hotkey state, restores channels/vectors, writes the saved target to
 `$C820`, and jumps to the shim switch entry `$C80F`. If no neighbor is loaded,
@@ -868,7 +879,8 @@ KERNAL-visible calls safe where needed.
 - `$2AC0` must remain zero before stored-program `RUN`.
 - `RESIDENT` must stay below `$2AC0`.
 - `BRIDGE` must stay below `$C200`, leaving `$C200-$C5FF` for relocated frames.
-- `$C600-$C7FF` is shared ReadyOS REU metadata, not ReadyBASIC scratch.
+- `$C600-$C7FF` is app-private snapshot room but is intentionally unused to
+  preserve the custom ReadyBASIC load/run shape.
 - `$C800-$C9FF` is ReadyOS shim ABI, not app RAM.
 - Warm resume restores `$A000` from the assigned-core-bank hidden-helper shadow before hidden helper calls.
 - Warm resume must not cold-reset `FRETOP`, `VARTAB`, `ARYTAB`, or `STREND`.
@@ -879,6 +891,12 @@ KERNAL-visible calls safe where needed.
 - String heap writes happen only in visible resident code.
 - Acceptance re-entry uses launcher menu navigation, not direct app-bank
   hotkeys.
+
+The assembler and linker config are a coupled ABI: `readybasic.s` is assembled
+with ca65 and linked only with `cfg/ready_app_readybasic.cfg`. Cold-load seed
+regions, under-ROM run slots, bridge/shared frames, and the exact `$1000-$7FFF`
+compact PRG span must move together. `verify_readybasic_plugin.py` enforces both
+sides of that dependency.
 
 ## Current Verification Evidence
 
@@ -895,7 +913,7 @@ Current static layout:
 | `ENTRY` | `$1000-$11FF` | `$0200` (512B) |
 | `RESIDENT` | `$1200-$2ABF` | `$18C0` (6.2K, 6336 exact bytes) |
 | `REGSEED` | `$5000-$600F` | `$1010` (4.0K, 4112 exact bytes) |
-| `HIDDEN` | `$A000-$A7E8` | `$07E9` (2025B) |
+| `HIDDEN` | `$A000-$A78A` | `$078B` (1931B) |
 | `LOWPACK` / slot 0 payload | `$A800-$AFDB` | `$07DC` (2012B) |
 | `SLOTPACK1` / slot 1 payload | `$B000-$B540` | `$0541` (1345B) |
 | `SLOTPACK2` / GFXPRIM | `$B800-$BF37` | `$0738` (1848B) |
@@ -916,7 +934,7 @@ Current measured guardrails:
 | `bin/readybasic.prg` size | `28674` |
 | `RESIDENT` | `$18C0` / 6336B |
 | `LOWPACK` | `$07DC` / 2012B |
-| `HIDDEN` | `$07E9` / 2025B |
+| `HIDDEN` | `$078B` / 1931B |
 | `BRIDGE` | `$01FF` / 511B |
 | `REGSEED` | `$1010` / 4112B |
 | `GFXPOLY` overlay | `$0779` / 1913B |
@@ -929,6 +947,16 @@ Recent VICE coverage includes:
 The broad external command/program/lifecycle/state wrappers have been refreshed
 for bare parenthesized syntax. The demo suite is intentionally viewer-paced;
 the regression probes stay shorter and more assertion-heavy.
+
+`make readybasic-vice-suites` is the complete 26-target regular acceptance
+aggregate. It includes the core lifecycle/program/state/hotkey/resume probes,
+the minimum-resume and screen/REU temporary-state probes, all current graphics
+phases and sprite-step examples, sound, ReadyOS loaded-app visibility, and the
+full visual verification. New official ReadyBASIC probes must be added to both
+`READYBASIC_VICE_SCRIPTS` and this aggregate so plan generation and execution
+cannot silently diverge. `verify_readybasic_plugin.py` enforces the exact
+26-target aggregate and the plan-only script coverage for the formerly omitted
+resume/screen/graphics examples.
 
 | Probe | Coverage |
 |---|---|

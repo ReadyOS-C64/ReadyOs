@@ -64,11 +64,12 @@ Current release build layout:
 
 | Region | Range | Purpose |
 | --- | --- | --- |
-| Resident app window | `$1000-$C5FF` | ReadyShell-owned app RAM |
+| ReadyOS snapshot window | `$1000-$C7FF` | ReadyShell-owned app RAM captured by the shim |
 | Overlay load bytes | `$8DFE-$8DFF` | PRG load-address bytes for overlay sidecars |
 | Overlay execution window | `$8E00-$C5FF` | Shared live window for whichever overlay is active |
-| Resident BSS | `$7D37-$7EE0` | Resident writable state below overlays |
-| Resident heap | `$7EE2-$8DFD` | cc65 heap below overlay load address |
+| Snapshot-private tail | `$C600-$C7FF` | Captured app RAM; ReadyShell leaves it outside its proven overlay ABI |
+| Resident BSS | `$7DEB-$7F94` | Resident writable state below overlays |
+| Resident heap | `$7F96-$8DFD` | cc65 heap below overlay load address |
 | High runtime area | `$CA00-$CFFF` | ReadyShell runtime state outside app snapshot |
 
 Important constraints:
@@ -342,6 +343,11 @@ reader. CAT is safe to place in the same scratch area because command overlays
 execute serially; while CAT is active, no other command owns that transient
 handoff area.
 
+The diagnostic ring has no C64-RAM mirror. The former `$C7A0-$C7DF` data and
+`$C7F0` head are now ordinary app-private snapshot bytes; only small live
+cursor/availability variables remain in ReadyShell BSS, while ring contents
+and head are read and written in the loader-assigned state bank.
+
 ## 9. Responsibilities
 
 - Resident code owns the shell loop, overlay boot/load/restore logic, generic
@@ -355,7 +361,8 @@ handoff area.
 
 ## 10. Current Constraints
 
-- Resident heap below the overlay load address is `3868` bytes.
+- Resident heap below the overlay load address is `3688` bytes in the current
+  release map.
 - `OVERLAY6` is currently the tightest overlay, with only `11` bytes left in the
   `$3800` live window.
 - The assigned cache layout leaves `8192` bytes free at the tail of assigned

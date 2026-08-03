@@ -54,6 +54,12 @@ steps:
       text: "ready."
       wait_timeout_s: 180
       capture_label: readybasic_prompt
+  - id: wait_readybasic_prompt_stable_before_program_entry
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      pre_delay_s: 1.5
+      wait_timeout_s: 30
   - id: clear_keyboard_buffer_before_program_entry
     type: memory.write
     params:
@@ -113,20 +119,32 @@ steps:
   - id: move_from_readybasic_to_editor_1
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_1
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_1
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_1
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_1
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_1
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_1
     type: screen.wait_contains
     params:
@@ -135,9 +153,18 @@ steps:
   - id: move_from_editor_to_readybasic_1
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_1
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_1
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_1
     type: screen.wait_contains
     params:
@@ -220,20 +247,32 @@ steps:
   - id: move_from_readybasic_to_editor_2
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_2
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_2
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_2
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_2
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_2
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_2
     type: screen.wait_contains
     params:
@@ -242,9 +281,18 @@ steps:
   - id: move_from_editor_to_readybasic_2
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_2
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_2
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_2
     type: screen.wait_contains
     params:
@@ -327,20 +375,32 @@ steps:
   - id: move_from_readybasic_to_editor_3
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_3
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_3
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_3
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_3
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_3
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_3
     type: screen.wait_contains
     params:
@@ -349,9 +409,18 @@ steps:
   - id: move_from_editor_to_readybasic_3
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_3
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_3
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_3
     type: screen.wait_contains
     params:
@@ -434,20 +503,32 @@ steps:
   - id: move_from_readybasic_to_editor_4
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_4
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_4
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_4
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_4
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_4
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_4
     type: screen.wait_contains
     params:
@@ -456,9 +537,18 @@ steps:
   - id: move_from_editor_to_readybasic_4
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_4
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_4
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_4
     type: screen.wait_contains
     params:
@@ -541,20 +631,32 @@ steps:
   - id: move_from_readybasic_to_editor_5
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_5
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_5
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_5
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_5
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_5
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_5
     type: screen.wait_contains
     params:
@@ -563,9 +665,18 @@ steps:
   - id: move_from_editor_to_readybasic_5
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_5
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_5
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_5
     type: screen.wait_contains
     params:
@@ -648,20 +759,32 @@ steps:
   - id: move_from_readybasic_to_editor_6
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_6
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_6
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_6
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_6
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_6
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_6
     type: screen.wait_contains
     params:
@@ -670,9 +793,18 @@ steps:
   - id: move_from_editor_to_readybasic_6
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_6
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_6
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_6
     type: screen.wait_contains
     params:
@@ -755,20 +887,32 @@ steps:
   - id: move_from_readybasic_to_editor_7
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_7
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_7
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_7
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_7
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_7
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_7
     type: screen.wait_contains
     params:
@@ -777,9 +921,18 @@ steps:
   - id: move_from_editor_to_readybasic_7
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_7
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_7
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_7
     type: screen.wait_contains
     params:
@@ -862,20 +1015,32 @@ steps:
   - id: move_from_readybasic_to_editor_8
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_8
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_8
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_8
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_8
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_8
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_8
     type: screen.wait_contains
     params:
@@ -884,9 +1049,18 @@ steps:
   - id: move_from_editor_to_readybasic_8
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_8
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_8
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_8
     type: screen.wait_contains
     params:
@@ -969,20 +1143,32 @@ steps:
   - id: move_from_readybasic_to_editor_9
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_9
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_9
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_9
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_9
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_9
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_9
     type: screen.wait_contains
     params:
@@ -991,9 +1177,18 @@ steps:
   - id: move_from_editor_to_readybasic_9
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_9
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_9
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_9
     type: screen.wait_contains
     params:
@@ -1076,20 +1271,32 @@ steps:
   - id: move_from_readybasic_to_editor_10
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_10
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_10
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_10
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_10
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_10
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_10
     type: screen.wait_contains
     params:
@@ -1098,9 +1305,18 @@ steps:
   - id: move_from_editor_to_readybasic_10
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_10
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_10
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_resume_10
     type: screen.wait_contains
     params:

@@ -15,6 +15,6 @@ void resume_invalidate(void) {
     for (i = 0; i < RESUME_HDR_SIZE; ++i) {
         rs_resume_zero_hdr[i] = 0;
     }
-    reu_dma_stash((unsigned int)rs_resume_zero_hdr, rs_resume_bank, REU_RESUME_OFF, RESUME_HDR_SIZE);
+    reu_dma_stash((unsigned int)rs_resume_zero_hdr, rs_resume_bank, RS_RESUME_OFF(), RESUME_HDR_SIZE);
     rs_resume_last_seq = 0;
 }

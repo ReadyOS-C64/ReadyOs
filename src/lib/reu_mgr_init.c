@@ -1,70 +1,13 @@
 /*
- * reu_mgr_init.c - REU manager initialization and shim bitmap sync
+ * reu_mgr_init.c - app-side ReadyOS-bank allocator initialization
+ *
+ * The launcher owns schema creation.  Apps must never create or rebuild global
+ * state from a private RAM mirror; initialization is therefore intentionally a
+ * validation-only no-op.  Allocation operations read the ReadyOS bank directly.
  */
 
 #include "reu_mgr.h"
 
-static void reu_mark_bitmap_slot(unsigned char logical_bank, unsigned char is_loaded) {
-    unsigned char phys;
-    unsigned char type;
-
-    phys = REU_LOGICAL_TO_PHYSICAL(logical_bank);
-    type = REU_ALLOC_TABLE[phys];
-    if (type == REU_UNAVAIL) {
-        return;
-    }
-    if (is_loaded) {
-        REU_ALLOC_TABLE[phys] = REU_APP_STATE;
-    } else if (type == REU_RESERVED) {
-        REU_ALLOC_TABLE[phys] = REU_FREE;
-    }
-}
-
-static void reu_sync_from_bitmap(void) {
-    unsigned char bitmap_lo = *SHIM_REU_BITMAP_LO;
-    unsigned char bitmap_hi = *SHIM_REU_BITMAP_HI;
-    unsigned char bitmap_xhi = *SHIM_REU_BITMAP_XHI;
-    unsigned char bank;
-    unsigned char mask;
-    unsigned char skip = *SHIM_REU_BANK_SKIP;
-
-    for (bank = 0; bank < skip; ++bank) {
-        REU_ALLOC_TABLE[bank] = REU_SKIPPED;
-    }
-
-    REU_ALLOC_TABLE[REU_READYOS_GLOBAL_PHYSICAL()] = REU_GLOBAL;
-    REU_ALLOC_TABLE[REU_LAUNCHER_PHYSICAL()] = REU_LAUNCHER;
-
-    for (bank = 1; bank < 8; ++bank) {
-        mask = (unsigned char)(1 << bank);
-        reu_mark_bitmap_slot(bank, (unsigned char)(bitmap_lo & mask));
-    }
-
-    for (bank = 0; bank < 8; ++bank) {
-        mask = (unsigned char)(1 << bank);
-        reu_mark_bitmap_slot((unsigned char)(bank + 8),
-                             (unsigned char)(bitmap_hi & mask));
-    }
-
-    for (bank = 0; bank < 8; ++bank) {
-        mask = (unsigned char)(1 << bank);
-        reu_mark_bitmap_slot((unsigned char)(bank + 16),
-                             (unsigned char)(bitmap_xhi & mask));
-    }
-}
-
 void reu_mgr_init(void) {
-    if (*REU_SYS_MAGIC == REU_MAGIC_VALUE) {
-        reu_sync_from_bitmap();
-        return;
-    }
-
-    {
-        unsigned int i;
-        for (i = 0; i < REU_TOTAL_BANKS; ++i) {
-            REU_ALLOC_TABLE[i] = REU_FREE;
-        }
-    }
-    *REU_SYS_MAGIC = REU_MAGIC_VALUE;
-    reu_sync_from_bitmap();
+    /* Kept for source/ABI compatibility with existing apps. */
 }

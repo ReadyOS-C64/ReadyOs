@@ -1,45 +1,39 @@
-/*
- * reu_mgr_alloc.c - REU allocation/free helpers
- */
+/* reu_mgr_alloc.c - authoritative ReadyOS-bank allocation helpers */
 
 #include "reu_mgr.h"
+#include "reu_control_bank.h"
 
 static unsigned char reu_fixed_bank_type(unsigned char bank) {
-    if (bank < *SHIM_REU_BANK_SKIP) {
+    if (bank < REU_FIRST_DYNAMIC_PHYSICAL()) {
         return REU_SKIPPED;
     }
     if (bank == REU_READYOS_GLOBAL_PHYSICAL()) {
         return REU_GLOBAL;
     }
-    if (bank == REU_LAUNCHER_PHYSICAL()) {
-        return REU_LAUNCHER;
-    }
-    return 0xFF;
+    return 0xFFu;
 }
 
 unsigned char reu_alloc_bank(unsigned char type) {
     unsigned int bank;
 
-    for (bank = REU_FIRST_DYNAMIC_PHYSICAL(); bank < REU_TOTAL_BANKS; ++bank) {
-        if (reu_fixed_bank_type((unsigned char)bank) != 0xFF) {
+    /* $FF remains the legacy failure return, so the legacy allocator reserves
+     * physical bank 255. Token mappings themselves still represent all bytes. */
+    for (bank = REU_FIRST_DYNAMIC_PHYSICAL(); bank < 255u; ++bank) {
+        if (reu_fixed_bank_type((unsigned char)bank) != 0xFFu) {
             continue;
         }
-        if (REU_ALLOC_TABLE[bank] == REU_FREE) {
-            REU_ALLOC_TABLE[bank] = type;
+        if (readyos_bank_read_byte((unsigned int)(REUCB_BANK_TYPE_OFF + bank)) == REU_FREE) {
+            readyos_bank_write_byte((unsigned int)(REUCB_BANK_TYPE_OFF + bank), type);
             return (unsigned char)bank;
         }
     }
-
-    return 0xFF;
+    return 0xFFu;
 }
 
 void reu_free_bank(unsigned char bank) {
-    unsigned char fixed_type = reu_fixed_bank_type(bank);
+    unsigned char fixed_type;
 
-    if (fixed_type != 0xFF) {
-        REU_ALLOC_TABLE[bank] = fixed_type;
-        return;
-    }
-
-    REU_ALLOC_TABLE[bank] = REU_FREE;
+    fixed_type = reu_fixed_bank_type(bank);
+    readyos_bank_write_byte((unsigned int)(REUCB_BANK_TYPE_OFF + bank),
+                            (fixed_type == 0xFFu) ? REU_FREE : fixed_type);
 }

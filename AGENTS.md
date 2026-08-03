@@ -17,7 +17,7 @@
 
 ## ReadyOS Architecture Rules
 
-- App working region is `$1000-$C5FF` (`$B600` bytes); REU save/restore also targets this range.
+- App working region is `$1000-$C7FF` (`$B800` bytes); REU save/restore also targets this range. `$C600-$C7FF` is app-private snapshot RAM, not a shared metadata mirror.
 - Shim jump table/data is resident at `$C800-$C9FF`; never place app data/code assumptions there unless intentionally using shim ABI.
 - Assume KERNAL/disk I/O can clobber app memory in the active region; keep persistent control state in defined safe areas only.
 - ReadyBASIC module packages are generated SEQ files named `rbm.<name>`; preserve/restore disk-image logic must treat names beginning with `rbm.` as build-owned artifacts, not user files to restore from an older disk image.

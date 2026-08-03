@@ -1,201 +1,236 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ReadyShell Host Version For Mocking, Unit, And Smoke Testing</title>
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ReadyShellHostTesting</title>
   <style>
-    :root {
-      --bg: #0b1115;
-      --panel: rgba(17, 29, 36, 0.88);
-      --panel-2: rgba(13, 22, 28, 0.92);
-      --ink: #e8f3f6;
-      --muted: #a9bec8;
-      --line: #35515d;
-      --accent: #78d3b2;
-      --accent-2: #f0c06e;
-      --alert: #ef9b7d;
-      --mono: "Menlo", "Consolas", monospace;
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
     }
-    * { box-sizing: border-box; }
     body {
-      margin: 0;
-      color: var(--ink);
-      font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
-      background:
-        radial-gradient(1000px 720px at 0% -10%, rgba(120, 211, 178, 0.16), transparent 55%),
-        radial-gradient(900px 720px at 100% 0%, rgba(73, 144, 182, 0.18), transparent 48%),
-        linear-gradient(180deg, #0b1115, #0e171d);
-    }
-    header {
-      padding: 30px 24px 18px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(120,211,178,0.08), rgba(0,0,0,0));
-    }
-    h1 {
-      margin: 0;
-      font-size: clamp(1.6rem, 4vw, 2.6rem);
-      letter-spacing: .02em;
-    }
-    .sub {
-      margin: 12px 0 0;
-      max-width: 100ch;
-      line-height: 1.55;
-      color: var(--muted);
-    }
-    main {
-      max-width: 1180px;
       margin: 0 auto;
-      padding: 24px;
-      display: grid;
-      gap: 18px;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
     }
-    section {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 18px 18px 16px;
-      box-shadow: 0 18px 40px rgba(0,0,0,.16);
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
     }
-    h2 {
-      margin: 0 0 12px;
-      font-size: 1.02rem;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-      color: var(--accent);
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
     }
-    h3 {
-      margin: 0 0 8px;
-      font-size: .98rem;
-      color: var(--accent-2);
-      letter-spacing: .02em;
+    p {
+      margin: 1em 0;
     }
-    p, li { line-height: 1.58; }
-    ul {
-      margin: 10px 0 0 18px;
-      padding: 0;
+    a {
+      color: #1a1a1a;
     }
-    code, pre { font-family: var(--mono); }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
     code {
-      background: rgba(8, 15, 20, .78);
-      padding: 1px 4px;
-      border-radius: 4px;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
     }
     pre {
-      margin: 12px 0 0;
-      padding: 14px;
+      margin: 1em 0;
       overflow: auto;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(7, 13, 18, .96);
-      color: #d7eef5;
-      line-height: 1.42;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
     }
     table {
-      width: 100%;
+      margin: 1em 0;
       border-collapse: collapse;
-      margin-top: 10px;
-      font-size: .95rem;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
     }
-    th, td {
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      text-align: left;
-      vertical-align: top;
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
     }
     th {
-      color: var(--accent);
-      font-weight: 700;
-      letter-spacing: .03em;
-      text-transform: uppercase;
-      font-size: .8rem;
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
     }
-    .grid {
-      display: grid;
-      gap: 18px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
     }
-    .tri {
-      display: grid;
-      gap: 14px;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    header {
+      margin-bottom: 4em;
+      text-align: center;
     }
-    .card {
-      padding: 14px 15px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.08);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.08)),
-        var(--panel-2);
+    #TOC li {
+      list-style: none;
     }
-    .card h3 { margin-bottom: 10px; }
-    .callout {
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(120, 211, 178, .28);
-      background: rgba(120, 211, 178, .08);
-      color: var(--muted);
+    #TOC ul {
+      padding-left: 1.3em;
     }
-    .warn {
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(239, 155, 125, .26);
-      background: rgba(239, 155, 125, .08);
-      color: var(--muted);
+    #TOC > ul {
+      padding-left: 0;
     }
-    .note { color: var(--muted); }
-    @media (max-width: 980px) {
-      .grid, .tri { grid-template-columns: 1fr; }
+    #TOC a:not(:hover) {
+      text-decoration: none;
     }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
 </head>
 <body>
-<header>
-  <h1>ReadyShell Host Version For Mocking, Unit, And Smoke Testing</h1>
-  <p class="sub">
-    This document describes the current host-side ReadyShell test harness in
-    ReadyOS. It is a native <code>clang</code> harness around the real parser,
-    VM, value, serialization, and command-protocol code, not a separate
-    productized host port of the shell.
-  </p>
-</header>
-<main>
-  <section>
-    <h2>What It Is</h2>
-    <p>
-      ReadyShell host testing exists to validate logic quickly without booting
-      VICE or running on a real C64. The harness compiles selected ReadyShell
-      sources as normal native code and substitutes only the hardware-facing
-      edges with narrow mocks.
-    </p>
-    <div class="callout">
-      Strongest value: parser, VM, value, serialization, and command-protocol
-      regressions fail fast on the host. Weakest area: real overlay loading,
-      memory banking, IEC behavior, and UI integration are still outside the
-      host harness.
-    </div>
-  </section>
-
-  <section>
-    <h2>Targets</h2>
-    <table>
-      <thead>
-        <tr><th>Target</th><th>Purpose</th><th>Included In <code>make verify</code></th></tr>
-      </thead>
-      <tbody>
-        <tr><td><code>readyshell-host-tests</code></td><td>Aggregate parser + VM/overlay + REU suite</td><td>Yes</td></tr>
-        <tr><td><code>readyshell-parse-smoke-host</code></td><td>Parser-only smoke checks</td><td>Via aggregate</td></tr>
-        <tr><td><code>readyshell-vm-smoke-host</code></td><td>Generic VM smoke plus overlay-aware C64 dispatch and mocked file-command smoke</td><td>Via aggregate</td></tr>
-        <tr><td><code>readyshell-reu-tests-host</code></td><td>REU-backed value and serialization tests</td><td>Via aggregate</td></tr>
-      </tbody>
-    </table>
-  </section>
-
-  <section>
-    <h2>Shape</h2>
-    <pre>native clang build
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current ReadyShell host-testing counterpart generated from ReadyShellHostTesting.md.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<h1
+id="readyshell-host-version-for-mocking-unit-and-smoke-testing">ReadyShell
+Host Version For Mocking, Unit, And Smoke Testing</h1>
+<p>This document describes the current host-side ReadyShell test harness
+in ReadyOS.</p>
+<p>It is not a separate productized host port of ReadyShell. It is a
+native <code>clang</code> test harness around the real parser, VM,
+value, serialization, and external-command protocol code used by the C64
+build.</p>
+<p>For the user-facing shell guide, see <a
+href="../src/apps/readyshell/README.md">../src/apps/readyshell/README.md</a>.
+For the full C64 architecture, overlay model, and runtime layout, see <a
+href="./ReadyShellArchitecture.md">./ReadyShellArchitecture.md</a>.</p>
+<h2 id="what-the-host-harness-is">1. What The Host Harness Is</h2>
+<p>ReadyShell host testing exists to validate logic quickly without
+booting VICE or running on a real C64.</p>
+<p>The host harness compiles selected ReadyShell sources as normal
+native code and runs small test executables on the host machine. It
+keeps the same parser, VM, value, and REU-serialization code paths
+wherever possible, but replaces the hardware-facing pieces with narrow
+mocks.</p>
+<p>That means the host harness is best thought of as:</p>
+<ul>
+<li>a fast parser smoke test</li>
+<li>a fast VM and pipeline behavior smoke test</li>
+<li>a fast REU-backed value and serialization unit test</li>
+<li>a protocol-level test for the external overlay command ABI</li>
+</ul>
+<p>It is not:</p>
+<ul>
+<li>a full host UI version of ReadyShell</li>
+<li>a cycle-accurate C64 emulator</li>
+<li>a replacement for disk boot testing in ReadyOS</li>
+<li>a substitute for overlay loading, REU DMA, or true-drive
+verification</li>
+</ul>
+<h2 id="make-targets">2. Make Targets</h2>
+<p>The current host-side targets are:</p>
+<ul>
+<li><code>make readyshell-host-tests</code></li>
+<li><code>make readyshell-parse-smoke-host</code></li>
+<li><code>make readyshell-vm-smoke-host</code></li>
+<li><code>make readyshell-reu-tests-host</code></li>
+</ul>
+<p><code>make verify</code> now runs:</p>
+<ul>
+<li><code>readyshell-host-tests</code></li>
+</ul>
+<p>That aggregate target runs:</p>
+<ul>
+<li><code>readyshell-parse-smoke-host</code></li>
+<li><code>readyshell-vm-smoke-host</code></li>
+<li><code>readyshell-reu-tests-host</code></li>
+</ul>
+<h2 id="end-to-end-shape">3. End-To-End Shape</h2>
+<pre class="text"><code>native clang build
     |
     +--&gt; parser smoke binary
     |       uses real parser sources
@@ -210,155 +245,393 @@
     |
     `--&gt; REU/value test binary
             uses real value, serialization, and LDV-side helpers
-            with mocked REU backing</pre>
-  </section>
-
-  <section class="tri">
-    <div class="card">
-      <h3>Parser Smoke</h3>
-      <p>Compiles the real parser and checks the documented syntax surface plus malformed-input rejection.</p>
-      <ul>
-        <li>Expressions, statements, and command forms</li>
-        <li>Command, expression, filter, and foreach pipeline stages</li>
-        <li>Arrays, ranges, indexing, and property access</li>
-        <li>Error code and position reporting</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>VM Smoke</h3>
-      <p>Runs the real VM with mocked platform edges and a mocked overlay-command layer.</p>
-      <ul>
-        <li>Assignments, filters, foreach, `PRT`, `GEN`, `TOP`, `MORE`, `SEL`</li>
-        <li>Pipeline capture shape rules and nested array/object access</li>
-        <li>`LST`, `DRVI`, `LDV`, and `STV` with mocked platform/file I/O</li>
-        <li>Overlay-side `CAT`, `PUT`, `ADD`, `DEL`, `REN`, and `COPY`</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>REU Tests</h3>
-      <p>Validates REU-backed value persistence, nested graph round-trips, and malformed RSV1 rejection.</p>
-      <ul>
-        <li>String, array, object, and nested graph cloning</li>
-        <li>Representative scalar, array, and object file-byte checks</li>
-        <li>Serialization, deserialization, and loader rejection paths</li>
-        <li>`LDV` heap reconstruction path</li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="grid">
-    <div>
-      <h2>What Gets Mocked</h2>
-      <ul>
-        <li>REU becomes a 16 MB in-process byte array.</li>
-        <li>`LST` sees a synthetic fixed directory.</li>
-        <li>`DRVI` sees synthetic drive metadata.</li>
-        <li>`rs_overlay_command_call()` is stubbed in the overlay-aware host pass.</li>
-        <li>Overlay debug marking becomes a no-op.</li>
-        <li>Fixed C64 high-RAM flags become ordinary host globals.</li>
-      </ul>
-      <div class="callout">
-        The host harness preserves the logical REU offsets, scratch layout, and
-        heap metadata model. It does not preserve DMA behavior or true hardware
-        probing.
-      </div>
-    </div>
-    <div>
-      <h2>What Runs Real Code</h2>
-      <ul>
-        <li>The real lexer and parser</li>
-        <li>The real generic VM</li>
-        <li>The real C64-oriented VM dispatch path in the overlay-aware pass</li>
-        <li>The real value model and formatting logic</li>
-        <li>The real serialization logic</li>
-        <li>The real REU-backed value reconstruction helpers</li>
-        <li>The real external-command capability model</li>
-      </ul>
-      <div class="callout">
-        The harness is valuable specifically because it executes the real core
-        logic and only fakes the hardware boundary.
-      </div>
-    </div>
-  </section>
-
-  <section class="grid">
-    <div>
-      <h2>How It Handles C64 Differences</h2>
-      <ul>
-        <li>REU access is abstracted behind <code>rs_reu_available</code>, <code>rs_reu_read</code>, and <code>rs_reu_write</code>.</li>
-        <li>Platform services are abstracted behind <code>RSVMPlatform</code> callbacks.</li>
-        <li>Fixed-address state is replaced with ordinary host globals when not compiling under <code>__CC65__</code>.</li>
-        <li>The host path tests the overlay command ABI rather than emulating PRG loading and ROM banking.</li>
-      </ul>
-    </div>
-    <div>
-      <h2>What It Does Not Cover</h2>
-      <ul>
-        <li>The text UI and prompt editor</li>
-        <li>PETSCII and keyboard quirks in the live shell</li>
-        <li>Real IEC or KERNAL file I/O</li>
-        <li>Actual overlay PRG loading from disk</li>
-        <li>REU cache restore and verification failures</li>
-        <li>BASIC ROM banking and IRQ-state bugs</li>
-        <li>cc65 memory pressure and stack behavior</li>
-        <li>Timing-sensitive issues</li>
-      </ul>
-    </div>
-  </section>
-
-  <section>
-    <h2>Coverage Notes</h2>
-    <table>
-      <thead>
-        <tr><th>Area</th><th>Host Coverage</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Parser, expressions, pipeline semantics</td><td>Strong</td></tr>
-        <tr><td>`PRT`, `GEN`, `MORE`, `TOP`, `SEL`</td><td>Strong</td></tr>
-        <tr><td>`LST`, `DRVI` formatting and downstream behavior</td><td>Strong, but mocked</td></tr>
-        <tr><td>REU-backed value persistence and `LDV` reconstruction</td><td>Strong</td></tr>
-        <tr><td>`LDV` / `STV` real media behavior</td><td>Partial</td></tr>
-        <tr><td>`CAT`, `PUT`, `ADD`, `DEL`, `REN`, `COPY` media behavior</td><td>Weak to none</td></tr>
-        <tr><td>Overlay loading and REU cache restore</td><td>Not covered</td></tr>
-        <tr><td>UI loop and real C64 integration</td><td>Not covered</td></tr>
-      </tbody>
-    </table>
-  </section>
-
-  <section class="grid">
-    <div>
-      <h2>How To Read Failures</h2>
-      <ul>
-        <li>If parser smoke fails, suspect lexer/parser changes first.</li>
-        <li>If generic VM smoke fails, suspect evaluation or pipeline logic.</li>
-        <li>If only the overlay-aware VM pass fails, suspect external-command protocol handling.</li>
-        <li>If REU tests fail, suspect serialization or REU-backed value layout.</li>
-        <li>If host tests pass but C64 behavior fails, suspect overlays, banking, REU DMA, or disk integration.</li>
-      </ul>
-    </div>
-    <div>
-      <h2>Recommended Workflow</h2>
-      <ol>
-        <li>Run the host checks while iterating on parser, VM, or value logic.</li>
-        <li>Run <code>make verify</code> for the normal repo verification path.</li>
-        <li>Run ReadyOS through the supported <code>run.sh</code> workflow for actual C64/VICE validation.</li>
-      </ol>
-      <div class="warn">
-        Host success is useful evidence, not final proof. The harness stops at
-        the hardware boundary by design.
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Bottom Line</h2>
-    <p>
-      ReadyShell host testing is intentionally a logic harness, not a hardware
-      emulator. Its strength is fast execution of the real parser, VM, value,
-      and REU-data-path code. Its weakness is that it cannot validate the real
-      C64 overlay loader, memory map, disk environment, or UI loop.
-    </p>
-  </section>
-</main>
+            with mocked REU backing</code></pre>
+<h2 id="what-each-target-actually-tests">4. What Each Target Actually
+Tests</h2>
+<h3 id="readyshell-parse-smoke-host">4.1
+<code>readyshell-parse-smoke-host</code></h3>
+<p>This target compiles the real parser sources and calls
+<code>rs_parse_source()</code> directly.</p>
+<p>What it covers:</p>
+<ul>
+<li>parsing the documented expression, statement, and command forms</li>
+<li>parsing command, expression, filter, and foreach pipeline
+stages</li>
+<li>parsing multi-statement lines, array literals, ranges, indexing, and
+property access</li>
+<li>parser rejection paths</li>
+<li>error code, message, line, and column reporting</li>
+</ul>
+<p>What it does not cover:</p>
+<ul>
+<li>execution</li>
+<li>REU use</li>
+<li>overlays</li>
+<li>platform callbacks</li>
+<li>shell UI behavior</li>
+</ul>
+<h3 id="readyshell-vm-smoke-host">4.2
+<code>readyshell-vm-smoke-host</code></h3>
+<p>This target has two passes.</p>
+<p>The first pass links the generic VM path and injects platform
+callbacks for directory listing, drive info, and mocked snapshot file
+I/O.</p>
+<p>What it covers:</p>
+<ul>
+<li>expression evaluation</li>
+<li>assignments</li>
+<li>pipeline capture shape rules (<code>0 -&gt; FALSE</code>,
+<code>1 -&gt; scalar</code>, <code>2+ -&gt; array</code>)</li>
+<li>filters</li>
+<li>foreach stages</li>
+<li><code>PRT</code></li>
+<li><code>GEN</code></li>
+<li><code>TOP</code></li>
+<li><code>MORE</code></li>
+<li><code>SEL</code></li>
+<li>nested arrays, indexing, and property access through variables</li>
+<li><code>SEL</code> single-property scalar projection vs multi-property
+object projection</li>
+<li>array and object access</li>
+<li><code>LST</code> through a mocked directory listing provider</li>
+<li><code>DRVI</code> through a mocked drive-info provider</li>
+<li><code>LDV</code> / <code>STV</code> through mocked binary file
+read/write callbacks</li>
+<li>pause-flag behavior stored in REU metadata</li>
+</ul>
+<p>The second pass links the C64-oriented VM dispatch path and exercises
+the resident-to-external-command protocol through a mocked
+<code>rs_overlay_command_call()</code>.</p>
+<p>What that second pass adds:</p>
+<ul>
+<li>external command capability handling</li>
+<li><code>BEGIN</code> / <code>ITEM</code> iteration flow</li>
+<li><code>RUN</code> command flow</li>
+<li>C64-side external command dispatch shape</li>
+<li><code>DRVI</code> and <code>LST</code> through the overlay command
+ABI instead of the generic <code>RSVMPlatform</code> callbacks</li>
+<li>mocked <code>CAT</code>, <code>PUT</code>, <code>ADD</code>,
+<code>DEL</code>, <code>REN</code>, and <code>COPY</code> flows through
+the overlay command ABI</li>
+<li>mocked overlay-side <code>LDV</code> / <code>STV</code> argument
+handling, including explicit drive forms</li>
+</ul>
+<p>What this target still does not cover:</p>
+<ul>
+<li>real PRG overlay loading from disk</li>
+<li>REU overlay cache restore and verification</li>
+<li>ROM banking under BASIC</li>
+<li>the actual shell UI loop</li>
+<li>IEC/KERNAL disk transport or true-drive timing</li>
+</ul>
+<h3 id="readyshell-reu-tests-host">4.3
+<code>readyshell-reu-tests-host</code></h3>
+<p>This target is closer to a unit test suite for REU-backed value
+handling.</p>
+<p>What it covers:</p>
+<ul>
+<li>drive-prefix parsing and canonicalization helpers</li>
+<li>REU heap reset behavior</li>
+<li>cloning strings into REU-backed storage</li>
+<li>cloning arrays into REU-backed storage</li>
+<li>cloning objects into REU-backed storage</li>
+<li>cloning nested array/object graphs into REU-backed storage</li>
+<li>reading arrays and objects back out</li>
+<li>file-payload serialization</li>
+<li>file-payload deserialization</li>
+<li>exact representative <code>RSV1</code> byte-shape checks for scalar,
+array, and object files</li>
+<li>equality after round-trip</li>
+<li>the <code>LDV</code>-side loader that reconstructs values from the
+REU scratch area</li>
+<li>malformed <code>RSV1</code> rejection paths</li>
+</ul>
+<p>What it does not cover:</p>
+<ul>
+<li>real file I/O</li>
+<li>real <code>STV</code> / <code>LDV</code> disk transport</li>
+<li>real overlay PRG loading</li>
+<li>shell UI or command-line interaction</li>
+</ul>
+<h2 id="what-gets-mocked">5. What Gets Mocked</h2>
+<p>The host harness deliberately mocks only the edges where the real
+ReadyShell implementation meets C64-specific hardware or media.</p>
+<h3 id="mocked-reu-backend">5.1 Mocked REU Backend</h3>
+<p>The host REU implementation is a 16 MB byte array in process
+memory.</p>
+<p>Behavior:</p>
+<ul>
+<li><code>rs_reu_available()</code> always returns true</li>
+<li><code>rs_reu_read()</code> and <code>rs_reu_write()</code> become
+bounds-checked <code>memcpy</code> operations</li>
+<li>the same absolute REU offsets and shared metadata regions are still
+used</li>
+</ul>
+<p>What this preserves:</p>
+<ul>
+<li>REU address discipline</li>
+<li>scratch-region conventions</li>
+<li>REU heap layout and metadata validation</li>
+<li>shared pause-flag storage</li>
+</ul>
+<p>What this skips:</p>
+<ul>
+<li>DMA timing</li>
+<li>bank-switch edge cases</li>
+<li>transfer failures caused by hardware state</li>
+<li>probe logic for actual REU presence</li>
+</ul>
+<h3 id="mocked-vm-platform-callbacks">5.2 Mocked VM Platform
+Callbacks</h3>
+<p>The generic VM harness injects synthetic implementations for:</p>
+<ul>
+<li>directory listing</li>
+<li>drive information</li>
+</ul>
+<p><code>LST</code> always sees a small fixed directory with entries
+like:</p>
+<ul>
+<li><code>alpha</code></li>
+<li><code>beta</code></li>
+<li><code>gamma</code></li>
+</ul>
+<p><code>DRVI</code> always sees predictable drive metadata such as:</p>
+<ul>
+<li>drive number</li>
+<li>disk name <code>readyos</code></li>
+<li>ID <code>ro</code></li>
+<li>free blocks <code>664</code></li>
+</ul>
+<p>This lets the host VM test selection, formatting, indexing, and
+downstream pipeline behavior without touching IEC or disk images.</p>
+<h3 id="mocked-overlay-command-abi">5.3 Mocked Overlay Command ABI</h3>
+<p>The overlay-aware host pass does not load real overlay PRGs.</p>
+<p>Instead, it replaces <code>rs_overlay_command_call()</code> with a
+stub that simulates:</p>
+<ul>
+<li><code>LST</code> as a <code>BEGIN</code> + repeated
+<code>ITEM</code> stream</li>
+<li><code>DRVI</code> as a <code>RUN</code> command</li>
+</ul>
+<p>This is important because it validates the resident VM’s
+command-protocol handling:</p>
+<ul>
+<li>command capability bits</li>
+<li><code>BEGIN</code></li>
+<li><code>ITEM</code></li>
+<li><code>RUN</code></li>
+<li>iteration count handling</li>
+<li>result propagation into downstream pipeline stages</li>
+</ul>
+<p>It does not validate the real overlay loader or REU cache.</p>
+<h3 id="overlay-debug-marking">5.4 Overlay Debug Marking</h3>
+<p>The host build turns overlay debug marking into a no-op.</p>
+<p>That keeps the signatures satisfied for code that expects the hook,
+without pretending the host process is reproducing the real C64
+overlay-debug path.</p>
+<h2 id="what-runs-real-code">6. What Runs Real Code</h2>
+<p>Large parts of ReadyShell are not mocked in host mode.</p>
+<p>The host harness still uses the real:</p>
+<ul>
+<li>parser</li>
+<li>lexer</li>
+<li>error model</li>
+<li>generic VM</li>
+<li>C64-oriented VM dispatcher for the overlay-aware pass</li>
+<li>value model</li>
+<li>array/object access logic</li>
+<li>formatting logic</li>
+<li>serialization logic</li>
+<li><code>LDV</code>-side heap reconstruction helpers</li>
+<li>external command capability model</li>
+</ul>
+<p>That is the main value of the harness: logic changes in these areas
+fail fast without requiring a full ReadyOS boot.</p>
+<h2 id="how-it-deals-with-c64-architectural-differences">7. How It Deals
+With C64 Architectural Differences</h2>
+<p>The host harness does not try to re-create the entire C64 memory map.
+Instead, it isolates the portable logic behind small interfaces and
+substitutes only the hardware boundary.</p>
+<h3 id="reu-access-is-abstracted">7.1 REU Access Is Abstracted</h3>
+<p>ReadyShell core code talks to:</p>
+<ul>
+<li><code>rs_reu_available()</code></li>
+<li><code>rs_reu_read()</code></li>
+<li><code>rs_reu_write()</code></li>
+</ul>
+<p>On the real C64 build, these go through REU DMA.</p>
+<p>On the host build, they go through the in-memory REU mock.</p>
+<p>This keeps the logical REU contract intact while removing hardware
+timing from the test path.</p>
+<h3 id="vm-platform-services-are-abstracted">7.2 VM Platform Services
+Are Abstracted</h3>
+<p>The generic VM talks to an <code>RSVMPlatform</code> structure for
+operations like:</p>
+<ul>
+<li>file read</li>
+<li>file write</li>
+<li>directory list</li>
+<li>drive info</li>
+</ul>
+<p>The host harness only supplies the callbacks needed for the scenarios
+under test. Everything else stays unavailable by design.</p>
+<p>That is useful because it makes missing coverage obvious. If a
+command needs real file I/O and no callback is provided, the generic VM
+path reports that the command is unavailable on that platform.</p>
+<h3 id="fixed-c64-ram-state-becomes-plain-host-state">7.3 Fixed C64 RAM
+State Becomes Plain Host State</h3>
+<p>The real app has fixed RAM assumptions, for example:</p>
+<ul>
+<li>runtime state at <code>$CA00-$CFFF</code></li>
+<li>REU/session flags in fixed high-RAM bytes</li>
+<li>a much smaller tap-log budget under cc65 constraints</li>
+</ul>
+<p>In host mode:</p>
+<ul>
+<li>those fixed-address flags become normal globals</li>
+<li>the process uses the native heap</li>
+<li>some buffers are intentionally larger than the cc65 build</li>
+</ul>
+<p>This means host tests preserve logic and data-format contracts, but
+not the exact memory pressure or placement constraints of the C64
+build.</p>
+<h3 id="the-overlay-abi-is-tested-not-the-overlay-loader">7.4 The
+Overlay ABI Is Tested, Not The Overlay Loader</h3>
+<p>The C64 build must:</p>
+<ul>
+<li>map RAM under BASIC</li>
+<li>preserve IRQ state</li>
+<li>load overlay PRGs through KERNAL/CBM paths</li>
+<li>cache overlays into REU</li>
+<li>restore them into the shared window</li>
+</ul>
+<p>The host harness does not emulate that mechanism.</p>
+<p>Instead, it tests one layer up:</p>
+<ul>
+<li>command protocol correctness</li>
+<li>output/result shaping</li>
+<li>resident/external command dispatch expectations</li>
+</ul>
+<p>That is a deliberate tradeoff. It is much faster, but it leaves real
+overlay loading and banking to C64/VICE verification.</p>
+<h2 id="important-limitations">8. Important Limitations</h2>
+<p>The host harness has real value, but it is intentionally
+incomplete.</p>
+<p>It does not validate:</p>
+<ul>
+<li>shell prompt editing</li>
+<li>keyboard normalization and PETSCII quirks</li>
+<li>screen rendering</li>
+<li>pause/resume key handling in the live UI</li>
+<li>true-drive behavior</li>
+<li>KERNAL disk I/O side effects</li>
+<li>actual disk-mounted file access</li>
+<li>overlay PRG loading from disk</li>
+<li>REU cache restore failures</li>
+<li>BASIC/ROM banking mistakes</li>
+<li>cc65 stack pressure</li>
+<li>C64 heap fragmentation behavior</li>
+<li>timing-sensitive bugs</li>
+<li>launch/shim/resume interactions across the full ReadyOS boot
+flow</li>
+</ul>
+<p>In practice, that means host success proves:</p>
+<ul>
+<li>parser/VM/value logic is probably correct</li>
+<li>REU data-format logic is probably correct</li>
+<li>external command protocol handling is probably correct</li>
+</ul>
+<p>It does not prove:</p>
+<ul>
+<li>the feature works inside the shipped ReadyOS app on a real C64
+memory map</li>
+<li>the feature survives overlay swaps</li>
+<li>the feature survives real disk and drive behavior</li>
+</ul>
+<h2 id="coverage-notes-by-command-family">9. Coverage Notes By Command
+Family</h2>
+<p>Host coverage is strongest for:</p>
+<ul>
+<li>parser behavior</li>
+<li>expression and pipeline semantics</li>
+<li><code>PRT</code></li>
+<li><code>GEN</code></li>
+<li><code>MORE</code></li>
+<li><code>TOP</code></li>
+<li><code>SEL</code></li>
+<li><code>LST</code> formatting and downstream selection behavior</li>
+<li><code>DRVI</code> formatting and downstream selection behavior</li>
+<li>REU-backed value persistence and reconstruction</li>
+</ul>
+<p>Host coverage is partial or protocol-only for:</p>
+<ul>
+<li><code>LDV</code></li>
+<li><code>STV</code></li>
+<li>external command overlay dispatch</li>
+</ul>
+<p>Host coverage is effectively absent for real media behavior of:</p>
+<ul>
+<li><code>CAT</code></li>
+<li><code>PUT</code></li>
+<li><code>ADD</code></li>
+<li><code>DEL</code></li>
+<li><code>REN</code></li>
+<li><code>COPY</code></li>
+</ul>
+<p>Those still need C64/VICE validation through the normal ReadyOS
+workflow.</p>
+<h2 id="how-to-interpret-failures">10. How To Interpret Failures</h2>
+<p>Use host failures to narrow the problem layer.</p>
+<p>If <code>readyshell-parse-smoke-host</code> fails:</p>
+<ul>
+<li>suspect lexer/parser changes first</li>
+</ul>
+<p>If the generic part of <code>readyshell-vm-smoke-host</code>
+fails:</p>
+<ul>
+<li>suspect parser-to-VM semantics</li>
+<li>suspect expression/pipeline execution logic</li>
+<li>suspect value formatting or pipeline stage behavior</li>
+</ul>
+<p>If only the overlay-aware part of
+<code>readyshell-vm-smoke-host</code> fails:</p>
+<ul>
+<li>suspect external-command protocol handling</li>
+<li>suspect C64 VM dispatch integration</li>
+<li>suspect command capability or frame-shaping logic</li>
+</ul>
+<p>If <code>readyshell-reu-tests-host</code> fails:</p>
+<ul>
+<li>suspect REU-backed value layout</li>
+<li>suspect serialization/deserialization</li>
+<li>suspect <code>LDV</code>-side heap reconstruction helpers</li>
+</ul>
+<p>If host tests pass but the app still fails in ReadyOS:</p>
+<ul>
+<li>suspect overlay loading</li>
+<li>suspect memory-map or banking behavior</li>
+<li>suspect KERNAL/IEC disk behavior</li>
+<li>suspect REU DMA or cache restore behavior</li>
+<li>suspect UI-only integration issues</li>
+</ul>
+<h2 id="recommended-use">11. Recommended Use</h2>
+<p>The current host harness is best used as a fast first gate:</p>
+<ol type="1">
+<li>run host checks while iterating on parser/VM/value logic</li>
+<li>run full <code>make verify</code> for the normal repo path</li>
+<li>run ReadyOS through the supported <code>run.sh</code> workflow for
+C64/VICE validation</li>
+</ol>
+<p>That ordering keeps feedback fast without confusing host-level
+success for full platform-level correctness.</p>
+<h2 id="bottom-line">12. Bottom Line</h2>
+<p>ReadyShell host testing is intentionally a logic harness, not a
+hardware emulator.</p>
+<p>Its strength is that it executes the real parser, VM, value, and
+REU-data-path code very quickly on the host. Its weakness is that it
+stops at the hardware boundary and cannot prove correctness of the real
+C64 overlay, memory-map, or disk environment.</p>
+<p>That separation is deliberate and useful, as long as host-test
+success is treated as one layer of evidence rather than final proof.</p>
 </body>
 </html>

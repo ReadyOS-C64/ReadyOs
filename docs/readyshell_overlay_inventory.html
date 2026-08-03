@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ReadyShell Overlay Inventory Report (v0.2.4M)</title>
+  <title>ReadyShell Overlay Inventory Report (v0.2.5I)</title>
   <style>
     :root {
       --bg: #091017;
@@ -231,28 +231,31 @@
   </style>
 </head>
 <body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current artifact-backed ReadyShell overlay inventory for the version/profile named in the report.</aside>
+<!-- READYOS-DOC-STATUS:END -->
 <header>
-  <h1>ReadyShell Overlay Inventory Report (v0.2.4M)</h1>
+  <h1>ReadyShell Overlay Inventory Report (v0.2.5I)</h1>
   <p class="sub">
     Artifact-backed inventory for the current ReadyShell overlay system. This report is generated from the live build
-    outputs, the ReadyShell linker map, and the active D71 disk image instead of hand-maintained notes.
+    outputs, the ReadyShell linker map, and the active D81 disk image instead of hand-maintained notes.
   </p>
 </header>
 <main>
   <section>
     <h2>Executive Summary</h2>
     <div class="cards">
-      <div class="card"><div class="k">Profile</div><div class="v"><code>precog-dual-d71</code></div></div>
-      <div class="card"><div class="k">Disk Source</div><div class="v"><code>Releases/0.2.4/precog-dual-d71/readyos-v0.2.4m-dual-d71_1.d71</code></div></div>
+      <div class="card"><div class="k">Profile</div><div class="v"><code>precog-d81</code></div></div>
+      <div class="card"><div class="k">Disk Source</div><div class="v"><code>Releases/0.2.5/precog-d81/readyos-v0.2.5i-d81.d81</code></div></div>
       <div class="card"><div class="k">Overlay Window</div><div class="v"><code>$8E00-$C5FF</code></div></div>
       <div class="card"><div class="k">Window Size</div><div class="v">14336 bytes</div></div>
-      <div class="card"><div class="k">Resident Heap</div><div class="v">3846 bytes</div></div>
+      <div class="card"><div class="k">Resident Heap</div><div class="v">3688 bytes</div></div>
     </div>
       <div class="note">
       Overlays 1-9 are boot-loaded once and cached in fixed full-window REU slots.
-      Bank <code>0x38</code> holds overlays <code>1</code>, <code>2</code>, <code>3</code>, and <code>5</code>;
-      bank <code>0x39</code> holds overlays <code>4</code>, <code>6</code>, <code>7</code>, and <code>8</code>;
-      bank <code>0x3A</code> holds overlay <code>9</code>. Bank
+      Bank <code>0x36</code> holds overlays <code>1</code>, <code>2</code>, <code>3</code>, and <code>5</code>;
+      bank <code>0x37</code> holds overlays <code>4</code>, <code>6</code>, <code>7</code>, and <code>8</code>;
+      bank <code>0x38</code> holds overlay <code>9</code>. Bank
       <code>0x48</code> is shared for the external-command registry, overlay metadata, pause state, command handoff scratch,
       and the REU-backed ReadyShell value arena.
     </div>
@@ -262,18 +265,18 @@
     <div>
       <h2>Runtime Memory Map</h2>
       <ul>
-        <li><strong>Resident app window:</strong> <code>$1000-$C5FF</code> (46592 bytes)</li>
+        <li><strong>ReadyOS snapshot window:</strong> <code>$1000-$C7FF</code> (47104 bytes); ReadyShell's proven overlay ABI remains below <code>$C600</code>.</li>
         <li><strong>Overlay load bytes:</strong> <code>$8DFE-$8DFF</code></li>
         <li><strong>Overlay execution window:</strong> <code>$8E00-$C5FF</code> (14336 bytes)</li>
-        <li><strong>Resident BSS:</strong> <code>$7D4D-$7EF6</code> (426 bytes)</li>
-        <li><strong>Resident heap:</strong> <code>$7EF8-$8DFD</code> (3846 bytes)</li>
+        <li><strong>Resident BSS:</strong> <code>$7DEB-$7F94</code> (426 bytes)</li>
+        <li><strong>Resident heap:</strong> <code>$7F96-$8DFD</code> (3688 bytes)</li>
         <li><strong>High RAM runtime:</strong> <code>$CA00-$CFFF</code> (1536 bytes)</li>
       </ul>
     </div>
     <div>
       <h2>REU Layout</h2>
       <ul>
-        <li><strong>Shared cache bank 1:</strong> <code>$380000-$38FFFF</code> (65536 bytes)</li><li><strong>Overlay 1 parse slot:</strong> <code>$380000-$3837FF</code> (14336 bytes)</li><li><strong>Overlay 2 exec slot:</strong> <code>$383800-$386FFF</code> (14336 bytes)</li><li><strong>Overlay 3 command slot:</strong> <code>$387000-$38A7FF</code> (14336 bytes)</li><li><strong>Overlay 5 command slot:</strong> <code>$38A800-$38DFFF</code> (14336 bytes)</li><li><strong>Cache bank 1 free tail:</strong> <code>$38E000-$38FFFF</code> (8192 bytes)</li><li><strong>Shared cache bank 2:</strong> <code>$390000-$39FFFF</code> (65536 bytes)</li><li><strong>Overlay 4 command slot:</strong> <code>$390000-$3937FF</code> (14336 bytes)</li><li><strong>Overlay 6 command slot:</strong> <code>$393800-$396FFF</code> (14336 bytes)</li><li><strong>Overlay 7 command slot:</strong> <code>$397000-$39A7FF</code> (14336 bytes)</li><li><strong>Overlay 8 command slot:</strong> <code>$39A800-$39DFFF</code> (14336 bytes)</li><li><strong>Cache bank 2 free tail:</strong> <code>$39E000-$39FFFF</code> (8192 bytes)</li><li><strong>Shared cache bank 3:</strong> <code>$3A0000-$3AFFFF</code> (65536 bytes)</li><li><strong>Overlay 9 editor slot:</strong> <code>$3A0000-$3A37FF</code> (14336 bytes)</li><li><strong>Cache bank 3 free tail:</strong> <code>$3A3800-$3AFFFF</code> (51200 bytes)</li><li><strong>Debug trace ring:</strong> <code>$3B7DE0-$3B7FEF</code> (528 bytes)</li><li><strong>Command scratch:</strong> <code>$3B0000-$3B7DDF</code> (32224 bytes)</li><li><strong>Command registry header:</strong> <code>$3B8010-$3B8017</code> (8 bytes)</li><li><strong>Command descriptor table:</strong> <code>$3B8020-$3B807F</code> (96 bytes)</li><li><strong>Overlay state table:</strong> <code>$3B8080-$3B80EB</code> (108 bytes)</li><li><strong>Shared metadata:</strong> <code>$3B80F0-$3B8113</code> (36 bytes)</li><li><strong>Pause flag:</strong> <code>$3B8114</code> (1 byte)</li><li><strong>Heap metadata:</strong> <code>$3B8000-$3B80FF</code></li><li><strong>Heap arena:</strong> <code>$3B8120-$3BFEFF</code> (32224 bytes)</li>
+        <li><strong>Shared cache bank 1:</strong> <code>$360000-$36FFFF</code> (65536 bytes)</li><li><strong>Overlay 1 parse slot:</strong> <code>$360000-$3637FF</code> (14336 bytes)</li><li><strong>Overlay 2 exec slot:</strong> <code>$363800-$366FFF</code> (14336 bytes)</li><li><strong>Overlay 3 command slot:</strong> <code>$367000-$36A7FF</code> (14336 bytes)</li><li><strong>Overlay 5 command slot:</strong> <code>$36A800-$36DFFF</code> (14336 bytes)</li><li><strong>Cache bank 1 free tail:</strong> <code>$36E000-$36FFFF</code> (8192 bytes)</li><li><strong>Shared cache bank 2:</strong> <code>$370000-$37FFFF</code> (65536 bytes)</li><li><strong>Overlay 4 command slot:</strong> <code>$370000-$3737FF</code> (14336 bytes)</li><li><strong>Overlay 6 command slot:</strong> <code>$373800-$376FFF</code> (14336 bytes)</li><li><strong>Overlay 7 command slot:</strong> <code>$377000-$37A7FF</code> (14336 bytes)</li><li><strong>Overlay 8 command slot:</strong> <code>$37A800-$37DFFF</code> (14336 bytes)</li><li><strong>Cache bank 2 free tail:</strong> <code>$37E000-$37FFFF</code> (8192 bytes)</li><li><strong>Shared cache bank 3:</strong> <code>$380000-$38FFFF</code> (65536 bytes)</li><li><strong>Overlay 9 editor slot:</strong> <code>$380000-$3837FF</code> (14336 bytes)</li><li><strong>Cache bank 3 free tail:</strong> <code>$383800-$38FFFF</code> (51200 bytes)</li><li><strong>Debug trace ring:</strong> <code>$397DE0-$397FEF</code> (528 bytes)</li><li><strong>Command scratch:</strong> <code>$390000-$397DDF</code> (32224 bytes)</li><li><strong>Command registry header:</strong> <code>$398010-$398017</code> (8 bytes)</li><li><strong>Command descriptor table:</strong> <code>$398020-$39807F</code> (96 bytes)</li><li><strong>Overlay state table:</strong> <code>$398080-$3980EB</code> (108 bytes)</li><li><strong>Shared metadata:</strong> <code>$3980F0-$398113</code> (36 bytes)</li><li><strong>Pause flag:</strong> <code>$398114</code> (1 byte)</li><li><strong>Heap metadata:</strong> <code>$398000-$3980FF</code></li><li><strong>Heap arena:</strong> <code>$398120-$39FEFF</code> (32224 bytes)</li>
       </ul>
     </div>
   </section>
@@ -282,38 +285,38 @@
     <h2>Shared REU Bank Visual</h2>
     <div class="bank-visual">
       <div class="bank">
-        <div class="bank-title">Bank <code>0x38</code>: Overlay Cache</div>
+        <div class="bank-title">Bank <code>0x36</code>: Overlay Cache</div>
         <div class="stack">
-          <div class="slot parse"><strong>Overlay 1 parse slot</strong> <code>$380000-$3837FF</code><small>Full <code>0x3800</code>-byte window image for <code>rsparser.prg</code>. Live payload is <code>13005</code> bytes, but the cache stores the whole overlay window so writable overlay data survives phase switching.</small></div>
-          <div class="slot exec"><strong>Overlay 2 exec slot</strong> <code>$383800-$386FFF</code><small>Full <code>0x3800</code>-byte window image for <code>rsvm.prg</code>. Live payload is <code>14028</code> bytes.</small></div>
-          <div class="slot parse"><strong>Overlay 3 command slot</strong> <code>$387000-$38A7FF</code><small>Full window snapshot for <code>rsdrvilst.prg</code>, serving both <code>DRVI</code> and <code>LST</code>.</small></div>
-          <div class="slot exec"><strong>Overlay 5 command slot</strong> <code>$38A800-$38DFFF</code><small>Full window snapshot for <code>rsstv.prg</code>.</small></div>
-          <div class="slot free"><strong>Free tail</strong> <code>$38E000-$38FFFF</code><small><code>8192</code> bytes left free after the four cache slots in assigned bank <code>0x38</code>.</small></div>
+          <div class="slot parse"><strong>Overlay 1 parse slot</strong> <code>$360000-$3637FF</code><small>Full <code>0x3800</code>-byte window image for <code>rsparser.prg</code>. Live payload is <code>13005</code> bytes, but the cache stores the whole overlay window so writable overlay data survives phase switching.</small></div>
+          <div class="slot exec"><strong>Overlay 2 exec slot</strong> <code>$363800-$366FFF</code><small>Full <code>0x3800</code>-byte window image for <code>rsvm.prg</code>. Live payload is <code>14028</code> bytes.</small></div>
+          <div class="slot parse"><strong>Overlay 3 command slot</strong> <code>$367000-$36A7FF</code><small>Full window snapshot for <code>rsdrvilst.prg</code>, serving both <code>DRVI</code> and <code>LST</code>.</small></div>
+          <div class="slot exec"><strong>Overlay 5 command slot</strong> <code>$36A800-$36DFFF</code><small>Full window snapshot for <code>rsstv.prg</code>.</small></div>
+          <div class="slot free"><strong>Free tail</strong> <code>$36E000-$36FFFF</code><small><code>8192</code> bytes left free after the four cache slots in assigned bank <code>0x36</code>.</small></div>
         </div>
       </div>
       <div class="bank">
-        <div class="bank-title">Bank <code>0x39</code>: Overlay Cache</div>
+        <div class="bank-title">Bank <code>0x37</code>: Overlay Cache</div>
         <div class="stack">
-          <div class="slot parse"><strong>Overlay 4 command slot</strong> <code>$390000-$3937FF</code><small>Full window snapshot for <code>rsldv.prg</code>.</small></div>
-          <div class="slot exec"><strong>Overlay 6 command slot</strong> <code>$393800-$396FFF</code><small>Full window snapshot for <code>rsfops.prg</code>.</small></div>
-          <div class="slot parse"><strong>Overlay 7 command slot</strong> <code>$397000-$39A7FF</code><small>Full window snapshot for <code>rscat.prg</code>.</small></div>
-          <div class="slot exec"><strong>Overlay 8 command slot</strong> <code>$39A800-$39DFFF</code><small>Full window snapshot for <code>rscopy.prg</code>.</small></div>
-          <div class="slot free"><strong>Free tail</strong> <code>$39E000-$39FFFF</code><small><code>8192</code> bytes left free after the four cache slots in assigned bank <code>0x39</code>.</small></div>
+          <div class="slot parse"><strong>Overlay 4 command slot</strong> <code>$370000-$3737FF</code><small>Full window snapshot for <code>rsldv.prg</code>.</small></div>
+          <div class="slot exec"><strong>Overlay 6 command slot</strong> <code>$373800-$376FFF</code><small>Full window snapshot for <code>rsfops.prg</code>.</small></div>
+          <div class="slot parse"><strong>Overlay 7 command slot</strong> <code>$377000-$37A7FF</code><small>Full window snapshot for <code>rscat.prg</code>.</small></div>
+          <div class="slot exec"><strong>Overlay 8 command slot</strong> <code>$37A800-$37DFFF</code><small>Full window snapshot for <code>rscopy.prg</code>.</small></div>
+          <div class="slot free"><strong>Free tail</strong> <code>$37E000-$37FFFF</code><small><code>8192</code> bytes left free after the four cache slots in assigned bank <code>0x37</code>.</small></div>
         </div>
       </div>
       <div class="bank">
-        <div class="bank-title">Bank <code>0x3A</code>: Editor Overlay Cache</div>
+        <div class="bank-title">Bank <code>0x38</code>: Editor Overlay Cache</div>
         <div class="stack">
-          <div class="slot parse"><strong>Overlay 9 prompt editor slot</strong> <code>$3A0000-$3A37FF</code><small>Full window snapshot for <code>rsedit.prg</code>. Live payload is <code>2002</code> bytes, leaving room inside this cache bank for future editor-side state.</small></div>
-          <div class="slot free"><strong>Free tail</strong> <code>$3A3800-$3AFFFF</code><small><code>51200</code> bytes left free after the editor slot in assigned bank <code>0x3A</code>.</small></div>
+          <div class="slot parse"><strong>Overlay 9 prompt editor slot</strong> <code>$380000-$3837FF</code><small>Full window snapshot for <code>rsedit.prg</code>. Live payload is <code>2002</code> bytes, leaving room inside this cache bank for future editor-side state.</small></div>
+          <div class="slot free"><strong>Free tail</strong> <code>$383800-$38FFFF</code><small><code>51200</code> bytes left free after the editor slot in assigned bank <code>0x38</code>.</small></div>
         </div>
       </div>
       <div class="bank">
         <div class="bank-title">Bank <code>0x48</code>: Shared Shell State</div>
         <div class="stack">
-          <div class="slot meta"><strong>Command registry</strong> <code>$3B8010-$3B80EB</code><small>Registry header, external-command descriptors, and per-overlay load/cache state stored in REU metadata so new external commands do not consume resident BSS.</small></div>
-          <div class="slot meta"><strong>Shared metadata + pause</strong> <code>$3B80F0-$3B8114</code><small>Overlay cache metadata record plus the shared pause bit used by the resident line printer and <code>MORE</code>.</small></div>
-          <div class="slot heap"><strong>Command scratch + value arena</strong> <code>$3B0000-$3BFEFF</code><small>Command handoff scratch, REU heap metadata, and the persistent value arena for REU-backed strings, arrays, and objects.</small></div>
+          <div class="slot meta"><strong>Command registry</strong> <code>$398010-$3980EB</code><small>Registry header, external-command descriptors, and per-overlay load/cache state stored in REU metadata so new external commands do not consume resident BSS.</small></div>
+          <div class="slot meta"><strong>Shared metadata + pause</strong> <code>$3980F0-$398114</code><small>Overlay cache metadata record plus the shared pause bit used by the resident line printer and <code>MORE</code>.</small></div>
+          <div class="slot heap"><strong>Command scratch + value arena</strong> <code>$390000-$39FEFF</code><small>Command handoff scratch, REU heap metadata, and the persistent value arena for REU-backed strings, arrays, and objects.</small></div>
         </div>
       </div>
     </div>
@@ -338,7 +341,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>PRT, MORE, TOP, SEL, GEN, TAP</td><td><code>2 / rsvm</code></td><td>No direct use</td><td>Indirect only</td><td>Run inside the shared execution core. They do not stage command-local data in `$3B0000-$3B7DDF`; any REU-backed values are handled through the normal overlay-2 value/runtime paths.</td></tr><tr><td>DRVI</td><td><code>3 / rsdrvilst</code></td><td>No</td><td>No</td><td>Reads drive header/status data and builds its output object in transient overlay-local RAM.</td></tr><tr><td>LST</td><td><code>3 / rsdrvilst</code></td><td>Yes</td><td>No</td><td>Spools 28-byte directory records through `$3B0000-$3B7DDF` so `BEGIN`/`ITEM` can walk the listing without keeping the directory channel open.</td></tr><tr><td>LDV</td><td><code>4 / rsldv</code></td><td>Yes</td><td>Yes, writes persistent values</td><td>Reads the RSV1 file into `$3B0000-$3B7DDF`, validates its header, then materializes strings, arrays, and objects into the REU heap arena `$3B8120-$3BFEFF`.</td></tr><tr><td>STV</td><td><code>5 / rsstv</code></td><td>Yes</td><td>Yes, reads existing pointer values</td><td>Uses `$3B0000-$3B00FF` for session metadata and `$3B0100-$3B7DDF` for the outgoing RSV1 payload. When serializing pointer-backed values, it dereferences them from the persistent REU heap arena before flattening them into scratch.</td></tr><tr><td>DEL, REN</td><td><code>6 / rsfops</code></td><td>No</td><td>No</td><td>Issue DOS scratch/rename commands directly through command-channel I/O with no REU staging.</td></tr><tr><td>PUT, ADD</td><td><code>6 / rsfops</code></td><td>Yes</td><td>No</td><td>Use `$3B0000-$3B001F` for session metadata and `$3B0020-$3B7DDF` as a text spool for new/appended SEQ content before writing it back to disk.</td></tr><tr><td>CAT</td><td><code>7 / rscat</code></td><td>Yes</td><td>No</td><td>Uses `$3B0000-$3B07FF` as a line-record table and `$3B0800-$3B7DDF` as the line-data spool so `ITEM` can replay file lines after the initial read pass.</td></tr><tr><td>COPY</td><td><code>8 / rscopy</code></td><td>No</td><td>No</td><td>Uses its overlay-local 128-byte transfer buffer plus direct DOS copy/streamed file I/O. It does not use the shared command scratch or the persistent value arena.</td></tr>
+          <tr><td>PRT, MORE, TOP, SEL, GEN, TAP</td><td><code>2 / rsvm</code></td><td>No direct use</td><td>Indirect only</td><td>Run inside the shared execution core. They do not stage command-local data in `$390000-$397DDF`; any REU-backed values are handled through the normal overlay-2 value/runtime paths.</td></tr><tr><td>DRVI</td><td><code>3 / rsdrvilst</code></td><td>No</td><td>No</td><td>Reads drive header/status data and builds its output object in transient overlay-local RAM.</td></tr><tr><td>LST</td><td><code>3 / rsdrvilst</code></td><td>Yes</td><td>No</td><td>Spools 28-byte directory records through `$390000-$397DDF` so `BEGIN`/`ITEM` can walk the listing without keeping the directory channel open.</td></tr><tr><td>LDV</td><td><code>4 / rsldv</code></td><td>Yes</td><td>Yes, writes persistent values</td><td>Reads the RSV1 file into `$390000-$397DDF`, validates its header, then materializes strings, arrays, and objects into the REU heap arena `$398120-$39FEFF`.</td></tr><tr><td>STV</td><td><code>5 / rsstv</code></td><td>Yes</td><td>Yes, reads existing pointer values</td><td>Uses `$390000-$3900FF` for session metadata and `$390100-$397DDF` for the outgoing RSV1 payload. When serializing pointer-backed values, it dereferences them from the persistent REU heap arena before flattening them into scratch.</td></tr><tr><td>DEL, REN</td><td><code>6 / rsfops</code></td><td>No</td><td>No</td><td>Issue DOS scratch/rename commands directly through command-channel I/O with no REU staging.</td></tr><tr><td>PUT, ADD</td><td><code>6 / rsfops</code></td><td>Yes</td><td>No</td><td>Use `$390000-$39001F` for session metadata and `$390020-$397DDF` as a text spool for new/appended SEQ content before writing it back to disk.</td></tr><tr><td>CAT</td><td><code>7 / rscat</code></td><td>Yes</td><td>No</td><td>Uses `$390000-$3907FF` as a line-record table and `$390800-$397DDF` as the line-data spool so `ITEM` can replay file lines after the initial read pass.</td></tr><tr><td>COPY</td><td><code>8 / rscopy</code></td><td>No</td><td>No</td><td>Uses its overlay-local 128-byte transfer buffer plus direct DOS copy/streamed file I/O. It does not use the shared command scratch or the persistent value arena.</td></tr>
         </tbody>
       </table>
     </div>
@@ -351,7 +354,7 @@
       the ReadyShell REU metadata packing or overlay registry capacities drift out of sync.
     </div>
     <ul>
-      <li>Registry capacity check: `rs_cmd_registry.c` seeds `10` external command descriptors into `16` reserved descriptor slots and `6` overlay-state rows into `6` reserved state slots.</li><li>Metadata packing check: ReadyShell control metadata starts in `$3B8000-$3B80FF`. Header uses `$3B8010-$3B8017`, descriptor rows reserve `$3B8020-$3B807F` with live rows ending at `$3B805B`, state rows reserve `$3B8080-$3B80EB` with live rows ending at `$3B80EB`, shared metadata uses `$3B80F0-$3B8113`, and the pause flag sits at `$3B8114` before the value arena at `$3B8120`.</li><li>Non-overlap check: command scratch ends at `$3B7DDF` and REU heap metadata begins at `$3B8000`; the state table ends at `$3B80EB` and shared metadata begins at `$3B80F0`; shared metadata ends at `$3B8113` and the pause flag is `$3B8114`; the value arena begins at `$3B8120`.</li><li>Cache-slot audit: ReadyShell caches overlays 1-9. Bank `0x38` carries overlays `1`, `2`, `3`, and `5`; bank `0x39` carries overlays `4`, `6`, `7`, and `8`; bank `0x3A` carries overlay `9`. Every slot is a full `14336`-byte overlay-window snapshot.</li><li>Command-source audit: `DRVI` builds output only in overlay-local RAM; `LST` writes 28-byte directory records into shared scratch; `LDV` streams RSV1 payloads into scratch and materializes persistent values into the REU heap arena; `STV` serializes into scratch and dereferences pointer-backed values from the arena; `DEL` and `REN` issue direct DOS commands without REU staging; `PUT` and `ADD` use scratch metadata plus a text spool; `CAT` uses a scratch record table plus line-data spool; `COPY` stays overlay-local with `g_copy_buf[128]`.</li>
+      <li>Registry capacity check: `rs_cmd_registry.c` seeds `10` external command descriptors into `16` reserved descriptor slots and `6` overlay-state rows into `6` reserved state slots.</li><li>Metadata packing check: ReadyShell control metadata starts in `$398000-$3980FF`. Header uses `$398010-$398017`, descriptor rows reserve `$398020-$39807F` with live rows ending at `$39805B`, state rows reserve `$398080-$3980EB` with live rows ending at `$3980EB`, shared metadata uses `$3980F0-$398113`, and the pause flag sits at `$398114` before the value arena at `$398120`.</li><li>Non-overlap check: command scratch ends at `$397DDF` and REU heap metadata begins at `$398000`; the state table ends at `$3980EB` and shared metadata begins at `$3980F0`; shared metadata ends at `$398113` and the pause flag is `$398114`; the value arena begins at `$398120`.</li><li>Cache-slot audit: ReadyShell caches overlays 1-9. Bank `0x36` carries overlays `1`, `2`, `3`, and `5`; bank `0x37` carries overlays `4`, `6`, `7`, and `8`; bank `0x38` carries overlay `9`. Every slot is a full `14336`-byte overlay-window snapshot.</li><li>Command-source audit: `DRVI` builds output only in overlay-local RAM; `LST` writes 28-byte directory records into shared scratch; `LDV` streams RSV1 payloads into scratch and materializes persistent values into the REU heap arena; `STV` serializes into scratch and dereferences pointer-backed values from the arena; `DEL` and `REN` issue direct DOS commands without REU staging; `PUT` and `ADD` use scratch metadata plus a text spool; `CAT` uses a scratch record table plus line-data spool; `COPY` stays overlay-local with `g_copy_buf[128]`.</li>
     </ul>
   </section>
 
@@ -374,7 +377,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td>Parser / Lexer</td><td><code>rsparser.prg</code></td><td><code>rsparser</code></td><td class='num'>13007</td><td class='num'>52</td><td class='num'>13005</td><td class='num'>90.7%</td><td>None directly; parse phase support.</td><td>bank <code>0x38</code> slot <code>$380000-$3837FF</code></td></tr><tr><td>2</td><td>Execution Core</td><td><code>rsvm.prg</code></td><td><code>rsvm</code></td><td class='num'>14030</td><td class='num'>56</td><td class='num'>14028</td><td class='num'>97.9%</td><td>PRT, MORE, TOP, SEL, GEN, TAP and the shared execution paths that command overlays return to.</td><td>bank <code>0x38</code> slot <code>$383800-$386FFF</code></td></tr><tr><td>3</td><td>Drive Info + Directory Listing</td><td><code>rsdrvilst.prg</code></td><td><code>rsdrvilst</code></td><td class='num'>11260</td><td class='num'>45</td><td class='num'>11258</td><td class='num'>78.5%</td><td>DRVI, LST</td><td>bank <code>0x38</code> slot <code>$387000-$38A7FF</code></td></tr><tr><td>4</td><td>Load Value</td><td><code>rsldv.prg</code></td><td><code>rsldv</code></td><td class='num'>11896</td><td class='num'>47</td><td class='num'>11894</td><td class='num'>83.0%</td><td>LDV</td><td>bank <code>0x39</code> slot <code>$390000-$3937FF</code></td></tr><tr><td>5</td><td>Store Value</td><td><code>rsstv.prg</code></td><td><code>rsstv</code></td><td class='num'>10251</td><td class='num'>41</td><td class='num'>10249</td><td class='num'>71.5%</td><td>STV</td><td>bank <code>0x38</code> slot <code>$38A800-$38DFFF</code></td></tr><tr><td>6</td><td>File Delete / Rename / Write</td><td><code>rsfops.prg</code></td><td><code>rsfops</code></td><td class='num'>14327</td><td class='num'>57</td><td class='num'>14325</td><td class='num'>99.9%</td><td>DEL, REN, PUT, ADD</td><td>bank <code>0x39</code> slot <code>$393800-$396FFF</code></td></tr><tr><td>7</td><td>File Read</td><td><code>rscat.prg</code></td><td><code>rscat</code></td><td class='num'>8083</td><td class='num'>32</td><td class='num'>8081</td><td class='num'>56.4%</td><td>CAT</td><td>bank <code>0x39</code> slot <code>$397000-$39A7FF</code></td></tr><tr><td>8</td><td>File Copy</td><td><code>rscopy.prg</code></td><td><code>rscopy</code></td><td class='num'>6601</td><td class='num'>26</td><td class='num'>6599</td><td class='num'>46.0%</td><td>COPY</td><td>bank <code>0x39</code> slot <code>$39A800-$39DFFF</code></td></tr><tr><td>9</td><td>Prompt Editor</td><td><code>rsedit.prg</code></td><td><code>rsedit</code></td><td class='num'>2004</td><td class='num'>8</td><td class='num'>2002</td><td class='num'>14.0%</td><td>None directly; prompt/input phase support.</td><td>bank <code>0x3A</code> slot <code>$3A0000-$3A37FF</code></td></tr>
+          <tr><td>1</td><td>Parser / Lexer</td><td><code>rsparser.prg</code></td><td><code>rsparser</code></td><td class='num'>13007</td><td class='num'>52</td><td class='num'>13005</td><td class='num'>90.7%</td><td>None directly; parse phase support.</td><td>bank <code>0x36</code> slot <code>$360000-$3637FF</code></td></tr><tr><td>2</td><td>Execution Core</td><td><code>rsvm.prg</code></td><td><code>rsvm</code></td><td class='num'>14030</td><td class='num'>56</td><td class='num'>14028</td><td class='num'>97.9%</td><td>PRT, MORE, TOP, SEL, GEN, TAP and the shared execution paths that command overlays return to.</td><td>bank <code>0x36</code> slot <code>$363800-$366FFF</code></td></tr><tr><td>3</td><td>Drive Info + Directory Listing</td><td><code>rsdrvilst.prg</code></td><td><code>rsdrvilst</code></td><td class='num'>11260</td><td class='num'>45</td><td class='num'>11258</td><td class='num'>78.5%</td><td>DRVI, LST</td><td>bank <code>0x36</code> slot <code>$367000-$36A7FF</code></td></tr><tr><td>4</td><td>Load Value</td><td><code>rsldv.prg</code></td><td><code>rsldv</code></td><td class='num'>11896</td><td class='num'>47</td><td class='num'>11894</td><td class='num'>83.0%</td><td>LDV</td><td>bank <code>0x37</code> slot <code>$370000-$3737FF</code></td></tr><tr><td>5</td><td>Store Value</td><td><code>rsstv.prg</code></td><td><code>rsstv</code></td><td class='num'>10251</td><td class='num'>41</td><td class='num'>10249</td><td class='num'>71.5%</td><td>STV</td><td>bank <code>0x36</code> slot <code>$36A800-$36DFFF</code></td></tr><tr><td>6</td><td>File Delete / Rename / Write</td><td><code>rsfops.prg</code></td><td><code>rsfops</code></td><td class='num'>14327</td><td class='num'>57</td><td class='num'>14325</td><td class='num'>99.9%</td><td>DEL, REN, PUT, ADD</td><td>bank <code>0x37</code> slot <code>$373800-$376FFF</code></td></tr><tr><td>7</td><td>File Read</td><td><code>rscat.prg</code></td><td><code>rscat</code></td><td class='num'>8083</td><td class='num'>32</td><td class='num'>8081</td><td class='num'>56.4%</td><td>CAT</td><td>bank <code>0x37</code> slot <code>$377000-$37A7FF</code></td></tr><tr><td>8</td><td>File Copy</td><td><code>rscopy.prg</code></td><td><code>rscopy</code></td><td class='num'>6601</td><td class='num'>26</td><td class='num'>6599</td><td class='num'>46.0%</td><td>COPY</td><td>bank <code>0x37</code> slot <code>$37A800-$37DFFF</code></td></tr><tr><td>9</td><td>Prompt Editor</td><td><code>rsedit.prg</code></td><td><code>rsedit</code></td><td class='num'>2004</td><td class='num'>8</td><td class='num'>2002</td><td class='num'>14.0%</td><td>None directly; prompt/input phase support.</td><td>bank <code>0x38</code> slot <code>$380000-$3837FF</code></td></tr>
         </tbody>
       </table>
     </div>
@@ -395,11 +398,11 @@
     <ul>
       <li><strong>Build PRG:</strong> <code>readyshell.prg</code></li>
       <li><strong>Disk name:</strong> <code>readyshell</code></li>
-      <li><strong>Disk footprint:</strong> 27983 bytes, 111 D71 blocks</li>
+      <li><strong>Disk footprint:</strong> 28141 bytes, 111 D71 blocks</li>
       <li><strong>Resident sources:</strong> <code>readyshell.c, rs_token.c, rs_bc.c, rs_errors.c, rs_cmd_registry.c, rs_vm_c64.c, rs_overlay_c64.c, rs_platform_c64.c, tui_nav.c, reu_mgr_dma.c, resume_state_ctx.c, resume_state_core.c</code></li>
-      <li><strong>Resident asm/runtime:</strong> <code>rs_runtime_c64.s</code></li>
+      <li><strong>Resident asm/runtime:</strong> <code>rs_runtime_c64.s, $(TUI_READYOS_SRC)</code></li>
       <li><strong>Role:</strong> Resident app shell loop plus vm/overlay runtime. Command tokens resolved here, then dispatched to overlay 2 or command overlays.</li>
-      <li><strong>Current resident segments:</strong> <code>CODE $688D</code>, <code>RODATA $03F2</code>, <code>DATA $0047</code>, <code>INIT $001C</code>, <code>ONCE $0038</code>, <code>BSS $01AA</code></li>
+      <li><strong>Current resident segments:</strong> <code>CODE $692C</code>, <code>RODATA $03F2</code>, <code>DATA $0046</code>, <code>INIT $001C</code>, <code>ONCE $0038</code>, <code>BSS $01AA</code></li>
     </ul>
   </section>
 
@@ -415,8 +418,8 @@
     <ul>
       <li>Overlay 2 is effectively full at 14028 bytes of 14336 (97.9%).</li>
       <li>Overlay 1 is also large at 13005 bytes (90.7%).</li>
-      <li>The resident heap below the overlay load address is only 3846 bytes, so large working sets depend on overlays and REU-backed storage.</li>
-      <li>ReadyShell now uses three loader-assigned REU resource banks (current generated EasyFlash assignment): <code>0x38</code> for overlays <code>1</code>, <code>2</code>, <code>3</code>, and <code>5</code>; <code>0x39</code> for overlays <code>4</code>, <code>6</code>, <code>7</code>, and <code>8</code>; and <code>0x3A</code> for overlay <code>9</code> in this artifact.</li>
+      <li>The resident heap below the overlay load address is only 3688 bytes, so large working sets depend on overlays and REU-backed storage.</li>
+      <li>ReadyShell now uses three loader-assigned REU resource banks (current generated EasyFlash assignment): <code>0x36</code> for overlays <code>1</code>, <code>2</code>, <code>3</code>, and <code>5</code>; <code>0x37</code> for overlays <code>4</code>, <code>6</code>, <code>7</code>, and <code>8</code>; and <code>0x38</code> for overlay <code>9</code> in this artifact.</li>
       <li>Assigned bank 1 leaves 8192 bytes free; assigned bank 2 leaves 8192 bytes free; assigned bank 3 leaves 51200 bytes free.</li>
       <li>External commands now pay a launcher/loader preload cost instead of a repeated disk-load cost during each command call.</li>
       <li>Overlay 2 owns the shared formatting buffers, which is why it consumes almost the entire overlay window.</li>

@@ -1,7 +1,11 @@
 ;
 ; syscalls.s - Ready OS Syscall Implementations
-; NOTE: Legacy shim module; production shim is generated from src/boot/boot_asm.s.
+; RETIRED LEGACY SOURCE -- intentionally preserved, never assembled or linked.
+; Production uses src/boot/readyos_shim.inc and focused C micromodules.  This
+; file is archival and disabled so its obsolete syscall model cannot be used.
 ;
+
+.if 0
 
 .export _sys_init_impl, _sys_suspend_impl, _sys_resume_impl, _sys_exit_impl
 .export _sys_clip_copy_impl, _sys_clip_paste_impl
@@ -11,7 +15,7 @@
 .import _context_save, _context_restore
 
 ; System constants
-MAX_APPS = 24
+MAX_APPS = 64
 
 ; Memory layout constants
 ZP_START     = $00
@@ -23,7 +27,7 @@ SCREEN_SIZE  = 1000
 COLOR_START  = $D800
 COLOR_SIZE   = 1000
 APP_START    = $1000
-APP_SIZE     = $B600   ; $1000-$C5FF = 46,592 bytes
+APP_SIZE     = $B800   ; $1000-$C7FF = 47,104 bytes
 
 ; REU bank layout for app state (per bank = 64KB)
 REU_OFF_HEADER    = $0000  ; 32 bytes - app header + CPU state
@@ -486,3 +490,5 @@ dl_ptr: .word 0
 ; Imports
 ;-----------------------------------------------------------------------------
 .import sp      ; CC65 software stack pointer
+
+.endif ; retired legacy source

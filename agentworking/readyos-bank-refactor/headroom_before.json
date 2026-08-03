@@ -1,0 +1,1242 @@
+{
+  "app_window_end": "0xC5FF",
+  "app_window_start": "0x1000",
+  "maps": [
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 4414,
+      "bss_bytes": 2421,
+      "code_ro_init_bytes": 39707,
+      "data_bytes": 50,
+      "heap_capacity": 4302,
+      "heap_end": "0xC58F",
+      "heap_start": "0xB4C2",
+      "main_segment_total": 42178,
+      "map": "obj/launcher.map",
+      "name": "launcher",
+      "runtime_end": "0xB4C1",
+      "segments": {
+        "BSS": {
+          "end": "0xB4C1",
+          "size": 2421,
+          "start": "0xAB4D"
+        },
+        "CODE": {
+          "end": "0xA539",
+          "size": 38151,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0xAB0A",
+          "size": 50,
+          "start": "0xAAD9"
+        },
+        "INIT": {
+          "end": "0xAB26",
+          "size": 28,
+          "start": "0xAB0B"
+        },
+        "ONCE": {
+          "end": "0xAB4C",
+          "size": 38,
+          "start": "0xAB27"
+        },
+        "RODATA": {
+          "end": "0xAAD8",
+          "size": 1439,
+          "start": "0xA53A"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 12045,
+      "bss_bytes": 9880,
+      "code_ro_init_bytes": 24533,
+      "data_bytes": 134,
+      "heap_capacity": 11932,
+      "heap_end": "0xC58F",
+      "heap_start": "0x96F4",
+      "main_segment_total": 34547,
+      "map": "obj/editor.map",
+      "name": "editor",
+      "runtime_end": "0x96F2",
+      "segments": {
+        "BSS": {
+          "end": "0x96F2",
+          "size": 9880,
+          "start": "0x705B"
+        },
+        "CODE": {
+          "end": "0x6C54",
+          "size": 23586,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x7018",
+          "size": 134,
+          "start": "0x6F93"
+        },
+        "INIT": {
+          "end": "0x7034",
+          "size": 28,
+          "start": "0x7019"
+        },
+        "ONCE": {
+          "end": "0x705A",
+          "size": 38,
+          "start": "0x7035"
+        },
+        "RODATA": {
+          "end": "0x6F92",
+          "size": 830,
+          "start": "0x6C55"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 9164,
+      "bss_bytes": 6047,
+      "code_ro_init_bytes": 31159,
+      "data_bytes": 222,
+      "heap_capacity": 9052,
+      "heap_end": "0xC58F",
+      "heap_start": "0xA234",
+      "main_segment_total": 37428,
+      "map": "obj/quicknotes.map",
+      "name": "quicknotes",
+      "runtime_end": "0xA233",
+      "segments": {
+        "BSS": {
+          "end": "0xA233",
+          "size": 6047,
+          "start": "0x8A95"
+        },
+        "CODE": {
+          "end": "0x85BF",
+          "size": 30093,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x8A52",
+          "size": 222,
+          "start": "0x8975"
+        },
+        "INIT": {
+          "end": "0x8A6E",
+          "size": 28,
+          "start": "0x8A53"
+        },
+        "ONCE": {
+          "end": "0x8A94",
+          "size": 38,
+          "start": "0x8A6F"
+        },
+        "RODATA": {
+          "end": "0x8974",
+          "size": 949,
+          "start": "0x85C0"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 7266,
+      "bss_bytes": 1321,
+      "code_ro_init_bytes": 37847,
+      "data_bytes": 158,
+      "heap_capacity": 7154,
+      "heap_end": "0xC58F",
+      "heap_start": "0xA99E",
+      "main_segment_total": 39326,
+      "map": "obj/calcplus.map",
+      "name": "calcplus",
+      "runtime_end": "0xA99D",
+      "segments": {
+        "BSS": {
+          "end": "0xA99D",
+          "size": 1321,
+          "start": "0xA475"
+        },
+        "CODE": {
+          "end": "0x9EFF",
+          "size": 36557,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0xA432",
+          "size": 158,
+          "start": "0xA395"
+        },
+        "INIT": {
+          "end": "0xA44E",
+          "size": 28,
+          "start": "0xA433"
+        },
+        "ONCE": {
+          "end": "0xA474",
+          "size": 38,
+          "start": "0xA44F"
+        },
+        "RODATA": {
+          "end": "0xA394",
+          "size": 1173,
+          "start": "0x9F00"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 32950,
+      "bss_bytes": 101,
+      "code_ro_init_bytes": 13495,
+      "data_bytes": 46,
+      "heap_capacity": 32838,
+      "heap_end": "0xC58F",
+      "heap_start": "0x454A",
+      "main_segment_total": 13642,
+      "map": "obj/hexview.map",
+      "name": "hexview",
+      "runtime_end": "0x4549",
+      "segments": {
+        "BSS": {
+          "end": "0x4549",
+          "size": 101,
+          "start": "0x44E5"
+        },
+        "CODE": {
+          "end": "0x4282",
+          "size": 12880,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x44A2",
+          "size": 46,
+          "start": "0x4475"
+        },
+        "INIT": {
+          "end": "0x44BE",
+          "size": 28,
+          "start": "0x44A3"
+        },
+        "ONCE": {
+          "end": "0x44E4",
+          "size": 38,
+          "start": "0x44BF"
+        },
+        "RODATA": {
+          "end": "0x4474",
+          "size": 498,
+          "start": "0x4283"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 14112,
+      "bss_bytes": 1062,
+      "code_ro_init_bytes": 31372,
+      "data_bytes": 46,
+      "heap_capacity": 14000,
+      "heap_end": "0xC58F",
+      "heap_start": "0x8EE0",
+      "main_segment_total": 32480,
+      "map": "obj/clipmgr.map",
+      "name": "clipmgr",
+      "runtime_end": "0x8EDF",
+      "segments": {
+        "BSS": {
+          "end": "0x8EDF",
+          "size": 1062,
+          "start": "0x8ABA"
+        },
+        "CODE": {
+          "end": "0x86FF",
+          "size": 30413,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x8A77",
+          "size": 46,
+          "start": "0x8A4A"
+        },
+        "INIT": {
+          "end": "0x8A93",
+          "size": 28,
+          "start": "0x8A78"
+        },
+        "ONCE": {
+          "end": "0x8AB9",
+          "size": 38,
+          "start": "0x8A94"
+        },
+        "RODATA": {
+          "end": "0x8A49",
+          "size": 842,
+          "start": "0x8700"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 29454,
+      "bss_bytes": 229,
+      "code_ro_init_bytes": 16863,
+      "data_bytes": 46,
+      "heap_capacity": 29342,
+      "heap_end": "0xC58F",
+      "heap_start": "0x52F2",
+      "main_segment_total": 17138,
+      "map": "obj/reuviewer.map",
+      "name": "reuviewer",
+      "runtime_end": "0x52F1",
+      "segments": {
+        "BSS": {
+          "end": "0x52F1",
+          "size": 229,
+          "start": "0x520D"
+        },
+        "CODE": {
+          "end": "0x5043",
+          "size": 16401,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x51CA",
+          "size": 46,
+          "start": "0x519D"
+        },
+        "INIT": {
+          "end": "0x51E6",
+          "size": 28,
+          "start": "0x51CB"
+        },
+        "ONCE": {
+          "end": "0x520C",
+          "size": 38,
+          "start": "0x51E7"
+        },
+        "RODATA": {
+          "end": "0x519C",
+          "size": 345,
+          "start": "0x5044"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 30021,
+      "bss_bytes": 277,
+      "code_ro_init_bytes": 16247,
+      "data_bytes": 47,
+      "heap_capacity": 29908,
+      "heap_end": "0xC58F",
+      "heap_start": "0x50BC",
+      "main_segment_total": 16571,
+      "map": "obj/sysinfo.map",
+      "name": "sysinfo",
+      "runtime_end": "0x50BA",
+      "segments": {
+        "BSS": {
+          "end": "0x50BA",
+          "size": 277,
+          "start": "0x4FA6"
+        },
+        "CODE": {
+          "end": "0x4B0C",
+          "size": 15066,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x4F63",
+          "size": 47,
+          "start": "0x4F35"
+        },
+        "INIT": {
+          "end": "0x4F7F",
+          "size": 28,
+          "start": "0x4F64"
+        },
+        "ONCE": {
+          "end": "0x4FA5",
+          "size": 38,
+          "start": "0x4F80"
+        },
+        "RODATA": {
+          "end": "0x4F34",
+          "size": 1064,
+          "start": "0x4B0D"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 6402,
+      "bss_bytes": 8927,
+      "code_ro_init_bytes": 31112,
+      "data_bytes": 151,
+      "heap_capacity": 6290,
+      "heap_end": "0xC58F",
+      "heap_start": "0xACFE",
+      "main_segment_total": 40190,
+      "map": "obj/tasklist.map",
+      "name": "tasklist",
+      "runtime_end": "0xACFD",
+      "segments": {
+        "BSS": {
+          "end": "0xACFD",
+          "size": 8927,
+          "start": "0x8A1F"
+        },
+        "CODE": {
+          "end": "0x8610",
+          "size": 30174,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x89DC",
+          "size": 151,
+          "start": "0x8946"
+        },
+        "INIT": {
+          "end": "0x89F8",
+          "size": 28,
+          "start": "0x89DD"
+        },
+        "ONCE": {
+          "end": "0x8A1E",
+          "size": 38,
+          "start": "0x89F9"
+        },
+        "RODATA": {
+          "end": "0x8945",
+          "size": 821,
+          "start": "0x8611"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 12636,
+      "bss_bytes": 4397,
+      "code_ro_init_bytes": 29497,
+      "data_bytes": 62,
+      "heap_capacity": 12524,
+      "heap_end": "0xC58F",
+      "heap_start": "0x94A4",
+      "main_segment_total": 33956,
+      "map": "obj/simplefiles.map",
+      "name": "simplefiles",
+      "runtime_end": "0x94A3",
+      "segments": {
+        "BSS": {
+          "end": "0x94A3",
+          "size": 4397,
+          "start": "0x8377"
+        },
+        "CODE": {
+          "end": "0x7E29",
+          "size": 28151,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x8334",
+          "size": 62,
+          "start": "0x82F7"
+        },
+        "INIT": {
+          "end": "0x8350",
+          "size": 28,
+          "start": "0x8335"
+        },
+        "ONCE": {
+          "end": "0x8376",
+          "size": 38,
+          "start": "0x8351"
+        },
+        "RODATA": {
+          "end": "0x82F6",
+          "size": 1229,
+          "start": "0x7E2A"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 9407,
+      "bss_bytes": 2142,
+      "code_ro_init_bytes": 34805,
+      "data_bytes": 238,
+      "heap_capacity": 9294,
+      "heap_end": "0xC58F",
+      "heap_start": "0xA142",
+      "main_segment_total": 37185,
+      "map": "obj/simplecells.map",
+      "name": "simplecells",
+      "runtime_end": "0xA140",
+      "segments": {
+        "BSS": {
+          "end": "0xA140",
+          "size": 2142,
+          "start": "0x98E3"
+        },
+        "CODE": {
+          "end": "0x90F8",
+          "size": 32966,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x98A0",
+          "size": 238,
+          "start": "0x97B3"
+        },
+        "INIT": {
+          "end": "0x98BC",
+          "size": 28,
+          "start": "0x98A1"
+        },
+        "ONCE": {
+          "end": "0x98E2",
+          "size": 38,
+          "start": "0x98BD"
+        },
+        "RODATA": {
+          "end": "0x97B2",
+          "size": 1722,
+          "start": "0x90F9"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 28580,
+      "bss_bytes": 1203,
+      "code_ro_init_bytes": 16763,
+      "data_bytes": 46,
+      "heap_capacity": 28468,
+      "heap_end": "0xC58F",
+      "heap_start": "0x565C",
+      "main_segment_total": 18012,
+      "map": "obj/game2048.map",
+      "name": "game2048",
+      "runtime_end": "0x565B",
+      "segments": {
+        "BSS": {
+          "end": "0x565B",
+          "size": 1203,
+          "start": "0x51A9"
+        },
+        "CODE": {
+          "end": "0x5008",
+          "size": 16342,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x5166",
+          "size": 46,
+          "start": "0x5139"
+        },
+        "INIT": {
+          "end": "0x5182",
+          "size": 28,
+          "start": "0x5167"
+        },
+        "ONCE": {
+          "end": "0x51A8",
+          "size": 38,
+          "start": "0x5183"
+        },
+        "RODATA": {
+          "end": "0x5138",
+          "size": 304,
+          "start": "0x5009"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 22167,
+      "bss_bytes": 4276,
+      "code_ro_init_bytes": 20103,
+      "data_bytes": 46,
+      "heap_capacity": 22054,
+      "heap_end": "0xC58F",
+      "heap_start": "0x6F6A",
+      "main_segment_total": 24425,
+      "map": "obj/deminer.map",
+      "name": "deminer",
+      "runtime_end": "0x6F68",
+      "segments": {
+        "BSS": {
+          "end": "0x6F68",
+          "size": 4276,
+          "start": "0x5EB5"
+        },
+        "CODE": {
+          "end": "0x5B59",
+          "size": 19239,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x5E72",
+          "size": 46,
+          "start": "0x5E45"
+        },
+        "INIT": {
+          "end": "0x5E8E",
+          "size": 28,
+          "start": "0x5E73"
+        },
+        "ONCE": {
+          "end": "0x5EB4",
+          "size": 38,
+          "start": "0x5E8F"
+        },
+        "RODATA": {
+          "end": "0x5E44",
+          "size": 747,
+          "start": "0x5B5A"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 30286,
+      "bss_bytes": 908,
+      "code_ro_init_bytes": 15312,
+      "data_bytes": 86,
+      "heap_capacity": 30174,
+      "heap_end": "0xC58F",
+      "heap_start": "0x4FB2",
+      "main_segment_total": 16306,
+      "map": "obj/sidetris.map",
+      "name": "sidetris",
+      "runtime_end": "0x4FB1",
+      "segments": {
+        "BSS": {
+          "end": "0x4FB1",
+          "size": 908,
+          "start": "0x4C26"
+        },
+        "CODE": {
+          "end": "0x478A",
+          "size": 14168,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x4BE3",
+          "size": 86,
+          "start": "0x4B8E"
+        },
+        "INIT": {
+          "end": "0x4BFF",
+          "size": 28,
+          "start": "0x4BE4"
+        },
+        "ONCE": {
+          "end": "0x4C25",
+          "size": 38,
+          "start": "0x4C00"
+        },
+        "RODATA": {
+          "end": "0x4B8D",
+          "size": 1027,
+          "start": "0x478B"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 9084,
+      "bss_bytes": 4803,
+      "code_ro_init_bytes": 32381,
+      "data_bytes": 324,
+      "heap_capacity": 8972,
+      "heap_end": "0xC58F",
+      "heap_start": "0xA284",
+      "main_segment_total": 37508,
+      "map": "obj/cal26.map",
+      "name": "cal26",
+      "runtime_end": "0xA283",
+      "segments": {
+        "BSS": {
+          "end": "0xA283",
+          "size": 4803,
+          "start": "0x8FC1"
+        },
+        "CODE": {
+          "end": "0x86ED",
+          "size": 30395,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x8F7E",
+          "size": 324,
+          "start": "0x8E3B"
+        },
+        "INIT": {
+          "end": "0x8F9A",
+          "size": 28,
+          "start": "0x8F7F"
+        },
+        "ONCE": {
+          "end": "0x8FC0",
+          "size": 38,
+          "start": "0x8F9B"
+        },
+        "RODATA": {
+          "end": "0x8E3A",
+          "size": 1869,
+          "start": "0x86EE"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 1834,
+      "bss_bytes": 6327,
+      "code_ro_init_bytes": 38299,
+      "data_bytes": 132,
+      "heap_capacity": 1722,
+      "heap_end": "0xC58F",
+      "heap_start": "0xBED6",
+      "main_segment_total": 44758,
+      "map": "obj/dizzy.map",
+      "name": "dizzy",
+      "runtime_end": "0xBED5",
+      "segments": {
+        "BSS": {
+          "end": "0xBED5",
+          "size": 6327,
+          "start": "0xA61F"
+        },
+        "CODE": {
+          "end": "0xA08F",
+          "size": 36957,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0xA5DC",
+          "size": 132,
+          "start": "0xA559"
+        },
+        "INIT": {
+          "end": "0xA5F8",
+          "size": 28,
+          "start": "0xA5DD"
+        },
+        "ONCE": {
+          "end": "0xA61E",
+          "size": 38,
+          "start": "0xA5F9"
+        },
+        "RODATA": {
+          "end": "0xA558",
+          "size": 1225,
+          "start": "0xA090"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 19005,
+      "bss_bytes": 5351,
+      "code_ro_init_bytes": 22189,
+      "data_bytes": 47,
+      "heap_capacity": 18892,
+      "heap_end": "0xC58F",
+      "heap_start": "0x7BC4",
+      "main_segment_total": 27587,
+      "map": "obj/readyirc.map",
+      "name": "readyirc",
+      "runtime_end": "0x7BC2",
+      "segments": {
+        "BSS": {
+          "end": "0x7BC2",
+          "size": 5351,
+          "start": "0x66DC"
+        },
+        "CODE": {
+          "end": "0x62CE",
+          "size": 21148,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x6699",
+          "size": 47,
+          "start": "0x666B"
+        },
+        "INIT": {
+          "end": "0x66B5",
+          "size": 28,
+          "start": "0x669A"
+        },
+        "ONCE": {
+          "end": "0x66DB",
+          "size": 38,
+          "start": "0x66B6"
+        },
+        "RODATA": {
+          "end": "0x666A",
+          "size": 924,
+          "start": "0x62CF"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 17871,
+      "bss_bytes": 6909,
+      "code_ro_init_bytes": 21585,
+      "data_bytes": 227,
+      "heap_capacity": 17758,
+      "heap_end": "0xC58F",
+      "heap_start": "0x8032",
+      "main_segment_total": 28721,
+      "map": "obj/rirc-rrnet.map",
+      "name": "rirc-rrnet",
+      "runtime_end": "0x8030",
+      "segments": {
+        "BSS": {
+          "end": "0x8030",
+          "size": 6909,
+          "start": "0x6534"
+        },
+        "CODE": {
+          "end": "0x6130",
+          "size": 20734,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x64F1",
+          "size": 227,
+          "start": "0x640F"
+        },
+        "INIT": {
+          "end": "0x650D",
+          "size": 28,
+          "start": "0x64F2"
+        },
+        "ONCE": {
+          "end": "0x6533",
+          "size": 38,
+          "start": "0x650E"
+        },
+        "RODATA": {
+          "end": "0x640E",
+          "size": 734,
+          "start": "0x6131"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 1025,
+      "bss_bytes": 0,
+      "code_ro_init_bytes": 9390,
+      "data_bytes": 0,
+      "main_segment_total": 3054,
+      "map": "obj/readybasic.map",
+      "name": "readybasic",
+      "runtime_end": "0xC1FE",
+      "segments": {
+        "BRIDGE": {
+          "end": "0xC1FE",
+          "size": 511,
+          "start": "0xC000"
+        },
+        "ENTRY": {
+          "end": "0x11FF",
+          "size": 512,
+          "start": "0x1000"
+        },
+        "HIDDEN": {
+          "end": "0xA7EE",
+          "size": 2031,
+          "start": "0xA000"
+        }
+      }
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 21230,
+      "bss_bytes": 2708,
+      "code_ro_init_bytes": 22583,
+      "data_bytes": 71,
+      "heap_capacity": 21118,
+      "heap_end": "0xC58F",
+      "heap_start": "0x7312",
+      "main_segment_total": 25362,
+      "map": "obj/ucitest.map",
+      "name": "ucitest",
+      "runtime_end": "0x7311",
+      "segments": {
+        "BSS": {
+          "end": "0x7311",
+          "size": 2708,
+          "start": "0x687E"
+        },
+        "CODE": {
+          "end": "0x5972",
+          "size": 18752,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x683B",
+          "size": 71,
+          "start": "0x67F5"
+        },
+        "INIT": {
+          "end": "0x6857",
+          "size": 28,
+          "start": "0x683C"
+        },
+        "ONCE": {
+          "end": "0x687D",
+          "size": 38,
+          "start": "0x6858"
+        },
+        "RODATA": {
+          "end": "0x67F4",
+          "size": 3714,
+          "start": "0x5973"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 22468,
+      "bss_bytes": 48,
+      "code_ro_init_bytes": 24030,
+      "data_bytes": 46,
+      "heap_capacity": 22356,
+      "heap_end": "0xC58F",
+      "heap_start": "0x6E3C",
+      "main_segment_total": 24124,
+      "map": "obj/readme.map",
+      "name": "readme",
+      "runtime_end": "0x6E3B",
+      "segments": {
+        "BSS": {
+          "end": "0x6E3B",
+          "size": 48,
+          "start": "0x6E0C"
+        },
+        "CODE": {
+          "end": "0x38E3",
+          "size": 10417,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x6DC9",
+          "size": 46,
+          "start": "0x6D9C"
+        },
+        "INIT": {
+          "end": "0x6DE5",
+          "size": 28,
+          "start": "0x6DCA"
+        },
+        "ONCE": {
+          "end": "0x6E0B",
+          "size": 38,
+          "start": "0x6DE6"
+        },
+        "RODATA": {
+          "end": "0x6D9B",
+          "size": 13496,
+          "start": "0x38E4"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 18185,
+      "bss_bytes": 426,
+      "code_ro_init_bytes": 27910,
+      "data_bytes": 71,
+      "heap_capacity": 3846,
+      "main_segment_total": 28407,
+      "map": "obj/readyshell.map",
+      "name": "readyshell",
+      "readyshell": {
+        "heap_end": "0x8DFD",
+        "heap_size": 3846,
+        "heap_start": "0x7EF8",
+        "himem": "0xC600",
+        "overlay_loadaddr": "0x8DFE",
+        "overlay_start": "0x8E00",
+        "overlay_window": 14336
+      },
+      "runtime_end": "0x7EF6",
+      "segments": {
+        "BSS": {
+          "end": "0x7EF6",
+          "size": 426,
+          "start": "0x7D4D"
+        },
+        "CODE": {
+          "end": "0x78BF",
+          "size": 26765,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x7CF8",
+          "size": 71,
+          "start": "0x7CB2"
+        },
+        "INIT": {
+          "end": "0x7D14",
+          "size": 28,
+          "start": "0x7CF9"
+        },
+        "ONCE": {
+          "end": "0x7D4C",
+          "size": 56,
+          "start": "0x7D15"
+        },
+        "RODATA": {
+          "end": "0x7CB1",
+          "size": 1010,
+          "start": "0x78C0"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      }
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 17635,
+      "bss_bytes": 1890,
+      "code_ro_init_bytes": 27017,
+      "data_bytes": 50,
+      "heap_capacity": 17522,
+      "heap_end": "0xC58F",
+      "heap_start": "0x811E",
+      "main_segment_total": 28957,
+      "map": "obj/launcher_easyflash.map",
+      "name": "launcher_easyflash",
+      "runtime_end": "0x811C",
+      "segments": {
+        "BSS": {
+          "end": "0x811C",
+          "size": 1890,
+          "start": "0x79BB"
+        },
+        "CODE": {
+          "end": "0x7116",
+          "size": 24804,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x7978",
+          "size": 50,
+          "start": "0x7947"
+        },
+        "INIT": {
+          "end": "0x7994",
+          "size": 28,
+          "start": "0x7979"
+        },
+        "ONCE": {
+          "end": "0x79BA",
+          "size": 38,
+          "start": "0x7995"
+        },
+        "RODATA": {
+          "end": "0x7946",
+          "size": 2096,
+          "start": "0x7117"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      },
+      "stack_reserve": 112
+    },
+    {
+      "app_window_end": "0xC5FF",
+      "app_window_headroom": 18287,
+      "bss_bytes": 426,
+      "code_ro_init_bytes": 27808,
+      "data_bytes": 71,
+      "heap_capacity": 3948,
+      "main_segment_total": 28305,
+      "map": "obj/readyshell_easyflash.map",
+      "name": "readyshell_easyflash",
+      "readyshell": {
+        "heap_end": "0x8DFD",
+        "heap_size": 3948,
+        "heap_start": "0x7E92",
+        "himem": "0xC600",
+        "overlay_loadaddr": "0x8DFE",
+        "overlay_start": "0x8E00",
+        "overlay_window": 14336
+      },
+      "runtime_end": "0x7E90",
+      "segments": {
+        "BSS": {
+          "end": "0x7E90",
+          "size": 426,
+          "start": "0x7CE7"
+        },
+        "CODE": {
+          "end": "0x7859",
+          "size": 26663,
+          "start": "0x1033"
+        },
+        "DATA": {
+          "end": "0x7C92",
+          "size": 71,
+          "start": "0x7C4C"
+        },
+        "INIT": {
+          "end": "0x7CAE",
+          "size": 28,
+          "start": "0x7C93"
+        },
+        "ONCE": {
+          "end": "0x7CE6",
+          "size": 56,
+          "start": "0x7CAF"
+        },
+        "RODATA": {
+          "end": "0x7C4B",
+          "size": 1010,
+          "start": "0x785A"
+        },
+        "STARTUP": {
+          "end": "0x1032",
+          "size": 51,
+          "start": "0x1000"
+        }
+      }
+    }
+  ]
+}

@@ -42,18 +42,6 @@ def payload_bytes_from_prg(path: Path) -> bytes:
     return raw[2:]
 
 
-def expected_bitmap(layout: Dict[str, object]) -> bytes:
-    bitmap = [0, 0, 0]
-    for entry in layout["apps"]:
-        bank = int(entry["bank"])
-        if bank >= 24:
-            fail(f"unsupported launcher bank for smoke bitmap: {bank}")
-        byte_index = bank // 8
-        bit_index = bank % 8
-        bitmap[byte_index] |= 1 << bit_index
-    return bytes(bitmap + [0x08])
-
-
 def parse_monitor_log(path: Path) -> Dict[int, bytes]:
     dumps: Dict[int, bytes] = {}
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
@@ -100,6 +88,14 @@ def marker_present(ring: bytes, marker: bytes) -> bool:
     return value in ring or (value | 0x80) in ring
 
 
+def generated_readyos_bank() -> int:
+    text = (ROOT / "src/generated/easyflash_layout.inc").read_text(encoding="ascii")
+    match = re.search(r"(?m)^READYOS_REU_BANK_SKIP\s*=\s*(\d+)\s*$", text)
+    if not match:
+        fail("READYOS_REU_BANK_SKIP missing from generated EasyFlash layout")
+    return (int(match.group(1)) + 1) & 0xFF
+
+
 def symbol_value_from_map(path: Path, symbol: str) -> int:
     pattern = re.compile(rf"(?:^|\s){re.escape(symbol)}\s+([0-9A-Fa-f]{{6}})\s+RLA", re.M)
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -125,145 +121,37 @@ def write_monitor(output_path: Path,
     output_path.parent.mkdir(parents=True, exist_ok=True)
     main_addr = symbol_value_from_map(launcher_map_path, "_main")
     keyloop_addr = symbol_value_from_map(launcher_map_path, "_tui_getkey")
-    callmain_addr = symbol_value_from_map(launcher_map_path, "callmain")
-    initlib_addr = symbol_value_from_map(launcher_map_path, "initlib")
-    zerobss_addr = symbol_value_from_map(launcher_map_path, "zerobss")
-    optional_launcher_breaks = [
-        optional_symbol_value_from_map(launcher_map_path, "_ef_linit_entry"),
-        optional_symbol_value_from_map(launcher_map_path, "_ef_linit_before_bootstrap"),
-        optional_symbol_value_from_map(launcher_map_path, "_ef_linit_after_bootstrap"),
-        optional_symbol_value_from_map(launcher_map_path, "_ef_linit_before_catalog_defaults"),
-        optional_symbol_value_from_map(launcher_map_path, "_ef_linit_after_catalog_defaults"),
-    ]
     lines = []
     if include_preload:
         if boot_map_path is None:
             fail("--include-preload requires --boot-map")
-        shim_addr = symbol_value_from_map(boot_map_path, "easyflash_shim_copy_done")
         preload_addr = symbol_value_from_map(boot_map_path, "easyflash_preload_verify_done")
-        kernal_addr = symbol_value_from_map(boot_map_path, "easyflash_after_kernal_init")
-        restore_addr = symbol_value_from_map(boot_map_path, "easyflash_after_launcher_restore")
-        jump_addr = symbol_value_from_map(boot_map_path, "easyflash_before_launcher_jump")
-        lines.append(f"break {shim_addr:04x}")
         lines.append(f"break {preload_addr:04x}")
-        lines.append(f"break {kernal_addr:04x}")
-        lines.append(f"break {restore_addr:04x}")
-        lines.append(f"break {jump_addr:04x}")
     lines.extend([
-        "break 1000",
-        "break 890d",
-        f"break {initlib_addr:04x}",
-        f"break {zerobss_addr:04x}",
-        f"break {callmain_addr:04x}",
         f"break {main_addr:04x}",
         f"break {keyloop_addr:04x}",
         "x",
     ])
-    for addr in optional_launcher_breaks:
-        if addr is not None:
-            lines.insert(-1, f"break {addr:04x}")
     if include_preload:
         lines.extend([
-            "m 0f20 112f",
             "m c800 c9ff",
-            "x",
-            "m 1000 107f",
             "m ca00 cb1f",
-            "m c600 c9ff",
-            "m c760 c783",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m 1000 107f",
-            "m c7a0 c7ef",
-            "m c836 c839",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m 1000 107f",
-            "m c7a0 c7ef",
-            "m c836 c839",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m 1000 107f",
-            "m 88e0 892f",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m 88e0 892f",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m 88e0 892f",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m 8927 89a6",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m 7c50 7c7f",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m 0400 047f",
-            "m d800 d87f",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m c7a0 c7ef",
-            "m 0000 001b",
-            "m de00 de02",
-            "m df01 df08",
-            "x",
-            "m c7a0 c7ef",
-            "m 0000 001b",
+            "m cb20 cb6f",
+            "m cb60 cb83",
             "m de00 de02",
             "m df01 df08",
             "x",
         ])
     lines.extend([
+        # Launcher C entry. Resume until the first UI key wait, after schema
+        # initialization, embedded preload publication, and the initial draw.
         "m 1000 101f",
-        "m c7a0 c7ef",
-        "m c600 c9ff",
-        "m de00 de02",
-        "m df01 df08",
         "x",
         "m 0400 047f",
         "m d800 d87f",
-        "m c7a0 c7ef",
-        "m c700 c700",
-        "m c836 c839",
+        "m 1000 101f",
+        "m cb20 cb6f",
+        "m c800 c9ff",
         "m de00 de02",
         "m df01 df08",
         "q",
@@ -319,28 +207,56 @@ def verify_preload_diagnostics(dumps: Dict[int, bytes], layout: Dict[str, object
                 )
         return
 
-    # Current boot ROM no longer writes the transient EFV checksum block at
-    # $CA00. Fall back to the persistent preload state that survives into the
-    # launcher handoff: REU init magic, app bitmap, overlay cache metadata, and
-    # boot-stage debug markers up through V(erify).
-    if 0xC700 not in dumps:
-        fail("missing REU magic memory dump at $C700")
-    if 0xC836 not in dumps:
-        fail("missing launcher bitmap memory dump at $C836")
-    if 0xC760 not in dumps:
-        fail("missing ReadyShell overlay metadata dump at $C760")
-    if 0xC7A0 not in dumps:
-        fail("missing launcher debug ring dump at $C7A0")
-
-    bitmap = expected_bitmap(layout)
-    check_prefix(dumps[0xC700], bytes([0xA5]), "REU magic")
-    check_prefix(dumps[0xC836], bitmap, "app preload bitmap/storage drive")
-    check_prefix(region_bytes(dumps, 0xC760, len(expected_overlay_meta(layout))),
-                 expected_overlay_meta(layout), "overlay metadata")
-    ring = region_bytes(dumps, 0xC7A0, 0x50)
+    # Compact/production loader builds may omit the extended $CA00 diagnostic
+    # records.  In that case the loader ring is the preload-stage contract;
+    # full smoke runs independently validate schema v5 from VICE's REU image
+    # after the launcher has initialized it.
+    ring = region_bytes(dumps, 0xCB20, 0x50)
     for marker in (b"R", b"L", b"A", b"O", b"M", b"V"):
         if not marker_present(ring, marker):
             fail(f"preload debug ring missing marker {marker.decode('ascii')}")
+
+
+def verify_readyos_schema(dumps: Dict[int, bytes], layout: Dict[str, object]) -> None:
+    schema = region_bytes(dumps, 0x0800, 0x300)
+    if len(schema) != 0x300:
+        fail("missing ReadyOS-bank schema dump at $0800-$0AFF")
+    check_prefix(schema, b"RCB5\x05", "ReadyOS-bank schema header")
+    readyos_bank = (int(layout["reu_bank_skip"]) + 1) & 0xFF
+    if schema[9] != readyos_bank or schema[10] != readyos_bank:
+        fail("ReadyOS/launcher physical bank header fields do not name Skip+1")
+    if schema[0x40 + readyos_bank] != 7:
+        fail("ReadyOS physical bank is not marked REU_GLOBAL")
+    for entry in layout["apps"]:
+        token = int(entry["bank"])
+        physical = int(entry["reu_bank"])
+        if schema[0x140 + token] != physical:
+            fail(f"token {token} maps to {schema[0x140 + token]}, expected {physical}")
+        if schema[0x240 + token] & 0x07 != 0x07:
+            fail(f"token {token} is not valid, loaded, and resumable")
+
+
+def verify_readyos_schema_image(path: Path, layout: Dict[str, object]) -> None:
+    if not path.exists():
+        fail(f"missing VICE REU image: {path}")
+    readyos_bank = (int(layout["reu_bank_skip"]) + 1) & 0xFF
+    raw = path.read_bytes()
+    start = readyos_bank * 0x10000 + 0xB800
+    schema = raw[start:start + 0x300]
+    if len(schema) != 0x300:
+        fail("VICE REU image is too short for the ReadyOS-bank schema")
+    check_prefix(schema, b"RCB5\x05", "ReadyOS-bank schema header")
+    if schema[9] != readyos_bank or schema[10] != readyos_bank:
+        fail("ReadyOS/launcher physical bank header fields do not name Skip+1")
+    if schema[0x40 + readyos_bank] != 7:
+        fail("ReadyOS physical bank is not marked REU_GLOBAL")
+    for entry in layout["apps"]:
+        token = int(entry["bank"])
+        physical = int(entry["reu_bank"])
+        if schema[0x140 + token] != physical:
+            fail(f"token {token} maps to {schema[0x140 + token]}, expected {physical}")
+        if schema[0x240 + token] & 0x07 != 0x07:
+            fail(f"token {token} is not valid, loaded, and resumable")
 
 
 def verify_log(output_dir: Path,
@@ -348,6 +264,7 @@ def verify_log(output_dir: Path,
                log_path: Path,
                vice_rc: int,
                launcher_map_path: Path,
+               reu_image_path: Path | None = None,
                verify_preload: bool = False,
                preload_only: bool = False) -> None:
     crt_path = output_dir / "readyos_easyflash.crt"
@@ -371,7 +288,6 @@ def verify_log(output_dir: Path,
         return
 
     launcher_prefix = payload_bytes_from_prg(BIN_DIR / "launcher_easyflash.prg")[:32]
-    bitmap = expected_bitmap(layout)
     main_addr = symbol_value_from_map(launcher_map_path, "_main")
     keyloop_addr = symbol_value_from_map(launcher_map_path, "_tui_getkey")
 
@@ -384,21 +300,14 @@ def verify_log(output_dir: Path,
         fail("missing launcher memory dump at $1000")
     if 0x0400 not in dumps:
         fail("missing launcher screen dump at $0400")
-    if 0xC7A0 not in dumps:
-        fail("missing launcher debug ring dump at $C7A0")
-    if 0xC700 not in dumps:
-        fail("missing REU magic memory dump at $C700")
-    if 0xC836 not in dumps:
-        fail("missing launcher bitmap memory dump at $C836")
-    if 0xC760 not in dumps:
-        fail("missing ReadyShell overlay metadata dump at $C760")
+    if 0xCB20 not in dumps:
+        fail("missing EasyFlash loader debug ring dump at $CB20")
 
     check_prefix(region_bytes(dumps, 0x1000, len(launcher_prefix)), launcher_prefix, "launcher RAM prefix")
-    check_prefix(dumps[0xC700], bytes([0xA5]), "REU magic")
-    check_prefix(dumps[0xC836], bitmap, "app preload bitmap/storage drive")
-    check_prefix(region_bytes(dumps, 0xC760, len(expected_overlay_meta(layout))),
-                 expected_overlay_meta(layout), "overlay metadata")
-    ring = region_bytes(dumps, 0xC7A0, 0x50)
+    if reu_image_path is None:
+        fail("full EasyFlash smoke verification requires --reu-image")
+    verify_readyos_schema_image(reu_image_path, layout)
+    ring = region_bytes(dumps, 0xCB20, 0x50)
     for marker in (b"R", b"L", b"A", b"O", b"M", b"V", b"T", b"J", b"K"):
         if not marker_present(ring, marker):
             fail(f"launcher debug ring missing marker {marker.decode('ascii')}")
@@ -408,8 +317,7 @@ def verify_log(output_dir: Path,
     print("easyflash smoke passed")
     print(f"  launcher main breakpoint: ${main_addr:04X}")
     print(f"  launcher key-loop breakpoint: ${keyloop_addr:04X}")
-    print(f"  preload bitmap: {bitmap[:3].hex(' ')}")
-    print(f"  storage drive: {bitmap[3]}")
+    print("  ReadyOS bank: schema v5 and explicit token mappings verified")
     if vice_rc != 0:
         print(f"  note: VICE exited with rc={vice_rc}, but the monitor log verified successfully")
 
@@ -429,6 +337,7 @@ def main() -> int:
     verify_parser.add_argument("--layout", required=True)
     verify_parser.add_argument("--log", required=True)
     verify_parser.add_argument("--launcher-map", required=True)
+    verify_parser.add_argument("--reu-image")
     verify_parser.add_argument("--vice-rc", type=int, default=0)
     verify_parser.add_argument("--verify-preload", action="store_true")
     verify_parser.add_argument("--preload-only", action="store_true")
@@ -450,6 +359,7 @@ def main() -> int:
                 layout_path=Path(args.layout),
                 log_path=Path(args.log),
                 launcher_map_path=Path(args.launcher_map),
+                reu_image_path=Path(args.reu_image) if args.reu_image else None,
                 vice_rc=args.vice_rc,
                 verify_preload=bool(args.verify_preload),
                 preload_only=bool(args.preload_only),

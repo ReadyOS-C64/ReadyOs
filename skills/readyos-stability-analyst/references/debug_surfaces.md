@@ -7,12 +7,16 @@ Primary runtime capture source:
 
 ## RAM debug surfaces
 - Screen buffer: `$0400-$07E7`
-- Boot preload markers: `$C007-$C00C`
+- The former boot preload markers at `$C007-$C00C` are retired; preload no
+  longer writes diagnostics into app snapshot RAM. Use launcher state, the
+  ReadyOS-bank audit page, and harness stage traces instead.
 - Shim data: `$C820-$C83F`
 - Historical shim debug ring storage: `$C980-$C99F`; overlaps current
   `$C960-$C99F` logical REU setup code and must not be treated as active
   persistent debug storage.
-- ReadyShell RAM ring: `$C7A0-$C7DF` with head at `$C7F0`
+- The former ReadyShell RAM ring at `$C7A0-$C7DF` / `$C7F0` is retired.
+  ReadyShell diagnostics are authoritative only in its loader-assigned REU
+  state bank.
 - REU registers: `$DF00-$DF08`
 - ReadyShell overlay window base:
 - release/default (`READYSHELL_PARSE_TRACE_DEBUG=0`): `$8E00`

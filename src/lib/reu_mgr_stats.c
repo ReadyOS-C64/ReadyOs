@@ -1,38 +1,38 @@
-/*
- * reu_mgr_stats.c - REU manager query helpers
- * Split from core so apps that only use clipboard can avoid this code.
- */
+/* reu_mgr_stats.c - authoritative ReadyOS-bank allocation queries */
 
 #include "reu_mgr.h"
+#include "reu_control_bank.h"
 
 unsigned char reu_bank_type(unsigned char bank) {
-    return REU_ALLOC_TABLE[bank];
+    return readyos_bank_read_byte((unsigned int)(REUCB_BANK_TYPE_OFF + bank));
 }
 
 unsigned char reu_count_free(void) {
     unsigned int i;
-    unsigned char count = 0;
+    unsigned char count;
 
-    for (i = 0; i < REU_TOTAL_BANKS; ++i) {
-        if (REU_ALLOC_TABLE[i] == REU_FREE) {
-            ++count;
-            if (count == 255) break;
+    count = 0u;
+    for (i = 0u; i < REU_TOTAL_BANKS; ++i) {
+        if (readyos_bank_read_byte((unsigned int)(REUCB_BANK_TYPE_OFF + i)) == REU_FREE) {
+            if (++count == 255u) {
+                break;
+            }
         }
     }
-
     return count;
 }
 
 unsigned char reu_count_type(unsigned char type) {
     unsigned int i;
-    unsigned char count = 0;
+    unsigned char count;
 
-    for (i = 0; i < REU_TOTAL_BANKS; ++i) {
-        if (REU_ALLOC_TABLE[i] == type) {
-            ++count;
-            if (count == 255) break;
+    count = 0u;
+    for (i = 0u; i < REU_TOTAL_BANKS; ++i) {
+        if (readyos_bank_read_byte((unsigned int)(REUCB_BANK_TYPE_OFF + i)) == type) {
+            if (++count == 255u) {
+                break;
+            }
         }
     }
-
     return count;
 }

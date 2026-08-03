@@ -1,9 +1,14 @@
-/*
+/* RETIRED LEGACY SOURCE -- intentionally preserved, never linked.
+ * The production TUI is split into operation-sized micromodules, including
+ * tui_readyos.c for direct ReadyOS-bank state access, to avoid app bloat.
+ *
  * tui.c - TUI Library Implementation for Ready OS
  * Text User Interface with PETSCII box drawing
  *
  * For Commodore 64, compiled with CC65
  */
+
+#if 0
 
 #include "tui.h"
 #include <c64.h>
@@ -728,3 +733,5 @@ void tui_print_hex16(unsigned char x, unsigned char y, unsigned int value,
     tui_putc(x + 3, y, tui_ascii_to_screen(hex[(value >> 4) & 0x0F]), color);
     tui_putc(x + 4, y, tui_ascii_to_screen(hex[value & 0x0F]), color);
 }
+
+#endif /* retired legacy source */

@@ -4,7 +4,7 @@ verify_memory_map.py
 
 Hard memory-map contract checks for ReadyOS:
 - app/runtime RAM windows
-- shim/REU-reserved boundary discipline
+- shim boundary discipline and ReadyOS-bank schema constants
 - cc65 ONCE/BSS disjointness for warm-resumed apps
 - ReadyShell overlay window + overlay fit
 - REU and resume constants
@@ -179,6 +179,8 @@ def collect_fixed_addresses():
         if path.suffix not in (".c", ".h", ".s"):
             continue
         txt = path.read_text(encoding="utf-8", errors="replace")
+        if "RETIRED" in txt[:512]:
+            continue
         for m in pat.finditer(txt):
             addr = int(m.group(0), 16)
             if 0xC000 <= addr <= 0xDFFF:
@@ -206,8 +208,6 @@ def main():
 
     app_start = parse_int(spec["ram_windows"]["app_runtime"]["start"])
     app_end = parse_int(spec["ram_windows"]["app_runtime"]["end"])
-    reu_meta_start = parse_int(spec["ram_windows"]["reu_metadata"]["start"])
-    reu_meta_end = parse_int(spec["ram_windows"]["reu_metadata"]["end"])
     shim_start = parse_int(spec["ram_windows"]["shim"]["start"])
     shim_end = parse_int(spec["ram_windows"]["shim"]["end"])
     io_start = parse_int(spec["ram_windows"]["io"]["start"])
@@ -290,11 +290,6 @@ def main():
                 f"{hex(start)}..{hex(end)}",
             )
             ok &= check(
-                f"{rel}:{seg_name} avoids REU meta",
-                not intersects(start, end, reu_meta_start, reu_meta_end),
-                f"{hex(start)}..{hex(end)} vs {hex(reu_meta_start)}..{hex(reu_meta_end)}",
-            )
-            ok &= check(
                 f"{rel}:{seg_name} avoids shim",
                 not intersects(start, end, shim_start, shim_end),
                 f"{hex(start)}..{hex(end)} vs {hex(shim_start)}..{hex(shim_end)}",
@@ -321,7 +316,7 @@ def main():
                 f"ONCE={once_range} BSS={bss_range}",
             )
 
-        if rel.endswith("readyshell.map"):
+        if "readyshell" in Path(rel).stem:
             try:
                 overlay_start = parse_map_symbol(txt, "__OVERLAYSTART__")
                 overlay_loadaddr = parse_map_symbol(txt, "__OVERLAY_LOADADDR__")
@@ -431,29 +426,24 @@ def main():
             load >= app_start and end <= app_end,
             f"{fmt_range(load, end)} payload=${payload_len:04X}",
         )
-        ok &= check(
-            f"{rel} compact load span avoids REU meta",
-            not intersects(load, end, reu_meta_start, reu_meta_end),
-            f"{fmt_range(load, end)} vs {fmt_range(reu_meta_start, reu_meta_end)}",
-        )
 
     print("\n=== REU/Resume Constants ===")
     try:
         reu_total = parse_define(ROOT / "src" / "lib" / "reu_mgr.h", "REU_TOTAL_BANKS")
         reu_first = parse_define(ROOT / "src" / "lib" / "reu_mgr.h", "REU_FIRST_DYNAMIC")
-        reu_skip_addr = parse_pointer_define(ROOT / "src" / "lib" / "reu_mgr.h", "SHIM_REU_BANK_SKIP")
+        readyos_addr = parse_pointer_define(ROOT / "src" / "lib" / "reu_mgr.h", "SHIM_READYOS_BANK")
         reu_mgr_h = (ROOT / "src" / "lib" / "reu_mgr.h").read_text(encoding="utf-8", errors="replace")
         ok &= check("REU total banks", reu_total == int(spec["reu_contract"]["total_banks"]), str(reu_total))
         ok &= check("REU first dynamic logical", reu_first == int(spec["reu_contract"]["first_dynamic_logical"]), str(reu_first))
         ok &= check("REU physical dynamic offset macro",
-                    "*SHIM_REU_BANK_SKIP + 2u" in reu_mgr_h,
-                    "expect skip + 2")
-        ok &= check("REU logical-to-physical macro",
-                    "? 1u : (1u + (unsigned char)(bank))" in reu_mgr_h,
-                    "expect logical 0 -> skip + 1, apps -> skip + 1 + logical")
-        ok &= check("SHIM_REU_BANK_SKIP address",
-                    reu_skip_addr == parse_int(spec["reu_contract"]["shim_reu_bank_skip_addr"]),
-                    hex(reu_skip_addr))
+                    "*SHIM_READYOS_BANK - 1u" in reu_mgr_h,
+                    "physical Skip is the first dynamic bank")
+        ok &= check("arithmetic token mapping removed",
+                    "REU_LOGICAL_TO_PHYSICAL" not in reu_mgr_h,
+                    "tokens resolve through schema-v5 lookup")
+        ok &= check("SHIM_READYOS_BANK address",
+                    readyos_addr == parse_int(spec["reu_contract"]["shim_readyos_bank_addr"]),
+                    hex(readyos_addr))
         ok &= check("REU ReadyShell cache banks dynamic",
                     "REU_BANK_RS_CACHE" not in reu_mgr_h,
                     "cache bank constants must not be fixed")
@@ -467,20 +457,17 @@ def main():
         ok &= check("reu_mgr.h constants", False, str(ex))
 
     try:
-        bank_system = parse_define(ROOT / "src" / "shim" / "reu.h", "REU_BANK_SYSTEM")
-        bank_launcher = parse_define(ROOT / "src" / "shim" / "reu.h", "REU_BANK_LAUNCHER")
-        bank_base = parse_define(ROOT / "src" / "shim" / "reu.h", "REU_BANK_APP_BASE")
-        bank_count = parse_define(ROOT / "src" / "shim" / "reu.h", "REU_BANK_APP_COUNT")
-        bank_free_base = parse_define(ROOT / "src" / "shim" / "reu.h", "REU_BANK_FREE_BASE")
-        ok &= check("shim REU bank system", bank_system == int(spec["reu_contract"]["bank_system"]), str(bank_system))
-        ok &= check("shim REU bank launcher", bank_launcher == int(spec["reu_contract"]["bank_launcher"]), str(bank_launcher))
-        ok &= check("shim REU bank app base", bank_base == int(spec["reu_contract"]["bank_app_base"]), str(bank_base))
-        ok &= check("shim REU bank app count", bank_count == int(spec["reu_contract"]["bank_app_count"]), str(bank_count))
-        ok &= check("shim REU bank free base",
-                    bank_free_base == int(spec["reu_contract"]["first_dynamic_physical_offset"]),
-                    str(bank_free_base))
+        schema = parse_define(ROOT / "src" / "lib" / "reu_control_bank.h",
+                              "REUCB_SCHEMA_VERSION")
+        lookup = parse_define(ROOT / "src" / "lib" / "reu_control_bank.h",
+                              "REUCB_SHIM_LOOKUP_OFF")
+        status = parse_define(ROOT / "src" / "lib" / "reu_control_bank.h",
+                              "REUCB_TOKEN_STATUS_OFF")
+        ok &= check("ReadyOS-bank schema version", schema == 5, str(schema))
+        ok &= check("token mapping offset", lookup == 0xB940, hex(lookup))
+        ok &= check("token status offset", status == 0xBA40, hex(status))
     except ValueError as ex:
-        ok &= check("shim/reu.h constants", False, str(ex))
+        ok &= check("ReadyOS-bank schema constants", False, str(ex))
 
     try:
         snapshot = parse_define(ROOT / "src" / "lib" / "resume_state.h", "REU_APP_SNAPSHOT_SIZE")

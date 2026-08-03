@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5i-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5i-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5i-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5b-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5b-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5b-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -244,9 +244,20 @@ steps:
   - id: type_resume_readybasic
     type: input.sequence
     params:
-      keys: [145,17,13]
+      keys: [145,17]
       inter_key_delay_s: 0.10
-      post_delay_s: 3.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_resume
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  # The binary-monitor input helper can drop a lone RETURN immediately after
+  # ReadyBASIC's EXIT return. VICE's text-monitor keybuf path is deterministic.
+  - id: launch_readybasic_after_exit
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_prompt_after_resume
     type: screen.wait_contains
     params:

@@ -106,11 +106,15 @@ READYBASIC_VICE_SCRIPTS = \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase2_demo.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase3_demo.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase4_demo.sh \
+	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_phase5_demo.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_gfx_mbitmap_demo.sh \
+	$(BUILD_SUPPORT_DIR)/run_readybasic_sprite_steps_demo.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_sound_phase1_demo.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_readyos_loaded_apps_suite.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_program_probe.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_rbtest1_probe.sh \
+	$(BUILD_SUPPORT_DIR)/run_readybasic_resume_min_probe.sh \
+	$(BUILD_SUPPORT_DIR)/run_readybasic_screen_reu_temp_probe.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_second_entry_editor_probe.sh \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_state_probe.sh \
 	$(BUILD_SUPPORT_DIR)/vice_readybasic_repeat_label_probe.sh
@@ -134,6 +138,7 @@ BOOT_EASYFLASH_ROMH = $(BIN_DIR)/boot_easyflash_romh.bin
 EASYFLASH_SMOKE_MON = $(OBJ_DIR)/easyflash_smoke.mon
 EASYFLASH_SMOKE_LOG = $(OBJ_DIR)/easyflash_smoke.log
 EASYFLASH_SMOKE_RUNTIME_CRT = $(OBJ_DIR)/easyflash_smoke.runtime.crt
+EASYFLASH_SMOKE_REU_IMAGE = $(OBJ_DIR)/easyflash_smoke.reu
 EASYFLASH_BOOT_MAP = $(OBJ_DIR)/boot_easyflash_roml.map
 IP65_DIR = $(THIRD_PARTY_DIR)/ip65
 IP65_TCP_OBJ_DIR = $(OBJ_DIR)/ip65/tcp
@@ -217,7 +222,10 @@ TUI_WINDOW_SRC = $(LIB_DIR)/tui_window.c
 TUI_MENU_SRC = $(LIB_DIR)/tui_menu.c
 TUI_INPUT_SRC = $(LIB_DIR)/tui_input.c
 TUI_NAV_SRC = $(LIB_DIR)/tui_nav.c
-TUI_HOTKEY_SRC = $(LIB_DIR)/tui_hotkeys.c
+TUI_READYOS_LITE_SRC = $(LIB_DIR)/tui_readyos.c
+TUI_READYOS_SRC = $(LIB_DIR)/tui_readyos_alias.s
+TUI_HOTKEY_SRC = $(LIB_DIR)/tui_hotkeys.c $(TUI_READYOS_SRC)
+TUI_HOTKEY_LITE_SRC = $(LIB_DIR)/tui_hotkeys.c $(TUI_READYOS_LITE_SRC)
 TUI_MISC_SRC = $(LIB_DIR)/tui_misc.c
 TUI_CONTROLS_SRC = $(LIB_DIR)/tui_controls.c
 TUI_SPLIT_SRC = $(LIB_DIR)/tui_split.c
@@ -240,6 +248,7 @@ CLIP_COPY_SRC = $(LIB_DIR)/clipboard_copy.c
 CLIP_PASTE_SRC = $(LIB_DIR)/clipboard_paste.c
 CLIP_COUNT_SRC = $(LIB_DIR)/clipboard_count.c
 CLIP_ADMIN_SRC = $(LIB_DIR)/clipboard_admin.c
+CLIP_INSERT_SRC = $(LIB_DIR)/clipboard_insert.c
 RESUME_STATE_CTX_SRC = $(LIB_DIR)/resume_state_ctx.c
 RESUME_STATE_CORE_SRC = $(LIB_DIR)/resume_state_core.c
 RESUME_STATE_SEGMENTS_SRC = $(LIB_DIR)/resume_state_segments.c
@@ -342,7 +351,8 @@ READYSHELL_RESIDENT_EASYFLASH_SRCS = \
 	$(REU_DMA_SRC) \
 	$(RESUME_STATE_SIMPLE_SRCS)
 READYSHELL_RESIDENT_ASM_SRCS = \
-	$(READYSHELL_PLATFORM_C64_DIR)/rs_runtime_c64.s
+	$(READYSHELL_PLATFORM_C64_DIR)/rs_runtime_c64.s \
+	$(TUI_READYOS_SRC)
 READYSHELL_RESIDENT_C_OBJS = $(patsubst %.c,$(READYSHELL_OBJ_DIR)/resident/%.o,$(READYSHELL_RESIDENT_SRCS))
 READYSHELL_RESIDENT_ASM_OBJS = $(patsubst %.s,$(READYSHELL_OBJ_DIR)/resident/%.o,$(READYSHELL_RESIDENT_ASM_SRCS))
 READYSHELL_RESIDENT_OBJS = $(READYSHELL_RESIDENT_C_OBJS) $(READYSHELL_RESIDENT_ASM_OBJS)
@@ -380,21 +390,21 @@ LIB_REU_BASE = $(REU_INIT_SRC)
 LIB_REU_DMA = $(REU_INIT_SRC) $(REU_ALLOC_SRC) $(REU_DMA_SRC)
 LIB_REU_STATS = $(REU_INIT_SRC) $(REU_STATS_SRC)
 LIB_REU_DMA_STATS = $(REU_INIT_SRC) $(REU_ALLOC_SRC) $(REU_DMA_SRC) $(REU_STATS_SRC)
-LIB_CLIP_COPY = $(CLIP_COPY_SRC)
+LIB_CLIP_COPY = $(CLIP_COPY_SRC) $(CLIP_INSERT_SRC) $(CLIP_COUNT_SRC)
 LIB_CLIP_PASTE = $(CLIP_PASTE_SRC)
 LIB_CLIP_COUNT = $(CLIP_COUNT_SRC)
 LIB_CLIP_PASTE_COUNT = $(CLIP_PASTE_SRC) $(CLIP_COUNT_SRC)
-LIB_CLIP_COPY_PASTE_COUNT = $(CLIP_COPY_SRC) $(CLIP_PASTE_SRC) $(CLIP_COUNT_SRC)
+LIB_CLIP_COPY_PASTE_COUNT = $(CLIP_COPY_SRC) $(CLIP_INSERT_SRC) $(CLIP_PASTE_SRC) $(CLIP_COUNT_SRC)
 LIB_EDITOR = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(LIB_CLIP_COPY_PASTE_COUNT) $(RESUME_STATE_SEGMENT_SRCS) $(STORAGE_DEVICE_SRC) $(DIR_PAGE_SRC) $(FILE_DIALOG_SRC)
 LIB_QUICKNOTES = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA_STATS) $(REU_OWNED_ALLOC_SRC) $(LIB_CLIP_COPY_PASTE_COUNT) $(RESUME_STATE_ALL_SRCS) $(STORAGE_DEVICE_SRC) $(DIR_PAGE_SRC) $(FILE_DIALOG_SRC)
 LIB_CALCPLUS = $(TUI_BASE_NAV) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(LIB_CLIP_COPY_PASTE_COUNT) $(RESUME_STATE_SEGMENT_SRCS)
 LIB_HEXVIEW = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(LIB_CLIP_COPY) $(RESUME_STATE_SIMPLE_SRCS)
-LIB_CLIPMGR = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA_STATS) $(LIB_CLIP_PASTE_COUNT) $(CLIP_ADMIN_SRC) $(RESUME_STATE_SIMPLE_SRCS) $(STORAGE_DEVICE_SRC) $(DIR_PAGE_SRC)
+LIB_CLIPMGR = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA_STATS) $(LIB_CLIP_PASTE_COUNT) $(CLIP_ADMIN_SRC) $(CLIP_INSERT_SRC) $(RESUME_STATE_SIMPLE_SRCS) $(STORAGE_DEVICE_SRC) $(DIR_PAGE_SRC)
 LIB_REUVIEWER = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA_STATS) $(REU_PHYS_SRC) $(REU_CONTROL_BANK_SRC) $(RESUME_STATE_SIMPLE_SRCS)
-LIB_SYSINFO = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC)
+LIB_SYSINFO = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_LITE_SRC)
 LIB_TASKLIST = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(LIB_CLIP_COPY_PASTE_COUNT) $(RESUME_STATE_ALL_SRCS) $(STORAGE_DEVICE_SRC) $(DIR_PAGE_SRC)
 LIB_SIMPLEFILES = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS) $(STORAGE_DEVICE_SRC) $(FILE_BROWSER_SRC)
-LIB_SIMPLECELLS = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(LIB_REU_DMA) $(RESUME_STATE_SEGMENT_SRCS) $(STORAGE_DEVICE_SRC) $(DIR_PAGE_SRC)
+LIB_SIMPLECELLS = $(TUI_BASE_MENU_INPUT_NAV_MISC) $(TUI_READYOS_SRC) $(LIB_REU_DMA) $(RESUME_STATE_SEGMENT_SRCS) $(STORAGE_DEVICE_SRC) $(DIR_PAGE_SRC)
 LIB_GAME2048 = $(TUI_BASE_NAV) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_DEMINER = $(TUI_BASE_NAV) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_SIDETRIS = $(TUI_BASE_NAV) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
@@ -404,7 +414,7 @@ LIB_README = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STAT
 LIB_READYSHELL = $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_READYIRC = $(TUI_BASE_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(REU_OWNED_ALLOC_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_RIRC_RRNET = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(REU_OWNED_ALLOC_SRC) $(RESUME_STATE_SIMPLE_SRCS) $(IP65_TCP_LIB) $(IP65_C64_LIB)
-LIB_UCITEST = $(TUI_UCITEST) $(TUI_HOTKEY_SRC)
+LIB_UCITEST = $(TUI_UCITEST) $(TUI_HOTKEY_LITE_SRC)
 EASYFLASH_PAYLOADS = $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(RIRC_RRNET) $(READYBASIC) $(UCITEST) $(READMEAPP) $(READYSHELL_OVL1_PRG) $(READYSHELL_OVL2_PRG) $(READYSHELL_OVL3_PRG) $(READYSHELL_OVL4_PRG) $(READYSHELL_OVL5_PRG) $(READYSHELL_OVL6_PRG) $(READYSHELL_OVL7_PRG) $(READYSHELL_OVL8_PRG) $(READYSHELL_OVL9_PRG)
 
 # Primary binaries shared across profiles
@@ -742,6 +752,12 @@ readybasic-program-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_program_probe.sh
 readybasic-rbtest1-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_rbtest1_probe.sh
 	$(BUILD_SUPPORT_DIR)/run_readybasic_rbtest1_probe.sh
 
+readybasic-resume-min-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_resume_min_probe.sh
+	$(BUILD_SUPPORT_DIR)/run_readybasic_resume_min_probe.sh
+
+readybasic-screen-reu-temp-vice: $(BUILD_SUPPORT_DIR)/run_readybasic_screen_reu_temp_probe.sh
+	$(BUILD_SUPPORT_DIR)/run_readybasic_screen_reu_temp_probe.sh
+
 launcher-reu-state-vice: $(BUILD_SUPPORT_DIR)/run_launcher_reu_state_probe.sh
 	$(BUILD_SUPPORT_DIR)/run_launcher_reu_state_probe.sh
 
@@ -765,7 +781,7 @@ readybasic-vice-plans: $(READYBASIC_VICE_SCRIPTS)
 		READYBASIC_SKIP_BUILD=1 READYBASIC_GENERATE_PLAN_ONLY=1 "$$script"; \
 	done
 
-readybasic-vice-suites: readybasic-demo-vice readybasic-repeat-label-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-state-vice readybasic-large-vars-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-second-entry-editor-vice readybasic-sound-phase1-vice readybasic-full-vice
+readybasic-vice-suites: readybasic-demo-vice readybasic-repeat-label-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-resume-min-vice readybasic-screen-reu-temp-vice readybasic-state-vice readybasic-large-vars-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-second-entry-editor-vice readybasic-gfx-phase1-vice readybasic-sprite-steps-vice readybasic-gfx-phase2-vice readybasic-gfx-phase3-vice readybasic-gfx-mbitmap-vice readybasic-gfx-phase4-vice readybasic-gfx-phase5-vice readybasic-sound-phase1-vice readybasic-readyos-loaded-apps-vice readybasic-full-vice
 
 readybasic-memory-report: $(READYBASIC) $(BUILD_SUPPORT_DIR)/readybasic_memory_report.py
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/readybasic_memory_report.py --html-out docs/readybasic_memory_diagrams.html
@@ -1044,8 +1060,9 @@ easyflash-verify: easyflash
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py write-monitor --output "$(EASYFLASH_SMOKE_MON)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --boot-map "$(EASYFLASH_BOOT_MAP)" --include-preload
 	cp "$(EASYFLASH_OUTPUT_DIR)/readyos_easyflash.crt" "$(EASYFLASH_SMOKE_RUNTIME_CRT)"
 	rm -f "$(EASYFLASH_SMOKE_LOG)"
-	script -q /dev/null x64sc -console -default +sound -warp -reu -reusize 16384 -cartcrt "$(EASYFLASH_SMOKE_RUNTIME_CRT)" -drive8type 1541 -devicebackend8 0 +busdevice8 -8 "$(EASYFLASH_OUTPUT_DIR)/readyos_data.d64" -moncommands "$(EASYFLASH_SMOKE_MON)" -monlog -monlogname "$(EASYFLASH_SMOKE_LOG)" -initbreak 0xe000 -limitcycles 120000000 || true
-	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py verify-log --layout "$(EASYFLASH_LAYOUT_JSON)" --output-dir "$(EASYFLASH_OUTPUT_DIR)" --log "$(EASYFLASH_SMOKE_LOG)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --verify-preload
+	dd if=/dev/zero of="$(EASYFLASH_SMOKE_REU_IMAGE)" bs=1048576 count=16
+	script -q /dev/null x64sc -console -default +sound -warp -reu -reusize 16384 -reuimage "$(EASYFLASH_SMOKE_REU_IMAGE)" -reuimagerw -cartcrt "$(EASYFLASH_SMOKE_RUNTIME_CRT)" -drive8type 1541 -devicebackend8 0 +busdevice8 -8 "$(EASYFLASH_OUTPUT_DIR)/readyos_data.d64" -moncommands "$(EASYFLASH_SMOKE_MON)" -monlog -monlogname "$(EASYFLASH_SMOKE_LOG)" -initbreak 0xe000 -limitcycles 120000000 || true
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py verify-log --layout "$(EASYFLASH_LAYOUT_JSON)" --output-dir "$(EASYFLASH_OUTPUT_DIR)" --log "$(EASYFLASH_SMOKE_LOG)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --reu-image "$(EASYFLASH_SMOKE_REU_IMAGE)" --verify-preload
 
 easyflash-report: easyflash
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_easyflash.py report \
@@ -1058,8 +1075,9 @@ easyflash-smoke: easyflash
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py write-monitor --output "$(EASYFLASH_SMOKE_MON)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --boot-map "$(EASYFLASH_BOOT_MAP)" --include-preload
 	cp "$(EASYFLASH_OUTPUT_DIR)/readyos_easyflash.crt" "$(EASYFLASH_SMOKE_RUNTIME_CRT)"
 	rm -f "$(EASYFLASH_SMOKE_LOG)"
-	script -q /dev/null x64sc -console -default +sound -warp -reu -reusize 16384 -cartcrt "$(EASYFLASH_SMOKE_RUNTIME_CRT)" -drive8type 1541 -devicebackend8 0 +busdevice8 -8 "$(EASYFLASH_OUTPUT_DIR)/readyos_data.d64" -moncommands "$(EASYFLASH_SMOKE_MON)" -monlog -monlogname "$(EASYFLASH_SMOKE_LOG)" -initbreak 0xe000 -limitcycles 120000000 || true
-	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py verify-log --layout "$(EASYFLASH_LAYOUT_JSON)" --output-dir "$(EASYFLASH_OUTPUT_DIR)" --log "$(EASYFLASH_SMOKE_LOG)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --verify-preload
+	dd if=/dev/zero of="$(EASYFLASH_SMOKE_REU_IMAGE)" bs=1048576 count=16
+	script -q /dev/null x64sc -console -default +sound -warp -reu -reusize 16384 -reuimage "$(EASYFLASH_SMOKE_REU_IMAGE)" -reuimagerw -cartcrt "$(EASYFLASH_SMOKE_RUNTIME_CRT)" -drive8type 1541 -devicebackend8 0 +busdevice8 -8 "$(EASYFLASH_OUTPUT_DIR)/readyos_data.d64" -moncommands "$(EASYFLASH_SMOKE_MON)" -monlog -monlogname "$(EASYFLASH_SMOKE_LOG)" -initbreak 0xe000 -limitcycles 120000000 || true
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/vice_easyflash_smoke.py verify-log --layout "$(EASYFLASH_LAYOUT_JSON)" --output-dir "$(EASYFLASH_OUTPUT_DIR)" --log "$(EASYFLASH_SMOKE_LOG)" --launcher-map "$(OBJ_DIR)/launcher_easyflash.map" --reu-image "$(EASYFLASH_SMOKE_REU_IMAGE)" --verify-preload
 
 easyflash-smoke-long: easyflash-smoke
 

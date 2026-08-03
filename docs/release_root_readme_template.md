@@ -23,6 +23,11 @@ rather than being explicitly tailored to the new C64 Ultimate. The next release
 is expected to push further in that Ultimate-first direction while still trying
 to stay usable on other REU-capable C64 setups.
 
+The source tree may also contain an experimental C64 Ultimate DOS DMA launcher
+build. It is not implied by choosing a D81 SKU: normal public artifacts use the
+portable disk path unless explicitly built with `LAUNCHER_DMA_LOAD=1`, and the
+experimental path retains disk fallback.
+
 ## What ReadyOS Is
 
 ReadyOS is not trying to be a generic desktop shell squeezed into a C64. It is
@@ -39,6 +44,20 @@ C64 workflow should feel immediate once the machine is up:
 The current public release line is `{{PUBLIC_VERSION}}`. Full-content ReadyOS
 profiles currently expose `{{CURRENT_APP_COUNT}}` launcher-visible apps, with
 the exact app mix depending on the variant you choose.
+
+## Runtime And REU Contract
+
+- The active app snapshot is `$1000-$C7FF` (`$B800` bytes); `$C600-$C7FF` is
+  app-private RAM, and the resident 512-byte shim remains at `$C800-$C9FF`.
+- Physical REU bank `Skip` is the first dynamic bank. Physical `Skip+1` is
+  called the **ReadyOS bank** and is never allocated to an app/resource.
+- The ReadyOS bank contains the launcher snapshot at `$0000-$B7FF` and
+  schema-v5 mappings, status, clipboard, hotkeys, registry/catalog, audit, and
+  launcher runtime state at `$B800-$FFFF`.
+- Logical app tokens resolve through the explicit `$B940` table; they are not
+  physical bank numbers and must not be converted with arithmetic.
+- ReadyShell and ReadyBASIC resource banks are loader-assigned and recorded in
+  the ReadyOS bank. ReadyBASIC retains its custom ca65/ld65 compact-image shape.
 
 ## Why There Are Multiple Variants
 

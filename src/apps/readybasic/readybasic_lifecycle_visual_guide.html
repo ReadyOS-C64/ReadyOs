@@ -671,6 +671,9 @@
   </style>
 </head>
 <body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current ReadyBASIC lifecycle and REU architecture counterpart generated from READYBASIC_LIFECYCLE_AND_REU_ARCHITECTURE.md.</aside>
+<!-- READYOS-DOC-STATUS:END -->
   <header>
     <div class="page">
       <div class="eyebrow">ReadyBASIC deep architecture guide</div>
@@ -832,7 +835,7 @@
         <div class="addr">$C200-$C5FF</div>
         <div class="region r-shared"><span><b>SHARED FRAMES</b><small>Call/result frames, descriptor/name/page buffers; hidden shadow at $C280.</small></span><strong>$0400<br>1.0K</strong></div>
         <div class="addr">$C600-$C7FF</div>
-        <div class="region r-shim"><span><b>READYOS REU METADATA</b><small>Only bank ownership tags are touched.</small></span><strong>$0200<br>0.5K</strong></div>
+        <div class="region r-shared"><span><b>SNAPSHOT-PRIVATE HEADROOM</b><small>App-owned in schema v5; deliberately unused to preserve the custom ReadyBASIC assembler/linker shape.</small></span><strong>$0200<br>0.5K</strong></div>
         <div class="addr">$C800-$C9FF</div>
         <div class="region r-shim"><span><b>SHIM ABI</b><small>ReadyOS jump table/data. Not ReadyBASIC RAM.</small></span><strong>$0200<br>0.5K</strong></div>
       </div>
@@ -1180,7 +1183,7 @@
         <li><code>$2AC0</code> remains zero before stored-program <code>RUN</code>.</li>
         <li><code>RESIDENT</code> stays below <code>$2AC0</code>.</li>
         <li><code>BRIDGE</code> stays below <code>$C200</code>, leaving <code>$C200-$C5FF</code> for shared frames.</li>
-        <li><code>$C600-$C7FF</code> is shared ReadyOS REU metadata.</li>
+        <li><code>$C600-$C7FF</code> is app-private snapshot RAM, deliberately unused so the custom ReadyBASIC assembler/linker shape remains compatible.</li>
         <li><code>$C800-$C9FF</code> is shim ABI, not app scratch.</li>
         <li>Warm resume restores <code>$A000</code> from <code>$C280</code> before hidden calls.</li>
         <li>Warm restore preserves live <code>FRETOP</code>, variables, arrays, and string heap.</li>

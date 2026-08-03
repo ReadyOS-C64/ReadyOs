@@ -346,9 +346,7 @@ static void draw_status(void) {
 }
 
 static unsigned char clip_item_bank(unsigned char index) {
-    unsigned char *entry;
-    entry = CLIP_TABLE + ((unsigned int)index * 8);
-    return entry[0];
+    return clip_get_bank(index);
 }
 
 static void show_message(const char *msg, unsigned char color) {
@@ -565,33 +563,6 @@ static unsigned char show_open_dialog(DirPageEntry *out_entry) {
     }
 }
 
-static unsigned char clip_insert_bank_item(unsigned char bank, unsigned int size) {
-    unsigned char count;
-    unsigned char *entry;
-
-    count = *CLIP_COUNT;
-    if (count >= CLIP_MAX_ITEMS) {
-        return 1;
-    }
-
-    if (count > 0) {
-        memmove(CLIP_TABLE + 8, CLIP_TABLE, (unsigned int)count * 8);
-    }
-
-    entry = CLIP_TABLE;
-    entry[0] = bank;
-    entry[1] = CLIP_TYPE_TEXT;
-    entry[2] = (unsigned char)(size & 0xFF);
-    entry[3] = (unsigned char)(size >> 8);
-    entry[4] = 0;
-    entry[5] = 0;
-    entry[6] = 0;
-    entry[7] = 0;
-
-    *CLIP_COUNT = count + 1;
-    return 0;
-}
-
 static void free_staged_entries(unsigned char staged_count) {
     while (staged_count > 0u) {
         --staged_count;
@@ -625,7 +596,7 @@ static unsigned char file_load_raw_to_clipboard(const char *name, unsigned char 
     *truncated_out = 0;
     truncated = 0;
 
-    if (*CLIP_COUNT >= CLIP_MAX_ITEMS) {
+    if (clip_item_count() >= CLIP_MAX_ITEMS) {
         return 2;
     }
 
@@ -671,7 +642,7 @@ static unsigned char file_load_raw_to_clipboard(const char *name, unsigned char 
 
     cbm_close(LFN_FILE);
 
-    if (clip_insert_bank_item(bank, total) != 0) {
+    if (clip_insert_bank_item(bank, CLIP_TYPE_TEXT, total) != 0) {
         reu_free_bank(bank);
         return 2;
     }
@@ -694,7 +665,7 @@ static unsigned char file_load_bundle_open(unsigned char *loaded_count_out) {
 
     *loaded_count_out = 0u;
     entry_count = bundle_hdr[6];
-    avail_slots = (unsigned char)(CLIP_MAX_ITEMS - *CLIP_COUNT);
+    avail_slots = (unsigned char)(CLIP_MAX_ITEMS - clip_item_count());
     staged_count = 0u;
     rc = LOAD_RC_OK;
 
@@ -760,7 +731,7 @@ static unsigned char file_load_bundle_open(unsigned char *loaded_count_out) {
 
     while (staged_count > 0u) {
         --staged_count;
-        if (clip_insert_bank_item(staged_banks[staged_count],
+        if (clip_insert_bank_item(staged_banks[staged_count], CLIP_TYPE_TEXT,
                                   staged_sizes[staged_count]) != 0u) {
             reu_free_bank(staged_banks[staged_count]);
             return LOAD_RC_IO;

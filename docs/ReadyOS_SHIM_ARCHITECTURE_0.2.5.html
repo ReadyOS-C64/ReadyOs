@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ReadyOS_SHIM_ARCHITECTURE_0.2.5</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current 0.2.5 schema-v5 shim/ReadyOS-bank architecture, including the resident-versus-REU authority split and live token lookup.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<h1 id="readyos-0.2.5-shim-and-readyos-bank-architecture">ReadyOS 0.2.5
+Shim and ReadyOS-Bank Architecture</h1>
+<p>This is the current implementation-backed explanation of the resident
+shim and the combined ReadyOS bank. It was audited against the
+<code>0.2.5</code> development tree on 2026-08-01.</p>
+<p>The most important correction to older descriptions is that
+<strong>physical <code>Skip+1</code> is the ReadyOS bank and is the
+single source of truth</strong>. It combines the launcher snapshot and
+schema-v5 operating-system state:</p>
+<pre class="text"><code>C64 RAM
+$1000                                                               $C7FF $C800   $C9FF
+|&lt;---------------- active app snapshot: $B800 bytes -------------------&gt;|&lt;--- shim ----&gt;|
+
+ReadyOS physical REU region
+Skip                            Skip+1 (ReadyOS bank)           Skip+2 ... detected end
+| first dynamic app/resource    | launcher $0000-$B7FF         | remaining dynamic pool      |
+| bank                          | schema v5 $B800-$FFFF         | explicit token mappings     |</code></pre>
+<p>The configured skip is compiled into the build; resident shim byte
+<code>$C83B</code> stores the direct physical ReadyOS bank number
+(<code>Skip+1</code>).</p>
+<h2 id="what-changed">What Changed</h2>
+<p>The older shim calculated every app snapshot’s physical bank from a
+fixed layout. A nonzero logical app bank <code>N</code> was tied to a
+reserved physical slot after the global, launcher, and launcher-overlay
+reservations. That made the resident shim depend on a fixed block of app
+slots and prevented the allocator from using the REU as one flexible
+pool.</p>
+<p>The current implementation makes these changes:</p>
+<ol type="1">
+<li>Physical <code>Skip</code> is now the first dynamic bank instead of
+a control bank.</li>
+<li>Physical <code>Skip+1</code> is the ReadyOS bank. Token
+<code>0</code> resolves directly to it; its first <code>$B800</code>
+bytes are the launcher snapshot.</li>
+<li>Schema-v5 state occupies the same ReadyOS bank at
+<code>$B800-$FFFF</code>, including bank types, token mappings/status,
+clipboard metadata, hotkeys, settings, app/resource records, catalog
+text, audit data, and launcher runtime state.</li>
+<li>For a nonzero token, the shim fetches one byte from
+<code>ReadyOS:$B940 + token</code>. That byte is the physical snapshot
+bank to use.</li>
+<li>The old <code>$C600-$C7FF</code> allocation/clipboard/hotkey mirrors
+and the three-byte loaded bitmap are retired; <code>$C600-$C7FF</code>
+is app-private snapshot RAM.</li>
+<li>The snapshot expands to <code>$1000-$C7FF</code> (<code>$B800</code>
+bytes), leaving a <code>$4800</code> per-app resume tail at REU offsets
+<code>$B800-$FFFF</code>.</li>
+<li>The 512-byte shim window and stable entry addresses remain fixed.
+<code>$C81B</code> is the new <code>mark_loaded</code> entry;
+<code>$C818</code> is a safe deprecated <code>RTS</code> target.</li>
+</ol>
+<p>Mappings are explicitly allocated and published. No app or shim path
+may infer a physical bank from a logical token arithmetically.</p>
+<h3 id="version-history-clarification">Version-history
+clarification</h3>
+<p>The earlier 0.2.5 design used a separate control bank at
+<code>Skip</code> and launcher bank at <code>Skip+1</code>. Schema v5
+deliberately supersedes that split while preserving the 512-byte
+resident window and its established transition entry points. Ultimate
+DOS DMA remains launcher-side cold-load transport and publishes the same
+explicit mappings as the KERNAL path.</p>
+<h2 id="the-state-was-split-not-simply-moved">The State Was Split, Not
+Simply Moved</h2>
+<p>Only values required while <code>$1000-$C7FF</code> is being
+overwritten remain resident. All scalable state is authoritative in the
+ReadyOS bank.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>State</th>
+<th>Current location</th>
+<th>Operational role / authority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>transition target, current token, last-saved hint, bank skip, drive,
+flags</td>
+<td>shim <code>$C820-$C83F</code></td>
+<td>resident transition state; available while app RAM is replaced</td>
+</tr>
+<tr>
+<td><code>$C836-$C838</code>, <code>$C83A</code></td>
+<td>resident reserved bytes</td>
+<td>retired bitmap/log-index storage; never authoritative</td>
+</tr>
+<tr>
+<td>active physical bank allocation types</td>
+<td>ReadyOS <code>$B840-$B93F</code></td>
+<td>allocator authority used through direct byte/block DMA helpers</td>
+</tr>
+<tr>
+<td>token-to-physical mapping</td>
+<td>ReadyOS <code>$B940-$BA3F</code></td>
+<td>live source read by shim, launcher, apps, and tools</td>
+</tr>
+<tr>
+<td>token validity/loaded/resumable state</td>
+<td>ReadyOS <code>$BA40-$BB3F</code></td>
+<td>authoritative transition status; committed only after a successful
+stash</td>
+</tr>
+<tr>
+<td>clipboard metadata</td>
+<td>ReadyOS <code>$BB40-$BBCF</code></td>
+<td>authoritative 16-item table; payload banks remain dynamically
+allocated</td>
+</tr>
+<tr>
+<td>global hotkeys</td>
+<td>ReadyOS <code>$BBD0-$BBD8</code></td>
+<td>shared state read directly by focused TUI micromodules</td>
+</tr>
+<tr>
+<td>launcher catalog-shape settings</td>
+<td>ReadyOS <code>$BBD9-$BBFF</code></td>
+<td><code>LS</code> v1 record used to reconstruct launcher arrays from
+the authoritative registry</td>
+</tr>
+<tr>
+<td>app/resource/dependency/catalog records</td>
+<td>ReadyOS <code>$BC00-$FD3F</code></td>
+<td>normalized 64-app registry and cold metadata</td>
+</tr>
+<tr>
+<td>launcher executable snapshot</td>
+<td>ReadyOS <code>$0000-$B7FF</code></td>
+<td>restored for token <code>0</code></td>
+</tr>
+<tr>
+<td>launcher runtime/resume record</td>
+<td>ReadyOS <code>$FE40-$FEBF</code></td>
+<td><code>RSM1</code>-validated UI state (selection, scroll, one-shot
+flag, and DMA-use flag/path when enabled)</td>
+</tr>
+</tbody>
+</table>
+<p>The ReadyOS bank is the source of truth. Resident shim bytes carry
+only the minimum transition operands and one-byte DMA scratch needed
+while app RAM is being replaced.</p>
+<h2 id="resident-shim-abi-c800-c9ff">Resident Shim ABI
+(<code>$C800-$C9FF</code>)</h2>
+<p>The shim remains exactly 512 bytes and outside the app snapshot
+window.</p>
+<h3 id="measured-shim-room">Measured shim room</h3>
+<p>The current image has <strong>129 bytes of executable
+padding</strong>, verified as zero by
+<code>verify_readyos_shim.py</code>. That space is fragmented: the
+largest single run is 42 bytes at <code>$C8B6-$C8DF</code>; the other
+runs are 33, 23, 7, 7, 5, 4, 4, 2, and 2 bytes. There are another 11
+resident ABI/data bytes currently marked scratch/retired/reserved
+(<code>$C81E-$C81F</code>, <code>$C822-$C823</code>,
+<code>$C832-$C833</code>, <code>$C836-$C838</code>, <code>$C83A</code>,
+and <code>$C83F</code>), but they should not be counted as general code
+room because existing callers may rely on their addresses or zero value.
+So the practical extension budget is 129 fragmented code bytes, not 140
+freely reassignable bytes. Moving duplicate loaded/map/catalog authority
+into the ReadyOS bank is what makes this budget possible; new resident
+features should still be limited to operations required during a DMA
+transition.</p>
+<p>The 25-byte increase came from retiring five preload trace writes to
+<code>$C007-$C00C</code>. No runtime or test consumed them, and app
+snapshot RAM is no longer used as a shim diagnostic side channel. The
+reserved <code>$C812</code> entry now jumps to the safe
+<code>$C9FF</code> <code>RTS</code> instead of into the middle of
+preload code.</p>
+<h3 id="stable-entry-block">Stable entry block</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Address</th>
+<th>Entry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;"><code>$C800</code></td>
+<td>load from disk and run</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C803</code></td>
+<td>fetch from REU and run</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C806</code></td>
+<td>run app at <code>$1000</code></td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C809</code></td>
+<td>preload app to REU and return</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C80C</code></td>
+<td>return to launcher</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C80F</code></td>
+<td>switch directly to another app</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C812</code></td>
+<td>reserved compatibility slot; safe no-op jump to
+<code>$C9FF</code></td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C815</code></td>
+<td>fetch-bank helper</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C818</code></td>
+<td>deprecated logger entry; jumps to safe <code>RTS</code> at
+<code>$C9FF</code></td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C81B</code></td>
+<td>mark token loaded/resumable after a successful stash</td>
+</tr>
+</tbody>
+</table>
+<h3 id="resident-data-bytes">Resident data bytes</h3>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 30%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: right;">Address</th>
+<th>Field</th>
+<th>Current meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;"><code>$C820</code></td>
+<td><code>target_bank</code></td>
+<td>target logical snapshot token</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C821</code></td>
+<td><code>filename_len</code></td>
+<td>filename length for KERNAL load paths</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C822-$C823</code></td>
+<td>app-size scratch ABI bytes</td>
+<td>launcher uses them; shim does not consume them</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C824-$C82F</code></td>
+<td><code>filename[12]</code></td>
+<td>disk-load filename buffer</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C830-$C831</code></td>
+<td><code>load_end</code></td>
+<td>actual end returned by KERNAL <code>LOAD</code> during preload</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C832-$C833</code></td>
+<td>unused</td>
+<td>reserved</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C834</code></td>
+<td><code>current_bank</code></td>
+<td>currently running logical snapshot token</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C835</code></td>
+<td><code>last_saved</code></td>
+<td>recovery/resilience hint</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C836-$C838</code></td>
+<td>reserved</td>
+<td>retired loaded bitmap bytes</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C839</code></td>
+<td><code>storage_drive</code></td>
+<td>shared default file-dialog drive</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C83A</code></td>
+<td>reserved</td>
+<td>retired debug-ring index</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C83B</code></td>
+<td><code>readyos_bank</code></td>
+<td>direct physical ReadyOS bank (<code>Skip+1</code>)</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C83C</code></td>
+<td><code>launcher_flags</code></td>
+<td>launcher-owned one-shot flags</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C83D</code></td>
+<td><code>reu_lookup_scratch</code></td>
+<td>physical/status byte DMA scratch</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C83E</code></td>
+<td><code>token_scratch</code></td>
+<td>token preserved by <code>mark_loaded</code></td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C83F</code></td>
+<td>reserved</td>
+<td>future ABI space</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lookup-flow-at-c960">Lookup flow at <code>$C960</code></h3>
+<p>For shim token <code>0</code>:</p>
+<ol type="1">
+<li>read <code>$C83B</code></li>
+<li>use that direct physical ReadyOS-bank number</li>
+</ol>
+<p>For any nonzero token <code>N</code>:</p>
+<ol type="1">
+<li>configure a one-byte REU fetch into <code>$C83D</code></li>
+<li>fetch from the ReadyOS bank at offset <code>$B940 + N</code></li>
+<li>load the fetched physical bank byte</li>
+<li>configure the normal <code>$B800</code> stash or fetch at C64
+address <code>$1000</code></li>
+</ol>
+<p>The small one-byte preliminary DMA is why the shim can resolve a
+scalable logical token without carrying a large resident table.</p>
+<h2 id="readyos-bank-skip1-schema-5">ReadyOS Bank (<code>Skip+1</code>,
+Schema 5)</h2>
+<table>
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 36%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: right;">Offset</th>
+<th style="text-align: right;">Size</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;"><code>$0000</code></td>
+<td style="text-align: right;"><code>$B800</code></td>
+<td>launcher snapshot of C64 <code>$1000-$C7FF</code></td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$B800</code></td>
+<td style="text-align: right;"><code>$0040</code></td>
+<td><code>RCB5</code> header: schema, writer, skip/count/availability
+and offsets</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$B840</code></td>
+<td style="text-align: right;"><code>$0100</code></td>
+<td>authoritative 256-entry physical bank-type table</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$B940</code></td>
+<td style="text-align: right;"><code>$0100</code></td>
+<td>token-to-physical snapshot map</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$BA40</code></td>
+<td style="text-align: right;"><code>$0100</code></td>
+<td>token valid/loaded/resumable status</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$BB40</code></td>
+<td style="text-align: right;"><code>$0090</code></td>
+<td>clipboard count and 16 item records</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$BBD0</code></td>
+<td style="text-align: right;"><code>9</code></td>
+<td>global hotkeys</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$BBD9</code></td>
+<td style="text-align: right;"><code>$0027</code></td>
+<td>active <code>LS</code> v1 launcher settings: first-app index, app
+count, load-all policy, and 32-byte variant name</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$BC00</code></td>
+<td style="text-align: right;"><code>$0400</code></td>
+<td>64 app records (<code>64 x 16</code>)</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C000</code></td>
+<td style="text-align: right;"><code>$0100</code></td>
+<td>token-to-app-index table</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C100</code></td>
+<td style="text-align: right;"><code>$0340</code></td>
+<td>64 app filename records (<code>64 x 13</code>)</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C440</code></td>
+<td style="text-align: right;"><code>$0400</code></td>
+<td>64 rich resource records (<code>64 x 16</code>)</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$C840</code></td>
+<td style="text-align: right;"><code>$2000</code></td>
+<td>64 dependency/source lines (<code>64 x 128</code>)</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$E840</code></td>
+<td style="text-align: right;"><code>$0800</code></td>
+<td>catalog names (<code>64 x 32</code>)</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$F040</code></td>
+<td style="text-align: right;"><code>$09C0</code></td>
+<td>catalog descriptions (<code>64 x 39</code>)</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$FA00</code></td>
+<td style="text-align: right;"><code>$0340</code></td>
+<td>catalog file tokens (<code>64 x 13</code>)</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$FD40</code></td>
+<td style="text-align: right;"><code>$0100</code></td>
+<td>audit page</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$FE40</code></td>
+<td style="text-align: right;"><code>$0080</code></td>
+<td>launcher <code>RSM1</code> envelope: 16-byte header plus compact UI
+payload; DMA builds also persist the bounded image path</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$FEC0</code></td>
+<td style="text-align: right;"><code>$0140</code></td>
+<td>reserved for compatible schema growth</td>
+</tr>
+</tbody>
+</table>
+<p><code>reu_control_bank_sync_and_mirror()</code> writes bank types
+directly to the ReadyOS bank; there is no resident mirror to reconcile.
+The launcher registry writer publishes the catalog, explicit token
+maps/status, physical snapshot sizes, and resource ownership. Banks
+beyond the detected physical size are marked <code>REU_UNAVAIL</code>
+and are never eligible for allocation.</p>
+<p>The launcher deliberately does not persist its former full set of
+parallel arrays in the resume tail. On return, it validates the small
+<code>RSM1</code> UI record, then rebuilds <code>app_banks</code>,
+drives, hotkeys, resource-bank assignments, loaded flags, and snapshot
+sizes from the <code>LS</code> settings record plus the 64 app records
+at <code>$BC00</code>. Selection bounds are checked only after that
+registry has restored the menu shape. Catalog strings remain in their
+ReadyOS-bank tables and are fetched through a small visible-row cache
+and one shared scratch buffer.</p>
+<p>Because that scratch buffer is also used for ReadyOS DMA publication,
+code may not retain a pointer returned by a catalog accessor across a
+metadata write. The preload path resolves/allocates its token first and
+only then fetches the filename; the DMA fallback reacquires the filename
+after republishing state.</p>
+<h2 id="app-switching-with-the-split-state">App Switching With the Split
+State</h2>
+<h3 id="preload">Preload</h3>
+<ol type="1">
+<li>Launcher assigns a logical snapshot token and physical slot.</li>
+<li>Launcher publishes the allocation, map, and status directly to
+ReadyOS.</li>
+<li>Shim stashes the launcher using token <code>0</code> to the ReadyOS
+bank.</li>
+<li>The app is loaded into <code>$1000</code>, then stashed using its
+nonzero token.</li>
+<li>Shim reads that token’s physical bank from ReadyOS
+<code>$B940</code> and performs the transfer.</li>
+<li>Shim restores the launcher from the ReadyOS bank.</li>
+</ol>
+<h3 id="return-or-direct-switch">Return or direct switch</h3>
+<ol type="1">
+<li>Shim uses resident <code>$C834</code>/<code>$C820</code> to know the
+current and target tokens.</li>
+<li>Each nonzero token is resolved through ReadyOS
+<code>$B940</code>.</li>
+<li>Shim stashes/fetches exactly <code>$B800</code> bytes.</li>
+<li>Returning to the launcher resolves token <code>0</code> directly to
+<code>$C83B</code>.</li>
+</ol>
+<p>The shim never needs the launcher’s normal app RAM structures to
+survive this sequence; that is the reason the small resident state
+remains resident.</p>
+<h2 id="relationship-to-0.2.5-ultimate-dos-dma-loading">Relationship to
+0.2.5 Ultimate DOS DMA Loading</h2>
+<p>The opt-in Ultimate DOS/UCI DMA path changes how a cold PRG payload
+reaches an already allocated REU snapshot bank. It does
+<strong>not</strong> enlarge or relocate the resident shim and does not
+change the later switch contract:</p>
+<ul>
+<li>the destination snapshot is still launcher-allocated;</li>
+<li>ReadyOS-bank metadata, mapping, and status are still
+republished;</li>
+<li>later app launches, returns, and direct switches still use the
+resident shim and its <code>$B800</code> transfer;</li>
+<li>the KERNAL/disk preload path remains the fallback.</li>
+</ul>
+<p>The current non-DMA and DMA launchers therefore share the same
+resident shim/ReadyOS-bank switching architecture.</p>
+<h2 id="source-of-truth">Source of Truth</h2>
+<ul>
+<li>resident byte image: <code>src/boot/readyos_shim.inc</code></li>
+<li>ReadyOS-bank schema and publisher (retaining the source module’s
+historical filename): <code>src/lib/reu_control_bank.h</code> and
+<code>src/lib/reu_control_bank.c</code></li>
+<li>normalized app registry publisher:
+<code>src/lib/reu_control_registry.c</code></li>
+<li>active allocator and mapping helpers:
+<code>src/lib/reu_mgr*.c</code>, <code>src/lib/reu_mgr.h</code>, and
+<code>src/apps/launcher/launcher.c</code></li>
+<li>canonical detailed map:
+<code>privatedocs/top_level_md/MEMORY_MAP.md</code></li>
+</ul>
+<p>Older shim HTML reports are retained as historical architecture
+evidence. They must not be read as current when they show a separate
+control bank, a resident allocation/bitmap mirror, fixed app slots,
+<code>$2F00</code> lookup, or <code>$B600</code> snapshots.</p>
+<h2 id="full-commented-resident-shim-source">Full Commented Resident
+Shim Source</h2>
+<p>This appendix is synchronized from
+<code>src/boot/readyos_shim.inc</code>; both the disk and EasyFlash
+builds include that same canonical 512-byte image. The documentation
+verifier compares every <code>.byte</code> directive and ABI
+annotation.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode asm">;-----------------------------------------------------------------------------
+; Shared ReadyOS shim image ($C800-$C9FF, 512 bytes)
+; This file is the canonical shim byte layout used by both the disk boot path
+; and the EasyFlash cartridge flavor. Keep it identical across all variants.
+;-----------------------------------------------------------------------------
+
+;-----------------------------------------------------------------------------
+; Page 1: $C800-$C8FF - Jump table, data, and helper routines
+;-----------------------------------------------------------------------------
+
+; $C800-$C817: Jump Table (24 bytes, 8 entries)
+jt_load_disk    = $C800     ; Load from disk, run
+jt_load_reu     = $C803     ; Fetch from REU, run
+jt_run_app      = $C806     ; Just run app
+jt_preload      = $C809     ; Preload to REU, return
+jt_return       = $C80C     ; Return to launcher
+jt_switch       = $C80F     ; Switch to another app
+jt_reserved     = $C812     ; Reserved compatibility slot (safe no-op)
+jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
+
+.byte $4C, $40, $C8         ; $C800: JMP load_disk ($C840)
+.byte $4C, $60, $C8         ; $C803: JMP load_reu ($C860)
+.byte $4C, $00, $10         ; $C806: JMP $1000 (run app)
+.byte $4C, $80, $C8         ; $C809: JMP preload ($C880)
+.byte $4C, $00, $C9         ; $C80C: JMP return_to_launcher ($C900)
+.byte $4C, $40, $C9         ; $C80F: JMP switch_app ($C940)
+.byte $4C, $FF, $C9         ; $C812: reserved helper -&gt; safe RTS
+.byte $4C, $F0, $C8         ; $C815: JMP fetch_bank ($C8F0)
+
+; $C818: deprecated logger compatibility slot
+.byte $4C, $FF, $C9         ; $C818: deprecated logger -&gt; safe RTS
+.byte $4C, $C0, $C9         ; $C81B: JMP mark_loaded (token in A)
+.byte $00,$00               ; $C81E-$C81F: reserved
+
+; $C820-$C83F: Data Area (32 bytes)
+; $C820: target_bank - bank to load/switch to
+; $C821: filename_len
+; $C822-$C823: launcher-side app-size scratch (not consumed by the shim)
+; $C824-$C82F: filename (12 bytes)
+; $C830: load_end_lo (KERNAL LOAD end addr low byte, saved by preload)
+; $C831: load_end_hi (KERNAL LOAD end addr high byte, saved by preload)
+; $C832-$C833: unused
+; $C834: current_bank - currently running app
+; $C835: last_saved
+; $C836-$C838: retired bitmap bytes (reserved; authoritative state is in REU)
+; $C839: storage_drive - shim-global default storage drive for D8/D9 app dialogs
+;        This persists across app switches and is shared by apps that use the
+;        common file-dialog default-drive contract.
+; $C83A: reserved (formerly log_index)
+; $C83B: readyos_bank - direct physical ReadyOS bank number (Skip+1)
+; $C83C: launcher_flags - launcher-owned one-shot state flags
+; $C83D: reu_lookup_scratch - one-byte ReadyOS-bank DMA scratch
+; $C83E: token_scratch; $C83F: reserved
+
+.byte $00                   ; $C820: target_bank
+.byte $08                   ; $C821: filename_len
+.byte $00, $00              ; $C822-$C823: launcher app-size scratch
+.byte "LAUNCHER    "        ; $C824-$C82F: filename (12 bytes)
+.byte $00,$00               ; $C830-$C831: load_end_lo, load_end_hi
+.byte $00,$00               ; $C832-$C833: unused
+.byte $00                   ; $C834: current_bank
+.byte $FF                   ; $C835: last_saved
+.byte $00                   ; $C836: reserved (retired bitmap byte)
+.byte $00                   ; $C837: reserved (retired bitmap byte)
+.byte $00                   ; $C838: reserved (retired bitmap byte)
+.byte $08                   ; $C839: storage_drive (default drive 8)
+.byte $00                   ; $C83A: reserved (retired debug-ring head)
+.byte READYOS_REU_BANK_SKIP + 1 ; $C83B: readyos_bank (physical Skip+1)
+.byte $00                   ; $C83C: launcher_flags
+.byte $00                   ; $C83D: reu_lookup_scratch
+.byte $00,$00               ; $C83E-$C83F: reserved
+
+;-----------------------------------------------------------------------------
+; $C840: load_disk - Load app from disk and run (32 bytes)
+;-----------------------------------------------------------------------------
+.byte $AD, $21, $C8         ; LDA $C821 (filename len)
+.byte $A2, $24              ; LDX #$24
+.byte $A0, $C8              ; LDY #$C8 (filename at $C824)
+.byte $20, $BD, $FF         ; JSR $FFBD (SETNAM)
+.byte $A9, $00              ; LDA #0
+.byte $AE, $39, $C8         ; LDX $C839 (storage drive)
+.byte $A0, $01              ; LDY #1
+.byte $20, $BA, $FF         ; JSR $FFBA (SETLFS)
+.byte $A9, $00              ; LDA #0
+.byte $20, $D5, $FF         ; JSR $FFD5 (LOAD)
+.byte $4C, $00, $10         ; JMP $1000
+.byte $00,$00,$00,$00       ; Padding to $C860
+
+;-----------------------------------------------------------------------------
+; $C860: load_reu - Fetch app from REU and run (32 bytes)
+;-----------------------------------------------------------------------------
+.byte $AD, $20, $C8         ; LDA $C820 (target bank)
+.byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
+.byte $4C, $00, $10         ; JMP $1000
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00
+
+;-----------------------------------------------------------------------------
+; $C880: preload - Load to REU, return to launcher
+; Called via JSR $C809
+;-----------------------------------------------------------------------------
+.byte $A9, $00              ; LDA #0 (launcher token -&gt; ReadyOS bank)
+.byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
+
+.byte $AD, $21, $C8         ; LDA $C821 (len)
+.byte $A2, $24              ; LDX #$24
+.byte $A0, $C8              ; LDY #$C8 (filename at $C824)
+.byte $20, $BD, $FF         ; JSR SETNAM
+
+.byte $A9, $00              ; LDA #0
+.byte $AE, $39, $C8         ; LDX $C839 (storage drive)
+.byte $A0, $01              ; LDY #1
+.byte $20, $BA, $FF         ; JSR SETLFS
+
+.byte $A9, $00              ; LDA #0
+.byte $20, $D5, $FF         ; JSR LOAD
+
+.byte $8E, $30, $C8         ; STX $C830 (end addr lo)
+.byte $8C, $31, $C8         ; STY $C831 (end addr hi)
+
+.byte $AD, $20, $C8         ; LDA $C820 (target bank)
+.byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
+
+.byte $AD, $20, $C8         ; LDA $C820 (target bank)
+.byte $20, $C0, $C9         ; JSR mark_loaded ($C9C0)
+
+.byte $A9, $00              ; LDA #0
+.byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
+
+.byte $60                   ; RTS
+
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00
+
+;-----------------------------------------------------------------------------
+; $C8E0: stash_to_bank - Stash $1000-$C7FF to REU bank in A (16 bytes)
+;-----------------------------------------------------------------------------
+.byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
+.byte $A9, $90              ; LDA #$90 (STASH command)
+.byte $8D, $01, $DF         ; STA $DF01 - execute transfer
+.byte $60                   ; RTS
+.byte $00,$00,$00,$00,$00,$00,$00
+
+;-----------------------------------------------------------------------------
+; $C8F0: fetch_bank - Fetch from REU bank in A to $1000-$C7FF (16 bytes)
+;-----------------------------------------------------------------------------
+.byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
+.byte $A9, $91              ; LDA #$91 (FETCH command)
+.byte $8D, $01, $DF         ; STA $DF01 - execute transfer
+.byte $60                   ; RTS
+.byte $00,$00,$00,$00,$00,$00,$00
+
+;-----------------------------------------------------------------------------
+; Page 2: $C900-$C9FF - Main routines
+;-----------------------------------------------------------------------------
+
+;-----------------------------------------------------------------------------
+; $C900: return_to_launcher (64 bytes)
+;-----------------------------------------------------------------------------
+.byte $AD, $34, $C8         ; LDA $C834 (current bank)
+.byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
+.byte $AD, $34, $C8         ; LDA $C834 (current bank)
+.byte $20, $C0, $C9         ; JSR mark_loaded ($C9C0)
+.byte $AD, $34, $C8         ; LDA $C834
+.byte $8D, $35, $C8         ; STA $C835
+.byte $A9, $00              ; LDA #0
+.byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
+.byte $A9, $00              ; LDA #0
+.byte $8D, $34, $C8         ; STA $C834
+.byte $4C, $00, $10         ; JMP $1000
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00
+
+;-----------------------------------------------------------------------------
+; $C940: switch_app (64 bytes)
+;-----------------------------------------------------------------------------
+.byte $AD, $34, $C8         ; LDA $C834 (current bank)
+.byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
+.byte $AD, $34, $C8         ; LDA $C834 (current bank)
+.byte $20, $C0, $C9         ; JSR mark_loaded ($C9C0)
+.byte $AD, $20, $C8         ; LDA $C820 (target bank)
+.byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
+.byte $AD, $20, $C8         ; LDA $C820
+.byte $8D, $34, $C8         ; STA $C834
+.byte $4C, $00, $10         ; JMP $1000
+.byte $00,$00,$00,$00,$00
+
+;-----------------------------------------------------------------------------
+; $C960: reu_setup_logical - Resolve token via the ReadyOS bank, then setup regs
+;-----------------------------------------------------------------------------
+.byte $C9, $00              ; CMP #0 (logical launcher bank?)
+.byte $D0, $06              ; BNE lookup_app_bank
+.byte $AD, $3B, $C8         ; LDA $C83B (ReadyOS bank contains launcher)
+.byte $4C, $A0, $C9         ; JMP reu_setup ($C9A0)
+.byte $AA                   ; lookup_app_bank: TAX (preserve logical token)
+.byte $A9, $3D              ; LDA #&lt;$C83D
+.byte $8D, $02, $DF         ; STA $DF02 (C64 addr lo)
+.byte $A9, $C8              ; LDA #&gt;$C83D
+.byte $8D, $03, $DF         ; STA $DF03 (C64 addr hi)
+.byte $8A                   ; TXA
+.byte $18                   ; CLC
+.byte $69, $40              ; ADC #&lt;$B940 (mapping offset + token)
+.byte $8D, $04, $DF         ; STA $DF04 (REU offset lo)
+.byte $A9, $B9              ; LDA #&gt;$B940
+.byte $69, $00              ; ADC #0 (include low-byte carry)
+.byte $8D, $05, $DF         ; STA $DF05 (REU offset hi)
+.byte $AD, $3B, $C8         ; LDA $C83B (ReadyOS global physical bank)
+.byte $8D, $06, $DF         ; STA $DF06
+.byte $A9, $01              ; LDA #1
+.byte $8D, $07, $DF         ; STA $DF07 (length lo)
+.byte $A9, $00              ; LDA #0
+.byte $8D, $08, $DF         ; STA $DF08 (length hi)
+.byte $A9, $91              ; LDA #$91 (FETCH command)
+.byte $8D, $01, $DF         ; STA $DF01 - fetch physical bank byte
+.byte $AD, $3D, $C8         ; LDA $C83D (resolved physical bank)
+.byte $4C, $A0, $C9         ; JMP reu_setup ($C9A0)
+.byte $00,$00               ; Padding to $C9A0
+
+;-----------------------------------------------------------------------------
+; $C9A0: reu_setup - Set up REU registers for $B800 transfer at $1000
+;-----------------------------------------------------------------------------
+.byte $8D, $06, $DF         ; STA $DF06 (bank)
+.byte $A9, $00              ; LDA #$00
+.byte $8D, $02, $DF         ; STA $DF02 (C64 addr lo = $00)
+.byte $A9, $10              ; LDA #$10
+.byte $8D, $03, $DF         ; STA $DF03 (C64 addr hi = $10, so $1000)
+.byte $A9, $00              ; LDA #$00
+.byte $8D, $04, $DF         ; STA $DF04 (REU addr lo)
+.byte $8D, $05, $DF         ; STA $DF05 (REU addr hi)
+.byte $8D, $07, $DF         ; STA $DF07 (len lo = $00)
+.byte $A9, $B8              ; LDA #$B8
+.byte $8D, $08, $DF         ; STA $DF08 (len hi = $B8, so $B800 bytes)
+.byte $60                   ; RTS
+.byte $00,$00
+
+;-----------------------------------------------------------------------------
+; $C9C0: mark_loaded - Commit token status after a successful snapshot stash
+; A = logical token. Status $07 means valid, loaded, and resumable.
+;-----------------------------------------------------------------------------
+.byte $8D, $3E, $C8         ; STA $C83E (preserve token)
+.byte $A9, $07              ; LDA #VALID|LOADED|RESUMABLE
+.byte $8D, $3D, $C8         ; STA $C83D
+.byte $A9, $3D              ; C64 source = $C83D
+.byte $8D, $02, $DF
+.byte $A9, $C8
+.byte $8D, $03, $DF
+.byte $AD, $3E, $C8         ; token
+.byte $18                   ; CLC
+.byte $69, $40              ; + &lt;$BA40 (token status table)
+.byte $8D, $04, $DF
+.byte $A9, $BA              ; &gt;$BA40
+.byte $69, $00              ; include low-byte carry
+.byte $8D, $05, $DF
+.byte $AD, $3B, $C8         ; ReadyOS physical bank
+.byte $8D, $06, $DF
+.byte $A9, $01              ; one byte
+.byte $8D, $07, $DF
+.byte $A9, $00
+.byte $8D, $08, $DF
+.byte $A9, $90              ; STASH C64 byte to ReadyOS bank
+.byte $8D, $01, $DF
+.byte $AD, $3E, $C8         ; preserve caller-visible token in A
+.byte $60                   ; RTS
+.byte $00,$00,$00,$00       ; reserved through $C9FE
+.byte $60                   ; $C9FF: compatibility no-op RTS
+</pre></div>
+</body>
+</html>

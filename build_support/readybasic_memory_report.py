@@ -306,7 +306,7 @@ def render(ctx: dict[str, object]) -> str:
     basic_start = const["BASIC_START"]
     basic_limit = const["BASIC_LIMIT"]
     basic_free = basic_limit - (basic_start + 2)
-    app_window = 0xB600
+    app_window = 0xB800
     slot_size = 0x0800
     cmdpack_start, cmdpack_size = cfg["CMDPACK"]
     cmdpack2_start, cmdpack2_size = cfg["CMDPACK2"]
@@ -346,7 +346,7 @@ def render(ctx: dict[str, object]) -> str:
             "bridge",
             f"Bridge through ${seg['BRIDGE'].end:04X}, shared frames and buffers through $C5FF.",
         ),
-        Block("ReadyOS REU metadata", 0xC600, 0x0200, "readyos", "Allocation table and system metadata; not ReadyBASIC scratch."),
+        Block("ReadyBASIC snapshot-private headroom", 0xC600, 0x0200, "free", "Part of the ReadyOS app snapshot; currently left unused to preserve the custom ReadyBASIC bridge/assembler shape."),
         Block("ReadyOS shim ABI", 0xC800, 0x0200, "shim", "Resident jump table/data."),
         Block("High RAM gap", 0xCA00, 0x0600, "reserved", "Outside app snapshot and below I/O."),
         Block("I/O / color", 0xD000, 0x1000, "io", "REU registers at $DF00-$DF0A when I/O visible."),
@@ -451,10 +451,9 @@ def render(ctx: dict[str, object]) -> str:
     ]
 
     reu_overview_blocks = [
-        Block("Launcher/system", 0x000000, 0x010000, "readyos", "Bank 0 logical launcher/system state."),
-        Block("App snapshots", 0x020000, 24 * 0x10000, "entry", "Historical low-bank snapshot capacity; current snapshots are launcher-assigned and resolved through logical bank 0."),
-        Block("Legacy high-bank gap", 0x430000, 0x60000, "underrom", "No current ReadyOS fixed resource assignment here; ReadyBASIC banks and ReadyShell diagnostics/scratch are no longer fixed in this range."),
-        Block("Dynamic resources / free", 0x490000, (reu["REU_TOTAL_BANKS"] - 0x49) * 0x10000, "free", "Remaining 16MB REU space, including launcher-assigned ReadyBASIC core/code resource banks."),
+        Block("First dynamic bank", 0x000000, 0x010000, "free", "Physical Skip: the first allocatable bank; logical tokens never imply this physical address."),
+        Block("ReadyOS bank", 0x010000, 0x010000, "readyos", "Physical Skip+1: launcher snapshot at $0000-$B7FF plus schema-v5 mappings, status, clipboard, hotkeys, app/resource registry, catalog, audit, and runtime records at $B800-$FFFF."),
+        Block("Remaining dynamic pool", 0x020000, (reu["REU_TOTAL_BANKS"] - 2) * 0x10000, "free", "Physical Skip+2 through the detected end, shared by mapped app snapshots, ReadyBASIC/ReadyShell resources, clipboard payloads, and app-owned allocations. The ReadyOS bank is always skipped."),
     ]
 
     example_blocks = [
@@ -608,7 +607,7 @@ def render(ctx: dict[str, object]) -> str:
 <main class="page">
   <section id="whole">
     <h2>Whole C64 RAM: ReadyOS Contract And ReadyBASIC Runtime</h2>
-    <p>ReadyOS snapshots app RAM from <code>$1000-$C5FF</code>. ReadyBASIC stays inside that contract, while using RAM behind BASIC ROM for command payloads and loader-assigned REU resource banks for durable runtime state.</p>
+    <p>ReadyOS snapshots app RAM from <code>$1000-$C7FF</code>. ReadyBASIC deliberately keeps its custom compact image and bridge shape through <code>$C5FF</code>, leaving <code>$C600-$C7FF</code> unused today; its assembler/linker contract must remain compatible with this exact shape. Loader-assigned REU resource banks hold durable module state.</p>
     {stacked_map(ram_blocks, 0x10000)}
   </section>
 

@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    cart_crt: "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-easyflash/readyos_easyflash.crt"
+    cart_crt: "Releases/0.2.5/precog-easyflash/readyos_easyflash.crt"
     autostart_enabled: false
-    disk8: "/Users/karlprosserpp/dev/c64projects/readyosprecog/agentworking/easyflash_full_vice_plans/readyos_data.easyflash-vice.d64"
+    disk8: "agentworking/easyflash_full_vice_plans/readyos_data.easyflash-vice.d64"
     drive8_enabled: true
     drive8_type: 1541
     drive9_enabled: false
@@ -109,11 +109,9 @@ steps:
       end: 51252
       equals_hex: "00"
   - id: reenter_readybasic_1
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      command: "keybuf \\x0d"
   - id: capture_readybasic_reentry_1
     type: screen.capture
     params:
@@ -173,11 +171,21 @@ steps:
       start: 51252
       end: 51252
       equals_hex: "08"
-  - id: constrain_loaded_bitmap_for_readybasic_reuviewer_chain
+  - id: stage_readyos_token_status_for_readybasic_reuviewer_chain
     type: memory.write
     params:
-      start: 51254
-      bytes_hex: "20 01 00"
+      start: 828
+      bytes_hex: "00 00 00 00 00 07 00 00 07 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+  - id: configure_readyos_token_status_dma_for_readybasic_reuviewer_chain
+    type: memory.write
+    params:
+      start: 57090
+      bytes_hex: "3C 03 40 BA 21 18 00"
+  - id: commit_readyos_token_status_for_readybasic_reuviewer_chain
+    type: memory.write
+    params:
+      start: 57089
+      bytes_hex: "90"
   - id: reuviewer_f2_to_readybasic
     type: input.sequence
     params:
@@ -332,12 +340,15 @@ steps:
       start: 51252
       end: 51252
       equals_hex: "00"
-  - id: reenter_readybasic_after_reuviewer_ctrl_b
-    type: input.sequence
+  - id: select_readybasic_after_reuviewer_ctrl_b
+    type: memory.write
     params:
-      keys: [145,145,145,13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      start: 51232
+      bytes_hex: "05"
+  - id: launch_readybasic_after_reuviewer_ctrl_b
+    type: monitor.command
+    params:
+      command: "raw:g c80f"
   - id: capture_readybasic_after_reuviewer_ctrl_b_reentry
     type: screen.capture
     params:
@@ -376,12 +387,15 @@ steps:
     type: assert.screen_not_contains
     params:
       not_contains: "ready."
-  - id: reenter_readybasic_after_exit_guard
-    type: input.sequence
+  - id: select_readybasic_after_exit_guard
+    type: memory.write
     params:
-      keys: [13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      start: 51232
+      bytes_hex: "05"
+  - id: reenter_readybasic_after_exit_guard
+    type: monitor.command
+    params:
+      command: "raw:g c80f"
   - id: capture_readybasic_after_exit_guard_reentry
     type: screen.capture
     params:

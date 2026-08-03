@@ -14,6 +14,8 @@ Current snapshot:
   Local development builds may still include an internal trailing letter.
 - New since 0.1.5: **quicknotes**, **simple files**, **simple cells**,
   **sidetris**, **deminer**, **system info**, and **EasyFlash**
+- Experimental C64U direct-to-REU disk loading exists as an opt-in
+  build; normal release builds retain the portable disk loader.
 
 ---
 

@@ -1,7 +1,12 @@
-/*
- * clipboard.c - Multi-Item Clipboard Implementation
- * Uses REU banks for storage via reu_mgr
+/* RETIRED LEGACY SOURCE -- intentionally preserved, never linked.
+ *
+ * Clipboard metadata is authoritative in the ReadyOS bank at $BB40.  The
+ * production implementation is split across clipboard_copy.c,
+ * clipboard_paste.c, clipboard_count.c, clipboard_admin.c, and
+ * clipboard_insert.c so applications link only the operations they use.
  */
+
+#if 0
 
 #include "clipboard.h"
 #include "reu_mgr.h"
@@ -165,3 +170,5 @@ void clip_clear(void) {
     memset(CLIP_TABLE, 0, CLIP_MAX_ITEMS * 8);
     *CLIP_COUNT = 0;
 }
+
+#endif /* retired legacy source */

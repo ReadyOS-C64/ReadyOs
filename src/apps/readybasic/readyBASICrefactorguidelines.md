@@ -49,7 +49,7 @@ BASIC workspace. Treat these as hard boundaries:
 
 | Range | Contract |
 | --- | --- |
-| `$1000-$C5FF` | ReadyOS app working region. REU app save/restore targets this span. |
+| `$1000-$C7FF` | ReadyOS app working region. REU app save/restore targets this `$B800` span. |
 | `$1000-$11FF` | ReadyBASIC entry/cold-warm handoff area. Keep small. |
 | `$1200-$2AC0` | ReadyBASIC resident code plus sentinel. Visible resident code owns BASIC-facing parser and commit work. |
 | `$2AC1-$9FFF` | User BASIC program, variables, arrays, strings, and reclaimed cold-load seed space. Must remain the steady-state BASIC workspace. |
@@ -59,7 +59,7 @@ BASIC workspace. Treat these as hard boundaries:
 | `$B800-$BFFF` | Submodule slot 2 and overlay target. |
 | `$C000-$C1FF` | ReadyBASIC bridge/state. Keep persistent control state here only when it is part of the defined bridge contract. |
 | `$C200-$C5FF` | Shared frames and buffers, including call/result frames and the `$C500` disk-module page buffer. |
-| `$C600-$C7FF` | ReadyOS REU metadata. Do not use as ReadyBASIC scratch. |
+| `$C600-$C7FF` | App-private snapshot room, deliberately unused by the custom ReadyBASIC image today. |
 | `$C800-$C9FF` | ReadyOS shim ABI. Do not place ReadyBASIC assumptions here unless intentionally using the shim ABI. |
 
 Cold-load seed bytes may appear inside what later becomes the BASIC workspace.
@@ -69,9 +69,13 @@ REU. Warm resume must not reread seed tables from BASIC-owned memory.
 ## REU Contracts
 
 ReadyBASIC uses launcher-assigned REU resource banks. The launcher marks those
-physical banks in `$C600-$C6FF` with `REU_RB_CORE` and `REU_RB_CODE`;
+physical banks in the ReadyOS bank table at `$B840` with `REU_RB_CORE` and `REU_RB_CODE`;
 ReadyBASIC resolves the bank ids at startup and must not assume fixed `$44/$45`
 addresses.
+
+`readybasic.s` and `cfg/ready_app_readybasic.cfg` form a coupled ca65/ld65
+load/run ABI. Do not substitute the generic app config; run
+`verify_readybasic_plugin.py` after changing either side.
 
 | REU bank/area | Contract |
 | --- | --- |
@@ -248,6 +252,12 @@ Minimum focused tests after ReadyBASIC runtime changes:
 make bin/readybasic.prg readybasic-plugin-static-check
 READYBASIC_SKIP_BUILD=1 READYBASIC_VISIBLE=0 make readybasic-vice-suites
 ```
+
+The aggregate contains all 26 official regular ReadyBASIC targets, including
+graphics/sprite/sound examples and the minimum-resume, screen/REU temporary,
+loaded-app, lifecycle, hotkey, cross-app, and full visual probes. Keep
+`READYBASIC_VICE_SCRIPTS` and the aggregate dependency list synchronized when
+adding a new official probe.
 
 Important targeted probes:
 

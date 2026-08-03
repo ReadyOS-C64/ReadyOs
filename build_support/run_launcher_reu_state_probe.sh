@@ -124,7 +124,7 @@ steps:
       ranges: &launcher_reu_ranges
         - { label: shim_hot_state_c834, start: 0xC834, end: 0xC83F }
         - { label: shim_resident_c800, start: 0xC800, end: 0xC9FF }
-        - { label: reu_metadata_c600, start: 0xC600, end: 0xC7FF }
+        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC7FF }
   - id: dump_after_exit_reu
     type: dump.reu
     params:
@@ -195,9 +195,21 @@ steps:
   - id: launch_reloaded_readybasic
     type: input.sequence
     params:
-      keys: [145,17,13]
+      keys: [145,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.5
+      post_delay_s: 0.3
+  - id: clear_keyboard_buffer_before_relaunch
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  # A lone RETURN immediately after a dump/reload sequence is occasionally
+  # dropped by the binary-monitor key helper.  VICE's text-monitor keybuf path
+  # both resumes the CPU after monitor inspection and injects it reliably.
+  - id: enter_reloaded_readybasic
+    type: monitor.command
+    params:
+      command: "keybuf \\\\x0d"
   - id: wait_readybasic_after_reload
     type: screen.wait_contains
     params:
@@ -221,7 +233,7 @@ steps:
       ranges:
         - { label: shim_hot_state_c834, start: 0xC834, end: 0xC83F }
         - { label: shim_resident_c800, start: 0xC800, end: 0xC9FF }
-        - { label: reu_metadata_c600, start: 0xC600, end: 0xC7FF }
+        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC7FF }
         - { label: readybasic_bridge_c000, start: 0xC000, end: 0xC5FF }
         - { label: readybasic_text_1200, start: 0x1200, end: 0x1400 }
   - id: dump_final_reu

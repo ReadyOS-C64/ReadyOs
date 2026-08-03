@@ -1,7 +1,13 @@
-/*
- * reu_mgr.c - REU Memory Manager Implementation
- * Manages 256 REU banks with allocation table at $C600
+/* RETIRED LEGACY SOURCE -- intentionally preserved, never linked.
+ *
+ * This was the pre-schema-v5 C64-RAM allocation-mirror implementation.
+ * Production code is split across reu_mgr_init.c, reu_mgr_alloc.c,
+ * reu_mgr_stats.c, reu_phys.c, reu_mgr_dma.c, reu_control_bank.c, and
+ * reu_control_registry.c.  Keeping this translation unit disabled makes an
+ * accidental reintroduction of the obsolete $C600 mirror fail closed.
  */
+
+#if 0
 
 #include "reu_mgr.h"
 
@@ -213,3 +219,5 @@ void reu_dma_fetch(unsigned int c64_addr, unsigned char bank,
     REU_LEN_HI   = (unsigned char)(length >> 8);
     REU_COMMAND   = REU_CMD_FETCH;
 }
+
+#endif /* retired legacy source */

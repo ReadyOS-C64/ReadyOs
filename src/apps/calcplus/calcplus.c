@@ -185,7 +185,7 @@ static ResumeReadSegment calcplus_resume_read_segments[] = {
 #define CALCPLUS_RESUME_SEG_COUNT \
     ((unsigned char)(sizeof(calcplus_resume_read_segments) / sizeof(calcplus_resume_read_segments[0])))
 
-/* ROM float bridge buffers in always-visible RAM (must stay below $C600). */
+/* ROM float bridge buffers live inside the app snapshot (below the $C800 shim). */
 static unsigned char* const romfp_in = (unsigned char*)ROMFP_IN_ADDR;
 static unsigned char* const romfp_a = (unsigned char*)ROMFP_A_ADDR;
 static unsigned char* const romfp_b = (unsigned char*)ROMFP_B_ADDR;

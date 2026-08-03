@@ -316,11 +316,9 @@ $(emit_hotkey_step partial_line_ctrl_b ctrl_b 1.0)
       end: 51252
       equals_hex: "00"
   - id: reenter_readybasic_after_partial_ctrl_b
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
   - id: wait_readybasic_after_partial_ctrl_b
     type: screen.wait_contains
     params:

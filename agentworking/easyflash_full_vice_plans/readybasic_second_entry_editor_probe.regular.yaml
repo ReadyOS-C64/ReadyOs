@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5x-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5g-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5g-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5g-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -89,28 +89,50 @@ steps:
   - id: move_readybasic_to_editor_before_setup
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_editor_before_setup
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_before_setup
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_before_setup
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
+  - id: wait_editor_stable_before_setup
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      pre_delay_s: 1.5
+      wait_timeout_s: 30
+  - id: clear_keyboard_before_editor_text_before_setup
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
   - id: type_editor_chars_before_setup
     type: input.sequence
     params:
       keys: [80,82,79,66,69,32,76,73,78,69,13]
       inter_key_delay_s: 0.035
       post_delay_s: 0.6
-  - id: ctrl_b_editor_before_setup
-    type: input.sequence
+  - id: clear_keyboard_before_editor_ctrl_b_before_setup
+    type: memory.write
     params:
-      keys: [2]
-      pre_delay_s: 0
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: ctrl_b_editor_before_setup
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_before_setup
     type: screen.wait_contains
     params:
@@ -119,10 +141,19 @@ steps:
   - id: move_editor_to_readybasic_before_setup
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_readybasic_before_setup
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_before_setup
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_after_tour_before_setup
     type: screen.wait_contains
     params:
@@ -288,28 +319,50 @@ steps:
   - id: move_readybasic_to_editor_verify_1
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_editor_verify_1
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_verify_1
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_verify_1
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
+  - id: wait_editor_stable_verify_1
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      pre_delay_s: 1.5
+      wait_timeout_s: 30
+  - id: clear_keyboard_before_editor_text_verify_1
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
   - id: type_editor_chars_verify_1
     type: input.sequence
     params:
       keys: [80,82,79,66,69,32,76,73,78,69,13]
       inter_key_delay_s: 0.035
       post_delay_s: 0.6
-  - id: ctrl_b_editor_verify_1
-    type: input.sequence
+  - id: clear_keyboard_before_editor_ctrl_b_verify_1
+    type: memory.write
     params:
-      keys: [2]
-      pre_delay_s: 0
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: ctrl_b_editor_verify_1
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_verify_1
     type: screen.wait_contains
     params:
@@ -318,10 +371,19 @@ steps:
   - id: move_editor_to_readybasic_verify_1
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_readybasic_verify_1
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_verify_1
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_after_tour_verify_1
     type: screen.wait_contains
     params:
@@ -402,28 +464,50 @@ steps:
   - id: move_readybasic_to_editor_verify_2
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_editor_verify_2
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_verify_2
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_verify_2
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
+  - id: wait_editor_stable_verify_2
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      pre_delay_s: 1.5
+      wait_timeout_s: 30
+  - id: clear_keyboard_before_editor_text_verify_2
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
   - id: type_editor_chars_verify_2
     type: input.sequence
     params:
       keys: [80,82,79,66,69,32,76,73,78,69,13]
       inter_key_delay_s: 0.035
       post_delay_s: 0.6
-  - id: ctrl_b_editor_verify_2
-    type: input.sequence
+  - id: clear_keyboard_before_editor_ctrl_b_verify_2
+    type: memory.write
     params:
-      keys: [2]
-      pre_delay_s: 0
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: ctrl_b_editor_verify_2
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_verify_2
     type: screen.wait_contains
     params:
@@ -432,10 +516,19 @@ steps:
   - id: move_editor_to_readybasic_verify_2
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_readybasic_verify_2
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_verify_2
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_after_tour_verify_2
     type: screen.wait_contains
     params:
@@ -516,28 +609,50 @@ steps:
   - id: move_readybasic_to_editor_verify_3
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_editor_verify_3
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_verify_3
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_verify_3
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
+  - id: wait_editor_stable_verify_3
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      pre_delay_s: 1.5
+      wait_timeout_s: 30
+  - id: clear_keyboard_before_editor_text_verify_3
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
   - id: type_editor_chars_verify_3
     type: input.sequence
     params:
       keys: [80,82,79,66,69,32,76,73,78,69,13]
       inter_key_delay_s: 0.035
       post_delay_s: 0.6
-  - id: ctrl_b_editor_verify_3
-    type: input.sequence
+  - id: clear_keyboard_before_editor_ctrl_b_verify_3
+    type: memory.write
     params:
-      keys: [2]
-      pre_delay_s: 0
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: ctrl_b_editor_verify_3
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_verify_3
     type: screen.wait_contains
     params:
@@ -546,10 +661,19 @@ steps:
   - id: move_editor_to_readybasic_verify_3
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_readybasic_verify_3
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_verify_3
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_after_tour_verify_3
     type: screen.wait_contains
     params:
@@ -630,28 +754,50 @@ steps:
   - id: move_readybasic_to_editor_verify_4
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_editor_verify_4
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_verify_4
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_verify_4
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
+  - id: wait_editor_stable_verify_4
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      pre_delay_s: 1.5
+      wait_timeout_s: 30
+  - id: clear_keyboard_before_editor_text_verify_4
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
   - id: type_editor_chars_verify_4
     type: input.sequence
     params:
       keys: [80,82,79,66,69,32,76,73,78,69,13]
       inter_key_delay_s: 0.035
       post_delay_s: 0.6
-  - id: ctrl_b_editor_verify_4
-    type: input.sequence
+  - id: clear_keyboard_before_editor_ctrl_b_verify_4
+    type: memory.write
     params:
-      keys: [2]
-      pre_delay_s: 0
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: ctrl_b_editor_verify_4
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_verify_4
     type: screen.wait_contains
     params:
@@ -660,10 +806,19 @@ steps:
   - id: move_editor_to_readybasic_verify_4
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_readybasic_verify_4
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_verify_4
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_after_tour_verify_4
     type: screen.wait_contains
     params:
@@ -744,28 +899,50 @@ steps:
   - id: move_readybasic_to_editor_verify_5
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_editor_verify_5
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_verify_5
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_editor_verify_5
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
+  - id: wait_editor_stable_verify_5
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      pre_delay_s: 1.5
+      wait_timeout_s: 30
+  - id: clear_keyboard_before_editor_text_verify_5
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
   - id: type_editor_chars_verify_5
     type: input.sequence
     params:
       keys: [80,82,79,66,69,32,76,73,78,69,13]
       inter_key_delay_s: 0.035
       post_delay_s: 0.6
-  - id: ctrl_b_editor_verify_5
-    type: input.sequence
+  - id: clear_keyboard_before_editor_ctrl_b_verify_5
+    type: memory.write
     params:
-      keys: [2]
-      pre_delay_s: 0
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: ctrl_b_editor_verify_5
+    type: monitor.command
+    params:
+      command: "keybuf \\x02"
   - id: wait_launcher_after_editor_verify_5
     type: screen.wait_contains
     params:
@@ -774,10 +951,19 @@ steps:
   - id: move_editor_to_readybasic_verify_5
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       pre_delay_s: 0
       inter_key_delay_s: 0.10
-      post_delay_s: 1.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_before_readybasic_verify_5
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_verify_5
+    type: monitor.command
+    params:
+      command: "keybuf \\x0d"
   - id: wait_readybasic_after_tour_verify_5
     type: screen.wait_contains
     params:

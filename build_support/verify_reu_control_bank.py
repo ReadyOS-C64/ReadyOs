@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static checks for the ReadyOS logical REU bank 0 control mirror."""
+"""Static checks for the authoritative schema-v5 ReadyOS bank."""
 
 from __future__ import annotations
 
@@ -48,56 +48,64 @@ def main() -> int:
     reuviewer = read("src/apps/reuviewer/reuviewer.c")
     makefile = read("Makefile")
 
-    require(define_int(hdr, "REUCB_SCHEMA_VERSION") == 4, "schema version is 4")
-    require(define_int(hdr, "REUCB_HEADER_OFF") == 0x0000, "header starts at $0000")
+    require(define_int(hdr, "REUCB_SCHEMA_VERSION") == 5, "schema version is 5")
+    require(define_int(hdr, "REUCB_LAUNCHER_SNAPSHOT_SIZE") == 0xB800,
+            "ReadyOS bank begins with the $B800 launcher snapshot")
+    require(define_int(hdr, "REUCB_HEADER_OFF") == 0xB800, "header starts at $B800")
     require(define_int(hdr, "REUCB_HEADER_SIZE") == 0x0040, "header is 64 bytes")
-    require(define_int(hdr, "REUCB_BANK_TYPE_OFF") == 0x0100, "bank table mirror starts at $0100")
-    require(define_int(hdr, "REUCB_BANK_TYPE_SIZE") == 0x0100, "bank table mirror is 256 bytes")
-    require(define_int(hdr, "REUCB_RESOURCE_OFF") == 0x0200, "resource records start at $0200")
-    require(define_int(hdr, "REUCB_RESOURCE_SIZE") == 8, "resource records are 8 bytes")
-    require(define_int(hdr, "REUCB_RESOURCE_COUNT") == 10, "fixed resource record count is 10")
-    require(define_int(hdr, "REUCB_APP_REG_OFF") == 0x0300, "64-app registry starts at $0300")
-    require(define_int(hdr, "REUCB_APP_REG_SIZE") == 8, "app registry records are 8 bytes")
+    require(define_int(hdr, "REUCB_BANK_TYPE_OFF") == 0xB840, "bank types start at $B840")
+    require(define_int(hdr, "REUCB_SHIM_LOOKUP_OFF") == 0xB940,
+            "token-to-physical map starts at $B940")
+    require(define_int(hdr, "REUCB_TOKEN_STATUS_OFF") == 0xBA40,
+            "token status starts at $BA40")
+    require(define_int(hdr, "REUCB_CLIPBOARD_OFF") == 0xBB40,
+            "clipboard metadata starts at $BB40")
+    require(define_int(hdr, "REUCB_HOTKEY_OFF") == 0xBBD0,
+            "hotkeys start at $BBD0")
+    require(define_int(hdr, "REUCB_SETTINGS_OFF") == 0xBBD9,
+            "launcher settings start at $BBD9")
+    require(define_int(hdr, "REUCB_SETTINGS_SIZE") == 39,
+            "launcher settings fill the pre-registry gap")
+    require(define_int(hdr, "REUCB_RUNTIME_OFF") == 0xFE40,
+            "launcher UI resume state starts at $FE40")
+    require(define_int(hdr, "REUCB_RUNTIME_SIZE") == 0x0080,
+            "launcher UI resume state has a 128-byte envelope")
+    require(define_int(hdr, "REUCB_APP_REG_OFF") == 0xBC00, "64-app registry starts at $BC00")
+    require(define_int(hdr, "REUCB_APP_REG_SIZE") == 16, "app registry records are 16 bytes")
     require(define_int(hdr, "REUCB_APP_REG_COUNT") == 64, "app registry has 64 entries")
-    require(define_int(hdr, "REUCB_APP_META_OFF") == 0x0500, "app metadata starts at $0500")
+    require(define_int(hdr, "REUCB_TOKEN_APP_OFF") == 0xC000,
+            "token-to-app index starts at $C000")
+    require(define_int(hdr, "REUCB_APP_META_OFF") == 0xC100, "app metadata starts at $C100")
     require(define_int(hdr, "REUCB_APP_META_SIZE") == 13, "app filename records are 13 bytes")
-    require(define_int(hdr, "REUCB_DEP_OFF") == 0x0900, "dependency records start at $0900")
-    require(define_int(hdr, "REUCB_DEP_COUNT") == 128, "dependency record capacity is 128")
-    require(define_int(hdr, "REUCB_RSRC_REC_OFF") == 0x0A00, "rich resource records start at $0A00")
+    require(define_int(hdr, "REUCB_RSRC_REC_OFF") == 0xC440, "rich resource records start at $C440")
     require(define_int(hdr, "REUCB_RSRC_REC_SIZE") == 16, "rich resource records are 16 bytes")
     require(define_int(hdr, "REUCB_RSRC_REC_COUNT") == 64, "rich resource record capacity is 64")
-    require(define_int(hdr, "REUCB_DEP_LINE_OFF") == 0x0E00, "dependency lines start at $0E00")
+    require(define_int(hdr, "REUCB_DEP_LINE_OFF") == 0xC840, "dependency lines start at $C840")
     require(define_int(hdr, "REUCB_DEP_LINE_SIZE") == 128, "dependency line records are 128 bytes")
-    require(define_int(hdr, "REUCB_CATALOG_TEXT_OFF") == 0x3000, "cold catalog text starts at $3000")
-    require(define_int(hdr, "REUCB_CATALOG_NAME_OFF") == 0x3000, "catalog names start at $3000")
+    require(define_int(hdr, "REUCB_CATALOG_NAME_OFF") == 0xE840, "catalog names start at $E840")
     require(define_int(hdr, "REUCB_CATALOG_NAME_SIZE") == 32, "catalog name records are 32 bytes")
-    require(define_int(hdr, "REUCB_CATALOG_DESC_OFF") == 0x3800, "catalog descriptions start at $3800")
+    require(define_int(hdr, "REUCB_CATALOG_DESC_OFF") == 0xF040, "catalog descriptions start at $F040")
     require(define_int(hdr, "REUCB_CATALOG_DESC_SIZE") == 39, "catalog description records are 39 bytes")
-    require(define_int(hdr, "REUCB_CATALOG_FILE_OFF") == 0x4200, "catalog file tokens start at $4200")
+    require(define_int(hdr, "REUCB_CATALOG_FILE_OFF") == 0xFA00, "catalog file tokens start at $FA00")
     require(define_int(hdr, "REUCB_CATALOG_FILE_SIZE") == 13, "catalog file token records are 13 bytes")
     require(define_int(hdr, "REUCB_HEADER_PHYS_BANKS") == 44, "header records physical bank count")
     require(define_int(hdr, "REUCB_HEADER_FIRST_UNAVAIL") == 45, "header records first unavailable bank")
 
-    require("REU_READYOS_GLOBAL_PHYSICAL()" in src, "control mirror records ReadyOS global bank")
-    require("REU_LAUNCHER_PHYSICAL()" in src, "control mirror records launcher bank")
-    require("REU_LAUNCHER_OVERLAY_PHYSICAL()" not in src,
-            "control mirror does not reserve a launcher overlay bank")
+    require("REU_READYOS_GLOBAL_PHYSICAL()" in src, "schema records direct ReadyOS bank")
+    require("readyos_bank_write_byte" in src, "schema writes bank types directly in REU")
+    require("REU_ALLOC_TABLE" not in src, "schema has no C64-RAM allocation mirror")
     require("REU_BANK_RS_CACHE" not in src, "control mirror no longer records fixed ReadyShell cache banks")
     require("REU_BANK_RS_SCRATCH" not in src, "control mirror no longer records fixed ReadyShell scratch bank")
     require("REU_BANK_RS_DEBUG" not in src, "control mirror no longer records fixed ReadyShell debug bank")
     require("REU_BANK_RB_CORE" not in src and "REU_BANK_RB_CODE" not in src,
             "control mirror must not record fixed ReadyBASIC core/code banks")
-    require("reu_dma_stash((unsigned int)REU_ALLOC_TABLE" in src,
-            "control mirror stashes resident bank table")
-    require("reu_phys_count_from_alloc_table()" in src and
-            "REUCB_HEADER_PHYS_BANKS" in src,
-            "control mirror publishes physical REU size")
+    require("REUCB_HEADER_PHYS_BANKS" in src, "schema publishes physical REU size")
     require("reu_control_bank_write_launcher_registry" in registry,
             "control mirror writes launcher 64-app registry")
-    require("app_rs_bank1 + first_app_index" in registry and
-            "app_rs_bank3 + first_app_index" in registry and
-            "app_rs_bank4 + first_app_index" in registry,
-            "control mirror records loader-owned dependency/resource bank arrays")
+    require("REUCB_TOKEN_STATUS_OFF" in registry and "REUCB_TOKEN_APP_OFF" in registry,
+            "registry publishes authoritative token status and token-to-app index")
+    require("REUCB_APP_REC_SIZE_LO" in registry and "app_sizes" in registry,
+            "registry publishes app snapshot sizes")
 
     require("REU_CONTROL_BANK_SRC = $(LIB_DIR)/reu_control_bank.c" in makefile,
             "Makefile defines REU_CONTROL_BANK_SRC")
@@ -126,16 +134,20 @@ def main() -> int:
             "normal REU DMA/stats library does not link control bank module")
 
     require("launcher_mirror_reu_control();" in launcher,
-            "launcher refreshes control mirror")
+            "launcher refreshes ReadyOS-bank registry")
+    require("launcher_publish_settings" in launcher and
+            "REUCB_SETTINGS_MAGIC0" in launcher and
+            "launcher_restore_registry_from_readyos" in launcher,
+            "launcher publishes and restores its settings and registry from the ReadyOS bank")
     require("reu_phys_apply_to_alloc_table(reu_phys_detect_bank_count())" in launcher,
             "launcher probes physical REU size before allocation")
     require("reu_control_bank_write_launcher_registry(" in launcher,
-            "launcher mirrors app registry into control bank")
+            "launcher publishes app registry into ReadyOS bank")
     require("catalog_store_entry" in launcher and
             "REUCB_CATALOG_NAME_OFF" in launcher and
             "REUCB_CATALOG_DESC_OFF" in launcher and
             "REUCB_CATALOG_FILE_OFF" in launcher,
-            "launcher stores cold catalog strings in logical REU bank 0")
+            "launcher stores cold catalog strings in the ReadyOS bank")
     require("catalog_name_cache[APPS_HEIGHT]" in launcher and
             "catalog_text_buf[MAX_DESC_LEN + 1]" in launcher,
             "launcher keeps only visible catalog-name cache and one text scratch buffer")
@@ -152,7 +164,7 @@ def main() -> int:
             "launcher writes rich resource/dependency metadata")
     require("launcher_free_app_owned_alloc_records" in launcher and
             "REUCB_DEP_KIND_APP_ALLOC" in launcher and
-            "REU_ALLOC_TABLE[bank] == REU_APP_ALLOC" in launcher,
+            "launcher_bank_type(bank) == REU_APP_ALLOC" in launcher,
             "launcher unload frees owner-recorded app allocation banks")
     require("readyshell_overlay_names" not in launcher and
             "readyshell_overlay_offsets" not in launcher,
@@ -161,10 +173,23 @@ def main() -> int:
             "launcher has snapshot-bank resolver")
     require("bank = launcher_resolve_snapshot_bank(index);" in launcher,
             "launcher preload/REU launch paths use resolver")
+    load_app = re.search(
+        r"static unsigned int load_app_to_reu\(unsigned char index\) \{(.*?)\n\}",
+        launcher,
+        re.DOTALL,
+    )
+    require(load_app is not None, "launcher preload implementation is available for ordering checks")
+    if load_app is not None:
+        body = load_app.group(1)
+        require(body.find("bank = launcher_resolve_snapshot_bank(index);") <
+                body.find("filename = catalog_file_for_index(index);"),
+                "snapshot allocation publishes metadata before taking a catalog scratch pointer")
+        require("filename = catalog_file_for_index(index);\n        set_shim_name(filename);" in body,
+                "DMA fallback reacquires its catalog filename after metadata publication")
     require("*SHIM_CURRENT_BANK = bank;" in launcher,
             "launcher disk path writes resolved bank to shim current bank")
     require("reu_control_bank_sync_and_mirror(REUCB_WRITER_REUVIEWER)" in reuviewer,
-            "reuviewer refreshes control mirror")
+            "reuviewer refreshes ReadyOS-bank header")
     require("reuviewer_read_control_bank_header" in reuviewer and '"CB:"' in reuviewer and
             "control_bank_generation" in reuviewer,
             "reuviewer displays compact control-bank header status")
@@ -177,7 +202,7 @@ def main() -> int:
     require("REUCB_DEP_KIND_APP_ALLOC" in reuviewer and '"TAG"' in reuviewer,
             "reuviewer displays app-owned allocation record tags")
 
-    print("REU control bank static checks passed.")
+    print("ReadyOS bank schema-v5 static checks passed.")
     return 0
 
 

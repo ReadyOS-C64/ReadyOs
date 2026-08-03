@@ -1,3 +1,6 @@
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="historical" style="margin:16px;padding:12px 14px;border:2px solid #9a6700;background:#fff4d6;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>PRESERVED SNAPSHOT / DESIGN</strong><br>Preserved completed-phase record. Its full commented shim appendix is byte-verified current; other values describe the phase at the time and are not a live 0.2.5 memory contract.</aside>
+<!-- READYOS-DOC-STATUS:END -->
 <h1 id="readyos-reu-enhancement-refactor---phase-1-completed">ReadyOS
 REU Enhancement Refactor - Phase 1 Completed</h1>
 <h2 id="phase-1-completion-note">Phase 1 Completion Note</h2>
@@ -1088,300 +1091,280 @@ Shim Source</h3>
 because this branch changed the resident shim mapping contract while
 keeping the final image at <code>512</code> bytes.</p>
 <div class="sourceCode" id="cb4"><pre
-class="sourceCode asm"><code class="sourceCode fasm"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">; Shared ReadyOS shim image ($C800-$C9FF, 512 bytes)</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">; This file is the canonical shim byte layout used by both the disk boot path</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">; and the EasyFlash cartridge flavor. Keep it identical across all variants.</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">; Page 1: $C800-$C8FF - Jump table, data, and helper routines</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">; $C800-$C817: Jump Table (24 bytes, 8 entries)</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>jt_load_disk    <span class="op">=</span> <span class="op">$</span>C800     <span class="co">; Load from disk, run</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>jt_load_reu     <span class="op">=</span> <span class="op">$</span>C803     <span class="co">; Fetch from REU, run</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>jt_run_app      <span class="op">=</span> <span class="op">$</span>C806     <span class="co">; Just run app</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>jt_preload      <span class="op">=</span> <span class="op">$</span>C809     <span class="co">; Preload to REU, return</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>jt_return       <span class="op">=</span> <span class="op">$</span>C80C     <span class="co">; Return to launcher</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>jt_switch       <span class="op">=</span> <span class="op">$</span>C80F     <span class="co">; Switch to another app</span></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>jt_stash_cur    <span class="op">=</span> <span class="op">$</span>C812     <span class="co">; Helper: stash current app</span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>jt_fetch_bank   <span class="op">=</span> <span class="op">$</span>C815     <span class="co">; Helper: fetch from bank in A</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">40</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; $C800: JMP load_disk ($C840)</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">60</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; $C803: JMP load_reu ($C860)</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">00</span><span class="op">,</span> <span class="op">$</span><span class="bn">10</span>         <span class="co">; $C806: JMP $1000 (run app)</span></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">80</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; $C809: JMP preload ($C880)</span></span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">00</span><span class="op">,</span> <span class="op">$</span>C9         <span class="co">; $C80C: JMP return_to_launcher ($C900)</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">40</span><span class="op">,</span> <span class="op">$</span>C9         <span class="co">; $C80F: JMP switch_app ($C940)</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span>C0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; $C812: JMP stash_current ($C8C0) - placeholder</span></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span>F0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; $C815: JMP fetch_bank ($C8F0)</span></span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="co">; $C818: JMP log_byte ($C9E0)</span></span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span>E0<span class="op">,</span> <span class="op">$</span>C9         <span class="co">; $C818: JMP log_byte</span></span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span>   <span class="co">; $C81B-$C81F: Padding</span></span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="co">; $C820-$C83F: Data Area (32 bytes)</span></span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="co">; $C820: target_bank - bank to load/switch to</span></span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="co">; $C821: filename_len</span></span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="co">; $C822-$C823: unused</span></span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="co">; $C824-$C82F: filename (12 bytes)</span></span>
-<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="co">; $C830: load_end_lo (KERNAL LOAD end addr low byte, saved by preload)</span></span>
-<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a><span class="co">; $C831: load_end_hi (KERNAL LOAD end addr high byte, saved by preload)</span></span>
-<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="co">; $C832-$C833: unused</span></span>
-<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a><span class="co">; $C834: current_bank - currently running app</span></span>
-<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a><span class="co">; $C835: last_saved</span></span>
-<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a><span class="co">; $C836: reu_bitmap_lo (banks 0-7)</span></span>
-<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a><span class="co">; $C837: reu_bitmap_hi (banks 8-15)</span></span>
-<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a><span class="co">; $C838: reu_bitmap_xhi (banks 16-23)</span></span>
-<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a><span class="co">; $C839: storage_drive - shim-global default storage drive for D8/D9 app dialogs</span></span>
-<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a><span class="co">;        This persists across app switches and is shared by apps that use the</span></span>
-<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a><span class="co">;        common file-dialog default-drive contract.</span></span>
-<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a><span class="co">; $C83A: log_index - debug byte ring head</span></span>
-<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a><span class="co">; $C83B: reu_bank_skip - physical 64K banks reserved before ReadyOS bank start</span></span>
-<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a><span class="co">; $C83C: launcher_flags - launcher-owned one-shot state flags</span></span>
-<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a><span class="co">; $C83D: reu_lookup_scratch - one-byte physical bank fetched from REU bank 0</span></span>
-<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a><span class="co">; $C83E-$C83F: reserved</span></span>
-<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span>                   <span class="co">; $C820: target_bank</span></span>
-<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">08</span>                   <span class="co">; $C821: filename_len</span></span>
-<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; $C822-$C823: unused</span></span>
-<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="st">&quot;LAUNCHER    &quot;</span>        <span class="co">; $C824-$C82F: filename (12 bytes)</span></span>
-<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span>               <span class="co">; $C830-$C831: load_end_lo, load_end_hi</span></span>
-<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span>               <span class="co">; $C832-$C833: unused</span></span>
-<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span>                   <span class="co">; $C834: current_bank</span></span>
-<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>FF                   <span class="co">; $C835: last_saved</span></span>
-<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span>                   <span class="co">; $C836: reu_bitmap_lo</span></span>
-<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span>                   <span class="co">; $C837: reu_bitmap_hi</span></span>
-<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span>                   <span class="co">; $C838: reu_bitmap_xhi</span></span>
-<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">08</span>                   <span class="co">; $C839: storage_drive (default drive 8)</span></span>
-<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span>                   <span class="co">; $C83A: log_index (for debug buffer)</span></span>
-<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> READYOS_REU_BANK_SKIP <span class="co">; $C83B: reu_bank_skip (compiled into boot image)</span></span>
-<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span>                   <span class="co">; $C83C: launcher_flags</span></span>
-<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span>                   <span class="co">; $C83D: reu_lookup_scratch</span></span>
-<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span>               <span class="co">; $C83E-$C83F: reserved</span></span>
-<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a><span class="co">; $C840: load_disk - Load app from disk and run (32 bytes)</span></span>
-<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">21</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C821 (filename len)</span></span>
-<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A2<span class="op">,</span> <span class="op">$</span><span class="bn">24</span>              <span class="co">; LDX #$24</span></span>
-<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A0<span class="op">,</span> <span class="op">$</span>C8              <span class="co">; LDY #$C8 (filename at $C824)</span></span>
-<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>BD<span class="op">,</span> <span class="op">$</span>FF         <span class="co">; JSR $FFBD (SETNAM)</span></span>
-<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #0</span></span>
-<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A2<span class="op">,</span> <span class="op">$</span><span class="bn">08</span>              <span class="co">; LDX #8</span></span>
-<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A0<span class="op">,</span> <span class="op">$</span><span class="bn">01</span>              <span class="co">; LDY #1</span></span>
-<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>BA<span class="op">,</span> <span class="op">$</span>FF         <span class="co">; JSR $FFBA (SETLFS)</span></span>
-<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #0</span></span>
-<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>D5<span class="op">,</span> <span class="op">$</span>FF         <span class="co">; JSR $FFD5 (LOAD)</span></span>
-<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">00</span><span class="op">,</span> <span class="op">$</span><span class="bn">10</span>         <span class="co">; JMP $1000</span></span>
-<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span>   <span class="co">; Padding to $C860</span></span>
-<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a><span class="co">; $C860: load_reu - Fetch app from REU and run (32 bytes)</span></span>
-<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C820 (target bank)</span></span>
-<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>F0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; JSR fetch_bank ($C8F0)</span></span>
-<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">00</span><span class="op">,</span> <span class="op">$</span><span class="bn">10</span>         <span class="co">; JMP $1000</span></span>
-<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-99"><a href="#cb4-99" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-100"><a href="#cb4-100" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a><span class="co">; $C880: preload - Load to REU, return to launcher</span></span>
-<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a><span class="co">; Called via JSR $C809</span></span>
-<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a><span class="co">; DEBUG: writes markers to $C007-$C00C</span></span>
-<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span>AA              <span class="co">; LDA #$AA (170 = &quot;preload entered&quot;)</span></span>
-<span id="cb4-106"><a href="#cb4-106" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">07</span><span class="op">,</span> <span class="op">$</span>C0         <span class="co">; STA $C007</span></span>
-<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #0 (bank 0)</span></span>
-<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>E0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; JSR stash_to_bank ($C8E0)</span></span>
-<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span>BB              <span class="co">; LDA #$BB (187 = &quot;launcher stashed&quot;)</span></span>
-<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">08</span><span class="op">,</span> <span class="op">$</span>C0         <span class="co">; STA $C008</span></span>
-<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">21</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C821 (len)</span></span>
-<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A2<span class="op">,</span> <span class="op">$</span><span class="bn">24</span>              <span class="co">; LDX #$24</span></span>
-<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A0<span class="op">,</span> <span class="op">$</span>C8              <span class="co">; LDY #$C8 (filename at $C824)</span></span>
-<span id="cb4-117"><a href="#cb4-117" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>BD<span class="op">,</span> <span class="op">$</span>FF         <span class="co">; JSR SETNAM</span></span>
-<span id="cb4-118"><a href="#cb4-118" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-119"><a href="#cb4-119" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #0</span></span>
-<span id="cb4-120"><a href="#cb4-120" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A2<span class="op">,</span> <span class="op">$</span><span class="bn">08</span>              <span class="co">; LDX #8</span></span>
-<span id="cb4-121"><a href="#cb4-121" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A0<span class="op">,</span> <span class="op">$</span><span class="bn">01</span>              <span class="co">; LDY #1</span></span>
-<span id="cb4-122"><a href="#cb4-122" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>BA<span class="op">,</span> <span class="op">$</span>FF         <span class="co">; JSR SETLFS</span></span>
-<span id="cb4-123"><a href="#cb4-123" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-124"><a href="#cb4-124" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span>CC              <span class="co">; LDA #$CC (204 = &quot;about to LOAD&quot;)</span></span>
-<span id="cb4-125"><a href="#cb4-125" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">09</span><span class="op">,</span> <span class="op">$</span>C0         <span class="co">; STA $C009</span></span>
-<span id="cb4-126"><a href="#cb4-126" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-127"><a href="#cb4-127" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #0</span></span>
-<span id="cb4-128"><a href="#cb4-128" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>D5<span class="op">,</span> <span class="op">$</span>FF         <span class="co">; JSR LOAD</span></span>
-<span id="cb4-129"><a href="#cb4-129" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8E</span><span class="op">,</span> <span class="op">$</span><span class="bn">30</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; STX $C830 (end addr lo)</span></span>
-<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8C</span><span class="op">,</span> <span class="op">$</span><span class="bn">31</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; STY $C831 (end addr hi)</span></span>
-<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C820 (target bank)</span></span>
-<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>E0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; JSR stash_to_bank ($C8E0)</span></span>
-<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-136"><a href="#cb4-136" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span>EE              <span class="co">; LDA #$EE (238 = &quot;app stashed&quot;)</span></span>
-<span id="cb4-137"><a href="#cb4-137" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">0B</span><span class="op">,</span> <span class="op">$</span>C0         <span class="co">; STA $C00B</span></span>
-<span id="cb4-138"><a href="#cb4-138" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-139"><a href="#cb4-139" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C820 (target bank)</span></span>
-<span id="cb4-140"><a href="#cb4-140" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>C0<span class="op">,</span> <span class="op">$</span>C9         <span class="co">; JSR set_bitmap ($C9C0)</span></span>
-<span id="cb4-141"><a href="#cb4-141" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-142"><a href="#cb4-142" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #0</span></span>
-<span id="cb4-143"><a href="#cb4-143" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>F0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; JSR fetch_bank ($C8F0)</span></span>
-<span id="cb4-144"><a href="#cb4-144" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-145"><a href="#cb4-145" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span>FF              <span class="co">; LDA #$FF (255 = &quot;launcher restored&quot;)</span></span>
-<span id="cb4-146"><a href="#cb4-146" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">0C</span><span class="op">,</span> <span class="op">$</span>C0         <span class="co">; STA $C00C</span></span>
-<span id="cb4-147"><a href="#cb4-147" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-148"><a href="#cb4-148" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">60</span>                   <span class="co">; RTS</span></span>
-<span id="cb4-149"><a href="#cb4-149" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-150"><a href="#cb4-150" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-151"><a href="#cb4-151" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-152"><a href="#cb4-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-153"><a href="#cb4-153" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-154"><a href="#cb4-154" aria-hidden="true" tabindex="-1"></a><span class="co">; $C8E0: stash_to_bank - Stash $1000-$C5FF to REU bank in A (16 bytes)</span></span>
-<span id="cb4-155"><a href="#cb4-155" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-156"><a href="#cb4-156" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span><span class="bn">60</span><span class="op">,</span> <span class="op">$</span>C9         <span class="co">; JSR reu_setup_logical ($C960)</span></span>
-<span id="cb4-157"><a href="#cb4-157" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">90</span>              <span class="co">; LDA #$90 (STASH command)</span></span>
-<span id="cb4-158"><a href="#cb4-158" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">01</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF01 - execute transfer</span></span>
-<span id="cb4-159"><a href="#cb4-159" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">60</span>                   <span class="co">; RTS</span></span>
-<span id="cb4-160"><a href="#cb4-160" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-161"><a href="#cb4-161" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-162"><a href="#cb4-162" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-163"><a href="#cb4-163" aria-hidden="true" tabindex="-1"></a><span class="co">; $C8F0: fetch_bank - Fetch from REU bank in A to $1000-$C5FF (16 bytes)</span></span>
-<span id="cb4-164"><a href="#cb4-164" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-165"><a href="#cb4-165" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span><span class="bn">60</span><span class="op">,</span> <span class="op">$</span>C9         <span class="co">; JSR reu_setup_logical ($C960)</span></span>
-<span id="cb4-166"><a href="#cb4-166" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">91</span>              <span class="co">; LDA #$91 (FETCH command)</span></span>
-<span id="cb4-167"><a href="#cb4-167" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">01</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF01 - execute transfer</span></span>
-<span id="cb4-168"><a href="#cb4-168" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">60</span>                   <span class="co">; RTS</span></span>
-<span id="cb4-169"><a href="#cb4-169" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-170"><a href="#cb4-170" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-171"><a href="#cb4-171" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-172"><a href="#cb4-172" aria-hidden="true" tabindex="-1"></a><span class="co">; Page 2: $C900-$C9FF - Main routines</span></span>
-<span id="cb4-173"><a href="#cb4-173" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-174"><a href="#cb4-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-175"><a href="#cb4-175" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-176"><a href="#cb4-176" aria-hidden="true" tabindex="-1"></a><span class="co">; $C900: return_to_launcher (64 bytes)</span></span>
-<span id="cb4-177"><a href="#cb4-177" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-178"><a href="#cb4-178" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">34</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C834 (current bank)</span></span>
-<span id="cb4-179"><a href="#cb4-179" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>E0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; JSR stash_to_bank ($C8E0)</span></span>
-<span id="cb4-180"><a href="#cb4-180" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">34</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C834 (current bank)</span></span>
-<span id="cb4-181"><a href="#cb4-181" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>C0<span class="op">,</span> <span class="op">$</span>C9         <span class="co">; JSR set_bitmap ($C9C0)</span></span>
-<span id="cb4-182"><a href="#cb4-182" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">34</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C834</span></span>
-<span id="cb4-183"><a href="#cb4-183" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">35</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; STA $C835</span></span>
-<span id="cb4-184"><a href="#cb4-184" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #0</span></span>
-<span id="cb4-185"><a href="#cb4-185" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>F0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; JSR fetch_bank ($C8F0)</span></span>
-<span id="cb4-186"><a href="#cb4-186" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #0</span></span>
-<span id="cb4-187"><a href="#cb4-187" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">34</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; STA $C834</span></span>
-<span id="cb4-188"><a href="#cb4-188" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">00</span><span class="op">,</span> <span class="op">$</span><span class="bn">10</span>         <span class="co">; JMP $1000</span></span>
-<span id="cb4-189"><a href="#cb4-189" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-190"><a href="#cb4-190" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-191"><a href="#cb4-191" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-192"><a href="#cb4-192" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-193"><a href="#cb4-193" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span></span>
-<span id="cb4-194"><a href="#cb4-194" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-195"><a href="#cb4-195" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-196"><a href="#cb4-196" aria-hidden="true" tabindex="-1"></a><span class="co">; $C940: switch_app (64 bytes)</span></span>
-<span id="cb4-197"><a href="#cb4-197" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-198"><a href="#cb4-198" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">34</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C834 (current bank)</span></span>
-<span id="cb4-199"><a href="#cb4-199" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>E0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; JSR stash_to_bank ($C8E0)</span></span>
-<span id="cb4-200"><a href="#cb4-200" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">34</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C834 (current bank)</span></span>
-<span id="cb4-201"><a href="#cb4-201" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>C0<span class="op">,</span> <span class="op">$</span>C9         <span class="co">; JSR set_bitmap ($C9C0)</span></span>
-<span id="cb4-202"><a href="#cb4-202" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C820 (target bank)</span></span>
-<span id="cb4-203"><a href="#cb4-203" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>F0<span class="op">,</span> <span class="op">$</span>C8         <span class="co">; JSR fetch_bank ($C8F0)</span></span>
-<span id="cb4-204"><a href="#cb4-204" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">20</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C820</span></span>
-<span id="cb4-205"><a href="#cb4-205" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">34</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; STA $C834</span></span>
-<span id="cb4-206"><a href="#cb4-206" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span><span class="bn">00</span><span class="op">,</span> <span class="op">$</span><span class="bn">10</span>         <span class="co">; JMP $1000</span></span>
-<span id="cb4-207"><a href="#cb4-207" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-208"><a href="#cb4-208" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-209"><a href="#cb4-209" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-210"><a href="#cb4-210" aria-hidden="true" tabindex="-1"></a><span class="co">; $C960: reu_setup_logical - Resolve logical token via REU bank 0, then setup regs</span></span>
-<span id="cb4-211"><a href="#cb4-211" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-212"><a href="#cb4-212" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>C9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; CMP #0 (logical launcher bank?)</span></span>
-<span id="cb4-213"><a href="#cb4-213" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>D0<span class="op">,</span> <span class="op">$</span><span class="bn">09</span>              <span class="co">; BNE lookup_app_bank</span></span>
-<span id="cb4-214"><a href="#cb4-214" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">3B</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C83B (reu_bank_skip)</span></span>
-<span id="cb4-215"><a href="#cb4-215" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">18</span>                   <span class="co">; CLC</span></span>
-<span id="cb4-216"><a href="#cb4-216" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">69</span><span class="op">,</span> <span class="op">$</span><span class="bn">01</span>              <span class="co">; ADC #$01 (launcher is Start+1)</span></span>
-<span id="cb4-217"><a href="#cb4-217" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span>A0<span class="op">,</span> <span class="op">$</span>C9         <span class="co">; JMP reu_setup ($C9A0)</span></span>
-<span id="cb4-218"><a href="#cb4-218" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AA                   <span class="co">; lookup_app_bank: TAX (preserve logical token)</span></span>
-<span id="cb4-219"><a href="#cb4-219" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">3D</span>              <span class="co">; LDA #&lt;$C83D</span></span>
-<span id="cb4-220"><a href="#cb4-220" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">02</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF02 (C64 addr lo)</span></span>
-<span id="cb4-221"><a href="#cb4-221" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span>C8              <span class="co">; LDA #&gt;$C83D</span></span>
-<span id="cb4-222"><a href="#cb4-222" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">03</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF03 (C64 addr hi)</span></span>
-<span id="cb4-223"><a href="#cb4-223" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8A</span>                   <span class="co">; TXA</span></span>
-<span id="cb4-224"><a href="#cb4-224" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">04</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF04 (REU offset lo = logical token)</span></span>
-<span id="cb4-225"><a href="#cb4-225" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">2F</span>              <span class="co">; LDA #$2F</span></span>
-<span id="cb4-226"><a href="#cb4-226" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">05</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF05 (REU offset hi = lookup page)</span></span>
-<span id="cb4-227"><a href="#cb4-227" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">3B</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C83B (ReadyOS global physical bank)</span></span>
-<span id="cb4-228"><a href="#cb4-228" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">06</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF06</span></span>
-<span id="cb4-229"><a href="#cb4-229" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">01</span>              <span class="co">; LDA #1</span></span>
-<span id="cb4-230"><a href="#cb4-230" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">07</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF07 (length lo)</span></span>
-<span id="cb4-231"><a href="#cb4-231" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #0</span></span>
-<span id="cb4-232"><a href="#cb4-232" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">08</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF08 (length hi)</span></span>
-<span id="cb4-233"><a href="#cb4-233" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">91</span>              <span class="co">; LDA #$91 (FETCH command)</span></span>
-<span id="cb4-234"><a href="#cb4-234" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">01</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF01 - fetch physical bank byte</span></span>
-<span id="cb4-235"><a href="#cb4-235" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AD<span class="op">,</span> <span class="op">$</span><span class="bn">3D</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDA $C83D (resolved physical bank)</span></span>
-<span id="cb4-236"><a href="#cb4-236" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4C</span><span class="op">,</span> <span class="op">$</span>A0<span class="op">,</span> <span class="op">$</span>C9         <span class="co">; JMP reu_setup ($C9A0)</span></span>
-<span id="cb4-237"><a href="#cb4-237" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span>       <span class="co">; Padding to $C9A0</span></span>
-<span id="cb4-238"><a href="#cb4-238" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-239"><a href="#cb4-239" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-240"><a href="#cb4-240" aria-hidden="true" tabindex="-1"></a><span class="co">; $C9A0: reu_setup - Set up REU registers for $B600 transfer at $1000</span></span>
-<span id="cb4-241"><a href="#cb4-241" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-242"><a href="#cb4-242" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">06</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF06 (bank)</span></span>
-<span id="cb4-243"><a href="#cb4-243" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #$00</span></span>
-<span id="cb4-244"><a href="#cb4-244" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">02</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF02 (C64 addr lo = $00)</span></span>
-<span id="cb4-245"><a href="#cb4-245" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">10</span>              <span class="co">; LDA #$10</span></span>
-<span id="cb4-246"><a href="#cb4-246" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">03</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF03 (C64 addr hi = $10, so $1000)</span></span>
-<span id="cb4-247"><a href="#cb4-247" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDA #$00</span></span>
-<span id="cb4-248"><a href="#cb4-248" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">04</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF04 (REU addr lo)</span></span>
-<span id="cb4-249"><a href="#cb4-249" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">05</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF05 (REU addr hi)</span></span>
-<span id="cb4-250"><a href="#cb4-250" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">07</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF07 (len lo = $00)</span></span>
-<span id="cb4-251"><a href="#cb4-251" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span>B6              <span class="co">; LDA #$B6</span></span>
-<span id="cb4-252"><a href="#cb4-252" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8D</span><span class="op">,</span> <span class="op">$</span><span class="bn">08</span><span class="op">,</span> <span class="op">$</span>DF         <span class="co">; STA $DF08 (len hi = $B6, so $B600 bytes)</span></span>
-<span id="cb4-253"><a href="#cb4-253" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">60</span>                   <span class="co">; RTS</span></span>
-<span id="cb4-254"><a href="#cb4-254" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-255"><a href="#cb4-255" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-256"><a href="#cb4-256" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-257"><a href="#cb4-257" aria-hidden="true" tabindex="-1"></a><span class="co">; $C9C0: set_bitmap - Set bit for bank in A in reu_bitmap ($C836-$C838)</span></span>
-<span id="cb4-258"><a href="#cb4-258" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-259"><a href="#cb4-259" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>C9<span class="op">,</span> <span class="op">$</span><span class="bn">18</span>              <span class="co">; CMP #$18 (only banks 0-23 are tracked)</span></span>
-<span id="cb4-260"><a href="#cb4-260" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>B0<span class="op">,</span> <span class="op">$</span><span class="bn">17</span>              <span class="co">; BCS done</span></span>
-<span id="cb4-261"><a href="#cb4-261" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AA                   <span class="co">; TAX - preserve full bank</span></span>
-<span id="cb4-262"><a href="#cb4-262" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">29</span><span class="op">,</span> <span class="op">$</span><span class="bn">07</span>              <span class="co">; AND #$07 - bit index within byte</span></span>
-<span id="cb4-263"><a href="#cb4-263" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A8                   <span class="co">; TAY - Y = bit index</span></span>
-<span id="cb4-264"><a href="#cb4-264" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8A</span>                   <span class="co">; TXA - restore full bank</span></span>
-<span id="cb4-265"><a href="#cb4-265" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4A</span>                   <span class="co">; LSR A</span></span>
-<span id="cb4-266"><a href="#cb4-266" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4A</span>                   <span class="co">; LSR A</span></span>
-<span id="cb4-267"><a href="#cb4-267" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">4A</span>                   <span class="co">; LSR A</span></span>
-<span id="cb4-268"><a href="#cb4-268" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AA                   <span class="co">; TAX - X = byte offset 0..2</span></span>
-<span id="cb4-269"><a href="#cb4-269" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A9<span class="op">,</span> <span class="op">$</span><span class="bn">01</span>              <span class="co">; LDA #$01</span></span>
-<span id="cb4-270"><a href="#cb4-270" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">88</span>                   <span class="co">; DEY</span></span>
-<span id="cb4-271"><a href="#cb4-271" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">30</span><span class="op">,</span> <span class="op">$</span><span class="bn">03</span>              <span class="co">; BMI store_bit</span></span>
-<span id="cb4-272"><a href="#cb4-272" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">0A</span>                   <span class="co">; ASL A</span></span>
-<span id="cb4-273"><a href="#cb4-273" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">10</span><span class="op">,</span> <span class="op">$</span>FA              <span class="co">; BPL shift_loop</span></span>
-<span id="cb4-274"><a href="#cb4-274" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">1D</span><span class="op">,</span> <span class="op">$</span><span class="bn">36</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; ORA $C836,X</span></span>
-<span id="cb4-275"><a href="#cb4-275" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">9D</span><span class="op">,</span> <span class="op">$</span><span class="bn">36</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; STA $C836,X</span></span>
-<span id="cb4-276"><a href="#cb4-276" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">60</span>                   <span class="co">; RTS</span></span>
-<span id="cb4-277"><a href="#cb4-277" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span>
-<span id="cb4-278"><a href="#cb4-278" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-279"><a href="#cb4-279" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-280"><a href="#cb4-280" aria-hidden="true" tabindex="-1"></a><span class="co">; $C9E0: log_byte - Write debug marker to buffer at $C980</span></span>
-<span id="cb4-281"><a href="#cb4-281" aria-hidden="true" tabindex="-1"></a><span class="co">;-----------------------------------------------------------------------------</span></span>
-<span id="cb4-282"><a href="#cb4-282" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">48</span>                   <span class="co">; PHA - save the byte to log</span></span>
-<span id="cb4-283"><a href="#cb4-283" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8E</span><span class="op">,</span> <span class="op">$</span>FC<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>         <span class="co">; STX $00FC - save X to ZP temp</span></span>
-<span id="cb4-284"><a href="#cb4-284" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AE<span class="op">,</span> <span class="op">$</span><span class="bn">3A</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; LDX $C83A - get log_index</span></span>
-<span id="cb4-285"><a href="#cb4-285" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">68</span>                   <span class="co">; PLA - get byte back</span></span>
-<span id="cb4-286"><a href="#cb4-286" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">9D</span><span class="op">,</span> <span class="op">$</span><span class="bn">80</span><span class="op">,</span> <span class="op">$</span>C9         <span class="co">; STA $C980,X - write to buffer</span></span>
-<span id="cb4-287"><a href="#cb4-287" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>E8                   <span class="co">; INX - increment index</span></span>
-<span id="cb4-288"><a href="#cb4-288" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>E0<span class="op">,</span> <span class="op">$</span><span class="bn">20</span>              <span class="co">; CPX #$20 - wrap at 32</span></span>
-<span id="cb4-289"><a href="#cb4-289" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>D0<span class="op">,</span> <span class="op">$</span><span class="bn">02</span>              <span class="co">; BNE +2 (skip reset)</span></span>
-<span id="cb4-290"><a href="#cb4-290" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>A2<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>              <span class="co">; LDX #$00 - reset to 0</span></span>
-<span id="cb4-291"><a href="#cb4-291" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">8E</span><span class="op">,</span> <span class="op">$</span><span class="bn">3A</span><span class="op">,</span> <span class="op">$</span>C8         <span class="co">; STX $C83A - store new index</span></span>
-<span id="cb4-292"><a href="#cb4-292" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span>AE<span class="op">,</span> <span class="op">$</span>FC<span class="op">,</span> <span class="op">$</span><span class="bn">00</span>         <span class="co">; LDX $00FC - restore X</span></span>
-<span id="cb4-293"><a href="#cb4-293" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">60</span>                   <span class="co">; RTS</span></span>
-<span id="cb4-294"><a href="#cb4-294" aria-hidden="true" tabindex="-1"></a>.<span class="dt">byte</span> <span class="op">$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span><span class="op">,$</span><span class="bn">00</span></span></code></pre></div>
+class="sourceCode asm">;-----------------------------------------------------------------------------
+; Shared ReadyOS shim image ($C800-$C9FF, 512 bytes)
+; This file is the canonical shim byte layout used by both the disk boot path
+; and the EasyFlash cartridge flavor. Keep it identical across all variants.
+;-----------------------------------------------------------------------------
+
+;-----------------------------------------------------------------------------
+; Page 1: $C800-$C8FF - Jump table, data, and helper routines
+;-----------------------------------------------------------------------------
+
+; $C800-$C817: Jump Table (24 bytes, 8 entries)
+jt_load_disk    = $C800     ; Load from disk, run
+jt_load_reu     = $C803     ; Fetch from REU, run
+jt_run_app      = $C806     ; Just run app
+jt_preload      = $C809     ; Preload to REU, return
+jt_return       = $C80C     ; Return to launcher
+jt_switch       = $C80F     ; Switch to another app
+jt_reserved     = $C812     ; Reserved compatibility slot (safe no-op)
+jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
+
+.byte $4C, $40, $C8         ; $C800: JMP load_disk ($C840)
+.byte $4C, $60, $C8         ; $C803: JMP load_reu ($C860)
+.byte $4C, $00, $10         ; $C806: JMP $1000 (run app)
+.byte $4C, $80, $C8         ; $C809: JMP preload ($C880)
+.byte $4C, $00, $C9         ; $C80C: JMP return_to_launcher ($C900)
+.byte $4C, $40, $C9         ; $C80F: JMP switch_app ($C940)
+.byte $4C, $FF, $C9         ; $C812: reserved helper -&gt; safe RTS
+.byte $4C, $F0, $C8         ; $C815: JMP fetch_bank ($C8F0)
+
+; $C818: deprecated logger compatibility slot
+.byte $4C, $FF, $C9         ; $C818: deprecated logger -&gt; safe RTS
+.byte $4C, $C0, $C9         ; $C81B: JMP mark_loaded (token in A)
+.byte $00,$00               ; $C81E-$C81F: reserved
+
+; $C820-$C83F: Data Area (32 bytes)
+; $C820: target_bank - bank to load/switch to
+; $C821: filename_len
+; $C822-$C823: launcher-side app-size scratch (not consumed by the shim)
+; $C824-$C82F: filename (12 bytes)
+; $C830: load_end_lo (KERNAL LOAD end addr low byte, saved by preload)
+; $C831: load_end_hi (KERNAL LOAD end addr high byte, saved by preload)
+; $C832-$C833: unused
+; $C834: current_bank - currently running app
+; $C835: last_saved
+; $C836-$C838: retired bitmap bytes (reserved; authoritative state is in REU)
+; $C839: storage_drive - shim-global default storage drive for D8/D9 app dialogs
+;        This persists across app switches and is shared by apps that use the
+;        common file-dialog default-drive contract.
+; $C83A: reserved (formerly log_index)
+; $C83B: readyos_bank - direct physical ReadyOS bank number (Skip+1)
+; $C83C: launcher_flags - launcher-owned one-shot state flags
+; $C83D: reu_lookup_scratch - one-byte ReadyOS-bank DMA scratch
+; $C83E: token_scratch; $C83F: reserved
+
+.byte $00                   ; $C820: target_bank
+.byte $08                   ; $C821: filename_len
+.byte $00, $00              ; $C822-$C823: launcher app-size scratch
+.byte "LAUNCHER    "        ; $C824-$C82F: filename (12 bytes)
+.byte $00,$00               ; $C830-$C831: load_end_lo, load_end_hi
+.byte $00,$00               ; $C832-$C833: unused
+.byte $00                   ; $C834: current_bank
+.byte $FF                   ; $C835: last_saved
+.byte $00                   ; $C836: reserved (retired bitmap byte)
+.byte $00                   ; $C837: reserved (retired bitmap byte)
+.byte $00                   ; $C838: reserved (retired bitmap byte)
+.byte $08                   ; $C839: storage_drive (default drive 8)
+.byte $00                   ; $C83A: reserved (retired debug-ring head)
+.byte READYOS_REU_BANK_SKIP + 1 ; $C83B: readyos_bank (physical Skip+1)
+.byte $00                   ; $C83C: launcher_flags
+.byte $00                   ; $C83D: reu_lookup_scratch
+.byte $00,$00               ; $C83E-$C83F: reserved
+
+;-----------------------------------------------------------------------------
+; $C840: load_disk - Load app from disk and run (32 bytes)
+;-----------------------------------------------------------------------------
+.byte $AD, $21, $C8         ; LDA $C821 (filename len)
+.byte $A2, $24              ; LDX #$24
+.byte $A0, $C8              ; LDY #$C8 (filename at $C824)
+.byte $20, $BD, $FF         ; JSR $FFBD (SETNAM)
+.byte $A9, $00              ; LDA #0
+.byte $AE, $39, $C8         ; LDX $C839 (storage drive)
+.byte $A0, $01              ; LDY #1
+.byte $20, $BA, $FF         ; JSR $FFBA (SETLFS)
+.byte $A9, $00              ; LDA #0
+.byte $20, $D5, $FF         ; JSR $FFD5 (LOAD)
+.byte $4C, $00, $10         ; JMP $1000
+.byte $00,$00,$00,$00       ; Padding to $C860
+
+;-----------------------------------------------------------------------------
+; $C860: load_reu - Fetch app from REU and run (32 bytes)
+;-----------------------------------------------------------------------------
+.byte $AD, $20, $C8         ; LDA $C820 (target bank)
+.byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
+.byte $4C, $00, $10         ; JMP $1000
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00
+
+;-----------------------------------------------------------------------------
+; $C880: preload - Load to REU, return to launcher
+; Called via JSR $C809
+;-----------------------------------------------------------------------------
+.byte $A9, $00              ; LDA #0 (launcher token -&gt; ReadyOS bank)
+.byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
+
+.byte $AD, $21, $C8         ; LDA $C821 (len)
+.byte $A2, $24              ; LDX #$24
+.byte $A0, $C8              ; LDY #$C8 (filename at $C824)
+.byte $20, $BD, $FF         ; JSR SETNAM
+
+.byte $A9, $00              ; LDA #0
+.byte $AE, $39, $C8         ; LDX $C839 (storage drive)
+.byte $A0, $01              ; LDY #1
+.byte $20, $BA, $FF         ; JSR SETLFS
+
+.byte $A9, $00              ; LDA #0
+.byte $20, $D5, $FF         ; JSR LOAD
+
+.byte $8E, $30, $C8         ; STX $C830 (end addr lo)
+.byte $8C, $31, $C8         ; STY $C831 (end addr hi)
+
+.byte $AD, $20, $C8         ; LDA $C820 (target bank)
+.byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
+
+.byte $AD, $20, $C8         ; LDA $C820 (target bank)
+.byte $20, $C0, $C9         ; JSR mark_loaded ($C9C0)
+
+.byte $A9, $00              ; LDA #0
+.byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
+
+.byte $60                   ; RTS
+
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00
+
+;-----------------------------------------------------------------------------
+; $C8E0: stash_to_bank - Stash $1000-$C7FF to REU bank in A (16 bytes)
+;-----------------------------------------------------------------------------
+.byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
+.byte $A9, $90              ; LDA #$90 (STASH command)
+.byte $8D, $01, $DF         ; STA $DF01 - execute transfer
+.byte $60                   ; RTS
+.byte $00,$00,$00,$00,$00,$00,$00
+
+;-----------------------------------------------------------------------------
+; $C8F0: fetch_bank - Fetch from REU bank in A to $1000-$C7FF (16 bytes)
+;-----------------------------------------------------------------------------
+.byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
+.byte $A9, $91              ; LDA #$91 (FETCH command)
+.byte $8D, $01, $DF         ; STA $DF01 - execute transfer
+.byte $60                   ; RTS
+.byte $00,$00,$00,$00,$00,$00,$00
+
+;-----------------------------------------------------------------------------
+; Page 2: $C900-$C9FF - Main routines
+;-----------------------------------------------------------------------------
+
+;-----------------------------------------------------------------------------
+; $C900: return_to_launcher (64 bytes)
+;-----------------------------------------------------------------------------
+.byte $AD, $34, $C8         ; LDA $C834 (current bank)
+.byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
+.byte $AD, $34, $C8         ; LDA $C834 (current bank)
+.byte $20, $C0, $C9         ; JSR mark_loaded ($C9C0)
+.byte $AD, $34, $C8         ; LDA $C834
+.byte $8D, $35, $C8         ; STA $C835
+.byte $A9, $00              ; LDA #0
+.byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
+.byte $A9, $00              ; LDA #0
+.byte $8D, $34, $C8         ; STA $C834
+.byte $4C, $00, $10         ; JMP $1000
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00
+
+;-----------------------------------------------------------------------------
+; $C940: switch_app (64 bytes)
+;-----------------------------------------------------------------------------
+.byte $AD, $34, $C8         ; LDA $C834 (current bank)
+.byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
+.byte $AD, $34, $C8         ; LDA $C834 (current bank)
+.byte $20, $C0, $C9         ; JSR mark_loaded ($C9C0)
+.byte $AD, $20, $C8         ; LDA $C820 (target bank)
+.byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
+.byte $AD, $20, $C8         ; LDA $C820
+.byte $8D, $34, $C8         ; STA $C834
+.byte $4C, $00, $10         ; JMP $1000
+.byte $00,$00,$00,$00,$00
+
+;-----------------------------------------------------------------------------
+; $C960: reu_setup_logical - Resolve token via the ReadyOS bank, then setup regs
+;-----------------------------------------------------------------------------
+.byte $C9, $00              ; CMP #0 (logical launcher bank?)
+.byte $D0, $06              ; BNE lookup_app_bank
+.byte $AD, $3B, $C8         ; LDA $C83B (ReadyOS bank contains launcher)
+.byte $4C, $A0, $C9         ; JMP reu_setup ($C9A0)
+.byte $AA                   ; lookup_app_bank: TAX (preserve logical token)
+.byte $A9, $3D              ; LDA #&lt;$C83D
+.byte $8D, $02, $DF         ; STA $DF02 (C64 addr lo)
+.byte $A9, $C8              ; LDA #&gt;$C83D
+.byte $8D, $03, $DF         ; STA $DF03 (C64 addr hi)
+.byte $8A                   ; TXA
+.byte $18                   ; CLC
+.byte $69, $40              ; ADC #&lt;$B940 (mapping offset + token)
+.byte $8D, $04, $DF         ; STA $DF04 (REU offset lo)
+.byte $A9, $B9              ; LDA #&gt;$B940
+.byte $69, $00              ; ADC #0 (include low-byte carry)
+.byte $8D, $05, $DF         ; STA $DF05 (REU offset hi)
+.byte $AD, $3B, $C8         ; LDA $C83B (ReadyOS global physical bank)
+.byte $8D, $06, $DF         ; STA $DF06
+.byte $A9, $01              ; LDA #1
+.byte $8D, $07, $DF         ; STA $DF07 (length lo)
+.byte $A9, $00              ; LDA #0
+.byte $8D, $08, $DF         ; STA $DF08 (length hi)
+.byte $A9, $91              ; LDA #$91 (FETCH command)
+.byte $8D, $01, $DF         ; STA $DF01 - fetch physical bank byte
+.byte $AD, $3D, $C8         ; LDA $C83D (resolved physical bank)
+.byte $4C, $A0, $C9         ; JMP reu_setup ($C9A0)
+.byte $00,$00               ; Padding to $C9A0
+
+;-----------------------------------------------------------------------------
+; $C9A0: reu_setup - Set up REU registers for $B800 transfer at $1000
+;-----------------------------------------------------------------------------
+.byte $8D, $06, $DF         ; STA $DF06 (bank)
+.byte $A9, $00              ; LDA #$00
+.byte $8D, $02, $DF         ; STA $DF02 (C64 addr lo = $00)
+.byte $A9, $10              ; LDA #$10
+.byte $8D, $03, $DF         ; STA $DF03 (C64 addr hi = $10, so $1000)
+.byte $A9, $00              ; LDA #$00
+.byte $8D, $04, $DF         ; STA $DF04 (REU addr lo)
+.byte $8D, $05, $DF         ; STA $DF05 (REU addr hi)
+.byte $8D, $07, $DF         ; STA $DF07 (len lo = $00)
+.byte $A9, $B8              ; LDA #$B8
+.byte $8D, $08, $DF         ; STA $DF08 (len hi = $B8, so $B800 bytes)
+.byte $60                   ; RTS
+.byte $00,$00
+
+;-----------------------------------------------------------------------------
+; $C9C0: mark_loaded - Commit token status after a successful snapshot stash
+; A = logical token. Status $07 means valid, loaded, and resumable.
+;-----------------------------------------------------------------------------
+.byte $8D, $3E, $C8         ; STA $C83E (preserve token)
+.byte $A9, $07              ; LDA #VALID|LOADED|RESUMABLE
+.byte $8D, $3D, $C8         ; STA $C83D
+.byte $A9, $3D              ; C64 source = $C83D
+.byte $8D, $02, $DF
+.byte $A9, $C8
+.byte $8D, $03, $DF
+.byte $AD, $3E, $C8         ; token
+.byte $18                   ; CLC
+.byte $69, $40              ; + &lt;$BA40 (token status table)
+.byte $8D, $04, $DF
+.byte $A9, $BA              ; &gt;$BA40
+.byte $69, $00              ; include low-byte carry
+.byte $8D, $05, $DF
+.byte $AD, $3B, $C8         ; ReadyOS physical bank
+.byte $8D, $06, $DF
+.byte $A9, $01              ; one byte
+.byte $8D, $07, $DF
+.byte $A9, $00
+.byte $8D, $08, $DF
+.byte $A9, $90              ; STASH C64 byte to ReadyOS bank
+.byte $8D, $01, $DF
+.byte $AD, $3E, $C8         ; preserve caller-visible token in A
+.byte $60                   ; RTS
+.byte $00,$00,$00,$00       ; reserved through $C9FE
+.byte $60                   ; $C9FF: compatibility no-op RTS
+</pre></div>
 <h3 id="implemented-logical-bank-0-layout">Implemented Logical Bank 0
 Layout</h3>
 <p>The implemented v4 layout deliberately separates "hot, cheap to copy"

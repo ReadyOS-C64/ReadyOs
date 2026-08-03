@@ -109,7 +109,8 @@ static void reuviewer_read_control_bank_header(void) {
     if (control_bank_ok) {
         reu_dma_fetch((unsigned int)&reu_physical_banks,
                       REU_READYOS_GLOBAL_PHYSICAL(),
-                      REUCB_HEADER_PHYS_BANKS, 1u);
+                      (unsigned int)(REUCB_HEADER_OFF +
+                                     REUCB_HEADER_PHYS_BANKS), 1u);
     } else {
         reu_physical_banks = reu_phys_count_from_alloc_table();
     }
@@ -129,17 +130,31 @@ static void reuviewer_fetch_app_name(unsigned char app_index) {
 
 static unsigned char reuviewer_find_app_for_logical(unsigned char logical,
                                                     unsigned char *out_app) {
-    unsigned char i;
-    unsigned char app_bank;
+    unsigned char app_index;
 
     if (!control_bank_ok) {
         return 0u;
     }
-    for (i = 0u; i < REUCB_APP_REG_COUNT; ++i) {
-        reu_dma_fetch((unsigned int)&app_bank, REU_READYOS_GLOBAL_PHYSICAL(),
-                      (unsigned int)(REUCB_APP_REG_OFF + i), 1u);
-        if (app_bank == logical) {
-            *out_app = i;
+    app_index = readyos_bank_read_byte((unsigned int)(REUCB_TOKEN_APP_OFF +
+                                                       logical));
+    if (app_index < REUCB_APP_REG_COUNT) {
+        *out_app = app_index;
+        return 1u;
+    }
+    return 0u;
+}
+
+static unsigned char reuviewer_find_logical_for_physical(unsigned char physical,
+                                                         unsigned char *out_token) {
+    unsigned char token;
+    unsigned char status;
+
+    for (token = 1u; token <= TUI_APP_BANK_MAX; ++token) {
+        status = readyos_bank_read_byte((unsigned int)(REUCB_TOKEN_STATUS_OFF + token));
+        if ((status & REUCB_TOKEN_VALID) &&
+            readyos_bank_read_byte((unsigned int)(REUCB_SHIM_LOOKUP_OFF + token)) ==
+                physical) {
+            *out_token = token;
             return 1u;
         }
     }
@@ -183,8 +198,8 @@ static void draw_summary(void) {
     tui_print_uint(6, TITLE_Y + 1,
                    reu_phys_display_count(reu_physical_banks), TUI_COLOR_WHITE);
 
-    tui_puts(12, TITLE_Y + 1, "SK:", TUI_COLOR_ORANGE);
-    tui_print_uint(15, TITLE_Y + 1, *SHIM_REU_BANK_SKIP, TUI_COLOR_ORANGE);
+    tui_puts(12, TITLE_Y + 1, "RO:", TUI_COLOR_ORANGE);
+    tui_print_uint(15, TITLE_Y + 1, *SHIM_READYOS_BANK, TUI_COLOR_ORANGE);
 
     tui_puts(20, TITLE_Y + 1, "FREE:", TUI_COLOR_GRAY2);
     tui_print_uint(25, TITLE_Y + 1, free_count, TUI_COLOR_GRAY2);
@@ -323,7 +338,7 @@ static void draw_detail(void) {
         case REU_APP_ALLOC: type_str = "APP ALLOC"; break;
         case REU_RESERVED:  type_str = "APP SLOT RSV"; break;
         case REU_LAUNCHER:  type_str = "LAUNCHER"; break;
-        case REU_GLOBAL:    type_str = "READYOS GLOBAL"; break;
+        case REU_GLOBAL:    type_str = "READYOS BANK"; break;
         case REU_SKIPPED:   type_str = "SKIPPED"; break;
         case REU_UNAVAIL:   type_str = "UNAVAILABLE"; break;
         case REU_RS_CACHE:  type_str = "RS CACHE"; break;
@@ -338,8 +353,7 @@ static void draw_detail(void) {
     tui_print_uint(6, DETAIL_Y + 1, bank, TUI_COLOR_WHITE);
     tui_puts(12, DETAIL_Y + 1, "LOG: ", TUI_COLOR_GRAY3);
     if (!bank_is_unavailable(bank) &&
-        bank >= (unsigned char)(*SHIM_REU_BANK_SKIP + 2u)) {
-        logical = (unsigned char)(bank - *SHIM_REU_BANK_SKIP - 1u);
+        reuviewer_find_logical_for_physical(bank, &logical)) {
         tui_print_hex8(17, DETAIL_Y + 1, logical, TUI_COLOR_CYAN);
         if (reuviewer_find_app_for_logical(logical, &app_index)) {
             reuviewer_fetch_app_name(app_index);

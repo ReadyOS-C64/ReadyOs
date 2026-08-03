@@ -132,11 +132,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_direct_string
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
   - id: wait_prompt_after_direct_string_resume
     type: screen.wait_contains
     params:
@@ -201,11 +199,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_multiline
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
   - id: wait_prompt_after_multiline_resume
     type: screen.wait_contains
     params:
@@ -258,11 +254,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_after_new
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
   - id: wait_prompt_after_new_resume
     type: screen.wait_contains
     params:
@@ -307,11 +301,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_variables
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
   - id: wait_prompt_after_variables_resume
     type: screen.wait_contains
     params:
@@ -364,11 +356,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_rb_program
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
   - id: wait_prompt_after_rb_resume
     type: screen.wait_contains
     params:

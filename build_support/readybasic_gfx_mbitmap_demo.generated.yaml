@@ -1,0 +1,153 @@
+version: 1
+kind: vice_task_plan
+plan_id: readybasic_gfx_mbitmap_demo
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 250
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 180
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: false
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5d-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5d-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5d-d81-preboot.prg"
+    drive8_type: 1581
+    drive9_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_readyos_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_readybasic_loaded_by_readyos
+    type: screen.wait_contains
+    params:
+      text: "FREE:"
+      wait_timeout_s: 180
+      capture_on_success: true
+      capture_label: readybasic_gfx_mbitmap_prompt
+  - id: load_rbgfx14
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,49,52,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
+  - id: capture_existing_circle
+    type: screen.capture
+    params:
+      label: readybasic_gfx_existing_circle
+      pitch: "Existing CIRCLE/FCIRCLE commands under ReadyOS ReadyBASIC"
+  - id: finish_rbgfx14
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.0
+  - id: wait_rbgfx14_done
+    type: screen.wait_contains
+    params:
+      text: "PHASE2 PRIMS DONE"
+      wait_timeout_s: 60
+      capture_on_success: true
+      capture_label: readybasic_gfx_existing_circle_done
+  - id: load_rbgfx15
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,49,53,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.8
+  - id: capture_existing_tile_charat
+    type: screen.capture
+    params:
+      label: readybasic_gfx_existing_tile_charat
+      pitch: "Existing TILE/CHARAT commands under ReadyOS ReadyBASIC"
+  - id: finish_rbgfx15
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.0
+  - id: wait_rbgfx15_done
+    type: screen.wait_contains
+    params:
+      text: "PHASE2 TILES DONE"
+      wait_timeout_s: 60
+      capture_on_success: true
+      capture_label: readybasic_gfx_existing_tile_charat_done
+  - id: load_rbgfx21
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,50,49,34,44,56,13,76,73,83,84,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.4
+  - id: capture_rbgfx21_list
+    type: screen.capture
+    params:
+      label: readybasic_gfx_mbitmap_prims_list
+      pitch: "RBGFX21 listed inside ReadyBASIC under ReadyOS"
+  - id: run_rbgfx21
+    type: input.sequence
+    params:
+      keys: [82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_mbitmap_prims
+    type: screen.capture
+    params:
+      label: readybasic_gfx_mbitmap_primitives
+      pitch: "MBITMAP primitive color-slot drawing"
+  - id: finish_rbgfx21
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.0
+  - id: wait_rbgfx21_done
+    type: screen.wait_contains
+    params:
+      text: "MBITMAP PRIMS DONE"
+      wait_timeout_s: 60
+      capture_on_success: true
+      capture_label: readybasic_gfx_mbitmap_primitives_done
+  - id: load_rbgfx22
+    type: input.sequence
+    params:
+      keys: [76,79,65,68,32,34,82,66,71,70,88,50,50,34,44,56,13,82,85,78,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.2
+  - id: capture_mbitmap_pnt_graphics
+    type: screen.capture
+    params:
+      label: readybasic_gfx_mbitmap_pnt_graphics
+      pitch: "MBITMAP pnt-code pixels before text assertion"
+  - id: finish_rbgfx22
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.0
+  - id: wait_rbgfx22_done
+    type: screen.wait_contains
+    params:
+      text: "MBITMAP PNT DONE"
+      wait_timeout_s: 60
+      capture_on_success: true
+      capture_label: readybasic_gfx_mbitmap_pnt_done
+  - id: assert_pnt_values
+    type: assert.screen
+    params:
+      contains: "MBITMAP PNT: 1  2  3"
+  - id: assert_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"

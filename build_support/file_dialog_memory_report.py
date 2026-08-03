@@ -25,8 +25,8 @@ DEFAULT_APPS = [
     "simplefiles",
     "readyshell",
 ]
-APP_SNAPSHOT_END = 0xC5FF
-APP_HIMEM = 0xC600
+APP_SNAPSHOT_END = 0xC7FF
+APP_HIMEM = 0xC800
 MAIN_SEGMENTS = ("STARTUP", "LOWCODE", "CODE", "RODATA", "DATA", "INIT", "ONCE", "BSS")
 SEGMENT_RE = re.compile(
     r"^\s*([A-Z0-9_]+)\s+([0-9A-F]{6})\s+([0-9A-F]{6})\s+([0-9A-F]{6})\s+[0-9A-F]{5}\s*$",
@@ -105,8 +105,8 @@ def collect_metrics(app: str) -> dict[str, object]:
         "runtime_end": runtime_end,
         "bss_bytes": bss_bytes,
         "used_bytes": used_bytes,
-        "headroom_c5ff": APP_SNAPSHOT_END - runtime_end,
-        "headroom_c600": APP_HIMEM - runtime_end,
+        "headroom_c7ff": APP_SNAPSHOT_END - runtime_end,
+        "headroom_c800": APP_HIMEM - runtime_end,
         "effective_limit": effective_limit,
         "effective_headroom": effective_limit - runtime_end,
         "stack_size": stack_size,
@@ -118,20 +118,21 @@ def collect_metrics(app: str) -> dict[str, object]:
 def print_report(rows: list[dict[str, object]], baseline: dict[str, dict[str, object]] | None) -> None:
     if baseline:
         print(
-            "app         class          end    used    bss   headC5FF  effLimit  effHead   dUsed  dBSS  dHead"
+            "app         class          end    used    bss   headC7FF  effLimit  effHead   dUsed  dBSS  dHead"
         )
         for row in rows:
             old = baseline.get(row["app"])
             d_used = row["used_bytes"] - old["used_bytes"] if old else None
             d_bss = row["bss_bytes"] - old["bss_bytes"] if old else None
-            d_head = row["headroom_c5ff"] - old["headroom_c5ff"] if old else None
+            old_head = old.get("headroom_c7ff", old.get("headroom_c5ff")) if old else None
+            d_head = row["headroom_c7ff"] - old_head if old_head is not None else None
             print(
                 f"{row['app']:<11}"
                 f"{row['class']:<15}"
                 f"{fmt_hex(row['runtime_end']):>7} "
                 f"{fmt_dec(row['used_bytes']):>6} "
                 f"{fmt_dec(row['bss_bytes']):>6} "
-                f"{fmt_dec(row['headroom_c5ff']):>9} "
+                f"{fmt_dec(row['headroom_c7ff']):>9} "
                 f"{fmt_hex(row['effective_limit']):>9} "
                 f"{fmt_dec(row['effective_headroom']):>8} "
                 f"{fmt_dec(d_used):>6} "
@@ -140,7 +141,7 @@ def print_report(rows: list[dict[str, object]], baseline: dict[str, dict[str, ob
             )
         return
 
-    print("app         class          end    used    bss   headC5FF  effLimit  effHead")
+    print("app         class          end    used    bss   headC7FF  effLimit  effHead")
     for row in rows:
         print(
             f"{row['app']:<11}"
@@ -148,7 +149,7 @@ def print_report(rows: list[dict[str, object]], baseline: dict[str, dict[str, ob
             f"{fmt_hex(row['runtime_end']):>7} "
             f"{fmt_dec(row['used_bytes']):>6} "
             f"{fmt_dec(row['bss_bytes']):>6} "
-            f"{fmt_dec(row['headroom_c5ff']):>9} "
+            f"{fmt_dec(row['headroom_c7ff']):>9} "
             f"{fmt_hex(row['effective_limit']):>9} "
             f"{fmt_dec(row['effective_headroom']):>8}"
         )

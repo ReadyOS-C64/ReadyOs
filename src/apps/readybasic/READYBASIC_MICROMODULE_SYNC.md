@@ -69,7 +69,8 @@ uppercase name field.
   - app runtime zero-page/stack save in the assigned core bank offsets
     `$0A00/$0B00`
 - Do not place ReadyBasic state in `$C800-$C9FF`; that remains shim ABI territory.
-- Do not use `$C600-$C7FF` as ReadyBASIC scratch; it remains ReadyOS REU metadata.
+- Keep `$C600-$C7FF` unused unless the custom assembler/linker shape and all
+  cold/warm tests are deliberately revised; it is now app-private snapshot RAM.
 
 ## Current ReadyBASIC Memory Snapshot
 

@@ -1,5 +1,13 @@
 # ReadyOS REU Enhancement Refactor - Phase 1 Completed
 
+> Superseded architecture note (2026-08-01): this remains the Phase 1 evidence
+> record, but its logical-bank-0 control bank and `$C600-$C7FF` RAM mirror were
+> replaced by schema v5. The current design uses one combined ReadyOS bank at
+> physical `Skip+1`, keeps its launcher snapshot at `$0000-$B7FF`, stores all
+> mapping/status/registry data from `$B800` onward, and treats `$C600-$C7FF` as
+> app-private snapshot RAM. See `docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.md` and
+> `privatedocs/top_level_md/MEMORY_MAP.md` for the active contract.
+
 ## Phase 1 Completion Note
 
 This document is the completed Phase 1 implementation record for the REU
@@ -692,7 +700,7 @@ jt_run_app      = $C806     ; Just run app
 jt_preload      = $C809     ; Preload to REU, return
 jt_return       = $C80C     ; Return to launcher
 jt_switch       = $C80F     ; Switch to another app
-jt_stash_cur    = $C812     ; Helper: stash current app
+jt_reserved     = $C812     ; Reserved compatibility slot (safe no-op)
 jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 
 .byte $4C, $40, $C8         ; $C800: JMP load_disk ($C840)
@@ -701,49 +709,48 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $4C, $80, $C8         ; $C809: JMP preload ($C880)
 .byte $4C, $00, $C9         ; $C80C: JMP return_to_launcher ($C900)
 .byte $4C, $40, $C9         ; $C80F: JMP switch_app ($C940)
-.byte $4C, $C0, $C8         ; $C812: JMP stash_current ($C8C0) - placeholder
+.byte $4C, $FF, $C9         ; $C812: reserved helper -> safe RTS
 .byte $4C, $F0, $C8         ; $C815: JMP fetch_bank ($C8F0)
 
-; $C818: JMP log_byte ($C9E0)
-.byte $4C, $E0, $C9         ; $C818: JMP log_byte
-.byte $00,$00,$00,$00,$00   ; $C81B-$C81F: Padding
+; $C818: deprecated logger compatibility slot
+.byte $4C, $FF, $C9         ; $C818: deprecated logger -> safe RTS
+.byte $4C, $C0, $C9         ; $C81B: JMP mark_loaded (token in A)
+.byte $00,$00               ; $C81E-$C81F: reserved
 
 ; $C820-$C83F: Data Area (32 bytes)
 ; $C820: target_bank - bank to load/switch to
 ; $C821: filename_len
-; $C822-$C823: unused
+; $C822-$C823: launcher-side app-size scratch (not consumed by the shim)
 ; $C824-$C82F: filename (12 bytes)
 ; $C830: load_end_lo (KERNAL LOAD end addr low byte, saved by preload)
 ; $C831: load_end_hi (KERNAL LOAD end addr high byte, saved by preload)
 ; $C832-$C833: unused
 ; $C834: current_bank - currently running app
 ; $C835: last_saved
-; $C836: reu_bitmap_lo (banks 0-7)
-; $C837: reu_bitmap_hi (banks 8-15)
-; $C838: reu_bitmap_xhi (banks 16-23)
+; $C836-$C838: retired bitmap bytes (reserved; authoritative state is in REU)
 ; $C839: storage_drive - shim-global default storage drive for D8/D9 app dialogs
 ;        This persists across app switches and is shared by apps that use the
 ;        common file-dialog default-drive contract.
-; $C83A: log_index - debug byte ring head
-; $C83B: reu_bank_skip - physical 64K banks reserved before ReadyOS bank start
+; $C83A: reserved (formerly log_index)
+; $C83B: readyos_bank - direct physical ReadyOS bank number (Skip+1)
 ; $C83C: launcher_flags - launcher-owned one-shot state flags
-; $C83D: reu_lookup_scratch - one-byte physical bank fetched from REU bank 0
-; $C83E-$C83F: reserved
+; $C83D: reu_lookup_scratch - one-byte ReadyOS-bank DMA scratch
+; $C83E: token_scratch; $C83F: reserved
 
 .byte $00                   ; $C820: target_bank
 .byte $08                   ; $C821: filename_len
-.byte $00, $00              ; $C822-$C823: unused
+.byte $00, $00              ; $C822-$C823: launcher app-size scratch
 .byte "LAUNCHER    "        ; $C824-$C82F: filename (12 bytes)
 .byte $00,$00               ; $C830-$C831: load_end_lo, load_end_hi
 .byte $00,$00               ; $C832-$C833: unused
 .byte $00                   ; $C834: current_bank
 .byte $FF                   ; $C835: last_saved
-.byte $00                   ; $C836: reu_bitmap_lo
-.byte $00                   ; $C837: reu_bitmap_hi
-.byte $00                   ; $C838: reu_bitmap_xhi
+.byte $00                   ; $C836: reserved (retired bitmap byte)
+.byte $00                   ; $C837: reserved (retired bitmap byte)
+.byte $00                   ; $C838: reserved (retired bitmap byte)
 .byte $08                   ; $C839: storage_drive (default drive 8)
-.byte $00                   ; $C83A: log_index (for debug buffer)
-.byte READYOS_REU_BANK_SKIP ; $C83B: reu_bank_skip (compiled into boot image)
+.byte $00                   ; $C83A: reserved (retired debug-ring head)
+.byte READYOS_REU_BANK_SKIP + 1 ; $C83B: readyos_bank (physical Skip+1)
 .byte $00                   ; $C83C: launcher_flags
 .byte $00                   ; $C83D: reu_lookup_scratch
 .byte $00,$00               ; $C83E-$C83F: reserved
@@ -756,13 +763,13 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $A0, $C8              ; LDY #$C8 (filename at $C824)
 .byte $20, $BD, $FF         ; JSR $FFBD (SETNAM)
 .byte $A9, $00              ; LDA #0
-.byte $A2, $08              ; LDX #8
+.byte $AE, $39, $C8         ; LDX $C839 (storage drive)
 .byte $A0, $01              ; LDY #1
 .byte $20, $BA, $FF         ; JSR $FFBA (SETLFS)
 .byte $A9, $00              ; LDA #0
 .byte $20, $D5, $FF         ; JSR $FFD5 (LOAD)
 .byte $4C, $00, $10         ; JMP $1000
-.byte $00,$00,$00,$00,$00   ; Padding to $C860
+.byte $00,$00,$00,$00       ; Padding to $C860
 
 ;-----------------------------------------------------------------------------
 ; $C860: load_reu - Fetch app from REU and run (32 bytes)
@@ -777,16 +784,9 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 ;-----------------------------------------------------------------------------
 ; $C880: preload - Load to REU, return to launcher
 ; Called via JSR $C809
-; DEBUG: writes markers to $C007-$C00C
 ;-----------------------------------------------------------------------------
-.byte $A9, $AA              ; LDA #$AA (170 = "preload entered")
-.byte $8D, $07, $C0         ; STA $C007
-
-.byte $A9, $00              ; LDA #0 (bank 0)
+.byte $A9, $00              ; LDA #0 (launcher token -> ReadyOS bank)
 .byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
-
-.byte $A9, $BB              ; LDA #$BB (187 = "launcher stashed")
-.byte $8D, $08, $C0         ; STA $C008
 
 .byte $AD, $21, $C8         ; LDA $C821 (len)
 .byte $A2, $24              ; LDX #$24
@@ -794,12 +794,9 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $20, $BD, $FF         ; JSR SETNAM
 
 .byte $A9, $00              ; LDA #0
-.byte $A2, $08              ; LDX #8
+.byte $AE, $39, $C8         ; LDX $C839 (storage drive)
 .byte $A0, $01              ; LDY #1
 .byte $20, $BA, $FF         ; JSR SETLFS
-
-.byte $A9, $CC              ; LDA #$CC (204 = "about to LOAD")
-.byte $8D, $09, $C0         ; STA $C009
 
 .byte $A9, $00              ; LDA #0
 .byte $20, $D5, $FF         ; JSR LOAD
@@ -810,25 +807,23 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $AD, $20, $C8         ; LDA $C820 (target bank)
 .byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
 
-.byte $A9, $EE              ; LDA #$EE (238 = "app stashed")
-.byte $8D, $0B, $C0         ; STA $C00B
-
 .byte $AD, $20, $C8         ; LDA $C820 (target bank)
-.byte $20, $C0, $C9         ; JSR set_bitmap ($C9C0)
+.byte $20, $C0, $C9         ; JSR mark_loaded ($C9C0)
 
 .byte $A9, $00              ; LDA #0
 .byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
 
-.byte $A9, $FF              ; LDA #$FF (255 = "launcher restored")
-.byte $8D, $0C, $C0         ; STA $C00C
-
 .byte $60                   ; RTS
 
-.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 .byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00,$00,$00,$00,$00
+.byte $00,$00
 
 ;-----------------------------------------------------------------------------
-; $C8E0: stash_to_bank - Stash $1000-$C5FF to REU bank in A (16 bytes)
+; $C8E0: stash_to_bank - Stash $1000-$C7FF to REU bank in A (16 bytes)
 ;-----------------------------------------------------------------------------
 .byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
 .byte $A9, $90              ; LDA #$90 (STASH command)
@@ -837,7 +832,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00,$00,$00,$00,$00,$00
 
 ;-----------------------------------------------------------------------------
-; $C8F0: fetch_bank - Fetch from REU bank in A to $1000-$C5FF (16 bytes)
+; $C8F0: fetch_bank - Fetch from REU bank in A to $1000-$C7FF (16 bytes)
 ;-----------------------------------------------------------------------------
 .byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
 .byte $A9, $91              ; LDA #$91 (FETCH command)
@@ -855,7 +850,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $AD, $34, $C8         ; LDA $C834 (current bank)
 .byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
 .byte $AD, $34, $C8         ; LDA $C834 (current bank)
-.byte $20, $C0, $C9         ; JSR set_bitmap ($C9C0)
+.byte $20, $C0, $C9         ; JSR mark_loaded ($C9C0)
 .byte $AD, $34, $C8         ; LDA $C834
 .byte $8D, $35, $C8         ; STA $C835
 .byte $A9, $00              ; LDA #0
@@ -875,7 +870,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $AD, $34, $C8         ; LDA $C834 (current bank)
 .byte $20, $E0, $C8         ; JSR stash_to_bank ($C8E0)
 .byte $AD, $34, $C8         ; LDA $C834 (current bank)
-.byte $20, $C0, $C9         ; JSR set_bitmap ($C9C0)
+.byte $20, $C0, $C9         ; JSR mark_loaded ($C9C0)
 .byte $AD, $20, $C8         ; LDA $C820 (target bank)
 .byte $20, $F0, $C8         ; JSR fetch_bank ($C8F0)
 .byte $AD, $20, $C8         ; LDA $C820
@@ -884,13 +879,11 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00,$00,$00,$00
 
 ;-----------------------------------------------------------------------------
-; $C960: reu_setup_logical - Resolve logical token via REU bank 0, then setup regs
+; $C960: reu_setup_logical - Resolve token via the ReadyOS bank, then setup regs
 ;-----------------------------------------------------------------------------
 .byte $C9, $00              ; CMP #0 (logical launcher bank?)
-.byte $D0, $09              ; BNE lookup_app_bank
-.byte $AD, $3B, $C8         ; LDA $C83B (reu_bank_skip)
-.byte $18                   ; CLC
-.byte $69, $01              ; ADC #$01 (launcher is Start+1)
+.byte $D0, $06              ; BNE lookup_app_bank
+.byte $AD, $3B, $C8         ; LDA $C83B (ReadyOS bank contains launcher)
 .byte $4C, $A0, $C9         ; JMP reu_setup ($C9A0)
 .byte $AA                   ; lookup_app_bank: TAX (preserve logical token)
 .byte $A9, $3D              ; LDA #<$C83D
@@ -898,9 +891,12 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $A9, $C8              ; LDA #>$C83D
 .byte $8D, $03, $DF         ; STA $DF03 (C64 addr hi)
 .byte $8A                   ; TXA
-.byte $8D, $04, $DF         ; STA $DF04 (REU offset lo = logical token)
-.byte $A9, $2F              ; LDA #$2F
-.byte $8D, $05, $DF         ; STA $DF05 (REU offset hi = lookup page)
+.byte $18                   ; CLC
+.byte $69, $40              ; ADC #<$B940 (mapping offset + token)
+.byte $8D, $04, $DF         ; STA $DF04 (REU offset lo)
+.byte $A9, $B9              ; LDA #>$B940
+.byte $69, $00              ; ADC #0 (include low-byte carry)
+.byte $8D, $05, $DF         ; STA $DF05 (REU offset hi)
 .byte $AD, $3B, $C8         ; LDA $C83B (ReadyOS global physical bank)
 .byte $8D, $06, $DF         ; STA $DF06
 .byte $A9, $01              ; LDA #1
@@ -911,10 +907,10 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $8D, $01, $DF         ; STA $DF01 - fetch physical bank byte
 .byte $AD, $3D, $C8         ; LDA $C83D (resolved physical bank)
 .byte $4C, $A0, $C9         ; JMP reu_setup ($C9A0)
-.byte $00,$00,$00,$00       ; Padding to $C9A0
+.byte $00,$00               ; Padding to $C9A0
 
 ;-----------------------------------------------------------------------------
-; $C9A0: reu_setup - Set up REU registers for $B600 transfer at $1000
+; $C9A0: reu_setup - Set up REU registers for $B800 transfer at $1000
 ;-----------------------------------------------------------------------------
 .byte $8D, $06, $DF         ; STA $DF06 (bank)
 .byte $A9, $00              ; LDA #$00
@@ -925,50 +921,41 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $8D, $04, $DF         ; STA $DF04 (REU addr lo)
 .byte $8D, $05, $DF         ; STA $DF05 (REU addr hi)
 .byte $8D, $07, $DF         ; STA $DF07 (len lo = $00)
-.byte $A9, $B6              ; LDA #$B6
-.byte $8D, $08, $DF         ; STA $DF08 (len hi = $B6, so $B600 bytes)
+.byte $A9, $B8              ; LDA #$B8
+.byte $8D, $08, $DF         ; STA $DF08 (len hi = $B8, so $B800 bytes)
 .byte $60                   ; RTS
 .byte $00,$00
 
 ;-----------------------------------------------------------------------------
-; $C9C0: set_bitmap - Set bit for bank in A in reu_bitmap ($C836-$C838)
+; $C9C0: mark_loaded - Commit token status after a successful snapshot stash
+; A = logical token. Status $07 means valid, loaded, and resumable.
 ;-----------------------------------------------------------------------------
-.byte $C9, $18              ; CMP #$18 (only banks 0-23 are tracked)
-.byte $B0, $17              ; BCS done
-.byte $AA                   ; TAX - preserve full bank
-.byte $29, $07              ; AND #$07 - bit index within byte
-.byte $A8                   ; TAY - Y = bit index
-.byte $8A                   ; TXA - restore full bank
-.byte $4A                   ; LSR A
-.byte $4A                   ; LSR A
-.byte $4A                   ; LSR A
-.byte $AA                   ; TAX - X = byte offset 0..2
-.byte $A9, $01              ; LDA #$01
-.byte $88                   ; DEY
-.byte $30, $03              ; BMI store_bit
-.byte $0A                   ; ASL A
-.byte $10, $FA              ; BPL shift_loop
-.byte $1D, $36, $C8         ; ORA $C836,X
-.byte $9D, $36, $C8         ; STA $C836,X
+.byte $8D, $3E, $C8         ; STA $C83E (preserve token)
+.byte $A9, $07              ; LDA #VALID|LOADED|RESUMABLE
+.byte $8D, $3D, $C8         ; STA $C83D
+.byte $A9, $3D              ; C64 source = $C83D
+.byte $8D, $02, $DF
+.byte $A9, $C8
+.byte $8D, $03, $DF
+.byte $AD, $3E, $C8         ; token
+.byte $18                   ; CLC
+.byte $69, $40              ; + <$BA40 (token status table)
+.byte $8D, $04, $DF
+.byte $A9, $BA              ; >$BA40
+.byte $69, $00              ; include low-byte carry
+.byte $8D, $05, $DF
+.byte $AD, $3B, $C8         ; ReadyOS physical bank
+.byte $8D, $06, $DF
+.byte $A9, $01              ; one byte
+.byte $8D, $07, $DF
+.byte $A9, $00
+.byte $8D, $08, $DF
+.byte $A9, $90              ; STASH C64 byte to ReadyOS bank
+.byte $8D, $01, $DF
+.byte $AD, $3E, $C8         ; preserve caller-visible token in A
 .byte $60                   ; RTS
-.byte $00,$00,$00,$00
-
-;-----------------------------------------------------------------------------
-; $C9E0: log_byte - Write debug marker to buffer at $C980
-;-----------------------------------------------------------------------------
-.byte $48                   ; PHA - save the byte to log
-.byte $8E, $FC, $00         ; STX $00FC - save X to ZP temp
-.byte $AE, $3A, $C8         ; LDX $C83A - get log_index
-.byte $68                   ; PLA - get byte back
-.byte $9D, $80, $C9         ; STA $C980,X - write to buffer
-.byte $E8                   ; INX - increment index
-.byte $E0, $20              ; CPX #$20 - wrap at 32
-.byte $D0, $02              ; BNE +2 (skip reset)
-.byte $A2, $00              ; LDX #$00 - reset to 0
-.byte $8E, $3A, $C8         ; STX $C83A - store new index
-.byte $AE, $FC, $00         ; LDX $00FC - restore X
-.byte $60                   ; RTS
-.byte $00,$00,$00,$00,$00,$00,$00
+.byte $00,$00,$00,$00       ; reserved through $C9FE
+.byte $60                   ; $C9FF: compatibility no-op RTS
 ```
 
 ### Implemented Logical Bank 0 Layout

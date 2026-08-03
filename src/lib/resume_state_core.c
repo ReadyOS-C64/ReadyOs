@@ -39,7 +39,7 @@ static unsigned char header_is_valid(unsigned int max_len, unsigned int *out_len
     if (len > max_len) {
         return 0;
     }
-    if (len > (REU_RESUME_TAIL_SIZE - RESUME_HDR_SIZE)) {
+    if (len > (RS_RESUME_TAIL_SIZE() - RESUME_HDR_SIZE)) {
         return 0;
     }
 
@@ -77,18 +77,18 @@ unsigned char resume_try_load(void *dst, unsigned int dst_len,
     if (rs_resume_schema == 0 || dst == 0 || dst_len == 0) {
         return 0;
     }
-    if (dst_len > (REU_RESUME_TAIL_SIZE - RESUME_HDR_SIZE)) {
+    if (dst_len > (RS_RESUME_TAIL_SIZE() - RESUME_HDR_SIZE)) {
         return 0;
     }
 
-    reu_dma_fetch((unsigned int)rs_resume_hdr, rs_resume_bank, REU_RESUME_OFF, RESUME_HDR_SIZE);
+    reu_dma_fetch((unsigned int)rs_resume_hdr, rs_resume_bank, RS_RESUME_OFF(), RESUME_HDR_SIZE);
     if (!header_is_valid(dst_len, &stored_len, &stored_seq)) {
         return 0;
     }
 
     reu_dma_fetch((unsigned int)dst,
                   rs_resume_bank,
-                  (unsigned int)(REU_RESUME_OFF + RESUME_HDR_SIZE),
+                  (unsigned int)(RS_RESUME_OFF() + RESUME_HDR_SIZE),
                   stored_len);
     rs_resume_last_seq = stored_seq;
     if (out_len != 0) {
@@ -101,15 +101,15 @@ unsigned char resume_save(const void *src, unsigned int src_len) {
     if (rs_resume_schema == 0 || src == 0 || src_len == 0) {
         return 0;
     }
-    if (src_len > (REU_RESUME_TAIL_SIZE - RESUME_HDR_SIZE)) {
+    if (src_len > (RS_RESUME_TAIL_SIZE() - RESUME_HDR_SIZE)) {
         return 0;
     }
 
     build_header(src_len);
     reu_dma_stash((unsigned int)src,
                   rs_resume_bank,
-                  (unsigned int)(REU_RESUME_OFF + RESUME_HDR_SIZE),
+                  (unsigned int)(RS_RESUME_OFF() + RESUME_HDR_SIZE),
                   src_len);
-    reu_dma_stash((unsigned int)rs_resume_hdr, rs_resume_bank, REU_RESUME_OFF, RESUME_HDR_SIZE);
+    reu_dma_stash((unsigned int)rs_resume_hdr, rs_resume_bank, RS_RESUME_OFF(), RESUME_HDR_SIZE);
     return 1;
 }

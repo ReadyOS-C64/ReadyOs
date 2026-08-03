@@ -116,12 +116,15 @@ Streaming output pause:
 
 Current release build memory layout:
 
-- Resident app window: `$1000-$C5FF` (`46592` bytes)
+- ReadyOS snapshot window: `$1000-$C7FF` (`47104` bytes); ReadyShell's overlay
+  execution ABI intentionally remains `$8E00-$C5FF`
 - Overlay load-address bytes: `$8DFE-$8DFF`
 - Overlay execution window: `$8E00-$C5FF` (`14336` bytes)
-- Resident BSS: `$7D37-$7EE0` (`426` bytes)
-- Resident heap: `$7EE2-$8DFD` (`3868` bytes)
+- Resident BSS: `$7DEB-$7F94` (`426` bytes)
+- Resident heap: `$7F96-$8DFD` (`3688` bytes)
 - High RAM runtime outside the app snapshot: `$CA00-$CFFF`
+- Overlay diagnostics are REU-only in the loader-assigned ReadyShell state
+  bank; the obsolete `$C7A0-$C7DF` / `$C7F0` RAM mirror is retired.
 
 Overlay policy:
 

@@ -26,7 +26,7 @@ unsigned char reu_phys_detect_bank_count(void) {
     unsigned char got;
     unsigned int bank;
 
-    base_bank = *SHIM_REU_BANK_SKIP;
+    base_bank = REU_FIRST_DYNAMIC_PHYSICAL();
     base_orig = reu_phys_fetch_probe_byte(base_bank);
     reu_phys_stash_probe_byte(base_bank, 0x5Au);
 

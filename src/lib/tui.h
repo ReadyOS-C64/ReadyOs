@@ -85,14 +85,16 @@
 #define TUI_MOD_CBM    0x02   /* Commodore key */
 #define TUI_MOD_CTRL   0x04
 
-/* Shared global app hotkey slots in system RAM ($C7E0-$C7E8) */
+/* Shared global app hotkey slots in the ReadyOS bank. */
 #define TUI_HOTKEY_SLOT_COUNT 9
 #define TUI_HOTKEY_NONE       0
 #define TUI_HOTKEY_BIND_ONLY  0xFE
 #define TUI_HOTKEY_LAUNCHER   0xFF
-#define TUI_HOTKEY_BINDINGS   ((unsigned char*)0xC7E0)
 #define TUI_APP_BANK_MIN      1
-#define TUI_APP_BANK_MAX      223
+#define TUI_APP_BANK_MAX      64  /* launcher catalog capacity; tokens map explicitly */
+
+unsigned char tui_hotkey_get_binding(unsigned char slot_index);
+void tui_hotkey_set_binding(unsigned char slot_index, unsigned char token);
 
 /* Keyboard auto-repeat policy */
 #define TUI_KEYREPEAT_CURSOR KBREPEAT_CURSOR

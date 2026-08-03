@@ -1,9 +1,14 @@
-/*
+/* RETIRED LEGACY SOURCE -- intentionally preserved, never linked.
+ * These speculative syscall wrappers do not describe the current $C800 shim
+ * ABI.  Applications use the focused TUI/REU/resume micromodules instead.
+ *
  * ready_os.c - Ready OS API Implementation
  * Syscall wrappers that call into the shim
  *
  * For Commodore 64, compiled with CC65
  */
+
+#if 0
 
 #include "ready_os.h"
 #include <string.h>
@@ -103,6 +108,8 @@ void ready_launch(const char *app_name) {
     /* Execute deeplink */
     ready_deeplink(&link);
 }
+
+#endif /* retired legacy source */
 
 void ready_open_file(const char *app_name, const char *filename) {
     static DeepLink link;

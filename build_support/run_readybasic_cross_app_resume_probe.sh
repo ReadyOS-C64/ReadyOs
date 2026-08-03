@@ -88,6 +88,12 @@ steps:
       text: "ready."
       wait_timeout_s: 180
       capture_label: readybasic_prompt
+  - id: wait_readybasic_prompt_stable_before_program_entry
+    type: screen.wait_contains
+    params:
+      text: "ready."
+      pre_delay_s: 1.5
+      wait_timeout_s: 30
   - id: clear_keyboard_buffer_before_program_entry
     type: memory.write
     params:
@@ -151,20 +157,32 @@ cat >>"$PLAN" <<YAML
   - id: move_from_readybasic_to_editor_$i
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_$i
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_$i
+    type: monitor.command
+    params:
+      command: "keybuf \\\\x0d"
   - id: wait_editor_$i
     type: screen.wait_contains
     params:
       text: "editor"
       wait_timeout_s: 60
   - id: ctrl_b_to_launcher_from_editor_$i
-    type: input.sequence
+    type: memory.write
     params:
-      keys: [2]
-      inter_key_delay_s: 0.03
-      post_delay_s: 1.0
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: inject_ctrl_b_to_launcher_from_editor_$i
+    type: monitor.command
+    params:
+      command: "keybuf \\\\x02"
   - id: wait_launcher_after_editor_$i
     type: screen.wait_contains
     params:
@@ -173,9 +191,18 @@ cat >>"$PLAN" <<YAML
   - id: move_from_editor_to_readybasic_$i
     type: input.sequence
     params:
-      keys: [17,17,17,17,13]
+      keys: [17,17,17,17]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_readybasic_$i
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_$i
+    type: monitor.command
+    params:
+      command: "keybuf \\\\x0d"
   - id: wait_readybasic_resume_$i
     type: screen.wait_contains
     params:

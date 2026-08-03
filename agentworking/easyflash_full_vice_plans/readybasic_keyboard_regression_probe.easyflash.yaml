@@ -38,6 +38,8 @@ steps:
     type: screen.wait_contains
     params:
       text: "READY OS"
+      pre_delay_s: 4
+      poll_s: 0.5
       wait_timeout_s: 420
       capture_label: keyboard_regression_launcher_initial
   - id: launch_readybasic_from_launcher
@@ -127,11 +129,9 @@ steps:
       end: 51252
       equals_hex: "00"
   - id: reenter_readybasic_after_partial_ctrl_b
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      command: "keybuf \\x0d"
   - id: wait_readybasic_after_partial_ctrl_b
     type: screen.wait_contains
     params:

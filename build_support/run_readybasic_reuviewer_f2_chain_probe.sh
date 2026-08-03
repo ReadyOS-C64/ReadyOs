@@ -19,9 +19,12 @@ HOTKEY_INPUT_MODE="${READYBASIC_HOTKEY_INPUT_MODE:-keylog}"
 HOTKEY_DEBUG="${READYBASIC_HOTKEY_DEBUG:-0}"
 BOOT_MODE="${READYBASIC_CHAIN_BOOT_MODE:-runfirst}"
 READYBASIC_BANK_RAW="${READYBASIC_CHAIN_READYBASIC_BANK:-1}"
-REUVIEWER_BANK_RAW="${READYBASIC_CHAIN_REUVIEWER_BANK:-4}"
+# In the regular run-first flow ReadyBASIC owns logical snapshot token 1 and
+# ReuViewer is the second app materialized into the dynamic REU pool.
+REUVIEWER_BANK_RAW="${READYBASIC_CHAIN_REUVIEWER_BANK:-2}"
 RESOURCE_BANKS_RAW="${READYBASIC_CHAIN_RESOURCE_BANKS:-}"
 CONSTRAIN_BITMAP="${READYBASIC_CHAIN_CONSTRAIN_BITMAP:-0}"
+READYOS_BANK_RAW="${READYBASIC_CHAIN_READYOS_BANK:-33}"
 STABILITY_WAIT="${READYBASIC_CHAIN_STABILITY_WAIT:-2.5}"
 DUPLICATE_KEYLOG="${READYBASIC_HOTKEY_DUPLICATE_KEYLOG:-1}"
 VICE_HEADLESS="true"
@@ -102,14 +105,43 @@ if [ -n "$RESOURCE_BANKS_RAW" ]; then
 fi
 CHAIN_BITMAP_HEX="$(printf '%02X %02X %02X' "$BITMAP_LO" "$BITMAP_HI" "$BITMAP_XHI")"
 
+# Schema v5 made the ReadyOS-bank token-status table authoritative.  Build a
+# 24-byte test image (token 0 plus app tokens 1..23) with only the two chain
+# participants marked VALID|LOADED|RESUMABLE.  The probe writes this image by
+# DMA; the retired $C836-$C838 bitmap must not influence navigation anymore.
+CHAIN_STATUS_HEX=""
+for token in $(seq 0 23); do
+  status=0
+  if [ "$token" -eq "$READYBASIC_BANK" ] || [ "$token" -eq "$REUVIEWER_BANK" ]; then
+    status=7
+  fi
+  byte="$(printf '%02X' "$status")"
+  if [ -n "$CHAIN_STATUS_HEX" ]; then
+    CHAIN_STATUS_HEX="$CHAIN_STATUS_HEX $byte"
+  else
+    CHAIN_STATUS_HEX="$byte"
+  fi
+done
+READYOS_BANK_HEX="$(printf '%02X' "$((READYOS_BANK_RAW))")"
+
 emit_bitmap_control_steps() {
   if [ "$CONSTRAIN_BITMAP" = "1" ] || [ -n "$RESOURCE_BANKS_RAW" ]; then
     cat <<YAML
-  - id: constrain_loaded_bitmap_for_readybasic_reuviewer_chain
+  - id: stage_readyos_token_status_for_readybasic_reuviewer_chain
     type: memory.write
     params:
-      start: 51254
-      bytes_hex: "$CHAIN_BITMAP_HEX"
+      start: 828
+      bytes_hex: "$CHAIN_STATUS_HEX"
+  - id: configure_readyos_token_status_dma_for_readybasic_reuviewer_chain
+    type: memory.write
+    params:
+      start: 57090
+      bytes_hex: "3C 03 40 BA $READYOS_BANK_HEX 18 00"
+  - id: commit_readyos_token_status_for_readybasic_reuviewer_chain
+    type: memory.write
+    params:
+      start: 57089
+      bytes_hex: "90"
 YAML
   else
     cat <<YAML
@@ -442,11 +474,9 @@ $(emit_hotkey_step readybasic_ctrl_b_1 ctrl_b 1.0)
       end: 51252
       equals_hex: "00"
   - id: reenter_readybasic_1
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      command: "keybuf \\\\x0d"
 $(emit_wait_readybasic_warm_steps readybasic_reentry_1 chain_readybasic_reentry_1)
   - id: assert_readybasic_bank_reentry_1
     type: assert.memory
@@ -621,12 +651,15 @@ $(emit_hotkey_step reuviewer_ctrl_b_after_readybasic_f2 ctrl_b 1.0 app)
       start: 51252
       end: 51252
       equals_hex: "00"
-  - id: reenter_readybasic_after_reuviewer_ctrl_b
-    type: input.sequence
+  - id: select_readybasic_after_reuviewer_ctrl_b
+    type: memory.write
     params:
-      keys: [145,145,145,13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      start: 51232
+      bytes_hex: "$READYBASIC_BANK_HEX"
+  - id: launch_readybasic_after_reuviewer_ctrl_b
+    type: monitor.command
+    params:
+      command: "raw:g c80f"
 $(emit_wait_readybasic_warm_steps readybasic_after_reuviewer_ctrl_b_reentry chain_readybasic_after_reuviewer_ctrl_b_reentry)
   - id: readybasic_type_after_reuviewer_ctrl_b_reentry
     type: input.sequence
@@ -661,12 +694,15 @@ $(emit_wait_readybasic_warm_steps readybasic_after_reuviewer_ctrl_b_reentry chai
     type: assert.screen_not_contains
     params:
       not_contains: "ready."
-  - id: reenter_readybasic_after_exit_guard
-    type: input.sequence
+  - id: select_readybasic_after_exit_guard
+    type: memory.write
     params:
-      keys: [13]
-      inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      start: 51232
+      bytes_hex: "$READYBASIC_BANK_HEX"
+  - id: reenter_readybasic_after_exit_guard
+    type: monitor.command
+    params:
+      command: "raw:g c80f"
 $(emit_wait_readybasic_warm_steps readybasic_after_exit_guard_reentry chain_readybasic_after_exit_guard_reentry)
   - id: readybasic_type_after_exit_guard_reentry
     type: input.sequence

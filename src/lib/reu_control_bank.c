@@ -1,79 +1,34 @@
-/*
- * reu_control_bank.c - mirror resident REU state into logical bank 0
- */
+/* reu_control_bank.c - ReadyOS-bank schema-v5 lifecycle */
 
 #include "reu_control_bank.h"
 #include "reu_phys.h"
 
 static unsigned char reucb_header[REUCB_HEADER_SIZE];
 static unsigned char reucb_zero[REUCB_HEADER_SIZE];
-static unsigned char reucb_record[REUCB_RESOURCE_SIZE];
 static unsigned char reucb_generation;
 
-static void reucb_zero_buf(unsigned char *buf, unsigned char len) {
+static void reucb_fill(unsigned char *buf, unsigned char value, unsigned char len) {
     unsigned char i;
-
-    for (i = 0; i < len; ++i) {
-        buf[i] = 0;
+    for (i = 0u; i < len; ++i) {
+        buf[i] = value;
     }
 }
 
-static void reucb_mark_bitmap_slot(unsigned char logical_bank, unsigned char is_loaded) {
-    unsigned char phys;
-    unsigned char type;
-
-    phys = REU_LOGICAL_TO_PHYSICAL(logical_bank);
-    type = REU_ALLOC_TABLE[phys];
-    if (type == REU_UNAVAIL) {
-        return;
-    }
-    if (is_loaded) {
-        REU_ALLOC_TABLE[phys] = REU_APP_STATE;
-    } else if (type == REU_RESERVED) {
-        REU_ALLOC_TABLE[phys] = REU_FREE;
-    }
+unsigned char reu_control_bank_is_valid(void) {
+    readyos_bank_read(REUCB_HEADER_OFF, reucb_header, 5u);
+    return (unsigned char)(reucb_header[0] == REUCB_MAGIC0 &&
+                           reucb_header[1] == REUCB_MAGIC1 &&
+                           reucb_header[2] == REUCB_MAGIC2 &&
+                           reucb_header[3] == REUCB_MAGIC3 &&
+                           reucb_header[4] == REUCB_SCHEMA_VERSION);
 }
 
-static void reucb_sync_from_bitmap(void) {
-    unsigned char bitmap_lo = *SHIM_REU_BITMAP_LO;
-    unsigned char bitmap_hi = *SHIM_REU_BITMAP_HI;
-    unsigned char bitmap_xhi = *SHIM_REU_BITMAP_XHI;
-    unsigned char bank;
-    unsigned char mask;
-    unsigned char skip = *SHIM_REU_BANK_SKIP;
+static void reucb_write_header(unsigned char writer_id,
+                               unsigned char physical_banks) {
+    unsigned char readyos_bank;
 
-    for (bank = 0; bank < skip; ++bank) {
-        REU_ALLOC_TABLE[bank] = REU_SKIPPED;
-    }
-
-    REU_ALLOC_TABLE[REU_READYOS_GLOBAL_PHYSICAL()] = REU_GLOBAL;
-    REU_ALLOC_TABLE[REU_LAUNCHER_PHYSICAL()] = REU_LAUNCHER;
-
-    for (bank = 1; bank < 8; ++bank) {
-        mask = (unsigned char)(1u << bank);
-        reucb_mark_bitmap_slot(bank, (unsigned char)(bitmap_lo & mask));
-    }
-
-    for (bank = 0; bank < 8; ++bank) {
-        mask = (unsigned char)(1u << bank);
-        reucb_mark_bitmap_slot((unsigned char)(bank + 8u),
-                               (unsigned char)(bitmap_hi & mask));
-    }
-
-    for (bank = 0; bank < 8; ++bank) {
-        mask = (unsigned char)(1u << bank);
-        reucb_mark_bitmap_slot((unsigned char)(bank + 16u),
-                               (unsigned char)(bitmap_xhi & mask));
-    }
-
-}
-
-static void reucb_write_header(unsigned char control_bank, unsigned char writer_id) {
-    unsigned char physical_banks;
-
-    reucb_zero_buf(reucb_header, REUCB_HEADER_SIZE);
-    physical_banks = reu_phys_count_from_alloc_table();
-
+    readyos_bank = REU_READYOS_GLOBAL_PHYSICAL();
+    reucb_fill(reucb_header, 0u, REUCB_HEADER_SIZE);
     reucb_header[0] = REUCB_MAGIC0;
     reucb_header[1] = REUCB_MAGIC1;
     reucb_header[2] = REUCB_MAGIC2;
@@ -82,123 +37,95 @@ static void reucb_write_header(unsigned char control_bank, unsigned char writer_
     reucb_header[5] = REUCB_HEADER_SIZE;
     reucb_header[6] = ++reucb_generation;
     reucb_header[7] = writer_id;
-    reucb_header[REUCB_HEADER_REU_SKIP] = *SHIM_REU_BANK_SKIP;
-    reucb_header[REUCB_HEADER_CONTROL_BANK] = control_bank;
-    reucb_header[REUCB_HEADER_LAUNCHER_BANK] = REU_LAUNCHER_PHYSICAL();
+    reucb_header[REUCB_HEADER_REU_SKIP] = REU_FIRST_DYNAMIC_PHYSICAL();
+    reucb_header[REUCB_HEADER_CONTROL_BANK] = readyos_bank;
+    reucb_header[REUCB_HEADER_LAUNCHER_BANK] = readyos_bank;
     reucb_header[REUCB_HEADER_LAUNCHER_OVL] = 0u;
     reucb_header[REUCB_HEADER_FIRST_DYNAMIC] = REU_FIRST_DYNAMIC_PHYSICAL();
-    reucb_header[REUCB_HEADER_LOGICAL_BANKS] = REU_TOTAL_BANKS & 0xFFu; /* 0 means 256 banks. */
-    reucb_header[14] = (unsigned char)(REUCB_BANK_TYPE_OFF & 0xFFu);
+    reucb_header[REUCB_HEADER_LOGICAL_BANKS] = 0u; /* 0 encodes 256 tokens. */
+    reucb_header[14] = (unsigned char)REUCB_BANK_TYPE_OFF;
     reucb_header[15] = (unsigned char)(REUCB_BANK_TYPE_OFF >> 8);
-    reucb_header[16] = (unsigned char)(REUCB_BANK_TYPE_SIZE & 0xFFu);
-    reucb_header[17] = (unsigned char)(REUCB_BANK_TYPE_SIZE >> 8);
-    reucb_header[18] = (unsigned char)(REUCB_RESOURCE_OFF & 0xFFu);
-    reucb_header[19] = (unsigned char)(REUCB_RESOURCE_OFF >> 8);
-    reucb_header[20] = REUCB_RESOURCE_COUNT;
-    reucb_header[21] = REUCB_RESOURCE_SIZE;
-    reucb_header[22] = (unsigned char)(REUCB_APP_REG_OFF & 0xFFu);
+    reucb_header[16] = 0u; /* 0 encodes 256 bytes. */
+    reucb_header[17] = 1u;
+    reucb_header[18] = (unsigned char)REUCB_SHIM_LOOKUP_OFF;
+    reucb_header[19] = (unsigned char)(REUCB_SHIM_LOOKUP_OFF >> 8);
+    reucb_header[20] = (unsigned char)REUCB_TOKEN_STATUS_OFF;
+    reucb_header[21] = (unsigned char)(REUCB_TOKEN_STATUS_OFF >> 8);
+    reucb_header[22] = (unsigned char)REUCB_APP_REG_OFF;
     reucb_header[23] = (unsigned char)(REUCB_APP_REG_OFF >> 8);
     reucb_header[24] = REUCB_APP_REG_COUNT;
     reucb_header[25] = REUCB_APP_REG_SIZE;
-    reucb_header[26] = (unsigned char)(REUCB_APP_META_OFF & 0xFFu);
+    reucb_header[26] = (unsigned char)REUCB_APP_META_OFF;
     reucb_header[27] = (unsigned char)(REUCB_APP_META_OFF >> 8);
     reucb_header[28] = REUCB_APP_META_COUNT;
     reucb_header[29] = REUCB_APP_META_SIZE;
-    reucb_header[30] = (unsigned char)(REUCB_DEP_OFF & 0xFFu);
-    reucb_header[31] = (unsigned char)(REUCB_DEP_OFF >> 8);
-    reucb_header[32] = REUCB_DEP_COUNT;
-    reucb_header[33] = REUCB_DEP_SIZE;
-    reucb_header[34] = (unsigned char)(REUCB_AUDIT_OFF & 0xFFu);
-    reucb_header[35] = (unsigned char)(REUCB_AUDIT_OFF >> 8);
-    reucb_header[36] = (unsigned char)(REUCB_RSRC_REC_OFF & 0xFFu);
-    reucb_header[37] = (unsigned char)(REUCB_RSRC_REC_OFF >> 8);
-    reucb_header[38] = REUCB_RSRC_REC_COUNT;
-    reucb_header[39] = REUCB_RSRC_REC_SIZE;
-    reucb_header[40] = (unsigned char)(REUCB_DEP_LINE_OFF & 0xFFu);
-    reucb_header[41] = (unsigned char)(REUCB_DEP_LINE_OFF >> 8);
-    reucb_header[42] = REUCB_DEP_LINE_COUNT;
-    reucb_header[43] = REUCB_DEP_LINE_SIZE;
+    reucb_header[30] = (unsigned char)REUCB_RSRC_REC_OFF;
+    reucb_header[31] = (unsigned char)(REUCB_RSRC_REC_OFF >> 8);
+    reucb_header[32] = REUCB_RSRC_REC_COUNT;
+    reucb_header[33] = REUCB_RSRC_REC_SIZE;
+    reucb_header[34] = (unsigned char)REUCB_DEP_LINE_OFF;
+    reucb_header[35] = (unsigned char)(REUCB_DEP_LINE_OFF >> 8);
+    reucb_header[36] = REUCB_DEP_LINE_COUNT;
+    reucb_header[37] = REUCB_DEP_LINE_SIZE;
+    reucb_header[38] = (unsigned char)REUCB_CLIPBOARD_OFF;
+    reucb_header[39] = (unsigned char)(REUCB_CLIPBOARD_OFF >> 8);
+    reucb_header[40] = (unsigned char)REUCB_HOTKEY_OFF;
+    reucb_header[41] = (unsigned char)(REUCB_HOTKEY_OFF >> 8);
+    reucb_header[42] = (unsigned char)REUCB_RUNTIME_OFF;
+    reucb_header[43] = (unsigned char)(REUCB_RUNTIME_OFF >> 8);
     reucb_header[REUCB_HEADER_PHYS_BANKS] = physical_banks;
     reucb_header[REUCB_HEADER_FIRST_UNAVAIL] = physical_banks;
     reucb_header[REUCB_HEADER_FLAGS] = REUCB_HEADER_FLAG_PHYS_SIZE;
-
-    reu_dma_stash((unsigned int)reucb_header, control_bank,
-                  REUCB_HEADER_OFF, REUCB_HEADER_SIZE);
+    readyos_bank_write(REUCB_HEADER_OFF, reucb_header, REUCB_HEADER_SIZE);
 }
 
-static void reucb_write_resource(unsigned char control_bank,
-                                 unsigned char index,
-                                 unsigned char bank,
-                                 unsigned char type,
-                                 unsigned char owner,
-                                 unsigned char role) {
-    reucb_zero_buf(reucb_record, REUCB_RESOURCE_SIZE);
-    reucb_record[0] = bank;
-    reucb_record[1] = type;
-    reucb_record[2] = owner;
-    reucb_record[3] = 0;
-    reucb_record[4] = role;
-    reucb_record[5] = 0;
-    reucb_record[6] = 0;
-    reucb_record[7] = 0;
+void reu_control_bank_prepare(unsigned char physical_banks) {
+    unsigned char valid;
+    unsigned char bank;
+    unsigned char type;
+    unsigned int off;
 
-    reu_dma_stash((unsigned int)reucb_record, control_bank,
-                  (unsigned int)(REUCB_RESOURCE_OFF +
-                                 ((unsigned int)index * REUCB_RESOURCE_SIZE)),
-                  REUCB_RESOURCE_SIZE);
-}
+    valid = reu_control_bank_is_valid();
+    if (!valid) {
+        reucb_fill(reucb_zero, 0u, REUCB_HEADER_SIZE);
+        off = REUCB_HEADER_OFF;
+        do {
+            readyos_bank_write(off, reucb_zero, REUCB_HEADER_SIZE);
+            off = (unsigned int)(off + REUCB_HEADER_SIZE);
+        } while (off != 0u);
+    }
 
-static void reucb_write_resources(unsigned char control_bank) {
-    reucb_write_resource(control_bank, 0, REU_READYOS_GLOBAL_PHYSICAL(),
-                         REU_GLOBAL, REUCB_OWNER_SYSTEM, REUCB_ROLE_GLOBAL);
-    reucb_write_resource(control_bank, 1, REU_LAUNCHER_PHYSICAL(),
-                         REU_LAUNCHER, REUCB_OWNER_LAUNCHER, REUCB_ROLE_SNAPSHOT);
-    reucb_write_resource(control_bank, 2, 0,
-                         REU_FREE, 0, 0);
-    reucb_write_resource(control_bank, 6, 0,
-                         REU_FREE, 0, 0);
-    reucb_write_resource(control_bank, 7, 0,
-                         REU_FREE, 0, 0);
-    reucb_write_resource(control_bank, 8, 0,
-                         REU_FREE, 0, 0);
-    reucb_write_resource(control_bank, 9, 0,
-                         REU_FREE, 0, 0);
-}
-
-static void reucb_write_shim_lookup(unsigned char control_bank) {
-    unsigned int start;
-    unsigned char i;
-    unsigned int physical;
-    unsigned char skip = *SHIM_REU_BANK_SKIP;
-
-    for (start = 0; start < REUCB_SHIM_LOOKUP_SIZE; start += REUCB_HEADER_SIZE) {
-        for (i = 0; i < REUCB_HEADER_SIZE; ++i) {
-            if (start == 0u && i == 0u) {
-                reucb_zero[i] = 0u;
-            } else {
-                physical = (unsigned int)skip + 1u + start + i;
-                reucb_zero[i] = (physical > 255u) ? 0u : (unsigned char)physical;
+    bank = 0u;
+    do {
+        if (bank < REU_FIRST_DYNAMIC_PHYSICAL()) {
+            type = REU_SKIPPED;
+        } else if (bank == REU_READYOS_GLOBAL_PHYSICAL()) {
+            type = REU_GLOBAL;
+        } else if (reu_phys_is_unavailable(physical_banks, bank)) {
+            type = REU_UNAVAIL;
+        } else if (!valid) {
+            type = REU_FREE;
+        } else {
+            type = readyos_bank_read_byte((unsigned int)(REUCB_BANK_TYPE_OFF + bank));
+            if (type == REU_SKIPPED || type == REU_GLOBAL ||
+                type == REU_LAUNCHER || type == REU_UNAVAIL) {
+                type = REU_FREE;
             }
         }
-        reu_dma_stash((unsigned int)reucb_zero, control_bank,
-                      (unsigned int)(REUCB_SHIM_LOOKUP_OFF + start),
-                      REUCB_HEADER_SIZE);
-    }
+        readyos_bank_write_byte((unsigned int)(REUCB_BANK_TYPE_OFF + bank), type);
+        ++bank;
+    } while (bank != 0u);
+
+    reucb_write_header(REUCB_WRITER_LAUNCHER, physical_banks);
 }
 
 void reu_control_bank_sync_and_mirror(unsigned char writer_id) {
-    unsigned char control_bank = REU_READYOS_GLOBAL_PHYSICAL();
+    unsigned char physical_banks;
 
-    reucb_sync_from_bitmap();
-    reucb_write_header(control_bank, writer_id);
-
-    reucb_zero_buf(reucb_zero, REUCB_HEADER_SIZE);
-    reu_dma_stash((unsigned int)reucb_zero, control_bank, 0x0040u, REUCB_HEADER_SIZE);
-    reu_dma_stash((unsigned int)reucb_zero, control_bank, 0x0080u, REUCB_HEADER_SIZE);
-    reu_dma_stash((unsigned int)reucb_zero, control_bank, 0x00C0u, REUCB_HEADER_SIZE);
-
-    reu_dma_stash((unsigned int)REU_ALLOC_TABLE, control_bank,
-                  REUCB_BANK_TYPE_OFF, REUCB_BANK_TYPE_SIZE);
-    reucb_write_resources(control_bank);
-    reucb_write_shim_lookup(control_bank);
+    physical_banks = readyos_bank_read_byte((unsigned int)(REUCB_HEADER_OFF +
+                                                           REUCB_HEADER_PHYS_BANKS));
+    readyos_bank_write_byte((unsigned int)(REUCB_BANK_TYPE_OFF +
+                                           REU_READYOS_GLOBAL_PHYSICAL()),
+                            REU_GLOBAL);
+    reucb_write_header(writer_id, physical_banks);
 }

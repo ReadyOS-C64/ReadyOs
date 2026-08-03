@@ -243,9 +243,24 @@ cat >>"$PLAN" <<YAML
   - id: move_readybasic_to_editor_$i
     type: input.sequence
     params:
-      keys: [145,145,145,145,13]
+      keys: [145,145,145,145]
       inter_key_delay_s: 0.08
-      post_delay_s: 2.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_editor_relaunch_$i
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  # The binary-monitor key helper can drop a lone RETURN immediately after
+  # ReadyBASIC's EXIT return. VICE's text-monitor keybuf path is deterministic.
+  - id: launch_editor_after_readybasic_$i
+    type: monitor.command
+    params:
+      command: "keybuf \\\\x0d"
+  - id: capture_after_move_readybasic_to_editor_$i
+    type: screen.capture
+    params:
+      label: after_move_readybasic_to_editor_$i
   - id: wait_editor_after_readybasic_$i
     type: screen.wait_contains
     params:
@@ -288,7 +303,7 @@ cat >>"$PLAN" <<'YAML'
       ranges:
         - { label: launcher_shim_c800, start: 0xC800, end: 0xCA00 }
         - { label: app_work_1000, start: 0x1000, end: 0x1800 }
-        - { label: upper_app_a000, start: 0xA000, end: 0xC600 }
+        - { label: upper_app_a000, start: 0xA000, end: 0xC800 }
 YAML
 
 if [ "${READYSHELL_GENERATE_PLAN_ONLY:-0}" = "1" ]; then

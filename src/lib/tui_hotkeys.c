@@ -1,13 +1,12 @@
 /*
- * tui_hotkeys.c - Shared direct app hotkeys backed by shim-safe RAM
+ * tui_hotkeys.c - Shared direct app hotkeys backed by the ReadyOS bank
  */
 
 #include "tui.h"
+#include "reu_control_bank.h"
+#include "tui_readyos.h"
 
 #define SHFLAG (*(unsigned char*)0x028D)
-#define SHIM_REU_BITMAP_LO ((unsigned char*)0xC836)
-#define SHIM_REU_BITMAP_HI ((unsigned char*)0xC837)
-#define SHIM_REU_BITMAP_XHI ((unsigned char*)0xC838)
 #define APP_BANK_EDITOR TUI_APP_BANK_MIN
 #define APP_BANK_MAX TUI_APP_BANK_MAX
 
@@ -85,16 +84,18 @@ static unsigned char hotkey_slot_from_unshifted(unsigned char key,
 }
 
 static unsigned char hotkey_bank_loaded(unsigned char bank) {
-    if (bank < 8) {
-        return (unsigned char)((*SHIM_REU_BITMAP_LO & (unsigned char)(1U << bank)) != 0);
-    }
-    if (bank < 16) {
-        return (unsigned char)((*SHIM_REU_BITMAP_HI & (unsigned char)(1U << (bank - 8))) != 0);
-    }
-    if (bank < 24) {
-        return (unsigned char)((*SHIM_REU_BITMAP_XHI & (unsigned char)(1U << (bank - 16))) != 0);
-    }
-    return 1;
+    return (unsigned char)(tui_readyos_read_byte(
+        (unsigned int)(REUCB_TOKEN_STATUS_OFF + bank)) & REUCB_TOKEN_LOADED);
+}
+
+unsigned char tui_hotkey_get_binding(unsigned char slot_index) {
+    if (slot_index >= TUI_HOTKEY_SLOT_COUNT) return TUI_HOTKEY_NONE;
+    return tui_readyos_read_byte((unsigned int)(REUCB_HOTKEY_OFF + slot_index));
+}
+
+void tui_hotkey_set_binding(unsigned char slot_index, unsigned char token) {
+    if (slot_index >= TUI_HOTKEY_SLOT_COUNT) return;
+    tui_readyos_write_byte((unsigned int)(REUCB_HOTKEY_OFF + slot_index), token);
 }
 
 unsigned char tui_get_modifiers(void) {
@@ -131,7 +132,7 @@ unsigned char tui_handle_global_hotkey(unsigned char key,
     if (slot != 0) {
         if (allow_bind && (modifiers & TUI_MOD_SHIFT) != 0) {
             if (current_bank >= APP_BANK_EDITOR && current_bank <= APP_BANK_MAX) {
-                TUI_HOTKEY_BINDINGS[(unsigned char)(slot - 1)] = current_bank;
+                tui_hotkey_set_binding((unsigned char)(slot - 1), current_bank);
             }
             return TUI_HOTKEY_BIND_ONLY;
         }
@@ -141,12 +142,12 @@ unsigned char tui_handle_global_hotkey(unsigned char key,
             return TUI_HOTKEY_NONE;
         }
         if (current_bank >= APP_BANK_EDITOR && current_bank <= APP_BANK_MAX) {
-            TUI_HOTKEY_BINDINGS[(unsigned char)(slot - 1)] = current_bank;
+            tui_hotkey_set_binding((unsigned char)(slot - 1), current_bank);
         }
         return TUI_HOTKEY_BIND_ONLY;
     }
 
-    target = TUI_HOTKEY_BINDINGS[(unsigned char)(slot - 1)];
+    target = tui_hotkey_get_binding((unsigned char)(slot - 1));
     if (target < APP_BANK_EDITOR || target > APP_BANK_MAX) {
         return TUI_HOTKEY_NONE;
     }

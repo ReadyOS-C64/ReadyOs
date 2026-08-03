@@ -28,14 +28,15 @@ ABI_CHECKS = (
     ("jt_preload", 0x009, bytes.fromhex("4c80c8")),
     ("jt_return", 0x00C, bytes.fromhex("4c00c9")),
     ("jt_switch", 0x00F, bytes.fromhex("4c40c9")),
-    ("jt_stash_cur", 0x012, bytes.fromhex("4cc0c8")),
+    ("jt_reserved_noop", 0x012, bytes.fromhex("4cffc9")),
     ("jt_fetch_bank", 0x015, bytes.fromhex("4cf0c8")),
-    ("jt_log_byte", 0x018, bytes.fromhex("4ce0c9")),
+    ("jt_deprecated_log", 0x018, bytes.fromhex("4cffc9")),
+    ("jt_mark_loaded", 0x01B, bytes.fromhex("4cc0c9")),
     ("data_filename_len", 0x021, bytes([0x08])),
     ("storage_drive_default", 0x039, bytes([0x08])),
     ("stash_uses_logical_setup", 0x0E0, bytes.fromhex("2060c9")),
     ("fetch_uses_logical_setup", 0x0F0, bytes.fromhex("2060c9")),
-    ("logical_setup_entry", 0x160, bytes.fromhex("c900d009ad3b")),
+    ("logical_setup_entry", 0x160, bytes.fromhex("c900d006ad3b")),
     ("raw_setup_entry", 0x1A0, bytes.fromhex("8d06df")),
 )
 
@@ -91,6 +92,9 @@ def parse_byte_token(token: str, constants: dict[str, int]) -> bytes:
         return bytes([int(token[1:], 16)])
     if token in constants:
         return bytes([constants[token] & 0xFF])
+    m = re.fullmatch(r"([A-Za-z_][A-Za-z0-9_]*)\s*\+\s*(\d+)", token)
+    if m and m.group(1) in constants:
+        return bytes([(constants[m.group(1)] + int(m.group(2))) & 0xFF])
     return bytes([int(token, 0)])
 
 
@@ -167,10 +171,34 @@ def verify_exact_image(label: str, data: bytes, *, reu_bank_skip: int = 0) -> No
                 f"{label} ABI field {name} changed at ${0xC800 + offset:04X} "
                 f"({actual.hex()} != {expected.hex()})"
             )
-    skip_actual = data[0x03B]
-    if skip_actual != (reu_bank_skip & 0xFF):
-        fail(f"{label} reu_bank_skip changed at $C83B ({skip_actual} != {reu_bank_skip})")
+    readyos_actual = data[0x03B]
+    readyos_expected = (reu_bank_skip + 1) & 0xFF
+    if readyos_actual != readyos_expected:
+        fail(f"{label} ReadyOS bank changed at $C83B ({readyos_actual} != {readyos_expected})")
+    if bytes.fromhex("a9b88d08df") not in data[0x1A0:0x1C0]:
+        fail(f"{label} snapshot length is not $B800")
+    for address_lo in (0x07, 0x08, 0x09, 0x0B, 0x0C):
+        if bytes((0x8D, address_lo, 0xC0)) in data:
+            fail(f"{label} reintroduced an obsolete preload trace store to $C0{address_lo:02X}")
+
+    padding_ranges = (
+        (0x05C, 0x060), (0x069, 0x080), (0x0B6, 0x0E0),
+        (0x0E9, 0x0F0), (0x0F9, 0x100), (0x11F, 0x140),
+        (0x15B, 0x160), (0x19E, 0x1A0), (0x1BE, 0x1C0),
+        (0x1FB, 0x1FF),
+    )
+    padding_bytes = sum(end - start for start, end in padding_ranges)
+    if padding_bytes != 129:
+        fail(f"internal shim padding accounting changed ({padding_bytes} != 129)")
+    for start, end in padding_ranges:
+        if any(data[start:end]):
+            fail(
+                f"{label} executable padding is no longer clear at "
+                f"${0xC800 + start:04X}-${0xC800 + end - 1:04X}"
+            )
     ok(f"{label} ABI anchor bytes match expected layout")
+    ok(f"{label} has no obsolete preload trace stores in app RAM")
+    ok(f"{label} has 129 verified executable-padding bytes")
 
 
 def main() -> int:

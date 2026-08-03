@@ -1,5 +1,13 @@
 # ReadyBASIC Lessons Learnt
 
+> Current contract note (schema v5): ReadyOS now snapshots `$1000-$C7FF`
+> (`$B800` bytes) and keeps mappings/status/registry state only in the combined
+> ReadyOS bank at physical `Skip+1`. ReadyBASIC deliberately leaves
+> `$C600-$C7FF` unused to preserve its custom assembler/linker image shape. Any
+> dated observations below that call `$C600-$C7FF` shared ReadyOS metadata or
+> describe a `$B600` snapshot are retained as historical debugging evidence and
+> are superseded by this contract.
+
 This is the running lab notebook for ReadyBASIC. Keep entries small, falsifiable,
 and updated when a hypothesis turns out to be wrong. The goal is to preserve the
 actual C64/ReadyOS evidence trail rather than a pile of confident guesses.
@@ -8,7 +16,8 @@ actual C64/ReadyOS evidence trail rather than a pile of confident guesses.
 
 - ReadyBASIC is a ReadyOS-native PRG host for BASIC, not a normal C64 BASIC PRG.
 - The app PRG loads at `$1000` and must obey the ReadyOS app/shim window:
-  `$1000-$C5FF` is app-owned, `$C600-$C9FF` is reserved metadata/shim space.
+  `$1000-$C7FF` is app-owned and `$C800-$C9FF` is resident shim space.
+  ReadyBASIC deliberately leaves `$C600-$C7FF` unused for custom-layout stability.
 - BASIC programs are data inside the host. The scoped BASIC workspace is now
   `$2AC1-$9FFF`, with `30013` formula empty free bytes (29.3K); ReadyBASIC
   extension lines are left as readable text rather than crunched into private
@@ -50,15 +59,17 @@ actual C64/ReadyOS evidence trail rather than a pile of confident guesses.
 
 ## Live Discipline Notes
 
-### Distinguish App RAM From Shared ReadyOS Metadata
+### Distinguish Available App RAM From The Stable ReadyBASIC Image Shape
 
-ReadyOS app snapshots own `$1000-$C5FF`. `$C600-$C7FF` is not app-private RAM,
-but it is also not unused; ReadyOS uses it for shared REU metadata. The launcher
-marks ReadyBASIC's assigned `rbcore` banks as `REU_RB_CORE` and `REU_RB_CODE`,
-and ReadyBASIC may refresh those exact ownership tags after resolving them. It
-must never treat that page as a general ReadyBasic buffer. If a future probe
-sees boot or app-load instability, check whether ReadyBasic is writing more
-than those ownership tags before blaming the launcher or VICE.
+ReadyOS app snapshots own `$1000-$C7FF`. The `$C600-$C7FF` tail is therefore
+app-private RAM, but ReadyBASIC deliberately leaves it unused so its custom
+assembler/linker image shape and runtime assumptions stay stable. The launcher
+publishes ReadyBASIC's assigned `rbcore` banks as `REU_RB_CORE` and
+`REU_RB_CODE` in the ReadyOS bank at physical `Skip+1`; ReadyBASIC may refresh
+those exact ReadyOS-bank ownership tags after resolving them. If a future probe
+sees boot or app-load instability, check for an unintended custom-image layout
+change or writes outside the documented bridge/shared-frame ranges before
+blaming the launcher or VICE.
 
 ### Interrupted VICE Runs Still Need A Ledger Entry
 

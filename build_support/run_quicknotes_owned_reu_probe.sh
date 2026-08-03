@@ -113,18 +113,12 @@ steps:
       wait_timeout_s: 45
       capture_on_success: true
       capture_label: qn_owned_launcher_after_quicknotes
-  - id: assert_owned_banks_before_viewer
-    type: assert.memory
-    params:
-      start: 0xC623
-      end: 0xC624
-      equals_hex: "03 03"
   - id: dump_before_viewer_ram
     type: dump.memory_ranges
     params:
       ranges: &owned_reu_ranges
-        - { label: reu_alloc_table_c600, start: 0xC600, end: 0xC67F }
-        - { label: reu_metadata_c600, start: 0xC600, end: 0xC7FF }
+        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC6FF }
+        - { label: app_snapshot_private_c700, start: 0xC700, end: 0xC7FF }
   - id: open_reuviewer_before_unload
     type: input.sequence
     params:
@@ -237,18 +231,12 @@ steps:
       wait_timeout_s: 45
       capture_on_success: true
       capture_label: qn_owned_after_launcher_after_quicknotes
-  - id: assert_owned_banks_before_unload
-    type: assert.memory
-    params:
-      start: 0xC623
-      end: 0xC624
-      equals_hex: "03 03"
   - id: dump_before_unload_ram
     type: dump.memory_ranges
     params:
       ranges: &owned_reu_ranges
-        - { label: reu_alloc_table_c600, start: 0xC600, end: 0xC67F }
-        - { label: reu_metadata_c600, start: 0xC600, end: 0xC7FF }
+        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC6FF }
+        - { label: app_snapshot_private_c700, start: 0xC700, end: 0xC7FF }
   - id: unload_quicknotes
     type: input.sequence
     params:
@@ -262,12 +250,6 @@ steps:
       wait_timeout_s: 45
       capture_on_success: true
       capture_label: qn_owned_launcher_after_unload
-  - id: assert_owned_banks_freed
-    type: assert.memory
-    params:
-      start: 0xC623
-      end: 0xC624
-      equals_hex: "00 00"
   - id: dump_after_unload_ram
     type: dump.memory_ranges
     params:

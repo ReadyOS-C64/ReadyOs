@@ -1,8 +1,14 @@
 # Future REU Refactor Plan
 
+> **Implemented by the schema-v5 ReadyOS-bank refactor (2026-08-01).** This
+> plan is preserved rather than deleted. Current authority is physical
+> `Skip+1`, the ReadyOS bank; `$C600-$C7FF` is app-private, physical `Skip` is
+> the first dynamic bank, and token mapping/status live at `$B940/$BA40`.
+> See `privatedocs/top_level_md/MEMORY_MAP.md` for the current contract.
+
 ## Purpose
 
-This is the active future plan after Phase 1 of the ReadyOS REU refactor.
+This was the active future plan after Phase 1 of the ReadyOS REU refactor.
 The completed Phase 1 record lives in `ReadyOSREUPhase1Completed.md`.
 
 The future work here builds on a working v4 REU control-bank model. The goal is

@@ -113,7 +113,7 @@ steps:
         - { label: hidden_visible_a000, start: 0xA000, end: 0xA5FF }
         - { label: hidden_overlay_a800, start: 0xA800, end: 0xA8FF }
         - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
-        - { label: reu_alloc_table_c600, start: 0xC600, end: 0xC6FF }
+        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC6FF }
 
   - id: direct_ping
     type: input.sequence
@@ -702,9 +702,18 @@ steps:
   - id: resume_after_exit
     type: input.sequence
     params:
-      keys: [145,17,13]
+      keys: [145,17]
       inter_key_delay_s: 0.10
-      post_delay_s: 3.0
+      post_delay_s: 0.5
+  - id: clear_keyboard_buffer_before_full_suite_resume
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_after_full_suite_exit
+    type: monitor.command
+    params:
+      command: "keybuf \\\\x0d"
   - id: wait_readybasic_after_resume
     type: screen.wait_contains
     params:

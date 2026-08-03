@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5n-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5n-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5n-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5b-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5b-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5b-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -77,11 +77,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_direct_string
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\x0d"
   - id: wait_prompt_after_direct_string_resume
     type: screen.wait_contains
     params:
@@ -146,11 +144,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_multiline
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\x0d"
   - id: wait_prompt_after_multiline_resume
     type: screen.wait_contains
     params:
@@ -203,11 +199,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_after_new
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\x0d"
   - id: wait_prompt_after_new_resume
     type: screen.wait_contains
     params:
@@ -252,11 +246,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_variables
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\x0d"
   - id: wait_prompt_after_variables_resume
     type: screen.wait_contains
     params:
@@ -309,11 +301,9 @@ steps:
       text: "READY OS"
       wait_timeout_s: 30
   - id: resume_rb_program
-    type: input.sequence
+    type: monitor.command
     params:
-      keys: [13]
-      inter_key_delay_s: 0.03
-      post_delay_s: 2.0
+      command: "keybuf \\x0d"
   - id: wait_prompt_after_rb_resume
     type: screen.wait_contains
     params:

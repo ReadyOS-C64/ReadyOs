@@ -5,6 +5,11 @@ and the launcher-local DMA experiments. It is specifically about Ultimate DOS
 UCI technique; the launcher integration remains gated behind
 `LAUNCHER_DMA_LOAD=1`.
 
+> **Schema-v5 update (2026-08-02):** current main-app DMA destinations and
+> shim transfers cover `$1000-$C7FF` (`$B800`). Older `$C5FF/$B600` values in
+> dated hardware experiments below are retained only where they describe the
+> artifact tested at that time.
+
 ## Current Proven Shape
 
 - Use Ultimate DOS UCI calls for the actual DMA load path.
@@ -396,8 +401,8 @@ The current experimental launcher path therefore avoids `FILE_STAT` entirely:
 - zero the destination REU window/slot first
 - issue Ultimate DOS `LOAD_REU` for the known destination window/slot length
 
-For main app snapshots, the destination window is `$1000-$C5FF`, length
-`$B600`. Exact PRG EOF size is not required because the target REU window is
+For main app snapshots, the destination window is `$1000-$C7FF`, length
+`$B800`. Exact PRG EOF size is not required because the target REU window is
 cleared first and the shim can restore the full app window. ReadyShell overlays
 also have a fixed slot length (`$3800`), so the same strategy applies there.
 Only dynamically packed resources without a known slot length would require a
@@ -449,8 +454,8 @@ on the tested C64U; it returned `21,UNKNOWN`.
 
 The Launcher does not need exact app file sizes for main app snapshots. It
 zeros the REU destination window first, validates the PRG load address, and
-then asks Ultimate DOS to `LOAD_REU` the full fixed app window (`$B600`) into
-the resolved physical REU bank. The shim app size is set to `$B600`. ReadyShell
+then asks Ultimate DOS to `LOAD_REU` the full fixed app window (`$B800`) into
+the resolved physical REU bank. The shim app size is set to `$B800`. ReadyShell
 overlays use the same strategy with their fixed `$3800` overlay slot.
 
 Hardware evidence from C64U REST automation:

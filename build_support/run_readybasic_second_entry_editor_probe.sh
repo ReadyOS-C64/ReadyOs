@@ -91,17 +91,60 @@ emit_readybasic_other_apps_tour() {
 
   # Launcher selection starts on ReadyBASIC (index 4). Visit Editor,
   # type a few chars, then return via CTRL+B.
-  emit_key_step "move_readybasic_to_editor_$label" "145,145,145,145,13"
+  emit_key_step "move_readybasic_to_editor_$label" "145,145,145,145" "0.10" "0.5"
+  cat >>"$PLAN" <<YAML
+  - id: clear_keyboard_before_editor_$label
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_editor_$label
+    type: monitor.command
+    params:
+      command: "keybuf \\\\x0d"
+YAML
   emit_wait_step "wait_editor_$label" "editor"
+  cat >>"$PLAN" <<YAML
+  - id: wait_editor_stable_$label
+    type: screen.wait_contains
+    params:
+      text: "editor"
+      pre_delay_s: 1.5
+      wait_timeout_s: 30
+  - id: clear_keyboard_before_editor_text_$label
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+YAML
   emit_type_step "type_editor_chars_$label" $'probe line\r'
-  emit_key_step "ctrl_b_editor_$label" "2" "0.03" "1.0"
+  cat >>"$PLAN" <<YAML
+  - id: clear_keyboard_before_editor_ctrl_b_$label
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: ctrl_b_editor_$label
+    type: monitor.command
+    params:
+      command: "keybuf \\\\x02"
+YAML
   emit_wait_step "wait_launcher_after_editor_$label" "READY OS" "30"
 
   # Selection is now Editor (index 0). Return to ReadyBASIC (index 4).
   # Other REU-overlay apps have their own focused probes; this one validates
   # ReadyBASIC state after an editor app round-trip.
-  emit_key_step "move_editor_to_readybasic_$label" "17,17,17,17,13"
+  emit_key_step "move_editor_to_readybasic_$label" "17,17,17,17" "0.10" "0.5"
   cat >>"$PLAN" <<YAML
+  - id: clear_keyboard_before_readybasic_$label
+    type: memory.write
+    params:
+      start: 0x00C6
+      bytes_hex: "00"
+  - id: launch_readybasic_$label
+    type: monitor.command
+    params:
+      command: "keybuf \\\\x0d"
   - id: wait_readybasic_after_tour_$label
     type: screen.wait_contains
     params:
