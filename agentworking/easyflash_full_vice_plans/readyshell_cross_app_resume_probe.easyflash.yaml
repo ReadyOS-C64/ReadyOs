@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    cart_crt: "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.2.5/precog-easyflash/readyos_easyflash.crt"
+    cart_crt: "Releases/0.2.5/precog-easyflash/readyos_easyflash.crt"
     autostart_enabled: false
-    disk8: "/Users/karlprosserpp/dev/c64projects/readyosprecog/agentworking/easyflash_full_vice_plans/readyos_data.easyflash-vice.d64"
+    disk8: "agentworking/easyflash_full_vice_plans/readyos_data.easyflash-vice.d64"
     drive8_enabled: true
     drive8_type: 1541
     drive9_enabled: false
@@ -35,6 +35,10 @@ steps:
     params:
       kill_stale: true
   - id: easyflash_wait_launcher
+    retry:
+      max_attempts: 1
+      backoff_ms: 0
+      jitter: false
     type: screen.wait_contains
     params:
       text: "READY OS"
@@ -219,6 +223,6 @@ steps:
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: launcher_shim_c800, start: 0xC800, end: 0xCA00 }
+        - { label: launcher_shim_c600, start: 0xC600, end: 0xCA00 }
         - { label: app_work_1000, start: 0x1000, end: 0x1800 }
-        - { label: upper_app_a000, start: 0xA000, end: 0xC800 }
+        - { label: upper_app_a000, start: 0xA000, end: 0xC600 }

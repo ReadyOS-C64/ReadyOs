@@ -20,7 +20,7 @@ static const unsigned char readyos_easyflash_app_banks[READYOS_EASYFLASH_APP_COU
 };
 
 static const unsigned char readyos_easyflash_app_physical_banks[READYOS_EASYFLASH_APP_COUNT] = {
-    32, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53
+    33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53
 };
 
 static const unsigned char readyos_easyflash_default_slots[READYOS_EASYFLASH_APP_COUNT] = {
