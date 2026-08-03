@@ -22,4 +22,4 @@ after the named final-state evidence exists and has been inspected.
 | Main, SKU, app, public/private Markdown and HTML are current or visibly historical | documentation verifier, HTML classification, corpus scan | proven |
 | Every full commented HTML shim source matches current source | five-listing byte/directive verifier | proven |
 | No files or retained historical artifacts are deleted | final Git deletion audit and release-artifact restoration | proven |
-| Working changes committed in reviewable scopes | clean diff checks and Git commits | pending |
+| Working changes committed in reviewable scopes | `ced085d`, `561124f`, `eb58efb`, plus this final audit commit | proven |
