@@ -95,7 +95,7 @@ Boot note:
   depending on media capacity; the catalog table below is the current app-token
   union across profiles.
 - App snapshots and app-owned resource banks are allocated on demand and
-  recorded in the schema-v5 ReadyOS bank at physical `Skip+1`; ReadyOS does
+  recorded in the schema-v5 ReadyOS bank at physical `Skip`; ReadyOS does
   not reserve a fixed app-slot gap or keep an allocation mirror in C64 RAM.
 
 ## What's New In 0.2.5
@@ -120,15 +120,15 @@ Boot note:
   Ultimate UCI status, and drive status for devices `8` through `11`; on the
   C64 Ultimate it shows a variety of Ultimate machine details, including
   networking information and IP addresses.
-- The launcher and cartridge loaders use the physical `Skip+1` ReadyOS bank as
+- The launcher and cartridge loaders use the physical `Skip` ReadyOS bank as
   the source of truth for the launcher snapshot, explicit app-token mapping,
   loaded/resumable status, clipboard metadata, hotkeys, resource relationships,
   app catalog metadata, and REU Viewer ownership details. ReadyShell overlays,
   ReadyShell state/scratch, and ReadyBASIC core/code banks are loader-assigned
   resources rather than fixed physical banks.
 - Launcher return state is intentionally small: an `RSM1` UI record at
-  ReadyOS `$FE40` keeps selection/scroll/one-shot state, while the `LS` record
-  at `$BBD9` and app registry at `$BC00` reconstruct the app-bank, drive,
+  ReadyOS `$FC40` keeps selection/scroll/one-shot state, while the `LS` record
+  at `$B9D9` and app registry at `$BA00` reconstruct the app-bank, drive,
   hotkey, resource, loaded-state, and size arrays. Those arrays are not kept as
   a second authoritative copy in the launcher resume payload.
 - Apps can opt into owner-recorded runtime REU allocation without growing the
@@ -325,7 +325,7 @@ Notes:
 - ReadyShell overlays are loader-assigned resources. The profile
   `rsovl+` line records which overlay PRGs are packed into each resource bank
   and at which bank-relative offset, while the schema-v5 ReadyOS bank at
-  physical `Skip+1` records the runtime owner/resource relationship for REU
+  physical `Skip` records the runtime owner/resource relationship for REU
   Viewer, unload, and diagnostics.
 - Current ReadyShell command set: `PRT`, `MORE`, `TOP`, `SEL`, `GEN`, `TAP`,
   `DRVI`, `LST`, `LDV`, `STV`, `CAT`, `PUT`, `ADD`, `DEL`, `REN`, and `COPY`.
@@ -360,10 +360,9 @@ same generated programs.
 
 Runtime memory layout:
 
-- app runtime window: `$1000-$C7FF` (`$B800` bytes)
-- `$C600-$C7FF`: the upper 512 bytes of app-private snapshot RAM; no ReadyOS
-  metadata mirror lives there
-- resident shim: `$C800-$C9FF`
+- app runtime window: `$1000-$C5FF` (`$B600` bytes)
+- resident shim: `$C600-$C9FF` (1 KB); `$C600-$C7FF` is reserved expansion
+  capacity and the public ABI remains at `$C800-$C9FF`
 - ReadyShell/ReadyBASIC high-RAM workspace: `$CA00-$CFFF` when owned by the
   active app; it is outside the app snapshot and must be managed by that app
 - hardware I/O region: `$D000-$DFFF`
@@ -371,13 +370,13 @@ Runtime memory layout:
 Spatially, the core RAM contract is:
 
 ```text
-$1000                                                               $C7FF $C800   $C9FF $CA00   $CFFF $D000
-|<---------------- active app snapshot: $B800 bytes ------------------->|<--- shim ---->|<- app high RAM ->|<-- I/O
+$1000                                                         $C5FF $C600             $C9FF $CA00   $CFFF $D000
+|<--------------- active app snapshot: $B600 bytes -------------->|<-- 1 KB shim ------>|<- app high RAM ->|<-- I/O
 ```
 
 Runtime model:
 
-- the active app owns `$1000-$C7FF`
+- the active app owns `$1000-$C5FF`
 - the shim stays resident outside that window
 - app switching works by stashing and fetching the app window through the REU
 - apps can return to the launcher or switch directly to another app without
@@ -385,12 +384,11 @@ Runtime model:
 
 REU layout:
 
-- physical `Skip`: first dynamic bank available for an app snapshot or resource
-- physical `Skip+1`: the ReadyOS bank; launcher snapshot at `$0000-$B7FF`,
-  followed by schema-v5 system state at `$B800-$FFFF`
-- physical `Skip+2` and above: remaining dynamic allocation pool
+- physical `Skip`: the ReadyOS bank; launcher snapshot at `$0000-$B5FF`,
+  followed by schema-v5 system state at `$B600-$FFFF`
+- physical `Skip+1` and above: dynamic allocation pool for app snapshots and resources
 - app snapshots: allocated on demand by the launcher, then resolved by token
-  through the ReadyOS bank's explicit `$B940` mapping table
+  through the ReadyOS bank's explicit `$B740` mapping table
 - clipboard payload banks: allocated from the dynamic pool
 - app-owned runtime banks: allocated from the dynamic pool by apps that opt into
   the owned-allocation micromodule, recorded in the ReadyOS bank, and reclaimed by
@@ -407,18 +405,19 @@ REU layout:
 - remaining banks: dynamic allocation pool
 
 The shim's logical token is not a fixed physical app-bank number. Token `0`
-resolves directly to the ReadyOS bank at physical `Skip+1`; nonzero app tokens
-resolve through its `$B940` lookup page. Loaded/resumable status is authoritative
-at `$BA40`, not in the retired `$C836-$C838` bitmap. This lets snapshots and
-resources move while preserving the 512-byte resident shim ABI.
+resolves directly to the ReadyOS bank at physical `Skip`; nonzero app tokens
+resolve through its `$B740` lookup page. Loaded/resumable status is authoritative
+at `$B840`, not in the retired `$C836-$C838` bitmap. This lets snapshots and
+resources move while preserving the 512-byte public shim ABI inside the full
+1 KB resident shim region.
 The current shim has 129 verifier-checked executable-padding bytes (largest
 contiguous run: 42 bytes) plus 11 ABI/data bytes that remain reserved rather
 than general feature space; the exact accounting is in the current shim
 architecture report.
 
 The ReadyOS bank also contains the active launcher catalog-shape settings at
-`$BBD9-$BBFF` and a 128-byte validated launcher runtime envelope at
-`$FE40-$FEBF`. The latter stores only compact UI state (and the bounded
+`$B9D9-$B9FF` and a 128-byte validated launcher runtime envelope at
+`$FC40-$FCBF`. The latter stores only compact UI state (and the bounded
 Ultimate DMA image path in DMA-enabled builds); the launcher restores its
 working registry arrays from the ReadyOS app records after every return.
 
@@ -449,6 +448,9 @@ Main entry points:
   print the known release profile ids
 - `bash ./run.sh --build-all`
   build every release profile and exit
+- `bash ./run.sh --profile precog-d81 --build-only`
+  build and package only the selected profile, then exit without starting VICE;
+  this is useful for hardware-test artifacts and custom `--config` builds
 - `bash ./run.sh --force-artifacts-from-d71 --build-all`
   promote non-excluded `SEQ` files and current `REL` files from the latest
   built `precog-dual-d71` images into `cfg/authoritative/`, then rebuild all

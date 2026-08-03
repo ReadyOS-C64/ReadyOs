@@ -1,5 +1,13 @@
 # ReadyOS REU Enhancement Refactor - Phase 1 Completed
 
+<!-- READYOS-CURRENT-CONTRACT-2026-08-02 -->
+> **Current ReadyOS contract (2026-08-02):** Physical `Skip` is the ReadyOS
+> bank and `Skip+1` is the first dynamic bank. The launcher snapshot occupies
+> ReadyOS `$0000-$B5FF`; schema v5 occupies `$B600-$FFFF`, including the token
+> map at `$B740` and status at `$B840`. C64 app RAM is `$1000-$C5FF` (`$B600`),
+> and the resident 1 KB shim owns `$C600-$C9FF` with its public ABI at `$C800`.
+> Dated layouts and measurements below are retained as historical evidence.
+
 > Superseded architecture note (2026-08-01): this remains the Phase 1 evidence
 > record, but its logical-bank-0 control bank and `$C600-$C7FF` RAM mirror were
 > replaced by schema v5. The current design uses one combined ReadyOS bank at
@@ -684,13 +692,23 @@ contract while keeping the final image at `512` bytes.
 
 ```asm
 ;-----------------------------------------------------------------------------
-; Shared ReadyOS shim image ($C800-$C9FF, 512 bytes)
+; Shared ReadyOS shim image ($C600-$C9FF, 1024 bytes)
 ; This file is the canonical shim byte layout used by both the disk boot path
 ; and the EasyFlash cartridge flavor. Keep it identical across all variants.
 ;-----------------------------------------------------------------------------
 
 ;-----------------------------------------------------------------------------
-; Page 1: $C800-$C8FF - Jump table, data, and helper routines
+; Pages 1-2: $C600-$C7FF - reserved resident expansion space
+;-----------------------------------------------------------------------------
+; This space used to contain the C64-RAM REU allocation/metadata mirror.  The
+; authoritative state now lives in the ReadyOS REU bank, but the RAM remains
+; resident shim-owned capacity rather than becoming app snapshot memory.
+.ifndef READYOS_SHIM_ABI_ONLY
+.res $0200, $00
+.endif
+
+;-----------------------------------------------------------------------------
+; Page 3: $C800-$C8FF - Jump table, data, and helper routines
 ;-----------------------------------------------------------------------------
 
 ; $C800-$C817: Jump Table (24 bytes, 8 entries)
@@ -732,7 +750,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 ;        This persists across app switches and is shared by apps that use the
 ;        common file-dialog default-drive contract.
 ; $C83A: reserved (formerly log_index)
-; $C83B: readyos_bank - direct physical ReadyOS bank number (Skip+1)
+; $C83B: readyos_bank - direct physical ReadyOS bank number (Skip)
 ; $C83C: launcher_flags - launcher-owned one-shot state flags
 ; $C83D: reu_lookup_scratch - one-byte ReadyOS-bank DMA scratch
 ; $C83E: token_scratch; $C83F: reserved
@@ -750,7 +768,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00                   ; $C838: reserved (retired bitmap byte)
 .byte $08                   ; $C839: storage_drive (default drive 8)
 .byte $00                   ; $C83A: reserved (retired debug-ring head)
-.byte READYOS_REU_BANK_SKIP + 1 ; $C83B: readyos_bank (physical Skip+1)
+.byte READYOS_REU_BANK_SKIP     ; $C83B: readyos_bank (physical Skip)
 .byte $00                   ; $C83C: launcher_flags
 .byte $00                   ; $C83D: reu_lookup_scratch
 .byte $00,$00               ; $C83E-$C83F: reserved
@@ -823,7 +841,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00
 
 ;-----------------------------------------------------------------------------
-; $C8E0: stash_to_bank - Stash $1000-$C7FF to REU bank in A (16 bytes)
+; $C8E0: stash_to_bank - Stash $1000-$C5FF to REU bank in A (16 bytes)
 ;-----------------------------------------------------------------------------
 .byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
 .byte $A9, $90              ; LDA #$90 (STASH command)
@@ -832,7 +850,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00,$00,$00,$00,$00,$00
 
 ;-----------------------------------------------------------------------------
-; $C8F0: fetch_bank - Fetch from REU bank in A to $1000-$C7FF (16 bytes)
+; $C8F0: fetch_bank - Fetch from REU bank in A to $1000-$C5FF (16 bytes)
 ;-----------------------------------------------------------------------------
 .byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
 .byte $A9, $91              ; LDA #$91 (FETCH command)
@@ -841,7 +859,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00,$00,$00,$00,$00,$00
 
 ;-----------------------------------------------------------------------------
-; Page 2: $C900-$C9FF - Main routines
+; Page 4: $C900-$C9FF - Main routines
 ;-----------------------------------------------------------------------------
 
 ;-----------------------------------------------------------------------------
@@ -892,9 +910,9 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $8D, $03, $DF         ; STA $DF03 (C64 addr hi)
 .byte $8A                   ; TXA
 .byte $18                   ; CLC
-.byte $69, $40              ; ADC #<$B940 (mapping offset + token)
+.byte $69, $40              ; ADC #<$B740 (mapping offset + token)
 .byte $8D, $04, $DF         ; STA $DF04 (REU offset lo)
-.byte $A9, $B9              ; LDA #>$B940
+.byte $A9, $B7              ; LDA #>$B740
 .byte $69, $00              ; ADC #0 (include low-byte carry)
 .byte $8D, $05, $DF         ; STA $DF05 (REU offset hi)
 .byte $AD, $3B, $C8         ; LDA $C83B (ReadyOS global physical bank)
@@ -910,7 +928,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00               ; Padding to $C9A0
 
 ;-----------------------------------------------------------------------------
-; $C9A0: reu_setup - Set up REU registers for $B800 transfer at $1000
+; $C9A0: reu_setup - Set up REU registers for $B600 transfer at $1000
 ;-----------------------------------------------------------------------------
 .byte $8D, $06, $DF         ; STA $DF06 (bank)
 .byte $A9, $00              ; LDA #$00
@@ -921,8 +939,8 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $8D, $04, $DF         ; STA $DF04 (REU addr lo)
 .byte $8D, $05, $DF         ; STA $DF05 (REU addr hi)
 .byte $8D, $07, $DF         ; STA $DF07 (len lo = $00)
-.byte $A9, $B8              ; LDA #$B8
-.byte $8D, $08, $DF         ; STA $DF08 (len hi = $B8, so $B800 bytes)
+.byte $A9, $B6              ; LDA #$B6
+.byte $8D, $08, $DF         ; STA $DF08 (len hi = $B6, so $B600 bytes)
 .byte $60                   ; RTS
 .byte $00,$00
 
@@ -939,9 +957,9 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $8D, $03, $DF
 .byte $AD, $3E, $C8         ; token
 .byte $18                   ; CLC
-.byte $69, $40              ; + <$BA40 (token status table)
+.byte $69, $40              ; + <$B840 (token status table)
 .byte $8D, $04, $DF
-.byte $A9, $BA              ; >$BA40
+.byte $A9, $B8              ; >$B840
 .byte $69, $00              ; include low-byte carry
 .byte $8D, $05, $DF
 .byte $AD, $3B, $C8         ; ReadyOS physical bank

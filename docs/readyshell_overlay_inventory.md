@@ -1,10 +1,10 @@
-# ReadyShell Overlay Inventory Report (v0.2.5I)
+# ReadyShell Overlay Inventory Report (v0.2.5Y)
 
 Artifact-backed report generated from the current local ReadyShell build, linker map, and D81 disk image.
 
 ## Executive Summary
 
-- Profile / disk source: `precog-d81` using `Releases/0.2.5/precog-d81/readyos-v0.2.5i-d81.d81` (disk label `readyosd81`, `227` blocks free).
+- Profile / disk source: `precog-d81` using `Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81.d81` (disk label `readyosd81`, `227` blocks free).
 - Resident ReadyShell PRG: `readyshell.prg` on disk as `readyshell`, `28141` bytes and `111` D71 blocks.
 - Overlay execution window: `$8E00-$C5FF` for `14336` bytes, with PRG load-address bytes at `$8DFE-$8DFF`.
 - Resident BSS / heap below overlays: BSS `$7DEB-$7F94` (`426` bytes), heap `$7F96-$8DFD` (`3688` bytes).
@@ -18,7 +18,7 @@ Artifact-backed report generated from the current local ReadyShell build, linker
 
 | Region | Range | Size | Notes |
 | --- | --- | ---: | --- |
-| ReadyOS snapshot window | `$1000-$C7FF` | `47104` | Full app-owned RAM captured by the shim; ReadyShell intentionally keeps its overlay ABI below `$C600`. |
+| ReadyOS snapshot window | `$1000-$C5FF` | `46592` | Full app-owned RAM captured by the shim; the resident 1 KB shim begins at `$C600`. |
 | Overlay load address bytes | `$8DFE-$8DFF` | `2` | PRG load address emitted ahead of each overlay sidecar file. |
 | Overlay execution window | `$8E00-$C5FF` | `14336` | Shared live area for whichever overlay is active. |
 | Resident BSS | `$7DEB-$7F94` | `426` | Resident writable data below the overlay load address. |

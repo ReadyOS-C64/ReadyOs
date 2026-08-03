@@ -77,11 +77,11 @@ Each EasyFlash bank is treated as one 16 KiB payload slot, split across:
 ### RAM execution / staging areas
 
 - `$0800-$27FF`: EasyFlash loader copied from cartridge and executed from RAM
-- `$1000-$C7FF`: `$B800` app working/launcher restore window
+- `$1000-$C5FF`: `$B600` app working/launcher restore window
 - `$1000-$47FF`: upper part of loader tail refresh
 - `$1000-$47FF` / full window: temporary staging during preload
-- `$C600-$C7FF`: app-private snapshot tail (no REU bookkeeping mirror)
-- `$C800-$C9FF`: historical shim copied into RAM
+- `$C600-$C7FF`: resident shim expansion reserve (no REU bookkeeping mirror)
+- `$C600-$C9FF`: canonical 1 KB shim copied into RAM; public ABI remains at `$C800`
 - `$CA00+`: diagnostic/debug scratch
 - `$CC00-$CC8F`: copied app layout table
 - `$CC90-...`: copied overlay layout table
@@ -237,7 +237,7 @@ Important nuance:
 
 ## Stage 4: Historical Shim Install
 
-The loader copies the historical shim byte image into `$C800-$C9FF`.
+The loader copies the canonical 1 KB shim byte image into `$C600-$C9FF`.
 
 Source:
 
@@ -247,7 +247,7 @@ Source:
 
 Destination:
 
-- RAM `$C800-$C9FF`
+- RAM `$C600-$C9FF`
 
 What the shim is:
 
@@ -274,8 +274,8 @@ Important nuance:
 The loader initializes only the small resident shim fields needed during
 preload: the default storage drive at `$C839` and `last_saved` at `$C835`.
 It does not create a `$C600-$C7FF` mirror. The launcher snapshot is placed in
-physical `Skip+1` during Stage 7; after handoff, the launcher initializes the
-schema-v5 portion at `$B800-$FFFF` without disturbing that snapshot.
+physical `Skip` during Stage 7; after handoff, the launcher initializes the
+schema-v5 portion at `$B600-$FFFF` without disturbing that snapshot.
 
 ## Stage 6: Copy Generated Layout Tables To RAM
 
@@ -292,7 +292,7 @@ Why:
 ## Stage 7: Preload Launcher Snapshot
 
 The launcher payload is copied from EasyFlash into the app window and then
-stashed into the launcher portion of the ReadyOS bank. Physical `Skip+1` is the
+stashed into the launcher portion of the ReadyOS bank. Physical `Skip` is the
 single source of truth for both the launcher snapshot and schema-v5 runtime
 metadata; it is not logical app token `0` and is never a dynamic app bank.
 
@@ -305,15 +305,15 @@ Current launcher layout:
 
 Detailed flow:
 
-1. Clear `$1000-$C7FF`.
+1. Clear `$1000-$C5FF`.
 2. Set current cart bank to launcher start bank.
 3. Copy launcher payload from cart to RAM at `$1000`.
-4. Stash the full app window `$1000-$C7FF` (`$B800` bytes) into the ReadyOS bank.
+4. Stash the full app window `$1000-$C5FF` (`$B600` bytes) into the ReadyOS bank.
 
 Important nuance:
 
 - The payload itself is about `30.2 KiB`.
-- The stash is the full `47,104` byte app window.
+- The stash is the full `46,592` byte app window.
 - That means the REU snapshot stores the complete runtime RAM image shape expected by the launcher, not just the compressed-on-cart payload bytes.
 - The border switches to yellow for cart-to-RAM copy, then orange for the REU stash.
 
@@ -323,13 +323,13 @@ The loader then walks every app entry in the app table.
 
 Per app, it does:
 
-1. Clear the full app window `$1000-$C7FF`.
+1. Clear the full app window `$1000-$C5FF`.
 2. Read app metadata from the copied RAM table at `$CC00`.
 3. Select the app's EasyFlash start bank by writing `$DE00`.
 4. Copy the app payload from cart to RAM at the specified load address, normally `$1000`.
-5. Stash the full `$B800` app window to the app's assigned REU bank.
+5. Stash the full `$B600` app window to the app's assigned REU bank.
 6. Leave the explicit app token and physical bank pair in the generated catalog
-   for the launcher to publish at ReadyOS `$B940`/`$BA40` after handoff.
+   for the launcher to publish at ReadyOS `$B740`/`$B840` after handoff.
 
 Current app REU banks are loader-assigned. The cartridge SKU preloads the
 profile's app payloads up front, but the steady-state metadata shape matches
@@ -443,10 +443,9 @@ This is also the reason you may briefly see text/color flashes late in boot:
 
 ## Current REU Physical Placement
 
-`Skip` means physical `READYOS_REU_BANK_SKIP`. Physical `Skip` is the first
-dynamic bank. Physical `Skip+1` is the combined ReadyOS bank: launcher snapshot
-at `$0000-$B7FF`, schema v5 at `$B800-$FFFF`. The allocator skips it and
-continues at `Skip+2`. Shim-facing app tokens resolve through ReadyOS `$B940`;
+`Skip` means physical `READYOS_REU_BANK_SKIP`. Physical `Skip` is the combined ReadyOS bank: launcher snapshot
+at `$0000-$B5FF`, schema v5 at `$B600-$FFFF`. The allocator skips it and
+continues at `Skip+1`. Shim-facing app tokens resolve through ReadyOS `$B740`;
 the cartridge emits explicit token/physical pairs and does not use arithmetic.
 
 ## Stage 13: Restore Launcher Snapshot and Handoff
@@ -454,7 +453,7 @@ the cartridge emits explicit token/physical pairs and does not use arithmetic.
 At the end of boot:
 
 1. The loader fetches the launcher snapshot selected by shim token `0`
-   (physical `Skip+1`) back into `$1000-$C7FF`.
+   (physical `Skip`) back into `$1000-$C5FF`.
 2. It disables unwanted interrupt sources.
 3. It jumps to `$1000`.
 
@@ -479,11 +478,11 @@ Important nuance:
 
 ### Pure asm, resident shim
 
-- shim image at `$C800-$C9FF`: `src/boot/readyos_shim.inc`
+- shim image at `$C600-$C9FF`: `src/boot/readyos_shim.inc`
 
 ### C / cc65 launcher stage
 
-- launcher program in `$1000-$C7FF`
+- launcher program in `$1000-$C5FF`
 - source entry:
   - `src/apps/launcher/launcher_easyflash.c`
   - `src/apps/launcher/launcher.c`
@@ -492,7 +491,7 @@ Important nuance:
 
 After boot, app launches are usually:
 
-1. launcher saves itself back to the ReadyOS bank (`Skip+1`)
+1. launcher saves itself back to the ReadyOS bank (`Skip`)
 2. shim fetches target app snapshot from REU
 3. control jumps to `$1000`
 
@@ -579,7 +578,7 @@ The EasyFlash boot process is a preload-and-snapshot pipeline:
 3. RAM loader preloads launcher/apps/overlays from EasyFlash
 4. RAM loader stashes them into REU snapshots
 5. machine state is normalized
-6. launcher snapshot is restored from the ReadyOS bank (`Skip+1`)
+6. launcher snapshot is restored from the ReadyOS bank (`Skip`)
 7. launcher starts in C at `$1000`
 
 The large cold-boot delay is mostly the price of making later launches effectively instant.

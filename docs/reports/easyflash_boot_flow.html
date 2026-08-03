@@ -264,14 +264,15 @@ bank</li>
 <ul>
 <li><code>$0800-$27FF</code>: EasyFlash loader copied from cartridge and
 executed from RAM</li>
-<li><code>$1000-$C7FF</code>: <code>$B800</code> app working/launcher
+<li><code>$1000-$C5FF</code>: <code>$B600</code> app working/launcher
 restore window</li>
 <li><code>$1000-$47FF</code>: upper part of loader tail refresh</li>
 <li><code>$1000-$47FF</code> / full window: temporary staging during
 preload</li>
-<li><code>$C600-$C7FF</code>: app-private snapshot tail (no REU
+<li><code>$C600-$C7FF</code>: resident shim expansion reserve (no REU
 bookkeeping mirror)</li>
-<li><code>$C800-$C9FF</code>: historical shim copied into RAM</li>
+<li><code>$C600-$C9FF</code>: canonical 1 KB shim copied into RAM;
+public ABI remains at <code>$C800</code></li>
 <li><code>$CA00+</code>: diagnostic/debug scratch</li>
 <li><code>$CC00-$CC8F</code>: copied app layout table</li>
 <li><code>$CC90-...</code>: copied overlay layout table</li>
@@ -483,8 +484,8 @@ expensive preload work begins</li>
 </ul>
 <h2 id="stage-4-historical-shim-install">Stage 4: Historical Shim
 Install</h2>
-<p>The loader copies the historical shim byte image into
-<code>$C800-$C9FF</code>.</p>
+<p>The loader copies the canonical 1 KB shim byte image into
+<code>$C600-$C9FF</code>.</p>
 <p>Source:</p>
 <ul>
 <li><code>shim_data</code> in
@@ -495,7 +496,7 @@ Install</h2>
 </ul>
 <p>Destination:</p>
 <ul>
-<li>RAM <code>$C800-$C9FF</code></li>
+<li>RAM <code>$C600-$C9FF</code></li>
 </ul>
 <p>What the shim is:</p>
 <ul>
@@ -523,8 +524,8 @@ model</li>
 during preload: the default storage drive at <code>$C839</code> and
 <code>last_saved</code> at <code>$C835</code>. It does not create a
 <code>$C600-$C7FF</code> mirror. The launcher snapshot is placed in
-physical <code>Skip+1</code> during Stage 7; after handoff, the launcher
-initializes the schema-v5 portion at <code>$B800-$FFFF</code> without
+physical <code>Skip</code> during Stage 7; after handoff, the launcher
+initializes the schema-v5 portion at <code>$B600-$FFFF</code> without
 disturbing that snapshot.</p>
 <h2 id="stage-6-copy-generated-layout-tables-to-ram">Stage 6: Copy
 Generated Layout Tables To RAM</h2>
@@ -546,7 +547,7 @@ control path.</li>
 Snapshot</h2>
 <p>The launcher payload is copied from EasyFlash into the app window and
 then stashed into the launcher portion of the ReadyOS bank. Physical
-<code>Skip+1</code> is the single source of truth for both the launcher
+<code>Skip</code> is the single source of truth for both the launcher
 snapshot and schema-v5 runtime metadata; it is not logical app token
 <code>0</code> and is never a dynamic app bank.</p>
 <p>Current launcher layout:</p>
@@ -558,16 +559,16 @@ snapshot and schema-v5 runtime metadata; it is not logical app token
 </ul>
 <p>Detailed flow:</p>
 <ol type="1">
-<li>Clear <code>$1000-$C7FF</code>.</li>
+<li>Clear <code>$1000-$C5FF</code>.</li>
 <li>Set current cart bank to launcher start bank.</li>
 <li>Copy launcher payload from cart to RAM at <code>$1000</code>.</li>
-<li>Stash the full app window <code>$1000-$C7FF</code>
-(<code>$B800</code> bytes) into the ReadyOS bank.</li>
+<li>Stash the full app window <code>$1000-$C5FF</code>
+(<code>$B600</code> bytes) into the ReadyOS bank.</li>
 </ol>
 <p>Important nuance:</p>
 <ul>
 <li>The payload itself is about <code>30.2 KiB</code>.</li>
-<li>The stash is the full <code>47,104</code> byte app window.</li>
+<li>The stash is the full <code>46,592</code> byte app window.</li>
 <li>That means the REU snapshot stores the complete runtime RAM image
 shape expected by the launcher, not just the compressed-on-cart payload
 bytes.</li>
@@ -579,18 +580,18 @@ Application Snapshots</h2>
 <p>The loader then walks every app entry in the app table.</p>
 <p>Per app, it does:</p>
 <ol type="1">
-<li>Clear the full app window <code>$1000-$C7FF</code>.</li>
+<li>Clear the full app window <code>$1000-$C5FF</code>.</li>
 <li>Read app metadata from the copied RAM table at
 <code>$CC00</code>.</li>
 <li>Select the app’s EasyFlash start bank by writing
 <code>$DE00</code>.</li>
 <li>Copy the app payload from cart to RAM at the specified load address,
 normally <code>$1000</code>.</li>
-<li>Stash the full <code>$B800</code> app window to the app’s assigned
+<li>Stash the full <code>$B600</code> app window to the app’s assigned
 REU bank.</li>
 <li>Leave the explicit app token and physical bank pair in the generated
 catalog for the launcher to publish at ReadyOS
-<code>$B940</code>/<code>$BA40</code> after handoff.</li>
+<code>$B740</code>/<code>$B840</code> after handoff.</li>
 </ol>
 <p>Current app REU banks are loader-assigned. The cartridge SKU preloads
 the profile’s app payloads up front, but the steady-state metadata shape
@@ -721,19 +722,19 @@ in boot:</p>
 <h2 id="current-reu-physical-placement">Current REU Physical
 Placement</h2>
 <p><code>Skip</code> means physical <code>READYOS_REU_BANK_SKIP</code>.
-Physical <code>Skip</code> is the first dynamic bank. Physical
-<code>Skip+1</code> is the combined ReadyOS bank: launcher snapshot at
-<code>$0000-$B7FF</code>, schema v5 at <code>$B800-$FFFF</code>. The
-allocator skips it and continues at <code>Skip+2</code>. Shim-facing app
-tokens resolve through ReadyOS <code>$B940</code>; the cartridge emits
-explicit token/physical pairs and does not use arithmetic.</p>
+Physical <code>Skip</code> is the combined ReadyOS bank: launcher
+snapshot at <code>$0000-$B5FF</code>, schema v5 at
+<code>$B600-$FFFF</code>. The allocator skips it and continues at
+<code>Skip+1</code>. Shim-facing app tokens resolve through ReadyOS
+<code>$B740</code>; the cartridge emits explicit token/physical pairs
+and does not use arithmetic.</p>
 <h2 id="stage-13-restore-launcher-snapshot-and-handoff">Stage 13:
 Restore Launcher Snapshot and Handoff</h2>
 <p>At the end of boot:</p>
 <ol type="1">
 <li>The loader fetches the launcher snapshot selected by shim token
-<code>0</code> (physical <code>Skip+1</code>) back into
-<code>$1000-$C7FF</code>.</li>
+<code>0</code> (physical <code>Skip</code>) back into
+<code>$1000-$C5FF</code>.</li>
 <li>It disables unwanted interrupt sources.</li>
 <li>It jumps to <code>$1000</code>.</li>
 </ol>
@@ -762,12 +763,12 @@ stage</h3>
 </ul>
 <h3 id="pure-asm-resident-shim">Pure asm, resident shim</h3>
 <ul>
-<li>shim image at <code>$C800-$C9FF</code>:
+<li>shim image at <code>$C600-$C9FF</code>:
 <code>src/boot/readyos_shim.inc</code></li>
 </ul>
 <h3 id="c-cc65-launcher-stage">C / cc65 launcher stage</h3>
 <ul>
-<li>launcher program in <code>$1000-$C7FF</code></li>
+<li>launcher program in <code>$1000-$C5FF</code></li>
 <li>source entry:
 <ul>
 <li><code>src/apps/launcher/launcher_easyflash.c</code></li>
@@ -778,7 +779,7 @@ stage</h3>
 <p>After boot, app launches are usually:</p>
 <ol type="1">
 <li>launcher saves itself back to the ReadyOS bank
-(<code>Skip+1</code>)</li>
+(<code>Skip</code>)</li>
 <li>shim fetches target app snapshot from REU</li>
 <li>control jumps to <code>$1000</code></li>
 </ol>
@@ -872,7 +873,7 @@ current order of operations.</p>
 <li>RAM loader stashes them into REU snapshots</li>
 <li>machine state is normalized</li>
 <li>launcher snapshot is restored from the ReadyOS bank
-(<code>Skip+1</code>)</li>
+(<code>Skip</code>)</li>
 <li>launcher starts in C at <code>$1000</code></li>
 </ol>
 <p>The large cold-boot delay is mostly the price of making later

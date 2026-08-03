@@ -112,9 +112,9 @@ consume one runtime strip.
 
 The graphics Bank D layout intentionally avoids ReadyBASIC/ReadyOS state:
 screen RAM is `$CC00-$CFFF`, sprite data is `$CA00-$CBFF`, bitmap/charset RAM
-is `$E000-$FFFF`, and color RAM is `$D800-$DBE7`. `$C000-$C9FF` remains owned
-by ReadyBASIC bridge/shared frames through `$C5FF`, an intentionally unused
-app-private snapshot tail at `$C600-$C7FF`, and the shim ABI at `$C800-$C9FF`.
+is `$E000-$FFFF`, and color RAM is `$D800-$DBE7`. ReadyBASIC owns bridge/shared
+frames through `$C5FF`; the resident 1 KB shim owns `$C600-$C9FF`, with its
+expansion reserve below the stable ABI at `$C800`.
 
 The naming nuance matters. A module is the logical command family identified by
 module id. A module package/container is the disk SEQ file that carries
@@ -485,9 +485,9 @@ to fetch:
 
 ## C64 RAM Layout
 
-ReadyBASIC is captured by the ReadyOS `$1000-$C7FF` app snapshot. Its custom
-assembler/linker shape intentionally uses runtime bytes only through `$C5FF`,
-leaving `$C600-$C7FF` unused today; only `$C800-$C9FF` is resident shim space.
+ReadyBASIC is captured by the ReadyOS `$1000-$C5FF` app snapshot. Its custom
+assembler/linker shape intentionally uses runtime bytes only through `$C5FF`;
+the full `$C600-$C9FF` region is resident shim space.
 
 | Region | Current range | Size | Owner and role |
 |---|---:|---:|---|
@@ -514,8 +514,8 @@ leaving `$C600-$C7FF` unused today; only `$C800-$C9FF` is resident shim space.
 | `BRIDGE` | `$C000-$C1FE` | `$01FF` (511B) | Persistent bridge state, saved vectors, overlay variables, current handle scratch, debug bytes, native routine return stack, and flow-control scratch. |
 | Shared frames | `$C200-$C5FF` | `$0400` (1.0K) | Call frame, result frame, descriptor buffer, command-name buffer, page/runtime buffers. |
 | Hidden helper shadow | Assigned core bank `$3000+` | `$078B` (1931B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
-| App-private snapshot tail | `$C600-$C7FF` | `$0200` (0.5K) | Captured by ReadyOS but intentionally unused so the custom assembler/linker image shape stays stable. ReadyBASIC ownership is published in the ReadyOS bank, not here. |
-| ReadyOS shim ABI | `$C800-$C9FF` | `$0200` (0.5K) shared | ReadyOS jump table and data; not ReadyBASIC RAM. |
+| ReadyOS shim expansion reserve | `$C600-$C7FF` | `$0200` (0.5K) shared | Resident capacity for future shim functionality; not ReadyBASIC RAM. |
+| ReadyOS shim ABI | `$C800-$C9FF` | `$0200` (0.5K) shared | Stable ReadyOS jump table and data; the full shim region is 1 KB. |
 
 The PRG load image is larger than the live resident core. On cold entry,
 ReadyBASIC copies the hidden helper seed from the load image to `$A000`, stashes
@@ -834,7 +834,7 @@ On `EXIT`, ReadyBASIC:
 10. Jumps to the ReadyOS shim return entry at `$C80C`.
 
 For `F2`/`F4`, ReadyBASIC scans the authoritative schema-v5 loaded flags at
-ReadyOS-bank offset `$BA40 + token`, using the direct physical ReadyOS bank in
+ReadyOS-bank offset `$B840 + token`, using the direct physical ReadyOS bank in
 `$C83B`, and starts from the current token in `$C834`. If a neighbor app is found, it performs the same
 READY-mode save/restore setup, persists the target bank in bridge state, clears
 editor hotkey state, restores channels/vectors, writes the saved target to
@@ -879,9 +879,8 @@ KERNAL-visible calls safe where needed.
 - `$2AC0` must remain zero before stored-program `RUN`.
 - `RESIDENT` must stay below `$2AC0`.
 - `BRIDGE` must stay below `$C200`, leaving `$C200-$C5FF` for relocated frames.
-- `$C600-$C7FF` is app-private snapshot room but is intentionally unused to
-  preserve the custom ReadyBASIC load/run shape.
-- `$C800-$C9FF` is ReadyOS shim ABI, not app RAM.
+- `$C600-$C7FF` is resident ReadyOS shim expansion capacity, not app RAM.
+- `$C800-$C9FF` is the stable ReadyOS shim ABI; together the shim owns 1 KB.
 - Warm resume restores `$A000` from the assigned-core-bank hidden-helper shadow before hidden helper calls.
 - Warm resume must not cold-reset `FRETOP`, `VARTAB`, `ARYTAB`, or `STREND`.
 - ReadyBASIC-owned vectors are restored before yielding to ReadyOS.

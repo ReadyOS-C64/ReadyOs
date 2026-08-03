@@ -246,7 +246,7 @@ assigned cache banks.</p>
 <tbody>
 <tr>
 <td>ReadyOS snapshot window</td>
-<td><code>$1000-$C7FF</code></td>
+<td><code>$1000-$C5FF</code></td>
 <td>ReadyShell-owned app RAM captured by the shim</td>
 </tr>
 <tr>
@@ -260,10 +260,9 @@ assigned cache banks.</p>
 <td>Shared live window for whichever overlay is active</td>
 </tr>
 <tr>
-<td>Snapshot-private tail</td>
+<td>Resident shim expansion reserve</td>
 <td><code>$C600-$C7FF</code></td>
-<td>Captured app RAM; ReadyShell leaves it outside its proven overlay
-ABI</td>
+<td>ReadyOS-owned capacity outside ReadyShell’s proven overlay ABI</td>
 </tr>
 <tr>
 <td>Resident BSS</td>
@@ -607,8 +606,8 @@ registry reader. CAT is safe to place in the same scratch area because
 command overlays execute serially; while CAT is active, no other command
 owns that transient handoff area.</p>
 <p>The diagnostic ring has no C64-RAM mirror. The former
-<code>$C7A0-$C7DF</code> data and <code>$C7F0</code> head are now
-ordinary app-private snapshot bytes; only small live cursor/availability
+<code>$C7A0-$C7DF</code> data and <code>$C7F0</code> head is now
+resident shim-owned capacity; only small live cursor/availability
 variables remain in ReadyShell BSS, while ring contents and head are
 read and written in the loader-assigned state bank.</p>
 <h2 id="responsibilities">9. Responsibilities</h2>

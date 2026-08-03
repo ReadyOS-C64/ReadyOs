@@ -190,6 +190,17 @@
   </style>
 </head>
 <body>
+<!-- READYOS-CURRENT-CONTRACT-2026-08-02 -->
+<aside style="margin:1rem auto;padding:1rem;border:2px solid #d69e2e;background:#fffaf0;color:#3d2b00;max-width:72rem">
+  <strong>Current ReadyOS contract (2026-08-02):</strong>
+  Physical <code>Skip</code> is the ReadyOS bank and <code>Skip+1</code> is the first dynamic bank.
+  The launcher snapshot is ReadyOS <code>$0000-$B5FF</code>; schema v5 is <code>$B600-$FFFF</code>,
+  with token map <code>$B740</code> and status <code>$B840</code>. C64 app RAM is
+  <code>$1000-$C5FF</code> (<code>$B600</code>), and the resident 1 KB shim owns
+  <code>$C600-$C9FF</code> with its public ABI at <code>$C800</code>.
+  Dated layouts and measurements below are retained as historical evidence.
+</aside>
+
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="historical" style="margin:16px;padding:12px 14px;border:2px solid #9a6700;background:#fff4d6;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>PRESERVED SNAPSHOT / DESIGN</strong><br>Preserved 0.1.8W measurement report; it is evidence from that build, not current headroom.</aside>
 <!-- READYOS-DOC-STATUS:END -->

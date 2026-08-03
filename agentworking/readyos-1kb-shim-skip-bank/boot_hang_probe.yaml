@@ -1,0 +1,60 @@
+version: 1
+kind: vice_task_plan
+plan_id: readyos_runfirst_fixture_probe
+run_mode: gui_vice
+global_defaults:
+  monitor_host: 127.0.0.1
+  monitor_port_start: 6502
+  monitor_port_span: 40
+  retry_policy:
+    max_attempts: 1
+    backoff_ms: 0
+    jitter: false
+  timeouts:
+    launch_s: 45
+    step_s: 90
+    read_s: 2
+  artifact_policy:
+    capture_screen: true
+    capture_state: true
+    capture_dump: true
+  vice:
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5o-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5o-d81-preboot.prg"
+    drive8_type: 1581
+    true_drive: false
+    close_vice: true
+    headless: true
+    speed_percent: 100
+steps:
+  - id: launch_preboot
+    type: vice.launch
+    params:
+      kill_stale: true
+  - id: wait_loading_launcher
+    type: screen.wait_contains
+    params:
+      text: "LOADING LAUNCHER"
+      wait_timeout_s: 30
+  - id: delay_during_load
+    type: input.key
+    params:
+      key: 145
+      pre_delay_s: 40
+  - id: capture_stalled_screen
+    type: screen.capture
+    params:
+      label: runfirst_after_40s
+  - id: registers_after_20s
+    type: monitor.command
+    params:
+      command: "r"
+  - id: dump_boot_and_shim
+    type: dump.memory_ranges
+    params:
+      ranges:
+        - { label: kernal_vectors, start: 0x002B, end: 0x0030 }
+        - { label: irq_vectors, start: 0x0314, end: 0x0315 }
+        - { label: boot_code, start: 0x0801, end: 0x0FFF }
+        - { label: launcher_prefix, start: 0x1000, end: 0x11FF }
+        - { label: shim_full, start: 0xC600, end: 0xC9FF }

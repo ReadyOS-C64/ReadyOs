@@ -1,9 +1,9 @@
 # ReadyBASIC Plugin Progress
 
 > Chronology note: entries below record the contract that existed when each
-> experiment ran. The current schema-v5 contract uses a `$1000-$C7FF` (`$B800`)
-> app snapshot and a combined ReadyOS bank at physical `Skip+1`; ReadyBASIC
-> leaves `$C600-$C7FF` unused to preserve its custom assembler/linker shape.
+> experiment ran. The current schema-v5 contract uses a `$1000-$C5FF` (`$B600`)
+> app snapshot and a combined ReadyOS bank at physical `Skip`; the resident
+> 1 KB shim owns `$C600-$C9FF`.
 
 This is a chronological progress log. Older entries intentionally preserve the
 layout and addresses that were current when the tests were run. For the current

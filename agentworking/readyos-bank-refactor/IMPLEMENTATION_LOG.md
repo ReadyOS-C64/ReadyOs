@@ -1,5 +1,10 @@
 # ReadyOS Bank Refactor Implementation Log
 
+> **Historical checkpoint, superseded 2026-08-02.** Entries below intentionally
+> preserve the prior `$B800` snapshot, 512-byte shim, and `Skip+1` ReadyOS-bank
+> implementation history. Current authority is the 1 KB shim, `$B600`
+> snapshot, ReadyOS bank at `Skip`, and dynamic pool at `Skip+1`.
+
 ## 2026-08-01 - baseline and architecture lock
 
 - Preserved the dirty worktree and ran baseline builds/tests in an isolated

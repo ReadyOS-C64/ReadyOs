@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ReadyShell Overlay Inventory Report (v0.2.5I)</title>
+  <title>ReadyShell Overlay Inventory Report (v0.2.5Y)</title>
   <style>
     :root {
       --bg: #091017;
@@ -235,7 +235,7 @@
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current artifact-backed ReadyShell overlay inventory for the version/profile named in the report.</aside>
 <!-- READYOS-DOC-STATUS:END -->
 <header>
-  <h1>ReadyShell Overlay Inventory Report (v0.2.5I)</h1>
+  <h1>ReadyShell Overlay Inventory Report (v0.2.5Y)</h1>
   <p class="sub">
     Artifact-backed inventory for the current ReadyShell overlay system. This report is generated from the live build
     outputs, the ReadyShell linker map, and the active D81 disk image instead of hand-maintained notes.
@@ -246,7 +246,7 @@
     <h2>Executive Summary</h2>
     <div class="cards">
       <div class="card"><div class="k">Profile</div><div class="v"><code>precog-d81</code></div></div>
-      <div class="card"><div class="k">Disk Source</div><div class="v"><code>Releases/0.2.5/precog-d81/readyos-v0.2.5i-d81.d81</code></div></div>
+      <div class="card"><div class="k">Disk Source</div><div class="v"><code>Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81.d81</code></div></div>
       <div class="card"><div class="k">Overlay Window</div><div class="v"><code>$8E00-$C5FF</code></div></div>
       <div class="card"><div class="k">Window Size</div><div class="v">14336 bytes</div></div>
       <div class="card"><div class="k">Resident Heap</div><div class="v">3688 bytes</div></div>
@@ -265,7 +265,7 @@
     <div>
       <h2>Runtime Memory Map</h2>
       <ul>
-        <li><strong>ReadyOS snapshot window:</strong> <code>$1000-$C7FF</code> (47104 bytes); ReadyShell's proven overlay ABI remains below <code>$C600</code>.</li>
+        <li><strong>ReadyOS snapshot window:</strong> <code>$1000-$C5FF</code> (46592 bytes); the resident 1 KB shim begins at <code>$C600</code>.</li>
         <li><strong>Overlay load bytes:</strong> <code>$8DFE-$8DFF</code></li>
         <li><strong>Overlay execution window:</strong> <code>$8E00-$C5FF</code> (14336 bytes)</li>
         <li><strong>Resident BSS:</strong> <code>$7DEB-$7F94</code> (426 bytes)</li>

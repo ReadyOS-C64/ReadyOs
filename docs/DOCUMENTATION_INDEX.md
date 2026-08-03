@@ -19,7 +19,7 @@ deleted or rewritten into claims about a version they did not describe.
   Ultimate DOS DMA loading, fallback behavior, configuration, and verification.
 - [`ReadyOS_SHIM_ARCHITECTURE_0.2.5.md`](ReadyOS_SHIM_ARCHITECTURE_0.2.5.md):
   current resident-shim and schema-v5 ReadyOS-bank architecture, including which
-  state remains resident, which state lives in physical `Skip+1`, and which copy is
+  state remains resident, which state lives in physical `Skip`, and which copy is
   authoritative for each operation.
 - [`../privatedocs/top_level_md/MEMORY_MAP.md`](../privatedocs/top_level_md/MEMORY_MAP.md):
   canonical detailed RAM, REU, shim, and per-app memory contract.
@@ -62,12 +62,15 @@ counterparts and run:
 ```sh
 python3 build_support/update_documentation_html_status.py
 python3 build_support/sync_shim_documentation.py
+python3 build_support/verify_documentation_contract.py
 python3 build_support/verify_shim_html_source.py
 ```
 
-The script fails if any covered HTML document is not explicitly classified,
-preventing a new report from silently appearing without freshness status. The
-shim-source verifier discovers every HTML `<pre>` block containing
+The documentation-contract verifier checks the current RAM/REU statements,
+the 1 MB SKU bank budget, retained-history supersession markers, and the HTML
+classification. Classification fails if any covered HTML document is not
+explicitly categorized, preventing a new report from silently appearing
+without freshness status. The shim-source verifier discovers every HTML `<pre>` block containing
 the complete resident shim, compares all `.byte` directives with
 `src/boot/readyos_shim.inc`, and rejects retired lookup annotations.
 

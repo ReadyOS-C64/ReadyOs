@@ -1,10 +1,18 @@
 # Future REU Refactor Plan
 
-> **Implemented by the schema-v5 ReadyOS-bank refactor (2026-08-01).** This
-> plan is preserved rather than deleted. Current authority is physical
-> `Skip+1`, the ReadyOS bank; `$C600-$C7FF` is app-private, physical `Skip` is
-> the first dynamic bank, and token mapping/status live at `$B940/$BA40`.
-> See `privatedocs/top_level_md/MEMORY_MAP.md` for the current contract.
+<!-- READYOS-CURRENT-CONTRACT-2026-08-02 -->
+> **Current ReadyOS contract (2026-08-02):** Physical `Skip` is the ReadyOS
+> bank and `Skip+1` is the first dynamic bank. The launcher snapshot occupies
+> ReadyOS `$0000-$B5FF`; schema v5 occupies `$B600-$FFFF`, including the token
+> map at `$B740` and status at `$B840`. C64 app RAM is `$1000-$C5FF` (`$B600`),
+> and the resident 1 KB shim owns `$C600-$C9FF` with its public ABI at `$C800`.
+> Dated layouts and measurements below are retained as historical evidence.
+
+> **Historical schema-v5 checkpoint (2026-08-01).** This plan is preserved
+> rather than deleted. Its physical `Skip+1` ReadyOS bank, `$B800` snapshot,
+> and `$B940/$BA40` mapping/status offsets were superseded by the current
+> contract summarized immediately above. See
+> `privatedocs/top_level_md/MEMORY_MAP.md` for current authority.
 
 ## Purpose
 

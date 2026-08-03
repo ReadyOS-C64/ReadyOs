@@ -245,7 +245,7 @@
 configured C64 Ultimate disk image directly into their allocated REU
 locations through the Ultimate Command Interface (UCI). This accelerates
 preload and cold app or resource loading without changing the resident
-shim or the <code>$1000-$C7FF</code> snapshot contract.</p>
+shim or the <code>$1000-$C5FF</code> snapshot contract.</p>
 <h2 id="availability">Availability</h2>
 <ul>
 <li>Build gate: <code>LAUNCHER_DMA_LOAD=1</code>.</li>
@@ -284,7 +284,7 @@ loader.</li>
 </ol>
 <p>DMA only changes how a cold PRG reaches REU. App switching still uses
 the same resident shim, logical-token lookup in the ReadyOS bank at
-<code>$B940</code>, and <code>$B800</code> REU stash/fetch
+<code>$B740</code>, and <code>$B600</code> REU stash/fetch
 operations.</p>
 <h2 id="launcher-indicator">Launcher Indicator</h2>
 <ul>

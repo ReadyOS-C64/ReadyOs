@@ -6,7 +6,7 @@ UCI technique; the launcher integration remains gated behind
 `LAUNCHER_DMA_LOAD=1`.
 
 > **Schema-v5 update (2026-08-02):** current main-app DMA destinations and
-> shim transfers cover `$1000-$C7FF` (`$B800`). Older `$C5FF/$B600` values in
+> shim transfers cover `$1000-$C5FF` (`$B600`). Older `$C7FF/$B800` values in
 > dated hardware experiments below are retained only where they describe the
 > artifact tested at that time.
 
@@ -386,14 +386,15 @@ classified from the captured screen:
 - For app-launch checks, wait for app-specific text such as `EDITOR:`. Matching
   the launcher menu row `8 EDITOR` is a false positive.
 
-## Launcher No-STAT / Fixed-Window Experiment
+## Historical Launcher No-STAT / Fixed-Window Experiment
 
 The launcher integration exposed a C64U-side hazard that the standalone probe
 did not originally make obvious: after `CD`/`MOUNT`/`CD image`, issuing Ultimate
 DOS `FILE_STAT` for `editor` consistently stopped at the launcher's debug marker
 `55` and the C64U REST endpoint stopped responding.
 
-The current experimental launcher path therefore avoids `FILE_STAT` entirely:
+The launcher checkpoint tested in this section therefore avoided `FILE_STAT`
+entirely:
 
 - open the file by Ultimate DOS name
 - read and validate the two-byte PRG load address
@@ -401,12 +402,11 @@ The current experimental launcher path therefore avoids `FILE_STAT` entirely:
 - zero the destination REU window/slot first
 - issue Ultimate DOS `LOAD_REU` for the known destination window/slot length
 
-For main app snapshots, the destination window is `$1000-$C7FF`, length
-`$B800`. Exact PRG EOF size is not required because the target REU window is
-cleared first and the shim can restore the full app window. ReadyShell overlays
-also have a fixed slot length (`$3800`), so the same strategy applies there.
-Only dynamically packed resources without a known slot length would require a
-reliable size query or EOF scan.
+At that checkpoint, main app snapshots used the then-current `$1000-$C7FF`
+window (`$B800`). The later, hardware-proven implementation below superseded
+this experiment: it uses open-handle `FILE_INFO`, validates the PRG header, and
+loads the exact payload length into a pre-zeroed destination. The current
+schema-v5 app-window ceiling is `$1000-$C5FF` (`$B600`).
 
 Current measured launcher map impact, forced rebuilds:
 
@@ -427,9 +427,9 @@ LAUNCHER_DMA_LOAD=1 fixed-window build:
   BSS    $B4B9..$C023 size $0B6B
 ```
 
-## Final Launcher Hardware Result
+## 2026-06-27 Launcher Hardware Result
 
-The launcher DMA path is now proven on a C64U for the regular D81 profile when
+The launcher DMA path was proven on a C64U for the regular D81 profile when
 the D81 path is supplied in launcher config as `c64u_image_path=/usb1/readyos.d81`
 and the launcher is built with `LAUNCHER_DMA_LOAD=1`.
 
@@ -452,11 +452,12 @@ Ultimate DOS into `USB1`, then mount and enter the image by its short image name
 Mounting with an absolute path and then trying `CD READYOS.D81` was not enough
 on the tested C64U; it returned `21,UNKNOWN`.
 
-The Launcher does not need exact app file sizes for main app snapshots. It
-zeros the REU destination window first, validates the PRG load address, and
-then asks Ultimate DOS to `LOAD_REU` the full fixed app window (`$B800`) into
-the resolved physical REU bank. The shim app size is set to `$B800`. ReadyShell
-overlays use the same strategy with their fixed `$3800` overlay slot.
+This result was from the earlier fixed-window checkpoint: the launcher cleared
+the target and loaded its then-current `$B800` app window. The current loader
+supersedes that detail by using open-handle `FILE_INFO` and loading the exact
+payload length, bounded by the schema-v5 `$B600` app window. ReadyShell
+resources likewise use measured payload lengths, with the documented narrow
+rounding workaround for edge-of-slot overlays.
 
 Hardware evidence from C64U REST automation:
 

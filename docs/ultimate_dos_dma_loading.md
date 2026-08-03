@@ -3,7 +3,7 @@
 ReadyOS has an opt-in launcher path that reads PRG payloads from a configured
 C64 Ultimate disk image directly into their allocated REU locations through
 the Ultimate Command Interface (UCI). This accelerates preload and cold app or
-resource loading without changing the resident shim or the `$1000-$C7FF`
+resource loading without changing the resident shim or the `$1000-$C5FF`
 snapshot contract.
 
 ## Availability
@@ -40,7 +40,7 @@ condition and continues through the normal disk path.
    state and falls back to its established KERNAL/disk loader.
 
 DMA only changes how a cold PRG reaches REU. App switching still uses the same
-resident shim, logical-token lookup in the ReadyOS bank at `$B940`, and `$B800` REU
+resident shim, logical-token lookup in the ReadyOS bank at `$B740`, and `$B600` REU
 stash/fetch operations.
 
 ## Launcher Indicator

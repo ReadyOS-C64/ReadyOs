@@ -6,29 +6,31 @@ Canonical sources:
 
 ## Critical RAM windows
 - App runtime snapshot: `$1000-$C5FF` (`$B600` bytes)
-- REU metadata/system table: `$C600-$C7FF`
-- Shim resident region: `$C800-$C9FF`
+- Shim resident region: `$C600-$C9FF` (1 KB)
+- Shim expansion reserve: `$C600-$C7FF`; scalable state is authoritative in REU
+- Public shim ABI: `$C800-$C9FF`
 - Hardware I/O: `$D000-$DFFF`
 
 ## Shim jump/data anchors
 - Jump table starts at `$C800`
 - Shim data window: `$C820-$C83F`
-- Core logical-bank state bytes: `$C834-$C838`
-- Physical REU region skip byte: `$C83B`
+- Current/target token and reserved legacy bytes: `$C834-$C83A`
+- Direct physical ReadyOS-bank byte: `$C83B`
 
 ## REU physical/logical bank contract
 - `Start` means physical REU bank `READYOS_REU_BANK_SKIP`.
-- `Start+0` is the system/global bank.
-- `Start+1` is the launcher snapshot/resume bank for launcher token `0`.
-- `Start+2` is the first dynamic allocation bank; no launcher overlay owns that bank.
-- Logical app/resource bank `N > 0` maps through logical REU bank `0`'s
-  `$2F00-$2FFF` lookup page. The default writer currently maps token `1` to
-  `Start+2`, but the lookup page is authoritative for shim-facing app tokens.
-- The dynamic allocation pool begins at `Start+2`; allocation tables skip any bank already marked in use.
-- The shim bitmap width remains 24 logical bits; app ABI-visible bank numbers are unchanged.
+- `Start+0` (`Skip`) is the combined ReadyOS bank: launcher snapshot
+  `$0000-$B5FF` plus schema-v5 state `$B600-$FFFF`.
+- `Start+1` (`Skip+1`) is the first dynamic allocation candidate; no launcher
+  overlay or fixed app slot owns it.
+- Shim token `0` resolves directly to the ReadyOS bank. Tokens `N > 0` resolve
+  through the ReadyOS bank's `$B740-$B83F` lookup table.
+- Loaded/resumable status is authoritative at ReadyOS `$B840-$B93F`; the
+  retired `$C836-$C838` bitmap is reserved and must not drive navigation.
+- The dynamic allocator begins at `Start+1` and skips banks already marked in
+  use in the ReadyOS `$B640-$B73F` bank-type table.
 - Physical REU size is launcher-owned. Banks beyond the detected physical end
-  are marked `REU_UNAVAIL` in `$C600-$C6FF`, mirrored to logical REU bank `0`,
-  and consumed by REU Viewer.
+  are marked `REU_UNAVAIL` in ReadyOS `$B640-$B73F` and reported by REU Viewer.
 
 ## ReadyShell overlay/resource contract
 - `__HIMEM__ = $C600`
@@ -55,7 +57,7 @@ Canonical sources:
 - The primitive allocator remains `src/lib/reu_mgr_alloc.c`; apps that do not
   need ownership records do not pay for the owner-record writer.
 - Owner-recorded runtime banks create `REUCB_DEP_KIND_APP_ALLOC` records in
-  logical REU bank `0` at `$0A00`, carrying owner app id, slot id, physical
+  the ReadyOS rich-resource table at `$C240`, carrying owner app id, slot id, physical
   bank, and a four-character tag.
 - Launcher unload frees owner-recorded `REU_APP_ALLOC` banks for the selected
   app; the shim does not participate.

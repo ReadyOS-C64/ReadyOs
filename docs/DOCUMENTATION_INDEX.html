@@ -268,7 +268,7 @@ and verification.</li>
 href="ReadyOS_SHIM_ARCHITECTURE_0.2.5.md"><code>ReadyOS_SHIM_ARCHITECTURE_0.2.5.md</code></a>:
 current resident-shim and schema-v5 ReadyOS-bank architecture, including
 which state remains resident, which state lives in physical
-<code>Skip+1</code>, and which copy is authoritative for each
+<code>Skip</code>, and which copy is authoritative for each
 operation.</li>
 <li><a
 href="../privatedocs/top_level_md/MEMORY_MAP.md"><code>../privatedocs/top_level_md/MEMORY_MAP.md</code></a>:
@@ -320,13 +320,16 @@ evidence from that run, not a live architecture contract.</p>
 counterparts and run:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/update_documentation_html_status.py</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/sync_shim_documentation.py</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_shim_html_source.py</span></code></pre></div>
-<p>The script fails if any covered HTML document is not explicitly
-classified, preventing a new report from silently appearing without
-freshness status. The shim-source verifier discovers every HTML
-<code>&lt;pre&gt;</code> block containing the complete resident shim,
-compares all <code>.byte</code> directives with
-<code>src/boot/readyos_shim.inc</code>, and rejects retired lookup
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_documentation_contract.py</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_shim_html_source.py</span></code></pre></div>
+<p>The documentation-contract verifier checks the current RAM/REU
+statements, the 1 MB SKU bank budget, retained-history supersession
+markers, and the HTML classification. Classification fails if any
+covered HTML document is not explicitly categorized, preventing a new
+report from silently appearing without freshness status. The shim-source
+verifier discovers every HTML <code>&lt;pre&gt;</code> block containing
+the complete resident shim, compares all <code>.byte</code> directives
+with <code>src/boot/readyos_shim.inc</code>, and rejects retired lookup
 annotations.</p>
 <h2 id="historical-material-policy">Historical Material Policy</h2>
 <ul>

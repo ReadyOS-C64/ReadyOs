@@ -1,5 +1,12 @@
 # ReadyOS Bank Refactor State
 
+> **Historical checkpoint, superseded 2026-08-02.** This retained audit proves
+> the earlier 512-byte-shim/`Skip+1` design. The current contract reserves the
+> full 1 KB `$C600-$C9FF` shim, snapshots `$1000-$C5FF` (`$B600`), places the
+> ReadyOS bank at physical `Skip`, and begins dynamic allocation at `Skip+1`.
+> See `agentworking/readyos-1kb-shim-skip-bank/PLAN.md` and
+> `privatedocs/top_level_md/MEMORY_MAP.md`.
+
 This is the retained implementation audit for the refactor that makes physical
 REU bank `Skip+1` the ReadyOS bank and removes the `$C600-$C7FF` resident
 metadata mirror.

@@ -671,6 +671,18 @@
   </style>
 </head>
 <body>
+<!-- READYOS-CURRENT-CONTRACT-2026-08-02 -->
+<aside style="margin:1rem auto;padding:1rem;border:2px solid #d69e2e;background:#fffaf0;color:#3d2b00;max-width:72rem">
+  <strong>Current ReadyOS contract (2026-08-02):</strong>
+  Physical <code>Skip</code> is the ReadyOS bank and <code>Skip+1</code> is the first dynamic bank.
+  The launcher snapshot is ReadyOS <code>$0000-$B5FF</code>; schema v5 is <code>$B600-$FFFF</code>,
+  with token map <code>$B740</code> and status <code>$B840</code>. C64 app RAM is
+  <code>$1000-$C5FF</code> (<code>$B600</code>), and the resident 1 KB shim owns
+  <code>$C600-$C9FF</code> with its public ABI at <code>$C800</code>.
+  The diagrams below apply this contract to the current ReadyBASIC lifecycle,
+  including its custom assembler/linker shape and assigned REU resource banks.
+</aside>
+
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current ReadyBASIC lifecycle and REU architecture counterpart generated from READYBASIC_LIFECYCLE_AND_REU_ARCHITECTURE.md.</aside>
 <!-- READYOS-DOC-STATUS:END -->
@@ -835,7 +847,7 @@
         <div class="addr">$C200-$C5FF</div>
         <div class="region r-shared"><span><b>SHARED FRAMES</b><small>Call/result frames, descriptor/name/page buffers; hidden shadow at $C280.</small></span><strong>$0400<br>1.0K</strong></div>
         <div class="addr">$C600-$C7FF</div>
-        <div class="region r-shared"><span><b>SNAPSHOT-PRIVATE HEADROOM</b><small>App-owned in schema v5; deliberately unused to preserve the custom ReadyBASIC assembler/linker shape.</small></span><strong>$0200<br>0.5K</strong></div>
+        <div class="region r-shim"><span><b>SHIM EXPANSION RESERVE</b><small>Resident ReadyOS capacity; not ReadyBASIC or app RAM.</small></span><strong>$0200<br>0.5K</strong></div>
         <div class="addr">$C800-$C9FF</div>
         <div class="region r-shim"><span><b>SHIM ABI</b><small>ReadyOS jump table/data. Not ReadyBASIC RAM.</small></span><strong>$0200<br>0.5K</strong></div>
       </div>
@@ -1183,8 +1195,8 @@
         <li><code>$2AC0</code> remains zero before stored-program <code>RUN</code>.</li>
         <li><code>RESIDENT</code> stays below <code>$2AC0</code>.</li>
         <li><code>BRIDGE</code> stays below <code>$C200</code>, leaving <code>$C200-$C5FF</code> for shared frames.</li>
-        <li><code>$C600-$C7FF</code> is app-private snapshot RAM, deliberately unused so the custom ReadyBASIC assembler/linker shape remains compatible.</li>
-        <li><code>$C800-$C9FF</code> is shim ABI, not app scratch.</li>
+        <li><code>$C600-$C7FF</code> is resident ReadyOS shim expansion capacity, not app scratch.</li>
+        <li><code>$C800-$C9FF</code> is the stable shim ABI; the full resident shim is 1 KB.</li>
         <li>Warm resume restores <code>$A000</code> from <code>$C280</code> before hidden calls.</li>
         <li>Warm restore preserves live <code>FRETOP</code>, variables, arrays, and string heap.</li>
         <li>ReadyBASIC restores owned page-3 vectors before yielding to ReadyOS.</li>

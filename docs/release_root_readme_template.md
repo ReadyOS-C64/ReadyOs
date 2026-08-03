@@ -47,14 +47,14 @@ the exact app mix depending on the variant you choose.
 
 ## Runtime And REU Contract
 
-- The active app snapshot is `$1000-$C7FF` (`$B800` bytes); `$C600-$C7FF` is
-  app-private RAM, and the resident 512-byte shim remains at `$C800-$C9FF`.
-- Physical REU bank `Skip` is the first dynamic bank. Physical `Skip+1` is
-  called the **ReadyOS bank** and is never allocated to an app/resource.
-- The ReadyOS bank contains the launcher snapshot at `$0000-$B7FF` and
+- The active app snapshot is `$1000-$C5FF` (`$B600` bytes). The resident 1 KB
+  shim owns `$C600-$C9FF`; its public ABI remains at `$C800-$C9FF`.
+- Physical REU bank `Skip` is the **ReadyOS bank** and is never allocated to an
+  app/resource. Physical `Skip+1` is the first dynamic bank.
+- The ReadyOS bank contains the launcher snapshot at `$0000-$B5FF` and
   schema-v5 mappings, status, clipboard, hotkeys, registry/catalog, audit, and
-  launcher runtime state at `$B800-$FFFF`.
-- Logical app tokens resolve through the explicit `$B940` table; they are not
+  launcher runtime state at `$B600-$FFFF`.
+- Logical app tokens resolve through the explicit `$B740` table; they are not
   physical bank numbers and must not be converted with arithmetic.
 - ReadyShell and ReadyBASIC resource banks are loader-assigned and recorded in
   the ReadyOS bank. ReadyBASIC retains its custom ca65/ld65 compact-image shape.

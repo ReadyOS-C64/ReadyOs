@@ -111,9 +111,8 @@ Future graphics work should keep the same proportional memory thinking:
   character sets, and bitmap resources in REU-backed handles;
 - use VIC bank D and memory behind ROM only in ways compatible with the ReadyOS
   shim and the app contract;
-- never use `$C800-$C9FF` unless deliberately calling the ReadyOS shim ABI;
-- keep `$C600-$C7FF` unused unless the custom ReadyBASIC assembler/linker shape
-  and all lifecycle tests are deliberately revised; it is app-private now;
+- never use `$C600-$C9FF` as app storage; the lower half is resident shim
+  expansion capacity and the upper half is the stable ReadyOS shim ABI;
 - make graphics modes explicit about which C64 RAM ranges they claim while
   active, especially screen RAM, color RAM, character sets, and bitmap pages.
 

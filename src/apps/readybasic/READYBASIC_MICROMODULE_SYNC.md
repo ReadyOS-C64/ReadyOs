@@ -68,9 +68,8 @@ uppercase name field.
   - hidden-helper warm-resume shadow in the assigned core bank at `$3000`
   - app runtime zero-page/stack save in the assigned core bank offsets
     `$0A00/$0B00`
-- Do not place ReadyBasic state in `$C800-$C9FF`; that remains shim ABI territory.
-- Keep `$C600-$C7FF` unused unless the custom assembler/linker shape and all
-  cold/warm tests are deliberately revised; it is now app-private snapshot RAM.
+- Do not place ReadyBasic state anywhere in `$C600-$C9FF`; the lower half is
+  resident shim expansion capacity and the upper half is the stable shim ABI.
 
 ## Current ReadyBASIC Memory Snapshot
 

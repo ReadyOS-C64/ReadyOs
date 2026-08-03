@@ -64,10 +64,10 @@ Current release build layout:
 
 | Region | Range | Purpose |
 | --- | --- | --- |
-| ReadyOS snapshot window | `$1000-$C7FF` | ReadyShell-owned app RAM captured by the shim |
+| ReadyOS snapshot window | `$1000-$C5FF` | ReadyShell-owned app RAM captured by the shim |
 | Overlay load bytes | `$8DFE-$8DFF` | PRG load-address bytes for overlay sidecars |
 | Overlay execution window | `$8E00-$C5FF` | Shared live window for whichever overlay is active |
-| Snapshot-private tail | `$C600-$C7FF` | Captured app RAM; ReadyShell leaves it outside its proven overlay ABI |
+| Resident shim expansion reserve | `$C600-$C7FF` | ReadyOS-owned capacity outside ReadyShell's proven overlay ABI |
 | Resident BSS | `$7DEB-$7F94` | Resident writable state below overlays |
 | Resident heap | `$7F96-$8DFD` | cc65 heap below overlay load address |
 | High runtime area | `$CA00-$CFFF` | ReadyShell runtime state outside app snapshot |
@@ -344,7 +344,7 @@ execute serially; while CAT is active, no other command owns that transient
 handoff area.
 
 The diagnostic ring has no C64-RAM mirror. The former `$C7A0-$C7DF` data and
-`$C7F0` head are now ordinary app-private snapshot bytes; only small live
+`$C7F0` head is now resident shim-owned capacity; only small live
 cursor/availability variables remain in ReadyShell BSS, while ring contents
 and head are read and written in the loader-assigned state bank.
 

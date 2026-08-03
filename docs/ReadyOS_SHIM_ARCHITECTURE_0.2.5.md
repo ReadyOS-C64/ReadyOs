@@ -5,22 +5,22 @@ and the combined ReadyOS bank. It was audited
 against the `0.2.5` development tree on 2026-08-01.
 
 The most important correction to older descriptions is that **physical
-`Skip+1` is the ReadyOS bank and is the single source of truth**. It combines
+`Skip` is the ReadyOS bank and is the single source of truth**. It combines
 the launcher snapshot and schema-v5 operating-system state:
 
 ```text
 C64 RAM
-$1000                                                               $C7FF $C800   $C9FF
-|<---------------- active app snapshot: $B800 bytes ------------------->|<--- shim ---->|
+$1000                                                         $C5FF $C600             $C9FF
+|<--------------- active app snapshot: $B600 bytes -------------->|<-- 1 KB shim ------>|
 
 ReadyOS physical REU region
-Skip                            Skip+1 (ReadyOS bank)           Skip+2 ... detected end
-| first dynamic app/resource    | launcher $0000-$B7FF         | remaining dynamic pool      |
-| bank                          | schema v5 $B800-$FFFF         | explicit token mappings     |
+Skip (ReadyOS bank)                       Skip+1 ... detected end
+| launcher $0000-$B5FF                    | dynamic app/resource pool |
+| schema v5 $B600-$FFFF                   | explicit token mappings   |
 ```
 
 The configured skip is compiled into the build; resident shim byte `$C83B`
-stores the direct physical ReadyOS bank number (`Skip+1`).
+stores the direct physical ReadyOS bank number (`Skip`).
 
 ## What Changed
 
@@ -32,20 +32,24 @@ from using the REU as one flexible pool.
 
 The current implementation makes these changes:
 
-1. Physical `Skip` is now the first dynamic bank instead of a control bank.
-2. Physical `Skip+1` is the ReadyOS bank. Token `0` resolves directly to it;
-   its first `$B800` bytes are the launcher snapshot.
-3. Schema-v5 state occupies the same ReadyOS bank at `$B800-$FFFF`, including
+1. Physical `Skip` is the ReadyOS bank. It is skipped by the dynamic allocator,
+   but it is not unused.
+2. Physical `Skip+1` is the first dynamic app/resource bank.
+3. Token `0` resolves directly to the ReadyOS bank;
+   its first `$B600` bytes are the launcher snapshot.
+4. Schema-v5 state occupies the same ReadyOS bank at `$B600-$FFFF`, including
    bank types, token mappings/status, clipboard metadata, hotkeys, settings,
    app/resource records, catalog text, audit data, and launcher runtime state.
-4. For a nonzero token, the shim fetches one byte from
-   `ReadyOS:$B940 + token`. That byte is the physical snapshot bank to use.
-5. The old `$C600-$C7FF` allocation/clipboard/hotkey mirrors and the three-byte
-   loaded bitmap are retired; `$C600-$C7FF` is app-private snapshot RAM.
-6. The snapshot expands to `$1000-$C7FF` (`$B800` bytes), leaving a `$4800`
-   per-app resume tail at REU offsets `$B800-$FFFF`.
-7. The 512-byte shim window and stable entry addresses remain fixed. `$C81B`
-   is the new `mark_loaded` entry; `$C818` is a safe deprecated `RTS` target.
+5. For a nonzero token, the shim fetches one byte from
+   `ReadyOS:$B740 + token`. That byte is the physical snapshot bank to use.
+6. The old `$C600-$C7FF` allocation/clipboard/hotkey mirrors and the three-byte
+   loaded bitmap are retired; `$C600-$C7FF` remains resident as contiguous shim
+   expansion capacity rather than becoming app RAM.
+7. The snapshot is `$1000-$C5FF` (`$B600` bytes), leaving a `$4A00`
+   per-app resume tail at REU offsets `$B600-$FFFF`.
+8. The full shim region is restored to 1 KB at `$C600-$C9FF`; the stable
+   512-byte ABI and entry addresses remain at `$C800-$C9FF`. `$C81B` is the
+   `mark_loaded` entry; `$C818` is a safe deprecated `RTS` target.
 
 Mappings are explicitly allocated and published. No app or shim path may infer
 a physical bank from a logical token arithmetically.
@@ -54,50 +58,53 @@ a physical bank from a logical token arithmetically.
 
 The earlier 0.2.5 design used a separate control bank at `Skip` and launcher
 bank at `Skip+1`. Schema v5 deliberately supersedes that split while preserving
-the 512-byte resident window and its established transition entry points.
+the established transition entry points in the upper 512-byte ABI.
 Ultimate DOS DMA remains launcher-side cold-load transport and publishes the
 same explicit mappings as the KERNAL path.
 
 ## The State Was Split, Not Simply Moved
 
-Only values required while `$1000-$C7FF` is being overwritten remain resident.
+Only values required while `$1000-$C5FF` is being overwritten remain resident.
 All scalable state is authoritative in the ReadyOS bank.
 
 | State | Current location | Operational role / authority |
 |---|---|---|
 | transition target, current token, last-saved hint, bank skip, drive, flags | shim `$C820-$C83F` | resident transition state; available while app RAM is replaced |
 | `$C836-$C838`, `$C83A` | resident reserved bytes | retired bitmap/log-index storage; never authoritative |
-| active physical bank allocation types | ReadyOS `$B840-$B93F` | allocator authority used through direct byte/block DMA helpers |
-| token-to-physical mapping | ReadyOS `$B940-$BA3F` | live source read by shim, launcher, apps, and tools |
-| token validity/loaded/resumable state | ReadyOS `$BA40-$BB3F` | authoritative transition status; committed only after a successful stash |
-| clipboard metadata | ReadyOS `$BB40-$BBCF` | authoritative 16-item table; payload banks remain dynamically allocated |
-| global hotkeys | ReadyOS `$BBD0-$BBD8` | shared state read directly by focused TUI micromodules |
-| launcher catalog-shape settings | ReadyOS `$BBD9-$BBFF` | `LS` v1 record used to reconstruct launcher arrays from the authoritative registry |
-| app/resource/dependency/catalog records | ReadyOS `$BC00-$FD3F` | normalized 64-app registry and cold metadata |
-| launcher executable snapshot | ReadyOS `$0000-$B7FF` | restored for token `0` |
-| launcher runtime/resume record | ReadyOS `$FE40-$FEBF` | `RSM1`-validated UI state (selection, scroll, one-shot flag, and DMA-use flag/path when enabled) |
+| active physical bank allocation types | ReadyOS `$B640-$B73F` | allocator authority used through direct byte/block DMA helpers |
+| token-to-physical mapping | ReadyOS `$B740-$B83F` | live source read by shim, launcher, apps, and tools |
+| token validity/loaded/resumable state | ReadyOS `$B840-$B93F` | authoritative transition status; committed only after a successful stash |
+| clipboard metadata | ReadyOS `$B940-$B9CF` | authoritative 16-item table; payload banks remain dynamically allocated |
+| global hotkeys | ReadyOS `$B9D0-$B9D8` | shared state read directly by focused TUI micromodules |
+| launcher catalog-shape settings | ReadyOS `$B9D9-$B9FF` | `LS` v1 record used to reconstruct launcher arrays from the authoritative registry |
+| app/resource/dependency/catalog records | ReadyOS `$BA00-$FB3F` | normalized 64-app registry and cold metadata |
+| launcher executable snapshot | ReadyOS `$0000-$B5FF` | restored for token `0` |
+| launcher runtime/resume record | ReadyOS `$FC40-$FCBF` | `RSM1`-validated UI state (selection, scroll, one-shot flag, and DMA-use flag/path when enabled) |
 
 The ReadyOS bank is the source of truth. Resident shim bytes carry only the
 minimum transition operands and one-byte DMA scratch needed while app RAM is
 being replaced.
 
-## Resident Shim ABI (`$C800-$C9FF`)
+## Resident Shim (`$C600-$C9FF`) and ABI (`$C800-$C9FF`)
 
-The shim remains exactly 512 bytes and outside the app snapshot window.
+The resident shim owns exactly 1 KB outside the app snapshot window. Its lower
+512 bytes are clear contiguous expansion reserve; its public ABI remains in the
+upper 512 bytes at the same addresses as before.
 
 ### Measured shim room
 
-The current image has **129 bytes of executable padding**, verified as zero by
+The current image has **512 contiguous reserved bytes** at `$C600-$C7FF`, plus
+**129 bytes of executable padding** within the established ABI, all verified as zero by
 `verify_readyos_shim.py`. That space is fragmented: the largest single run is
 42 bytes at `$C8B6-$C8DF`; the other runs are 33, 23, 7, 7, 5, 4, 4, 2, and 2
 bytes. There are another 11 resident ABI/data bytes currently marked
 scratch/retired/reserved (`$C81E-$C81F`, `$C822-$C823`, `$C832-$C833`,
 `$C836-$C838`, `$C83A`, and `$C83F`), but they should not be counted as general
 code room because existing callers may rely on their addresses or zero value.
-So the practical extension budget is 129 fragmented code bytes, not 140 freely
-reassignable bytes. Moving duplicate loaded/map/catalog authority into the
-ReadyOS bank is what makes this budget possible; new resident features should
-still be limited to operations required during a DMA transition.
+So the practical extension budget is 512 contiguous bytes plus 129 fragmented
+ABI padding bytes. Moving duplicate loaded/map/catalog authority into the
+ReadyOS bank is what makes this budget possible; ABI padding still requires
+extra caution because callers may depend on established addresses.
 
 The 25-byte increase came from retiring five preload trace writes to
 `$C007-$C00C`. No runtime or test consumed them, and app snapshot RAM is no
@@ -134,7 +141,7 @@ jumps to the safe `$C9FF` `RTS` instead of into the middle of preload code.
 | `$C836-$C838` | reserved | retired loaded bitmap bytes |
 | `$C839` | `storage_drive` | shared default file-dialog drive |
 | `$C83A` | reserved | retired debug-ring index |
-| `$C83B` | `readyos_bank` | direct physical ReadyOS bank (`Skip+1`) |
+| `$C83B` | `readyos_bank` | direct physical ReadyOS bank (`Skip`) |
 | `$C83C` | `launcher_flags` | launcher-owned one-shot flags |
 | `$C83D` | `reu_lookup_scratch` | physical/status byte DMA scratch |
 | `$C83E` | `token_scratch` | token preserved by `mark_loaded` |
@@ -150,36 +157,36 @@ For shim token `0`:
 For any nonzero token `N`:
 
 1. configure a one-byte REU fetch into `$C83D`
-2. fetch from the ReadyOS bank at offset `$B940 + N`
+2. fetch from the ReadyOS bank at offset `$B740 + N`
 3. load the fetched physical bank byte
-4. configure the normal `$B800` stash or fetch at C64 address `$1000`
+4. configure the normal `$B600` stash or fetch at C64 address `$1000`
 
 The small one-byte preliminary DMA is why the shim can resolve a scalable
 logical token without carrying a large resident table.
 
-## ReadyOS Bank (`Skip+1`, Schema 5)
+## ReadyOS Bank (`Skip`, Schema 5)
 
 | Offset | Size | Contents |
 |---:|---:|---|
-| `$0000` | `$B800` | launcher snapshot of C64 `$1000-$C7FF` |
-| `$B800` | `$0040` | `RCB5` header: schema, writer, skip/count/availability and offsets |
-| `$B840` | `$0100` | authoritative 256-entry physical bank-type table |
-| `$B940` | `$0100` | token-to-physical snapshot map |
-| `$BA40` | `$0100` | token valid/loaded/resumable status |
-| `$BB40` | `$0090` | clipboard count and 16 item records |
-| `$BBD0` | `9` | global hotkeys |
-| `$BBD9` | `$0027` | active `LS` v1 launcher settings: first-app index, app count, load-all policy, and 32-byte variant name |
-| `$BC00` | `$0400` | 64 app records (`64 x 16`) |
-| `$C000` | `$0100` | token-to-app-index table |
-| `$C100` | `$0340` | 64 app filename records (`64 x 13`) |
-| `$C440` | `$0400` | 64 rich resource records (`64 x 16`) |
-| `$C840` | `$2000` | 64 dependency/source lines (`64 x 128`) |
-| `$E840` | `$0800` | catalog names (`64 x 32`) |
-| `$F040` | `$09C0` | catalog descriptions (`64 x 39`) |
-| `$FA00` | `$0340` | catalog file tokens (`64 x 13`) |
-| `$FD40` | `$0100` | audit page |
-| `$FE40` | `$0080` | launcher `RSM1` envelope: 16-byte header plus compact UI payload; DMA builds also persist the bounded image path |
-| `$FEC0` | `$0140` | reserved for compatible schema growth |
+| `$0000` | `$B600` | launcher snapshot of C64 `$1000-$C5FF` |
+| `$B600` | `$0040` | `RCB5` header: schema, writer, skip/count/availability and offsets |
+| `$B640` | `$0100` | authoritative 256-entry physical bank-type table |
+| `$B740` | `$0100` | token-to-physical snapshot map |
+| `$B840` | `$0100` | token valid/loaded/resumable status |
+| `$B940` | `$0090` | clipboard count and 16 item records |
+| `$B9D0` | `9` | global hotkeys |
+| `$B9D9` | `$0027` | active `LS` v1 launcher settings: first-app index, app count, load-all policy, and 32-byte variant name |
+| `$BA00` | `$0400` | 64 app records (`64 x 16`) |
+| `$BE00` | `$0100` | token-to-app-index table |
+| `$BF00` | `$0340` | 64 app filename records (`64 x 13`) |
+| `$C240` | `$0400` | 64 rich resource records (`64 x 16`) |
+| `$C640` | `$2000` | 64 dependency/source lines (`64 x 128`) |
+| `$E640` | `$0800` | catalog names (`64 x 32`) |
+| `$EE40` | `$09C0` | catalog descriptions (`64 x 39`) |
+| `$F800` | `$0340` | catalog file tokens (`64 x 13`) |
+| `$FB40` | `$0100` | audit page |
+| `$FC40` | `$0080` | launcher `RSM1` envelope: 16-byte header plus compact UI payload; DMA builds also persist the bounded image path |
+| `$FCC0` | `$0340` | reserved for compatible schema growth |
 
 `reu_control_bank_sync_and_mirror()` writes bank types directly to the ReadyOS
 bank; there is no resident mirror to reconcile. The launcher registry writer
@@ -191,7 +198,7 @@ The launcher deliberately does not persist its former full set of parallel
 arrays in the resume tail. On return, it validates the small `RSM1` UI record,
 then rebuilds `app_banks`, drives, hotkeys, resource-bank assignments,
 loaded flags, and snapshot sizes from the `LS` settings record plus the 64 app
-records at `$BC00`. Selection bounds are checked only after that registry has
+records at `$BA00`. Selection bounds are checked only after that registry has
 restored the menu shape. Catalog strings remain in their ReadyOS-bank tables
 and are fetched through a small visible-row cache and one shared scratch
 buffer.
@@ -209,14 +216,14 @@ filename; the DMA fallback reacquires the filename after republishing state.
 2. Launcher publishes the allocation, map, and status directly to ReadyOS.
 3. Shim stashes the launcher using token `0` to the ReadyOS bank.
 4. The app is loaded into `$1000`, then stashed using its nonzero token.
-5. Shim reads that token's physical bank from ReadyOS `$B940` and performs the transfer.
+5. Shim reads that token's physical bank from ReadyOS `$B740` and performs the transfer.
 6. Shim restores the launcher from the ReadyOS bank.
 
 ### Return or direct switch
 
 1. Shim uses resident `$C834`/`$C820` to know the current and target tokens.
-2. Each nonzero token is resolved through ReadyOS `$B940`.
-3. Shim stashes/fetches exactly `$B800` bytes.
+2. Each nonzero token is resolved through ReadyOS `$B740`.
+3. Shim stashes/fetches exactly `$B600` bytes.
 4. Returning to the launcher resolves token `0` directly to `$C83B`.
 
 The shim never needs the launcher's normal app RAM structures to survive this
@@ -231,7 +238,7 @@ resident shim and does not change the later switch contract:
 - the destination snapshot is still launcher-allocated;
 - ReadyOS-bank metadata, mapping, and status are still republished;
 - later app launches, returns, and direct switches still use the resident shim
-  and its `$B800` transfer;
+  and its `$B600` transfer;
 - the KERNAL/disk preload path remains the fallback.
 
 The current non-DMA and DMA launchers therefore share the same resident
@@ -250,23 +257,35 @@ shim/ReadyOS-bank switching architecture.
 
 Older shim HTML reports are retained as historical architecture evidence. They
 must not be read as current when they show a separate control bank, a resident
-allocation/bitmap mirror, fixed app slots, `$2F00` lookup, or `$B600` snapshots.
+allocation/bitmap mirror, fixed app slots, `$2F00` lookup, or `$B800` snapshots.
 
 ## Full Commented Resident Shim Source
 
 This appendix is synchronized from `src/boot/readyos_shim.inc`; both the disk
-and EasyFlash builds include that same canonical 512-byte image. The
-documentation verifier compares every `.byte` directive and ABI annotation.
+and EasyFlash builds use that same canonical 1024-byte definition. The disk
+bootstrap clears the lower reserve in place and embeds only the upper ABI half
+to stay below `$1000`; EasyFlash packages the complete image. The documentation
+verifier compares every directive and ABI annotation.
 
 ```asm
 ;-----------------------------------------------------------------------------
-; Shared ReadyOS shim image ($C800-$C9FF, 512 bytes)
+; Shared ReadyOS shim image ($C600-$C9FF, 1024 bytes)
 ; This file is the canonical shim byte layout used by both the disk boot path
 ; and the EasyFlash cartridge flavor. Keep it identical across all variants.
 ;-----------------------------------------------------------------------------
 
 ;-----------------------------------------------------------------------------
-; Page 1: $C800-$C8FF - Jump table, data, and helper routines
+; Pages 1-2: $C600-$C7FF - reserved resident expansion space
+;-----------------------------------------------------------------------------
+; This space used to contain the C64-RAM REU allocation/metadata mirror.  The
+; authoritative state now lives in the ReadyOS REU bank, but the RAM remains
+; resident shim-owned capacity rather than becoming app snapshot memory.
+.ifndef READYOS_SHIM_ABI_ONLY
+.res $0200, $00
+.endif
+
+;-----------------------------------------------------------------------------
+; Page 3: $C800-$C8FF - Jump table, data, and helper routines
 ;-----------------------------------------------------------------------------
 
 ; $C800-$C817: Jump Table (24 bytes, 8 entries)
@@ -308,7 +327,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 ;        This persists across app switches and is shared by apps that use the
 ;        common file-dialog default-drive contract.
 ; $C83A: reserved (formerly log_index)
-; $C83B: readyos_bank - direct physical ReadyOS bank number (Skip+1)
+; $C83B: readyos_bank - direct physical ReadyOS bank number (Skip)
 ; $C83C: launcher_flags - launcher-owned one-shot state flags
 ; $C83D: reu_lookup_scratch - one-byte ReadyOS-bank DMA scratch
 ; $C83E: token_scratch; $C83F: reserved
@@ -326,7 +345,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00                   ; $C838: reserved (retired bitmap byte)
 .byte $08                   ; $C839: storage_drive (default drive 8)
 .byte $00                   ; $C83A: reserved (retired debug-ring head)
-.byte READYOS_REU_BANK_SKIP + 1 ; $C83B: readyos_bank (physical Skip+1)
+.byte READYOS_REU_BANK_SKIP     ; $C83B: readyos_bank (physical Skip)
 .byte $00                   ; $C83C: launcher_flags
 .byte $00                   ; $C83D: reu_lookup_scratch
 .byte $00,$00               ; $C83E-$C83F: reserved
@@ -399,7 +418,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00
 
 ;-----------------------------------------------------------------------------
-; $C8E0: stash_to_bank - Stash $1000-$C7FF to REU bank in A (16 bytes)
+; $C8E0: stash_to_bank - Stash $1000-$C5FF to REU bank in A (16 bytes)
 ;-----------------------------------------------------------------------------
 .byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
 .byte $A9, $90              ; LDA #$90 (STASH command)
@@ -408,7 +427,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00,$00,$00,$00,$00,$00
 
 ;-----------------------------------------------------------------------------
-; $C8F0: fetch_bank - Fetch from REU bank in A to $1000-$C7FF (16 bytes)
+; $C8F0: fetch_bank - Fetch from REU bank in A to $1000-$C5FF (16 bytes)
 ;-----------------------------------------------------------------------------
 .byte $20, $60, $C9         ; JSR reu_setup_logical ($C960)
 .byte $A9, $91              ; LDA #$91 (FETCH command)
@@ -417,7 +436,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00,$00,$00,$00,$00,$00
 
 ;-----------------------------------------------------------------------------
-; Page 2: $C900-$C9FF - Main routines
+; Page 4: $C900-$C9FF - Main routines
 ;-----------------------------------------------------------------------------
 
 ;-----------------------------------------------------------------------------
@@ -468,9 +487,9 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $8D, $03, $DF         ; STA $DF03 (C64 addr hi)
 .byte $8A                   ; TXA
 .byte $18                   ; CLC
-.byte $69, $40              ; ADC #<$B940 (mapping offset + token)
+.byte $69, $40              ; ADC #<$B740 (mapping offset + token)
 .byte $8D, $04, $DF         ; STA $DF04 (REU offset lo)
-.byte $A9, $B9              ; LDA #>$B940
+.byte $A9, $B7              ; LDA #>$B740
 .byte $69, $00              ; ADC #0 (include low-byte carry)
 .byte $8D, $05, $DF         ; STA $DF05 (REU offset hi)
 .byte $AD, $3B, $C8         ; LDA $C83B (ReadyOS global physical bank)
@@ -486,7 +505,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $00,$00               ; Padding to $C9A0
 
 ;-----------------------------------------------------------------------------
-; $C9A0: reu_setup - Set up REU registers for $B800 transfer at $1000
+; $C9A0: reu_setup - Set up REU registers for $B600 transfer at $1000
 ;-----------------------------------------------------------------------------
 .byte $8D, $06, $DF         ; STA $DF06 (bank)
 .byte $A9, $00              ; LDA #$00
@@ -497,8 +516,8 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $8D, $04, $DF         ; STA $DF04 (REU addr lo)
 .byte $8D, $05, $DF         ; STA $DF05 (REU addr hi)
 .byte $8D, $07, $DF         ; STA $DF07 (len lo = $00)
-.byte $A9, $B8              ; LDA #$B8
-.byte $8D, $08, $DF         ; STA $DF08 (len hi = $B8, so $B800 bytes)
+.byte $A9, $B6              ; LDA #$B6
+.byte $8D, $08, $DF         ; STA $DF08 (len hi = $B6, so $B600 bytes)
 .byte $60                   ; RTS
 .byte $00,$00
 
@@ -515,9 +534,9 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 .byte $8D, $03, $DF
 .byte $AD, $3E, $C8         ; token
 .byte $18                   ; CLC
-.byte $69, $40              ; + <$BA40 (token status table)
+.byte $69, $40              ; + <$B840 (token status table)
 .byte $8D, $04, $DF
-.byte $A9, $BA              ; >$BA40
+.byte $A9, $B8              ; >$B840
 .byte $69, $00              ; include low-byte carry
 .byte $8D, $05, $DF
 .byte $AD, $3B, $C8         ; ReadyOS physical bank

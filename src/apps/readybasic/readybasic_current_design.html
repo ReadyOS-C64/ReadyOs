@@ -470,10 +470,9 @@ polygon work would otherwise consume one runtime strip.</p>
 state: screen RAM is <code>$CC00-$CFFF</code>, sprite data is
 <code>$CA00-$CBFF</code>, bitmap/charset RAM is
 <code>$E000-$FFFF</code>, and color RAM is <code>$D800-$DBE7</code>.
-<code>$C000-$C9FF</code> remains owned by ReadyBASIC bridge/shared
-frames through <code>$C5FF</code>, an intentionally unused app-private
-snapshot tail at <code>$C600-$C7FF</code>, and the shim ABI at
-<code>$C800-$C9FF</code>.</p>
+ReadyBASIC owns bridge/shared frames through <code>$C5FF</code>; the
+resident 1 KB shim owns <code>$C600-$C9FF</code>, with its expansion
+reserve below the stable ABI at <code>$C800</code>.</p>
 <p>The naming nuance matters. A module is the logical command family
 identified by module id. A module package/container is the disk SEQ file
 that carries descriptors and payload records. A submodule is the runtime
@@ -1507,10 +1506,10 @@ slot-0 payload because their shared allocator and screen-copy helpers
 live there.</li>
 </ol>
 <h2 id="c64-ram-layout">C64 RAM Layout</h2>
-<p>ReadyBASIC is captured by the ReadyOS <code>$1000-$C7FF</code> app
+<p>ReadyBASIC is captured by the ReadyOS <code>$1000-$C5FF</code> app
 snapshot. Its custom assembler/linker shape intentionally uses runtime
-bytes only through <code>$C5FF</code>, leaving <code>$C600-$C7FF</code>
-unused today; only <code>$C800-$C9FF</code> is resident shim space.</p>
+bytes only through <code>$C5FF</code>; the full <code>$C600-$C9FF</code>
+region is resident shim space.</p>
 <table>
 <colgroup>
 <col style="width: 21%" />
@@ -1691,18 +1690,18 @@ page/runtime buffers.</td>
 refreshed during <code>EXIT</code> and cold seed.</td>
 </tr>
 <tr>
-<td>App-private snapshot tail</td>
+<td>ReadyOS shim expansion reserve</td>
 <td style="text-align: right;"><code>$C600-$C7FF</code></td>
-<td style="text-align: right;"><code>$0200</code> (0.5K)</td>
-<td>Captured by ReadyOS but intentionally unused so the custom
-assembler/linker image shape stays stable. ReadyBASIC ownership is
-published in the ReadyOS bank, not here.</td>
+<td style="text-align: right;"><code>$0200</code> (0.5K) shared</td>
+<td>Resident capacity for future shim functionality; not ReadyBASIC
+RAM.</td>
 </tr>
 <tr>
 <td>ReadyOS shim ABI</td>
 <td style="text-align: right;"><code>$C800-$C9FF</code></td>
 <td style="text-align: right;"><code>$0200</code> (0.5K) shared</td>
-<td>ReadyOS jump table and data; not ReadyBASIC RAM.</td>
+<td>Stable ReadyOS jump table and data; the full shim region is 1
+KB.</td>
 </tr>
 </tbody>
 </table>
@@ -2530,7 +2529,7 @@ metadata.</li>
 </ol>
 <p>For <code>F2</code>/<code>F4</code>, ReadyBASIC scans the
 authoritative schema-v5 loaded flags at ReadyOS-bank offset
-<code>$BA40 + token</code>, using the direct physical ReadyOS bank in
+<code>$B840 + token</code>, using the direct physical ReadyOS bank in
 <code>$C83B</code>, and starts from the current token in
 <code>$C834</code>. If a neighbor app is found, it performs the same
 READY-mode save/restore setup, persists the target bank in bridge state,
@@ -2604,10 +2603,10 @@ by loading an individual app directly.</li>
 <li><code>RESIDENT</code> must stay below <code>$2AC0</code>.</li>
 <li><code>BRIDGE</code> must stay below <code>$C200</code>, leaving
 <code>$C200-$C5FF</code> for relocated frames.</li>
-<li><code>$C600-$C7FF</code> is app-private snapshot room but is
-intentionally unused to preserve the custom ReadyBASIC load/run
-shape.</li>
-<li><code>$C800-$C9FF</code> is ReadyOS shim ABI, not app RAM.</li>
+<li><code>$C600-$C7FF</code> is resident ReadyOS shim expansion
+capacity, not app RAM.</li>
+<li><code>$C800-$C9FF</code> is the stable ReadyOS shim ABI; together
+the shim owns 1 KB.</li>
 <li>Warm resume restores <code>$A000</code> from the assigned-core-bank
 hidden-helper shadow before hidden helper calls.</li>
 <li>Warm resume must not cold-reset <code>FRETOP</code>,

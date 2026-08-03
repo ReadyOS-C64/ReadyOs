@@ -21,7 +21,7 @@ after the internal module model was stable.
   module payloads, and command helpers in REU-backed under-ROM code.
 - Keep ReadyBASIC compatible with the ReadyOS app memory contract:
   - app-owned RAM is `$1000-$C5FF`;
-  - `$C600-$C7FF` is ReadyOS REU metadata and must not be used as scratch;
+  - `$C600-$C7FF` is ReadyOS resident shim expansion capacity and must not be used as scratch;
   - `$C800-$C9FF` is the ReadyOS shim ABI area and must not be used by
     ReadyBASIC modules.
 - Keep built-in ReadyBASIC modules bundled into `readybasic.prg` and prestashed
@@ -41,7 +41,7 @@ ReadyBASIC continues to use the existing app layout discipline:
 | `$A000-$BFFF` | RAM under BASIC ROM | New common area plus three 2KB submodule slots. |
 | `$C000-$C1FF` | ReadyBASIC bridge | Persistent bridge/state only; must stay below shared frames. |
 | `$C200-$C5FF` | ReadyBASIC shared frames | Call/result/descriptor/name/page buffers and hidden helper shadow. |
-| `$C600-$C7FF` | ReadyOS REU metadata | Do not use as ReadyBASIC scratch. |
+| `$C600-$C7FF` | ReadyOS shim expansion reserve | Do not use as ReadyBASIC scratch. |
 | `$C800-$C9FF` | ReadyOS shim ABI | Do not place ReadyBASIC module code/data here. |
 
 The under-BASIC-ROM area is divided into four 2KB regions:

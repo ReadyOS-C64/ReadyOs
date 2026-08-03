@@ -116,8 +116,8 @@ Streaming output pause:
 
 Current release build memory layout:
 
-- ReadyOS snapshot window: `$1000-$C7FF` (`47104` bytes); ReadyShell's overlay
-  execution ABI intentionally remains `$8E00-$C5FF`
+- ReadyOS snapshot window: `$1000-$C5FF` (`46592` bytes); ReadyShell's overlay
+  execution ABI intentionally remains `$8E00-$C5FF`, immediately below the shim
 - Overlay load-address bytes: `$8DFE-$8DFF`
 - Overlay execution window: `$8E00-$C5FF` (`14336` bytes)
 - Resident BSS: `$7DEB-$7F94` (`426` bytes)

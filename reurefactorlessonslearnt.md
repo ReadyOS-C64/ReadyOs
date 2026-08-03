@@ -1,5 +1,19 @@
 # REU Refactor Lessons Learnt
 
+<!-- READYOS-CURRENT-CONTRACT-2026-08-02 -->
+> **Current ReadyOS contract (2026-08-02):** Physical `Skip` is the ReadyOS
+> bank and `Skip+1` is the first dynamic bank. The launcher snapshot occupies
+> ReadyOS `$0000-$B5FF`; schema v5 occupies `$B600-$FFFF`, including the token
+> map at `$B740` and status at `$B840`. C64 app RAM is `$1000-$C5FF` (`$B600`),
+> and the resident 1 KB shim owns `$C600-$C9FF` with its public ABI at `$C800`.
+> Dated layouts and measurements below are retained as historical evidence.
+
+> **Checkpoint clarification:** the “final authority cleanup” and
+> “schema-v5 completion” entries immediately below describe the preceding
+> 512-byte-shim / physical-`Skip+1` checkpoint. Their implementation lessons
+> remain useful, but the bank placement and C64 RAM sizes are superseded by the
+> current 1 KB-shim / physical-`Skip` contract above.
+
 ## 2026-08-02 final authority cleanup
 
 - ReadyShell's `$C7A0-$C7DF` / `$C7F0` diagnostic mirror was the last live

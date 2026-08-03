@@ -23,10 +23,11 @@
   opt-in DMA behavior. Historical release and dated evidence documents remain
   preserved as snapshots.
 - Combined the launcher snapshot and authoritative operating-system metadata in
-  physical `Skip+1`, now named the ReadyOS bank. Physical `Skip` becomes the
-  first dynamic allocation bank, `$C600-$C7FF` becomes app-private, snapshots
-  expand to `$B800`, and the 512-byte shim resolves nonzero tokens through the
-  ReadyOS `$B940` map instead of arithmetic placement or a resident bitmap.
+  physical `Skip`, now named the ReadyOS bank. Physical `Skip+1` becomes the
+  first dynamic allocation bank. The app snapshot remains `$1000-$C5FF`
+  (`$B600`), while `$C600-$C9FF` is restored as a 1 KB resident shim region;
+  its stable 512-byte ABI resolves nonzero tokens through the ReadyOS `$B740`
+  map instead of arithmetic placement or a resident bitmap.
 - Reduced launcher warm-resume duplication to a compact `RSM1` UI record. The
   launcher reconstructs banks, drives, hotkeys, resources, loaded state, and
   sizes from the ReadyOS `LS` settings and 64-app registry. Runtime testing

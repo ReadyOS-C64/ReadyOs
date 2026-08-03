@@ -80,8 +80,8 @@ pre-module plugin-spine snapshot. The current post-BASIC runtime map is:
 | `$B800-$BFFF` | RAM behind BASIC ROM | Submodule slot 2 and overlay target. |
 | `$C000-$C1FE` | ReadyBASIC bridge | Small state below shared frames. |
 | `$C200-$C5FF` | ReadyBASIC frames/buffers | Call frame, result frame, descriptor/name/page buffers, disk-module load page. |
-| `$C600-$C7FF` | App-private snapshot tail | Intentionally unused so the custom ReadyBASIC assembler/linker shape remains stable. |
-| `$C800-$C9FF` | ReadyOS shim ABI | Not ReadyBASIC scratch. |
+| `$C600-$C7FF` | ReadyOS shim expansion reserve | Resident capacity; not ReadyBASIC scratch. |
+| `$C800-$C9FF` | ReadyOS shim ABI | Stable public half of the 1 KB shim; not ReadyBASIC scratch. |
 | `$D000-$DFFF` | I/O or character ROM | REU registers are in I/O space. |
 | `$E000-$FFFF` | KERNAL ROM normally visible | KERNAL calls remain available after normal banking is restored. |
 
@@ -133,8 +133,8 @@ The V1 spine intentionally avoids a few attractive but expensive abstractions:
 
 ## Full RAM Layout
 
-The ReadyOS app working region is `$1000-$C7FF`; `$C600-$C7FF` is app-private
-but intentionally unused by ReadyBASIC, and `$C800-$C9FF` is shim ABI territory.
+The ReadyOS app working region is `$1000-$C5FF`; the resident 1 KB shim owns
+`$C600-$C9FF`, with its public ABI in the upper half.
 ReadyBASIC must preserve its custom assembler/linker shape while hosting BASIC.
 
 ```mermaid
@@ -152,7 +152,7 @@ flowchart TB
   O["$B000-$B23A SLOT 1 PAYLOAD<br/>module 2 proof and ZMODLD loader"]
   P["$B800-$B814 SLOT 2 / OVERLAYS<br/>proof and overlay slices"]
   L["$C000-$C1FE BRIDGE STATE<br/>magic, saved vectors, overlay vars, handle scratch, PROC/FUNC stack"]
-  M["$C600-$C7FF UNUSED SNAPSHOT TAIL<br/>app-private, held open for ReadyBASIC layout compatibility"]
+  M["$C600-$C7FF SHIM EXPANSION RESERVE<br/>resident ReadyOS capacity, not app RAM"]
   N["$C800-$C9FF SHIM ABI<br/>ReadyOS jump table/data, not app RAM"]
 
   A --> B --> C --> D --> G
@@ -473,7 +473,7 @@ flowchart TD
 ```
 
 `F2`/`F4` perform the same save/vector-restore setup, then scan authoritative
-schema-v5 loaded flags at ReadyOS-bank offset `$BA40 + token`, copy the selected
+schema-v5 loaded flags at ReadyOS-bank offset `$B840 + token`, copy the selected
 target token into bridge state, and
 only write `$C820` after hidden save, `CLRCHN`, and vector restore have
 completed. This keeps the switch target independent of scratch bytes used by
@@ -740,9 +740,8 @@ descriptor layout remains fixed.
 - `$2AC0` stays zero before stored-program `RUN`.
 - `RESIDENT` stays below `$2AC0`.
 - `BRIDGE` stays below `$C200`, leaving `$C200-$C5FF` for shared frames.
-- `$C600-$C7FF` is app-private snapshot RAM but remains unused by the current
-  ReadyBASIC assembler/linker contract.
-- `$C800-$C9FF` remains shim ABI.
+- `$C600-$C7FF` is resident ReadyOS shim expansion capacity.
+- `$C800-$C9FF` remains the stable shim ABI.
 - Warm resume must restore `$A000` from the assigned-core-bank hidden-helper shadow before hidden helper calls.
 - Warm resume must not reset `FRETOP`, `VARTAB`, `ARYTAB`, or `STREND`.
 - ReadyBASIC-owned vectors must be restored before yielding to ReadyOS.
