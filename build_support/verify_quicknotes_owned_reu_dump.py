@@ -7,8 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
-HEADER_OFF = 0xB800
-BANK_TYPES_OFF = 0xB840
+HEADER_OFF = 0xB600
+BANK_TYPES_OFF = 0xB640
 BANK_TYPES_SIZE = 0x100
 MAGIC = b"RCB5\x05"
 REU_APP_ALLOC = 3

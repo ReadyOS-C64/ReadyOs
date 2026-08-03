@@ -34,7 +34,7 @@ COLOR_START  = $D800
 COLOR_SIZE   = 1000
 APP_START    = $1000
 APP_END      = $C800
-APP_SIZE     = $B800    ; 47,104 bytes ($1000-$C7FF)
+APP_SIZE     = $B600    ; 46,592 bytes ($1000-$C5FF)
 
 ; REU offsets for saved state (within app's 64KB bank)
 REU_OFF_CPU      = $0000    ; 8 bytes - CPU registers
@@ -201,7 +201,7 @@ color_buffer:   .res 1000
         sta REU_COMMAND
 
         ;----- Save App Memory via DMA (46KB) -----
-        ; This is the big one - $1000 to $C7FF
+        ; This is the big one - $1000 to $C5FF
         lda #<APP_START
         sta REU_C64_LO
         lda #>APP_START

@@ -26,7 +26,7 @@ ZP_TMP      = $FD       ; 2 bytes temp
 
 ; App memory layout
 APP_LOAD_ADDR   = $1000     ; Apps load here
-APP_MAX_SIZE    = $B800     ; Current snapshot window max ($1000-$C7FF)
+APP_MAX_SIZE    = $B600     ; Current snapshot window max ($1000-$C5FF)
 
 ; REU registers
 REU_STATUS      = $DF00

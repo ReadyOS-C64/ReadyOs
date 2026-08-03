@@ -30,7 +30,7 @@
 #include <string.h>
 
 /*---------------------------------------------------------------------------
- * Shim Interface (shim is at $C800-$C9FF, 512 bytes)
+ * Shim Interface (resident area is $C600-$C9FF; ABI is at $C800-$C9FF)
  *---------------------------------------------------------------------------*/
 
 /* Shim jump table addresses (at $C800) */
@@ -241,10 +241,10 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #endif
 
 /* App save size - must include code + data + BSS */
-#define APP_SAVE_SIZE 0xB800  /* $1000-$C7FF (46KB) */
-/* Valid app load range from cfg/ready_app.cfg: $1000-$C7FF */
+#define APP_SAVE_SIZE 0xB600  /* $1000-$C5FF (45.5KB) */
+/* Valid app load range from cfg/ready_app.cfg: $1000-$C5FF */
 #define APP_LOAD_START    0x1000
-#define APP_LOAD_END_EXCL 0xC800
+#define APP_LOAD_END_EXCL 0xC600
 
 /*---------------------------------------------------------------------------
  * Static variables
@@ -2890,7 +2890,7 @@ static void launcher_free_app_resources(unsigned char index) {
 
 
 /*---------------------------------------------------------------------------
- * Save the launcher snapshot into the first $B800 bytes of the ReadyOS bank
+ * Save the launcher snapshot into the first $B600 bytes of the ReadyOS bank
  *---------------------------------------------------------------------------*/
 static void save_launcher_to_reu(void) {
     REU_C64_LO = 0x00;
@@ -2899,7 +2899,7 @@ static void save_launcher_to_reu(void) {
     REU_REU_HI = 0x00;
     REU_REU_BANK = REU_LAUNCHER_PHYSICAL();
     REU_LEN_LO = 0x00;
-    REU_LEN_HI = 0xB8;  /* $B800 bytes */
+    REU_LEN_HI = 0xB6;  /* $B600 bytes */
     REU_COMMAND = REU_CMD_STASH;
 }
 

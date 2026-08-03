@@ -117,8 +117,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges: &owned_reu_ranges
-        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC6FF }
-        - { label: app_snapshot_private_c700, start: 0xC700, end: 0xC7FF }
+        - { label: shim_resident_c600, start: 0xC600, end: 0xC9FF }
   - id: open_reuviewer_before_unload
     type: input.sequence
     params:
@@ -235,8 +234,7 @@ steps:
     type: dump.memory_ranges
     params:
       ranges: &owned_reu_ranges
-        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC6FF }
-        - { label: app_snapshot_private_c700, start: 0xC700, end: 0xC7FF }
+        - { label: shim_resident_c600, start: 0xC600, end: 0xC9FF }
   - id: unload_quicknotes
     type: input.sequence
     params:

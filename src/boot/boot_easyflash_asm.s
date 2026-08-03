@@ -64,7 +64,7 @@ REU_CMD_STASH = $90
 REU_CMD_FETCH = $91
 
 APP_LOAD_START    = $1000
-APP_WINDOW_LEN    = $B800
+APP_WINDOW_LEN    = $B600
 VERIFY_BUF        = $4000
 VERIFY_CHUNK_LEN  = $2000
 OVL_STAGE_LEN     = $3800
@@ -603,8 +603,12 @@ copy_shim:
     ldx #$00
 @shim_loop:
     lda shim_data,x
-    sta $C800,x
+    sta $C600,x
     lda shim_data+$0100,x
+    sta $C700,x
+    lda shim_data+$0200,x
+    sta $C800,x
+    lda shim_data+$0300,x
     sta $C900,x
     inx
     bne @shim_loop
@@ -742,8 +746,8 @@ reu_required_exit_to_basic:
     jmp BASIC_COLD_START
 
 init_reu_state:
-    ; $C600-$C7FF belongs to the app snapshot.  Schema-v5 state is initialized
-    ; by the launcher in the ReadyOS bank after the launcher snapshot is live.
+    ; $C600-$C7FF is resident shim expansion space. Schema-v5 state is
+    ; initialized by the launcher in the ReadyOS bank after its snapshot is live.
     lda #$08
     sta SHIM_STORAGE_DRIVE
     lda #$FF
@@ -763,7 +767,7 @@ preload_launcher_bank0:
     lda #>EASYFLASH_LAUNCHER_PAYLOAD_LEN
     sta rem_hi
     jsr copy_payload_from_cart
-    lda #(READYOS_REU_BANK_SKIP + 1)
+    lda #READYOS_REU_BANK_SKIP
     sta reu_bank_zp
     lda #$00
     sta reu_off_lo
@@ -784,7 +788,7 @@ restore_launcher_ram:
     sta dst_lo
     lda #>APP_LOAD_START
     sta dst_hi
-    lda #(READYOS_REU_BANK_SKIP + 1)
+    lda #READYOS_REU_BANK_SKIP
     sta reu_bank_zp
     lda #$00
     sta reu_off_lo

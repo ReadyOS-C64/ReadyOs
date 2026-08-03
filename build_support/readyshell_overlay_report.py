@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from readyos_profiles import resolve_profile
+from update_documentation_html_status import CURRENT, banner
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -963,7 +964,7 @@ def render_markdown(ctx: dict[str, object]) -> str:
             "",
             "| Region | Range | Size | Notes |",
             "| --- | --- | ---: | --- |",
-            f"| ReadyOS snapshot window | `$1000-$C7FF` | `{0xB800}` | Full app-owned RAM captured by the shim; ReadyShell intentionally keeps its overlay ABI below `$C600`. |",
+            f"| ReadyOS snapshot window | `$1000-$C5FF` | `{0xB600}` | Full app-owned RAM captured by the shim; the resident 1 KB shim begins at `$C600`. |",
             f"| Overlay load address bytes | `{fmt_range(ctx['overlay_loadaddr'], ctx['overlay_start'] - 1)}` | `2` | PRG load address emitted ahead of each overlay sidecar file. |",
             f"| Overlay execution window | `{fmt_range(ctx['overlay_start'], ctx['himem'] - 1)}` | `{ctx['window_size']}` | Shared live area for whichever overlay is active. |",
             f"| Resident BSS | `{fmt_range(ctx['bss_start'], ctx['bss_end'])}` | `{ctx['bss_size']}` | Resident writable data below the overlay load address. |",
@@ -1098,7 +1099,7 @@ def render_markdown(ctx: dict[str, object]) -> str:
     )
 
 
-def render_html(ctx: dict[str, object]) -> str:
+def render_html(ctx: dict[str, object], status_message: str) -> str:
     cmd_reu_rows = []
     for row in command_reu_usage_rows(ctx):
         cmd_reu_rows.append(
@@ -1414,6 +1415,7 @@ def render_html(ctx: dict[str, object]) -> str:
   </style>
 </head>
 <body>
+{banner("current", status_message)}
 <header>
   <h1>ReadyShell Overlay Inventory Report ({html.escape(ctx['version'])})</h1>
   <p class="sub">
@@ -1445,7 +1447,7 @@ def render_html(ctx: dict[str, object]) -> str:
     <div>
       <h2>Runtime Memory Map</h2>
       <ul>
-        <li><strong>ReadyOS snapshot window:</strong> <code>$1000-$C7FF</code> ({0xB800} bytes); ReadyShell's proven overlay ABI remains below <code>$C600</code>.</li>
+        <li><strong>ReadyOS snapshot window:</strong> <code>$1000-$C5FF</code> ({0xB600} bytes); the resident 1 KB shim begins at <code>$C600</code>.</li>
         <li><strong>Overlay load bytes:</strong> <code>{fmt_range(ctx['overlay_loadaddr'], ctx['overlay_start'] - 1)}</code></li>
         <li><strong>Overlay execution window:</strong> <code>{fmt_range(ctx['overlay_start'], ctx['himem'] - 1)}</code> ({ctx['window_size']} bytes)</li>
         <li><strong>Resident BSS:</strong> <code>{fmt_range(ctx['bss_start'], ctx['bss_end'])}</code> ({ctx['bss_size']} bytes)</li>
@@ -1738,12 +1740,17 @@ def main() -> int:
     )
 
     markdown_text = render_markdown(ctx) + "\n"
-    html_text = render_html(ctx)
+    html_text = render_html(
+        ctx, CURRENT["docs/readyshell_overlay_inventory.html"]
+    )
+    private_html_text = render_html(
+        ctx, CURRENT["privatedocs/reports/readyshell_overlay_inventory.html"]
+    )
     for out_path, text in (
         (args.markdown_out, markdown_text),
         (args.html_out, html_text),
         (private_markdown_out, markdown_text),
-        (private_html_out, html_text),
+        (private_html_out, private_html_text),
     ):
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(text, encoding="utf-8")

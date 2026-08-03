@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Verify that the shared ReadyOS shim remains 512 bytes, preserves ABI anchor
+Verify that the shared ReadyOS shim remains 1024 bytes, preserves ABI anchor
 locations, and that cartridge packaging consumes the configured image.
 """
 
@@ -19,25 +19,27 @@ EASYFLASH_SHIM_SRC = ROOT / "src" / "boot" / "easyflash_shim.s"
 SHIM_INC = ROOT / "src" / "boot" / "readyos_shim.inc"
 EASYFLASH_SHIM_BIN = ROOT / "bin" / "easyflash_shim.bin"
 
-EXPECTED_SIZE = 512
+SHIM_START = 0xC600
+ABI_BASE = 0x0200
+EXPECTED_SIZE = 1024
 
 ABI_CHECKS = (
-    ("jt_load_disk", 0x000, bytes.fromhex("4c40c8")),
-    ("jt_load_reu", 0x003, bytes.fromhex("4c60c8")),
-    ("jt_run_app", 0x006, bytes.fromhex("4c0010")),
-    ("jt_preload", 0x009, bytes.fromhex("4c80c8")),
-    ("jt_return", 0x00C, bytes.fromhex("4c00c9")),
-    ("jt_switch", 0x00F, bytes.fromhex("4c40c9")),
-    ("jt_reserved_noop", 0x012, bytes.fromhex("4cffc9")),
-    ("jt_fetch_bank", 0x015, bytes.fromhex("4cf0c8")),
-    ("jt_deprecated_log", 0x018, bytes.fromhex("4cffc9")),
-    ("jt_mark_loaded", 0x01B, bytes.fromhex("4cc0c9")),
-    ("data_filename_len", 0x021, bytes([0x08])),
-    ("storage_drive_default", 0x039, bytes([0x08])),
-    ("stash_uses_logical_setup", 0x0E0, bytes.fromhex("2060c9")),
-    ("fetch_uses_logical_setup", 0x0F0, bytes.fromhex("2060c9")),
-    ("logical_setup_entry", 0x160, bytes.fromhex("c900d006ad3b")),
-    ("raw_setup_entry", 0x1A0, bytes.fromhex("8d06df")),
+    ("jt_load_disk", ABI_BASE + 0x000, bytes.fromhex("4c40c8")),
+    ("jt_load_reu", ABI_BASE + 0x003, bytes.fromhex("4c60c8")),
+    ("jt_run_app", ABI_BASE + 0x006, bytes.fromhex("4c0010")),
+    ("jt_preload", ABI_BASE + 0x009, bytes.fromhex("4c80c8")),
+    ("jt_return", ABI_BASE + 0x00C, bytes.fromhex("4c00c9")),
+    ("jt_switch", ABI_BASE + 0x00F, bytes.fromhex("4c40c9")),
+    ("jt_reserved_noop", ABI_BASE + 0x012, bytes.fromhex("4cffc9")),
+    ("jt_fetch_bank", ABI_BASE + 0x015, bytes.fromhex("4cf0c8")),
+    ("jt_deprecated_log", ABI_BASE + 0x018, bytes.fromhex("4cffc9")),
+    ("jt_mark_loaded", ABI_BASE + 0x01B, bytes.fromhex("4cc0c9")),
+    ("data_filename_len", ABI_BASE + 0x021, bytes([0x08])),
+    ("storage_drive_default", ABI_BASE + 0x039, bytes([0x08])),
+    ("stash_uses_logical_setup", ABI_BASE + 0x0E0, bytes.fromhex("2060c9")),
+    ("fetch_uses_logical_setup", ABI_BASE + 0x0F0, bytes.fromhex("2060c9")),
+    ("logical_setup_entry", ABI_BASE + 0x160, bytes.fromhex("c900d006ad3b")),
+    ("raw_setup_entry", ABI_BASE + 0x1A0, bytes.fromhex("8d06df")),
 )
 
 
@@ -118,6 +120,14 @@ def parse_shim_bytes(text: str, *, start_label: str, constants: dict[str, int] |
             continue
         if stripped.startswith(".include"):
             continue
+        if stripped.startswith(".res"):
+            payload = stripped.split(".res", 1)[1]
+            tokens = split_tokens(payload)
+            count_raw = tokens[0]
+            count = int(count_raw[1:], 16) if count_raw.startswith("$") else int(count_raw, 0)
+            value = parse_byte_token(tokens[1], constants)[0] if len(tokens) > 1 else 0
+            data.extend(bytes([value]) * count)
+            continue
         if ".byte" not in stripped:
             continue
         payload = stripped.split(".byte", 1)[1]
@@ -168,17 +178,17 @@ def verify_exact_image(label: str, data: bytes, *, reu_bank_skip: int = 0) -> No
         actual = data[offset:offset + len(expected)]
         if actual != expected:
             fail(
-                f"{label} ABI field {name} changed at ${0xC800 + offset:04X} "
+                f"{label} ABI field {name} changed at ${SHIM_START + offset:04X} "
                 f"({actual.hex()} != {expected.hex()})"
             )
-    readyos_actual = data[0x03B]
-    readyos_expected = (reu_bank_skip + 1) & 0xFF
+    readyos_actual = data[ABI_BASE + 0x03B]
+    readyos_expected = reu_bank_skip & 0xFF
     if readyos_actual != readyos_expected:
         fail(f"{label} ReadyOS bank changed at $C83B ({readyos_actual} != {readyos_expected})")
-    if bytes.fromhex("a9b88d08df") not in data[0x1A0:0x1C0]:
-        fail(f"{label} snapshot length is not $B800")
+    if bytes.fromhex("a9b68d08df") not in data[ABI_BASE + 0x1A0:ABI_BASE + 0x1C0]:
+        fail(f"{label} snapshot length is not $B600")
     for address_lo in (0x07, 0x08, 0x09, 0x0B, 0x0C):
-        if bytes((0x8D, address_lo, 0xC0)) in data:
+        if bytes((0x8D, address_lo, 0xC0)) in data[ABI_BASE:]:
             fail(f"{label} reintroduced an obsolete preload trace store to $C0{address_lo:02X}")
 
     padding_ranges = (
@@ -191,14 +201,17 @@ def verify_exact_image(label: str, data: bytes, *, reu_bank_skip: int = 0) -> No
     if padding_bytes != 129:
         fail(f"internal shim padding accounting changed ({padding_bytes} != 129)")
     for start, end in padding_ranges:
-        if any(data[start:end]):
+        if any(data[ABI_BASE + start:ABI_BASE + end]):
             fail(
                 f"{label} executable padding is no longer clear at "
                 f"${0xC800 + start:04X}-${0xC800 + end - 1:04X}"
             )
+    if any(data[:ABI_BASE]):
+        fail(f"{label} lower 512-byte expansion reserve is not clear")
     ok(f"{label} ABI anchor bytes match expected layout")
     ok(f"{label} has no obsolete preload trace stores in app RAM")
     ok(f"{label} has 129 verified executable-padding bytes")
+    ok(f"{label} has 512 clear resident expansion bytes at $C600-$C7FF")
 
 
 def main() -> int:
@@ -216,8 +229,13 @@ def main() -> int:
 
     require_include_pattern(
         BOOT_ASM,
-        r"(?m)^shim_data:\s*\n\.include \"readyos_shim\.inc\"$",
-        "boot shim include handoff",
+        r"(?m)^shim_data:\s*\nREADYOS_SHIM_ABI_ONLY\s*=\s*1\s*\n\.include \"readyos_shim\.inc\"$",
+        "boot optimized ABI-only shim include handoff",
+    )
+    require_include_pattern(
+        BOOT_ASM,
+        r"(?s)sta \$C600,x.*sta \$C700,x.*sta \$C800,x.*sta \$C900,x",
+        "boot clears the reserve and copies both ABI pages",
     )
     require_include_pattern(
         EASYFLASH_SHIM_SRC,

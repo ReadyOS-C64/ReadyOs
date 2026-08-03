@@ -18,7 +18,7 @@ import verify_memory_map as memmap
 
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_WINDOW_END = 0xC7FF
+APP_WINDOW_END = 0xC5FF
 
 
 def hex4(value: int) -> str:
@@ -143,7 +143,7 @@ def comparison_markdown(before: dict, after: dict) -> str:
         "",
         f"Before snapshot end: `{before['app_window_end']}`. After snapshot end: `{after['app_window_end']}`.",
         "ReadyBASIC has no conventional cc65 BSS/heap: its custom assembler/linker budget is enforced separately by `verify_readybasic_plugin.py`.",
-        "ReadyShell heap is bounded by its unchanged overlay load address, while its full snapshot headroom includes the new app-private `$C600-$C7FF` tail.",
+        "ReadyShell heap is bounded by its unchanged overlay load address; the full snapshot ends at `$C5FF` before the 1 KB resident shim.",
         "",
     ])
     return "\n".join(lines)
@@ -159,7 +159,7 @@ def main() -> int:
     parser.add_argument("--root", type=Path, default=ROOT,
                         help="Repository root containing the map files.")
     parser.add_argument("--app-window-end", type=lambda s: int(s, 0), default=APP_WINDOW_END,
-                        help="Inclusive snapshot window end (default: 0xC7FF).")
+                        help="Inclusive snapshot window end (default: 0xC5FF).")
     parser.add_argument("--compare-json", type=Path,
                         help="Earlier JSON report to compare with this report.")
     parser.add_argument("--markdown-output", type=Path,

@@ -1,16 +1,16 @@
 /*
  * resume_state.h - Warm resume payload storage in per-app REU bank tail
  *
- * Stores app-defined state payload at REU offset $B800..$FFFF.
+ * Stores app-defined state payload at REU offset $B600..$FFFF.
  * This area is outside the shim's app snapshot transfer window.
  */
 
 #ifndef RESUME_STATE_H
 #define RESUME_STATE_H
 
-#define REU_APP_SNAPSHOT_SIZE 0xB800
-#define REU_RESUME_OFF        0xB800
-#define REU_RESUME_TAIL_SIZE  0x4800
+#define REU_APP_SNAPSHOT_SIZE 0xB600
+#define REU_RESUME_OFF        0xB600
+#define REU_RESUME_TAIL_SIZE  0x4A00
 
 #define RESUME_SCHEMA_V1      1
 

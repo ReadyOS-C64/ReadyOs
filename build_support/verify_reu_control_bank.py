@@ -49,44 +49,44 @@ def main() -> int:
     makefile = read("Makefile")
 
     require(define_int(hdr, "REUCB_SCHEMA_VERSION") == 5, "schema version is 5")
-    require(define_int(hdr, "REUCB_LAUNCHER_SNAPSHOT_SIZE") == 0xB800,
-            "ReadyOS bank begins with the $B800 launcher snapshot")
-    require(define_int(hdr, "REUCB_HEADER_OFF") == 0xB800, "header starts at $B800")
+    require(define_int(hdr, "REUCB_LAUNCHER_SNAPSHOT_SIZE") == 0xB600,
+            "ReadyOS bank begins with the $B600 launcher snapshot")
+    require(define_int(hdr, "REUCB_HEADER_OFF") == 0xB600, "header starts at $B600")
     require(define_int(hdr, "REUCB_HEADER_SIZE") == 0x0040, "header is 64 bytes")
-    require(define_int(hdr, "REUCB_BANK_TYPE_OFF") == 0xB840, "bank types start at $B840")
-    require(define_int(hdr, "REUCB_SHIM_LOOKUP_OFF") == 0xB940,
-            "token-to-physical map starts at $B940")
-    require(define_int(hdr, "REUCB_TOKEN_STATUS_OFF") == 0xBA40,
-            "token status starts at $BA40")
-    require(define_int(hdr, "REUCB_CLIPBOARD_OFF") == 0xBB40,
-            "clipboard metadata starts at $BB40")
-    require(define_int(hdr, "REUCB_HOTKEY_OFF") == 0xBBD0,
-            "hotkeys start at $BBD0")
-    require(define_int(hdr, "REUCB_SETTINGS_OFF") == 0xBBD9,
-            "launcher settings start at $BBD9")
+    require(define_int(hdr, "REUCB_BANK_TYPE_OFF") == 0xB640, "bank types start at $B640")
+    require(define_int(hdr, "REUCB_SHIM_LOOKUP_OFF") == 0xB740,
+            "token-to-physical map starts at $B740")
+    require(define_int(hdr, "REUCB_TOKEN_STATUS_OFF") == 0xB840,
+            "token status starts at $B840")
+    require(define_int(hdr, "REUCB_CLIPBOARD_OFF") == 0xB940,
+            "clipboard metadata starts at $B940")
+    require(define_int(hdr, "REUCB_HOTKEY_OFF") == 0xB9D0,
+            "hotkeys start at $B9D0")
+    require(define_int(hdr, "REUCB_SETTINGS_OFF") == 0xB9D9,
+            "launcher settings start at $B9D9")
     require(define_int(hdr, "REUCB_SETTINGS_SIZE") == 39,
             "launcher settings fill the pre-registry gap")
-    require(define_int(hdr, "REUCB_RUNTIME_OFF") == 0xFE40,
-            "launcher UI resume state starts at $FE40")
+    require(define_int(hdr, "REUCB_RUNTIME_OFF") == 0xFC40,
+            "launcher UI resume state starts at $FC40")
     require(define_int(hdr, "REUCB_RUNTIME_SIZE") == 0x0080,
             "launcher UI resume state has a 128-byte envelope")
-    require(define_int(hdr, "REUCB_APP_REG_OFF") == 0xBC00, "64-app registry starts at $BC00")
+    require(define_int(hdr, "REUCB_APP_REG_OFF") == 0xBA00, "64-app registry starts at $BA00")
     require(define_int(hdr, "REUCB_APP_REG_SIZE") == 16, "app registry records are 16 bytes")
     require(define_int(hdr, "REUCB_APP_REG_COUNT") == 64, "app registry has 64 entries")
-    require(define_int(hdr, "REUCB_TOKEN_APP_OFF") == 0xC000,
-            "token-to-app index starts at $C000")
-    require(define_int(hdr, "REUCB_APP_META_OFF") == 0xC100, "app metadata starts at $C100")
+    require(define_int(hdr, "REUCB_TOKEN_APP_OFF") == 0xBE00,
+            "token-to-app index starts at $BE00")
+    require(define_int(hdr, "REUCB_APP_META_OFF") == 0xBF00, "app metadata starts at $BF00")
     require(define_int(hdr, "REUCB_APP_META_SIZE") == 13, "app filename records are 13 bytes")
-    require(define_int(hdr, "REUCB_RSRC_REC_OFF") == 0xC440, "rich resource records start at $C440")
+    require(define_int(hdr, "REUCB_RSRC_REC_OFF") == 0xC240, "rich resource records start at $C240")
     require(define_int(hdr, "REUCB_RSRC_REC_SIZE") == 16, "rich resource records are 16 bytes")
     require(define_int(hdr, "REUCB_RSRC_REC_COUNT") == 64, "rich resource record capacity is 64")
-    require(define_int(hdr, "REUCB_DEP_LINE_OFF") == 0xC840, "dependency lines start at $C840")
+    require(define_int(hdr, "REUCB_DEP_LINE_OFF") == 0xC640, "dependency lines start at $C640")
     require(define_int(hdr, "REUCB_DEP_LINE_SIZE") == 128, "dependency line records are 128 bytes")
-    require(define_int(hdr, "REUCB_CATALOG_NAME_OFF") == 0xE840, "catalog names start at $E840")
+    require(define_int(hdr, "REUCB_CATALOG_NAME_OFF") == 0xE640, "catalog names start at $E640")
     require(define_int(hdr, "REUCB_CATALOG_NAME_SIZE") == 32, "catalog name records are 32 bytes")
-    require(define_int(hdr, "REUCB_CATALOG_DESC_OFF") == 0xF040, "catalog descriptions start at $F040")
+    require(define_int(hdr, "REUCB_CATALOG_DESC_OFF") == 0xEE40, "catalog descriptions start at $EE40")
     require(define_int(hdr, "REUCB_CATALOG_DESC_SIZE") == 39, "catalog description records are 39 bytes")
-    require(define_int(hdr, "REUCB_CATALOG_FILE_OFF") == 0xFA00, "catalog file tokens start at $FA00")
+    require(define_int(hdr, "REUCB_CATALOG_FILE_OFF") == 0xF800, "catalog file tokens start at $F800")
     require(define_int(hdr, "REUCB_CATALOG_FILE_SIZE") == 13, "catalog file token records are 13 bytes")
     require(define_int(hdr, "REUCB_HEADER_PHYS_BANKS") == 44, "header records physical bank count")
     require(define_int(hdr, "REUCB_HEADER_FIRST_UNAVAIL") == 45, "header records first unavailable bank")

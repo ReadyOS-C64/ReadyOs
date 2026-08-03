@@ -1,7 +1,7 @@
 {
   "ram_windows": {
-    "app_runtime": { "start": "0x1000", "end": "0xC7FF" },
-    "shim": { "start": "0xC800", "end": "0xC9FF" },
+    "app_runtime": { "start": "0x1000", "end": "0xC5FF" },
+    "shim": { "start": "0xC600", "end": "0xC9FF" },
     "io": { "start": "0xD000", "end": "0xDFFF" }
   },
   "readyshell_overlay": {
@@ -24,18 +24,18 @@
     }
   },
   "resume_contract": {
-    "snapshot_size": "0xB800",
-    "resume_offset": "0xB800",
-    "resume_tail": "0x4800"
+    "snapshot_size": "0xB600",
+    "resume_offset": "0xB600",
+    "resume_tail": "0x4A00"
   },
   "reu_contract": {
     "total_banks": 256,
     "first_dynamic": 1,
     "first_dynamic_logical": 1,
-    "first_dynamic_physical_offset": 0,
+    "first_dynamic_physical_offset": 1,
     "bank_skip_max": 39,
     "shim_readyos_bank_addr": "0xC83B",
-    "readyos_physical_offset": 1,
+    "readyos_physical_offset": 0,
     "launcher_token": 0,
     "bank_app_base": 1,
     "bank_app_count": 0
@@ -92,6 +92,7 @@
     "0xC5A5",
     "0xC5AA",
     "0xC5AF",
+    "0xC600",
     "0xC800",
     "0xC803",
     "0xC806",

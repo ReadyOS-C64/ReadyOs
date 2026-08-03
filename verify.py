@@ -6,9 +6,9 @@ Performs structural shim checks plus deep binary/layout checks:
 - boot.prg structure and shim byte layout
 - shim jump table / routine alignment / critical REU instruction sequences
 - app PRG load addresses and binary extents
-- app linker map segment bounds against the `$1000-$C7FF` snapshot window
+- app linker map segment bounds against the `$1000-$C5FF` snapshot window
 - region conflict checks across app/shim/I/O boundaries
-- app headroom warnings near the `$C7FF` snapshot ceiling
+- app headroom warnings near the `$C5FF` snapshot ceiling
 """
 
 import argparse
@@ -61,10 +61,11 @@ READYSHELL_OVERLAY_PRGS = [
 ]
 
 APP_LOAD_START = 0x1000
-APP_SNAPSHOT_END = 0xC7FF      # Shim stashes/fetches exactly $1000-$C7FF ($B800 bytes)
+APP_SNAPSHOT_END = 0xC5FF      # Shim stashes/fetches exactly $1000-$C5FF ($B600 bytes)
 APP_SNAPSHOT_SIZE = APP_SNAPSHOT_END - APP_LOAD_START + 1
-APP_LINKER_END = 0xC7FF        # cfg/ready_app.cfg MAIN range upper bound
-SHIM_START = 0xC800
+APP_LINKER_END = 0xC5FF        # cfg/ready_app.cfg MAIN range upper bound
+SHIM_START = 0xC600
+SHIM_ABI_START = 0xC800
 SHIM_END = 0xC9FF
 IO_START = 0xD000
 APP_HEADROOM_WARN = 1024
@@ -553,9 +554,9 @@ def main():
         return 1
 
     shim = boot[offset:]
-    all_ok &= check("Shim size", len(shim) == 512, f"{len(shim)} bytes (expect 512)")
-    all_ok &= check("Shim is last payload block", offset + 512 == len(boot),
-                    f"shim_end=0x{offset + 512:04X}, file_len=0x{len(boot):04X}")
+    all_ok &= check("Shim ABI size", len(shim) == 512, f"{len(shim)} bytes (expect 512)")
+    all_ok &= check("Shim ABI is last payload block", offset + 512 == len(boot),
+                    f"shim_abi_start=0x{offset:04X}, shim_end=0x{offset + 512:04X}, file_len=0x{len(boot):04X}")
 
     boot_payload = len(boot) - 2
     boot_end = boot_load_addr + boot_payload - 1
@@ -602,7 +603,7 @@ def main():
         (0x09, [0x4C, 0x80, 0xC8], "JMP $C880 (preload)"),
         (0x0C, [0x4C, 0x00, 0xC9], "JMP $C900 (return_to_launcher)"),
         (0x0F, [0x4C, 0x40, 0xC9], "JMP $C940 (switch_app)"),
-        (0x12, [0x4C, 0xC0, 0xC8], "JMP $C8C0 (stash_current)"),
+        (0x12, [0x4C, 0xFF, 0xC9], "JMP $C9FF (reserved no-op)"),
         (0x15, [0x4C, 0xF0, 0xC8], "JMP $C8F0 (fetch_bank)"),
     ]
     for off, expected, desc in jt_checks:
@@ -618,8 +619,8 @@ def main():
     all_ok &= check("retired bitmap bytes reserved", shim[0x36:0x39] == bytes(3),
                     shim[0x36:0x39].hex(" "))
     all_ok &= check("storage_drive", shim[0x39] == 0x08, f"${shim[0x39]:02X} (expect $08)")
-    all_ok &= check("ReadyOS physical bank", shim[0x3B] <= 40,
-                    f"{shim[0x3B]} (compiled Skip+1)")
+    all_ok &= check("ReadyOS physical bank", shim[0x3B] <= 39,
+                    f"{shim[0x3B]} (compiled Skip)")
 
     # --- Routine Alignment ---
     print("\n=== Routine Alignment ===")
@@ -638,7 +639,7 @@ def main():
     ]
     for off, expected, name, desc in routines:
         actual = shim[off]
-        addr = SHIM_START + off
+        addr = SHIM_ABI_START + off
         all_ok &= check(f"${addr:04X} {name}", actual == expected,
                         f"0x{actual:02X} (expect 0x{expected:02X} = {desc})")
 
@@ -657,15 +658,15 @@ def main():
     reu_logical = shim[0x160:0x1A0]
     token0_direct = bytes([0xC9, 0x00, 0xD0, 0x06, 0xAD, 0x3B, 0xC8,
                            0x4C, 0xA0, 0xC9])
-    lookup_b940 = bytes([0x8A, 0x18, 0x69, 0x40, 0x8D, 0x04, 0xDF,
-                         0xA9, 0xB9, 0x69, 0x00, 0x8D, 0x05, 0xDF])
+    lookup_b740 = bytes([0x8A, 0x18, 0x69, 0x40, 0x8D, 0x04, 0xDF,
+                         0xA9, 0xB7, 0x69, 0x00, 0x8D, 0x05, 0xDF])
     all_ok &= check("$C960 token 0 resolves directly to ReadyOS bank",
                     reu_logical.startswith(token0_direct))
-    all_ok &= check("$C960 nonzero tokens resolve through ReadyOS $B940",
-                    lookup_b940 in reu_logical)
-    reu_len = bytes([0xA9, 0xB8, 0x8D, 0x08, 0xDF])
-    all_ok &= check("$C9A0 transfer length is $B800", reu_len in shim[0x1A0:0x1C0],
-                    "LDA #$B8; STA $DF08")
+    all_ok &= check("$C960 nonzero tokens resolve through ReadyOS $B740",
+                    lookup_b740 in reu_logical)
+    reu_len = bytes([0xA9, 0xB6, 0x8D, 0x08, 0xDF])
+    all_ok &= check("$C9A0 transfer length is $B600", reu_len in shim[0x1A0:0x1C0],
+                    "LDA #$B6; STA $DF08")
 
     stash = list(shim[0xE0:0xE0 + 3])
     all_ok &= check("$C8E0 stash→reu_setup_logical", stash == [0x20, 0x60, 0xC9],
@@ -684,12 +685,12 @@ def main():
                     "LDA #$91; STA $DF01")
 
     mark_loaded = shim[0x1C0:0x1FF]
-    status_ba40 = bytes([0x18, 0x69, 0x40, 0x8D, 0x04, 0xDF,
-                         0xA9, 0xBA, 0x69, 0x00, 0x8D, 0x05, 0xDF])
+    status_b840 = bytes([0x18, 0x69, 0x40, 0x8D, 0x04, 0xDF,
+                         0xA9, 0xB8, 0x69, 0x00, 0x8D, 0x05, 0xDF])
     all_ok &= check("$C9C0 commits valid/loaded/resumable status $07",
                     bytes([0xA9, 0x07, 0x8D, 0x3D, 0xC8]) in mark_loaded)
-    all_ok &= check("$C9C0 writes ReadyOS $BA40 + token",
-                    status_ba40 in mark_loaded)
+    all_ok &= check("$C9C0 writes ReadyOS $B840 + token",
+                    status_b840 in mark_loaded)
 
     # --- Region Boundary Invariants ---
     print("\n=== Region Boundary Invariants ===")
@@ -1002,8 +1003,8 @@ def main():
         all_ok &= check("resume offset equals snapshot size",
                         resume_contract["resume_off"] == resume_contract["snapshot_size"],
                         f'0x{resume_contract["resume_off"]:04X}')
-        all_ok &= check("resume tail size", resume_contract["resume_tail_size"] == 0x4800,
-                        f'0x{resume_contract["resume_tail_size"]:04X} (expect 0x4800)')
+        all_ok &= check("resume tail size", resume_contract["resume_tail_size"] == 0x4A00,
+                        f'0x{resume_contract["resume_tail_size"]:04X} (expect 0x4A00)')
         all_ok &= check("resume region ends at bank boundary", resume_end == 0x10000,
                         f'0x{resume_end:05X} (expect 0x10000)')
 

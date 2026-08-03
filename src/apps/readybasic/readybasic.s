@@ -9,7 +9,7 @@
 ; Runtime zero page/stack snapshot: loader-assigned core bank, $0A00/$0B00
 ; Hidden helper shadow: ReadyBASIC core REU bank offset $3000
 ; Bridge state/trampolines: $C000-$C1FF
-; $C600-$C7FF: deliberately unused app-private snapshot room
+; $C600-$C9FF: resident ReadyOS shim area; public ABI remains at $C800
 ;
 ; BUILD CONTRACT: this source depends on ca65 plus the custom
 ; cfg/ready_app_readybasic.cfg load/run layout.  Its cold-load seed is a compact
@@ -287,10 +287,10 @@ RB_SLOT_INVALID = $FF
 RB_REU_TYPE_CORE= 14
 RB_REU_TYPE_CODE= 15
 RB_REU_HEADER_OFF  = $0000
-RB_REUCB_BANK_TYPE_OFF = $B840
-RB_REUCB_TOKEN_STATUS_OFF = $BA40
-RB_REUCB_TOKEN_APP_OFF = $C000
-RB_REUCB_APP_REG_OFF = $BC00
+RB_REUCB_BANK_TYPE_OFF = $B640
+RB_REUCB_TOKEN_STATUS_OFF = $B840
+RB_REUCB_TOKEN_APP_OFF = $BE00
+RB_REUCB_APP_REG_OFF = $BA00
 RB_REUCB_APP_REG_COUNT = 64
 RB_REU_DESC_OFF    = $1000
 RB_REU_SLOT_STATE_OFF = $2000

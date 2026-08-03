@@ -436,8 +436,8 @@ def main():
         ok &= check("REU total banks", reu_total == int(spec["reu_contract"]["total_banks"]), str(reu_total))
         ok &= check("REU first dynamic logical", reu_first == int(spec["reu_contract"]["first_dynamic_logical"]), str(reu_first))
         ok &= check("REU physical dynamic offset macro",
-                    "*SHIM_READYOS_BANK - 1u" in reu_mgr_h,
-                    "physical Skip is the first dynamic bank")
+                    "*SHIM_READYOS_BANK + 1u" in reu_mgr_h,
+                    "physical Skip+1 is the first dynamic bank")
         ok &= check("arithmetic token mapping removed",
                     "REU_LOGICAL_TO_PHYSICAL" not in reu_mgr_h,
                     "tokens resolve through schema-v5 lookup")
@@ -464,8 +464,8 @@ def main():
         status = parse_define(ROOT / "src" / "lib" / "reu_control_bank.h",
                               "REUCB_TOKEN_STATUS_OFF")
         ok &= check("ReadyOS-bank schema version", schema == 5, str(schema))
-        ok &= check("token mapping offset", lookup == 0xB940, hex(lookup))
-        ok &= check("token status offset", status == 0xBA40, hex(status))
+        ok &= check("token mapping offset", lookup == 0xB740, hex(lookup))
+        ok &= check("token status offset", status == 0xB840, hex(status))
     except ValueError as ex:
         ok &= check("ReadyOS-bank schema constants", False, str(ex))
 

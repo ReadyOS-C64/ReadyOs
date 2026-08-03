@@ -9,6 +9,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from update_documentation_html_status import CURRENT, banner
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -306,7 +308,7 @@ def render(ctx: dict[str, object]) -> str:
     basic_start = const["BASIC_START"]
     basic_limit = const["BASIC_LIMIT"]
     basic_free = basic_limit - (basic_start + 2)
-    app_window = 0xB800
+    app_window = 0xB600
     slot_size = 0x0800
     cmdpack_start, cmdpack_size = cfg["CMDPACK"]
     cmdpack2_start, cmdpack2_size = cfg["CMDPACK2"]
@@ -346,8 +348,8 @@ def render(ctx: dict[str, object]) -> str:
             "bridge",
             f"Bridge through ${seg['BRIDGE'].end:04X}, shared frames and buffers through $C5FF.",
         ),
-        Block("ReadyBASIC snapshot-private headroom", 0xC600, 0x0200, "free", "Part of the ReadyOS app snapshot; currently left unused to preserve the custom ReadyBASIC bridge/assembler shape."),
-        Block("ReadyOS shim ABI", 0xC800, 0x0200, "shim", "Resident jump table/data."),
+        Block("ReadyOS shim expansion reserve", 0xC600, 0x0200, "shim", "Resident capacity reserved for future shim functionality; not app RAM."),
+        Block("ReadyOS shim ABI", 0xC800, 0x0200, "shim", "Resident jump table/data; public addresses remain stable."),
         Block("High RAM gap", 0xCA00, 0x0600, "reserved", "Outside app snapshot and below I/O."),
         Block("I/O / color", 0xD000, 0x1000, "io", "REU registers at $DF00-$DF0A when I/O visible."),
         Block("KERNAL ROM", 0xE000, 0x2000, "rom", "Normally visible after banking is restored."),
@@ -451,9 +453,8 @@ def render(ctx: dict[str, object]) -> str:
     ]
 
     reu_overview_blocks = [
-        Block("First dynamic bank", 0x000000, 0x010000, "free", "Physical Skip: the first allocatable bank; logical tokens never imply this physical address."),
-        Block("ReadyOS bank", 0x010000, 0x010000, "readyos", "Physical Skip+1: launcher snapshot at $0000-$B7FF plus schema-v5 mappings, status, clipboard, hotkeys, app/resource registry, catalog, audit, and runtime records at $B800-$FFFF."),
-        Block("Remaining dynamic pool", 0x020000, (reu["REU_TOTAL_BANKS"] - 2) * 0x10000, "free", "Physical Skip+2 through the detected end, shared by mapped app snapshots, ReadyBASIC/ReadyShell resources, clipboard payloads, and app-owned allocations. The ReadyOS bank is always skipped."),
+        Block("ReadyOS bank", 0x000000, 0x010000, "readyos", "Physical Skip: launcher snapshot at $0000-$B5FF plus schema-v5 mappings, status, clipboard, hotkeys, app/resource registry, catalog, audit, and runtime records at $B600-$FFFF."),
+        Block("Dynamic pool", 0x010000, (reu["REU_TOTAL_BANKS"] - 1) * 0x10000, "free", "Physical Skip+1 through the detected end, shared by mapped app snapshots, ReadyBASIC/ReadyShell resources, clipboard payloads, and app-owned allocations. Physical Skip is reserved for ReadyOS."),
     ]
 
     example_blocks = [
@@ -584,6 +585,7 @@ def render(ctx: dict[str, object]) -> str:
   </style>
 </head>
 <body>
+{banner("current", CURRENT["docs/readybasic_memory_diagrams.html"])}
 <header>
   <div class="page">
     <h1>ReadyBASIC Memory Diagrams</h1>
@@ -607,7 +609,7 @@ def render(ctx: dict[str, object]) -> str:
 <main class="page">
   <section id="whole">
     <h2>Whole C64 RAM: ReadyOS Contract And ReadyBASIC Runtime</h2>
-    <p>ReadyOS snapshots app RAM from <code>$1000-$C7FF</code>. ReadyBASIC deliberately keeps its custom compact image and bridge shape through <code>$C5FF</code>, leaving <code>$C600-$C7FF</code> unused today; its assembler/linker contract must remain compatible with this exact shape. Loader-assigned REU resource banks hold durable module state.</p>
+    <p>ReadyOS snapshots app RAM from <code>$1000-$C5FF</code>. The resident 1 KB shim owns <code>$C600-$C9FF</code>, while ReadyBASIC deliberately keeps its custom compact image and bridge shape through <code>$C5FF</code>; its custom assembler/linker contract must remain compatible with this exact shape. Loader-assigned REU resource banks hold durable module state.</p>
     {stacked_map(ram_blocks, 0x10000)}
   </section>
 

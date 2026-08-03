@@ -25,8 +25,8 @@ DEFAULT_APPS = [
     "simplefiles",
     "readyshell",
 ]
-APP_SNAPSHOT_END = 0xC7FF
-APP_HIMEM = 0xC800
+APP_SNAPSHOT_END = 0xC5FF
+APP_HIMEM = 0xC600
 MAIN_SEGMENTS = ("STARTUP", "LOWCODE", "CODE", "RODATA", "DATA", "INIT", "ONCE", "BSS")
 SEGMENT_RE = re.compile(
     r"^\s*([A-Z0-9_]+)\s+([0-9A-F]{6})\s+([0-9A-F]{6})\s+([0-9A-F]{6})\s+[0-9A-F]{5}\s*$",

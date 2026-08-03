@@ -354,8 +354,8 @@ def main() -> None:
             "VOICE must use the existing five-number signature to avoid resident parser growth")
     require(r"CMD_SIDCORE\s+CMD_SOUND,\s+SIG_SPRSET,\s+cmd_sound,\s+\"SOUND\"", asm,
             "SOUND must be a built-in SIDCORE overlay command")
-    if re.search(r"^\s*RB_GFX_[A-Za-z0-9_]+\s*=\s*\$C[89][0-9A-Fa-f]{2}\b", asm, re.MULTILINE):
-        fail("graphics-owned Bank D state must not live in the resident $C800-$C9FF shim range")
+    if re.search(r"^\s*RB_GFX_[A-Za-z0-9_]+\s*=\s*\$C[6789][0-9A-Fa-f]{2}\b", asm, re.MULTILINE):
+        fail("graphics-owned Bank D state must not live in the resident $C600-$C9FF shim range")
     command_names = parse_command_names(asm)
     removed_present = sorted(set(command_names) & REMOVED_COMMAND_NAMES)
     if removed_present:

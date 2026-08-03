@@ -27,7 +27,7 @@ SCREEN_SIZE  = 1000
 COLOR_START  = $D800
 COLOR_SIZE   = 1000
 APP_START    = $1000
-APP_SIZE     = $B800   ; $1000-$C7FF = 47,104 bytes
+APP_SIZE     = $B600   ; $1000-$C5FF = 46,592 bytes
 
 ; REU bank layout for app state (per bank = 64KB)
 REU_OFF_HEADER    = $0000  ; 32 bytes - app header + CPU state

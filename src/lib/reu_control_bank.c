@@ -37,7 +37,7 @@ static void reucb_write_header(unsigned char writer_id,
     reucb_header[5] = REUCB_HEADER_SIZE;
     reucb_header[6] = ++reucb_generation;
     reucb_header[7] = writer_id;
-    reucb_header[REUCB_HEADER_REU_SKIP] = REU_FIRST_DYNAMIC_PHYSICAL();
+    reucb_header[REUCB_HEADER_REU_SKIP] = readyos_bank;
     reucb_header[REUCB_HEADER_CONTROL_BANK] = readyos_bank;
     reucb_header[REUCB_HEADER_LAUNCHER_BANK] = readyos_bank;
     reucb_header[REUCB_HEADER_LAUNCHER_OVL] = 0u;
@@ -97,10 +97,10 @@ void reu_control_bank_prepare(unsigned char physical_banks) {
 
     bank = 0u;
     do {
-        if (bank < REU_FIRST_DYNAMIC_PHYSICAL()) {
-            type = REU_SKIPPED;
-        } else if (bank == REU_READYOS_GLOBAL_PHYSICAL()) {
+        if (bank == REU_READYOS_GLOBAL_PHYSICAL()) {
             type = REU_GLOBAL;
+        } else if (bank < REU_FIRST_DYNAMIC_PHYSICAL()) {
+            type = REU_SKIPPED;
         } else if (reu_phys_is_unavailable(physical_banks, bank)) {
             type = REU_UNAVAIL;
         } else if (!valid) {

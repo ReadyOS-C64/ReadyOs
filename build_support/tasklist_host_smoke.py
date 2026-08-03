@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TASKLIST_SRC = ROOT / "src" / "apps" / "tasklist" / "tasklist.c"
 TASKLIST_MAP = ROOT / "obj" / "tasklist.map"
-APP_SNAPSHOT_END = 0xC7FF
+APP_SNAPSHOT_END = 0xC5FF
 MIN_HEADROOM = 1024
 
 

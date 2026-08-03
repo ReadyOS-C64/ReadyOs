@@ -676,7 +676,14 @@ if wait_for_screen "launcher_wait" "READY OS" 180; then
 
   if [[ "${READYOS_BOOT_ACTION:-}" == "manifest-sidetris" ]]; then
     type_key 135
-    if ! wait_for_screen "manifest_dialog_wait" "BROWSE APP MANIFEST" 120; then
+    # Repeated REST screen reads can stall active KERNAL directory I/O on the
+    # Ultimate.  Allow hardware acceptance callers to give the drive an
+    # entirely quiet interval before polling the completed dialog.
+    if [[ -n "${READYOS_QUIET_AFTER_MANIFEST_OPEN_S:-}" ]]; then
+      sleep "${READYOS_QUIET_AFTER_MANIFEST_OPEN_S}"
+    fi
+    if ! wait_for_screen "manifest_dialog_wait" "BROWSE APP MANIFEST" \
+      "${READYOS_MANIFEST_DIALOG_WAIT_S:-120}"; then
       capture_screen "manifest_dialog_failure"
       echo "READYOS_MANIFEST_DIALOG_FAIL" | tee "${out_dir}/status"
       exit 1

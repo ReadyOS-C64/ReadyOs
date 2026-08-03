@@ -30,7 +30,7 @@ EASYFLASH_PAYLOAD_SLOT_BYTES = 0x4000
 EASYFLASH_TOTAL_BANKS = 64
 EASYFLASH_TOTAL_BYTES = EASYFLASH_TOTAL_BANKS * EASYFLASH_BANK_BYTES
 APP_LOAD_START = 0x1000
-APP_SNAPSHOT_SIZE = 0xB800
+APP_SNAPSHOT_SIZE = 0xB600
 READYSHELL_OVL_LOAD = 0x8E00
 READYSHELL_OVL_SLOT_LEN = 0x3800
 READYSHELL_OVL_META_OFF = 0x80F0
@@ -269,16 +269,16 @@ def allocate_reu_bank(used: set[int], first: int) -> int:
 
 
 def catalog_app_physical_banks(catalog: Dict[str, object]) -> List[int]:
-    """Assign explicit app snapshot banks, using physical Skip first.
+    """Assign explicit app snapshot banks beginning at physical Skip+1.
 
-    Skip+1 is the ReadyOS bank.  No token arithmetic is part of the runtime
+    Skip is the ReadyOS bank.  No token arithmetic is part of the runtime
     contract, so the generated cartridge catalog carries this mapping.
     """
     skip = reu_bank_skip_from_system(catalog["system"])
-    used = {skip + 1}
+    used = {skip}
     result: List[int] = []
     for _entry in list(catalog["apps"]):
-        result.append(allocate_reu_bank(used, skip))
+        result.append(allocate_reu_bank(used, skip + 1))
     return result
 
 
@@ -298,9 +298,9 @@ def catalog_needs_readybasic_resources(catalog: Dict[str, object]) -> bool:
 
 def catalog_resource_banks(catalog: Dict[str, object]) -> Dict[str, List[int]]:
     reu_bank_skip = reu_bank_skip_from_system(catalog["system"])
-    used = {reu_bank_skip + 1}
+    used = {reu_bank_skip}
     used.update(catalog_app_physical_banks(catalog))
-    first_resource_bank = reu_bank_skip
+    first_resource_bank = reu_bank_skip + 1
     rs_banks = [0, 0, 0, 0]
     rb_banks = [0, 0]
     if catalog_needs_readyshell_resources(catalog):
@@ -332,7 +332,7 @@ def catalog_readybasic_banks(catalog: Dict[str, object]) -> List[int]:
 def build_layout(catalog: Dict[str, object]) -> Dict[str, object]:
     next_bank = 1
     reu_bank_skip = reu_bank_skip_from_system(catalog["system"])
-    used_reu_banks = {reu_bank_skip + 1}
+    used_reu_banks = {reu_bank_skip}
     app_physical_banks = catalog_app_physical_banks(catalog)
     needs_readyshell_resources = catalog_needs_readyshell_resources(catalog)
     resource_banks = catalog_resource_banks(catalog)

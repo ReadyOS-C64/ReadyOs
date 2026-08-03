@@ -24,16 +24,17 @@
 
 #define REU_TOTAL_BANKS  256
 
-/* Logical app snapshot tokens start at 1. Physical dynamic allocation starts
- * immediately after the ReadyOS global/control bank and launcher snapshot. */
+/* Logical app snapshot tokens start at 1. Physical Skip is the combined
+ * ReadyOS global/control bank and launcher snapshot; dynamic allocation starts
+ * at the immediately following physical bank. */
 #define REU_FIRST_DYNAMIC 1
 
-/* $C83B contains the direct physical ReadyOS-bank number (Skip+1). */
+/* $C83B contains the direct physical ReadyOS-bank number (Skip). */
 #define SHIM_READYOS_BANK ((unsigned char*)0xC83B)
 #define SHIM_REU_BANK_SKIP SHIM_READYOS_BANK /* deprecated source alias */
 #define REU_READYOS_GLOBAL_PHYSICAL() ((unsigned char)(*SHIM_READYOS_BANK))
 #define REU_LAUNCHER_PHYSICAL()       REU_READYOS_GLOBAL_PHYSICAL()
-#define REU_FIRST_DYNAMIC_PHYSICAL()  ((unsigned char)(*SHIM_READYOS_BANK - 1u))
+#define REU_FIRST_DYNAMIC_PHYSICAL()  ((unsigned char)(*SHIM_READYOS_BANK + 1u))
 
 /* Initialize REU manager (safe to call multiple times) */
 void reu_mgr_init(void);

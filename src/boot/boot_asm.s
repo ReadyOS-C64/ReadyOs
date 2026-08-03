@@ -3,13 +3,13 @@
 ;
 ; Memory Map:
 ;   $0801-$08FF: Boot loader (this code, freed after boot)
-;   $C800-$C9FF: Shim (512 bytes) - copied here, stays resident
-;                (Using $C800 to avoid cc65 runtime overwriting $0800)
-;   $1000-$C7FF: App snapshot window ($B800 / 47104 bytes)
+;   $C600-$C9FF: Shim area (1024 bytes) - copied here, stays resident
+;                (public jump table/data ABI remains at $C800-$C9FF)
+;   $1000-$C5FF: App snapshot window ($B600 / 46592 bytes)
 ;
-; READYOS_REU_BANK_SKIP names the first dynamic physical bank.
-;   Skip:   first dynamic app/resource bank
-;   Skip+1: ReadyOS bank (launcher snapshot + schema-v5 state)
+; READYOS_REU_BANK_SKIP names the ReadyOS physical bank.
+;   Skip:   ReadyOS bank (launcher snapshot + schema-v5 state)
+;   Skip+1: first dynamic app/resource bank
 ;   Other dynamic banks are assigned through the schema token map; token 1 is
 ;   not an arithmetic alias for Skip+2.
 ;-----------------------------------------------------------------------------
@@ -365,14 +365,20 @@ start:
     lda #(msg_kernel_end - msg_kernel)
     jsr print_progress      ; prints at row 19, col 4
 
-    ; Copy shim to $C800 (512 bytes in two chunks)
+    ; Install the complete 1KB resident shim area at $C600-$C9FF.  Clear the
+    ; reserved lower half in place, then copy the embedded 512-byte ABI half.
+    ; Avoiding 512 literal zero bytes keeps the bootstrap below app RAM.
     ldx #$00
+    lda #$00
 copy_shim:
     dex
+    sta $C600,x
+    sta $C700,x
     lda shim_data,x
     sta $C800,x
     lda shim_data+256,x
     sta $C900,x
+    lda #$00
     cpx #$00
     bne copy_shim
 
@@ -396,7 +402,7 @@ copy_shim:
     lda #(msg_memory_end - msg_memory)
     jsr print_progress
 
-    ; $C600-$C7FF is now part of the app snapshot window.  The launcher
+    ; $C600-$C7FF remains resident shim expansion space.  The launcher
     ; initializes authoritative allocation/mapping state in the ReadyOS bank.
 
     ;--- Phase 3: "LOADING LAUNCHER..." ---
@@ -964,31 +970,18 @@ anim_shadow_phase:
 .segment "RODATA"
 
 ;=============================================================================
-; SHIM - 512 bytes at $C800-$C9FF (moved from $0800 to avoid cc65 conflict)
+; SHIM - 1024 bytes at $C600-$C9FF; public ABI remains at $C800-$C9FF
 ;=============================================================================
 ;
-; BYTE ALIGNMENT VERIFICATION (all offsets from shim_data start):
+; Runtime layout:
 ;
-; Page 1 ($C800-$C8FF):
-;   $C800 (offset $00): Jump table (24 bytes) + log JMP + padding = 32 bytes
-;   $C820 (offset $20): Data area = 32 bytes
-;   $C840 (offset $40): load_disk = 32 bytes
-;   $C860 (offset $60): load_reu = 32 bytes
-;   $C880 (offset $80): preload = 78 bytes + padding
-;   $C8E0 (offset $E0): stash_to_bank = 16 bytes
-;   $C8F0 (offset $F0): fetch_bank = 16 bytes
-;   Page 1 total: 256 bytes
+; Pages 1-2 ($C600-$C7FF): cleared resident expansion reserve
+; Page 3 ($C800-$C8FF): embedded jump/data/helper ABI (shim_data offset $000)
 ;
-; Page 2 ($C900-$C9FF):
-;   $C900 (offset $100): return_to_launcher = 64 bytes
-;   $C940 (offset $140): switch_app = 32 bytes
-;   $C960 (offset $160): debug_log_step = 64 bytes
-;   $C9A0 (offset $1A0): reu_setup = 32 bytes
-;   $C9C0 (offset $1C0): set_bitmap = 32 bytes
-;   $C9E0 (offset $1E0): log_byte = 32 bytes
-;   Page 2 total: 256 bytes
+; Page 4 ($C900-$C9FF): embedded return/switch/REU helpers (offset $100)
 ;
-; TOTAL: 512 bytes
+; Runtime total: 1024 bytes; embedded payload: 512 bytes.
 ;=============================================================================
 shim_data:
+READYOS_SHIM_ABI_ONLY = 1
 .include "readyos_shim.inc"

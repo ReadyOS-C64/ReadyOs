@@ -14,14 +14,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/boot/readyos_shim.inc"
-MARKER = "Shared ReadyOS shim image ($C800-$C9FF, 512 bytes)"
+MARKERS = (
+    "Shared ReadyOS shim image ($C600-$C9FF, 1024 bytes)",
+    "Shared ReadyOS shim image ($C800-$C9FF, 512 bytes)",
+)
+
+
+def marker_offset(text: str) -> int:
+    offsets = [text.index(marker) for marker in MARKERS if marker in text]
+    return min(offsets) if offsets else -1
 
 
 def sync_markdown(path: Path, source: str) -> bool:
     text = path.read_text(encoding="utf-8")
-    if MARKER not in text:
+    marker = marker_offset(text)
+    if marker < 0:
         return False
-    marker = text.index(MARKER)
     opening = text.rfind("```", 0, marker)
     closing = text.find("```", marker)
     if opening < 0 or closing < 0:
@@ -34,9 +42,9 @@ def sync_markdown(path: Path, source: str) -> bool:
 
 def sync_html(path: Path, source: str) -> bool:
     text = path.read_text(encoding="utf-8")
-    if MARKER not in text:
+    marker = marker_offset(text)
+    if marker < 0:
         return False
-    marker = text.index(MARKER)
     opening = text.rfind("<pre", 0, marker)
     opening_end = text.find(">", opening)
     closing = text.find("</pre>", marker)

@@ -76,8 +76,8 @@ def parse_boot_snapshot_contract():
 
     includes_shared_shim = '.include "readyos_shim.inc"' in boot_src
     has_len_lo = "STA $DF07" in shim_src
-    has_len_hi_b8 = "LDA #$B8" in shim_src and "STA $DF08" in shim_src
-    return boot_path, shim_path, includes_shared_shim, has_len_lo, has_len_hi_b8
+    has_len_hi_b6 = "LDA #$B6" in shim_src and "STA $DF08" in shim_src
+    return boot_path, shim_path, includes_shared_shim, has_len_lo, has_len_hi_b6
 
 
 def main():
@@ -91,9 +91,9 @@ def main():
         all_ok &= check("resume_state.h parse", False, str(ex))
     else:
         resume_end = hdr["offset"] + hdr["tail"]
-        all_ok &= check("snapshot size is $B800", hdr["snapshot"] == 0xB800, hex(hdr["snapshot"]))
+        all_ok &= check("snapshot size is $B600", hdr["snapshot"] == 0xB600, hex(hdr["snapshot"]))
         all_ok &= check("offset equals snapshot", hdr["offset"] == hdr["snapshot"], hex(hdr["offset"]))
-        all_ok &= check("tail size is $4800", hdr["tail"] == 0x4800, hex(hdr["tail"]))
+        all_ok &= check("tail size is $4A00", hdr["tail"] == 0x4A00, hex(hdr["tail"]))
         all_ok &= check("tail reaches 64KB boundary", resume_end == 0x10000, hex(resume_end))
 
     print("\n=== App Hooks ===")
@@ -120,13 +120,13 @@ def main():
 
     print("\n=== Shim Snapshot Contract ===")
     try:
-        boot_path, shim_path, includes_shared_shim, has_len_lo, has_len_hi_b8 = parse_boot_snapshot_contract()
+        boot_path, shim_path, includes_shared_shim, has_len_lo, has_len_hi_b6 = parse_boot_snapshot_contract()
     except FileNotFoundError as ex:
         all_ok &= check("shared shim sources exist", False, str(ex))
     else:
         all_ok &= check("boot_asm includes shared shim", includes_shared_shim, boot_path)
         all_ok &= check("shared shim sets REU length low", has_len_lo, shim_path)
-        all_ok &= check("shared shim sets REU length high to $B8", has_len_hi_b8, shim_path)
+        all_ok &= check("shared shim sets REU length high to $B6", has_len_hi_b6, shim_path)
 
     print("\n=== Launcher ReadyOS-bank Resume Contract ===")
     try:

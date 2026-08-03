@@ -93,6 +93,7 @@ CONFIG_OVERRIDE_RUN_FIRST=""
 RUN_VERSION_TEXT=""
 SKIP_BUILD=0
 BUILD_ALL=0
+BUILD_ONLY=0
 FOR_RELEASE=0
 MODE=""
 PARSE_TRACE_DEBUG=""
@@ -259,6 +260,7 @@ show_help() {
     echo "  --profile ID                Select release profile (default: $DEFAULT_PROFILE)"
     echo "  --list-profiles             List available profiles and exit"
     echo "  --build-all                 Build every release profile and exit"
+    echo "  --build-only                Build the selected profile and exit without launching VICE"
     echo "  --for-release              Build without the rolling A..Z suffix in versioned artifacts"
     echo "  --skipbuild                 Skip automatic build before run"
     echo "  --force-artifacts-from-d71 Promote latest built dual-D71 SEQ/REL support files"
@@ -327,6 +329,10 @@ while [ $# -gt 0 ]; do
             ;;
         --build-all)
             BUILD_ALL=1
+            shift
+            ;;
+        --build-only)
+            BUILD_ONLY=1
             shift
             ;;
         --for-release)
@@ -449,6 +455,16 @@ fi
 
 if [ "$BUILD_ALL" -eq 1 ] && [ "$SKIP_BUILD" -eq 1 ]; then
     echo "Error: --build-all cannot be combined with --skipbuild."
+    exit 1
+fi
+
+if [ "$BUILD_ONLY" -eq 1 ] && [ "$SKIP_BUILD" -eq 1 ]; then
+    echo "Error: --build-only cannot be combined with --skipbuild."
+    exit 1
+fi
+
+if [ "$BUILD_ALL" -eq 1 ] && [ "$BUILD_ONLY" -eq 1 ]; then
+    echo "Error: --build-all cannot be combined with --build-only."
     exit 1
 fi
 
@@ -738,6 +754,10 @@ case "${MODE:-}" in
         maybe_build
         ;;
 esac
+
+if [ "$BUILD_ONLY" -eq 1 ]; then
+    exit 0
+fi
 
 case "${MODE:-}" in
     help|-h|--help)

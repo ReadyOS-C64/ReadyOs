@@ -1,7 +1,7 @@
 /*
  * boot.c - Ready OS Boot Loader
  * NOTE: Legacy prototype path. Current builds use src/boot/boot_asm.s.
- * The production app snapshot window is $1000-$C7FF ($B800, 47,104 bytes).
+ * The production app snapshot window is $1000-$C5FF ($B600, 46,592 bytes).
  *
  * MEMORY MAP:
  *   $0801-$08FF: Boot loader code (254 bytes max)

@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5b-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5b-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5b-d81-preboot.prg"
+    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5m-d81.d81"
+    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5m-d81.d81"
+    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5m-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -48,7 +48,7 @@ steps:
         - { label: descriptors_1000, start: 0x1000, end: 0x11FF }
         - { label: resident_1200, start: 0x1200, end: 0x1BFF }
         - { label: command_overlay_a800, start: 0xA800, end: 0xAFFF }
-        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC6FF }
+        - { label: shim_resident_c600, start: 0xC600, end: 0xC9FF }
   - id: load_temp_program
     type: input.sequence
     params:

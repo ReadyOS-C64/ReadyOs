@@ -24,7 +24,15 @@ READYBASIC_BANK_RAW="${READYBASIC_CHAIN_READYBASIC_BANK:-1}"
 REUVIEWER_BANK_RAW="${READYBASIC_CHAIN_REUVIEWER_BANK:-2}"
 RESOURCE_BANKS_RAW="${READYBASIC_CHAIN_RESOURCE_BANKS:-}"
 CONSTRAIN_BITMAP="${READYBASIC_CHAIN_CONSTRAIN_BITMAP:-0}"
-READYOS_BANK_RAW="${READYBASIC_CHAIN_READYOS_BANK:-33}"
+READYOS_BANK_RAW="${READYBASIC_CHAIN_READYOS_BANK:-}"
+if [ -z "$READYOS_BANK_RAW" ]; then
+  READYOS_BANK_RAW="$(awk '$1 == "READYOS_REU_BANK_SKIP" && $2 == "=" { print $3; exit }' \
+    "$READYOS_ROOT/src/generated/readyos_reu_config.inc" 2>/dev/null || true)"
+fi
+if [ -z "$READYOS_BANK_RAW" ]; then
+  echo "cannot determine the physical ReadyOS bank; build a profile or set READYBASIC_CHAIN_READYOS_BANK" >&2
+  exit 1
+fi
 STABILITY_WAIT="${READYBASIC_CHAIN_STABILITY_WAIT:-2.5}"
 DUPLICATE_KEYLOG="${READYBASIC_HOTKEY_DUPLICATE_KEYLOG:-1}"
 VICE_HEADLESS="true"
@@ -123,6 +131,15 @@ for token in $(seq 0 23); do
   fi
 done
 READYOS_BANK_HEX="$(printf '%02X' "$((READYOS_BANK_RAW))")"
+TOKEN_STATUS_RAW="$(awk '$2 == "REUCB_TOKEN_STATUS_OFF" { print $3; exit }' \
+  "$READYOS_ROOT/src/lib/reu_control_bank.h" | sed 's/[uUlL]*$//')"
+if [ -z "$TOKEN_STATUS_RAW" ]; then
+  echo "cannot determine REUCB_TOKEN_STATUS_OFF from reu_control_bank.h" >&2
+  exit 1
+fi
+TOKEN_STATUS_OFF="$((TOKEN_STATUS_RAW))"
+TOKEN_STATUS_LO_HEX="$(printf '%02X' "$((TOKEN_STATUS_OFF & 255))")"
+TOKEN_STATUS_HI_HEX="$(printf '%02X' "$(((TOKEN_STATUS_OFF >> 8) & 255))")"
 
 emit_bitmap_control_steps() {
   if [ "$CONSTRAIN_BITMAP" = "1" ] || [ -n "$RESOURCE_BANKS_RAW" ]; then
@@ -136,7 +153,7 @@ emit_bitmap_control_steps() {
     type: memory.write
     params:
       start: 57090
-      bytes_hex: "3C 03 40 BA $READYOS_BANK_HEX 18 00"
+      bytes_hex: "3C 03 $TOKEN_STATUS_LO_HEX $TOKEN_STATUS_HI_HEX $READYOS_BANK_HEX 18 00"
   - id: commit_readyos_token_status_for_readybasic_reuviewer_chain
     type: memory.write
     params:

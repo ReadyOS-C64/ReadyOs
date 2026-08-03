@@ -222,9 +222,9 @@ def verify_readyos_schema(dumps: Dict[int, bytes], layout: Dict[str, object]) ->
     if len(schema) != 0x300:
         fail("missing ReadyOS-bank schema dump at $0800-$0AFF")
     check_prefix(schema, b"RCB5\x05", "ReadyOS-bank schema header")
-    readyos_bank = (int(layout["reu_bank_skip"]) + 1) & 0xFF
+    readyos_bank = int(layout["reu_bank_skip"]) & 0xFF
     if schema[9] != readyos_bank or schema[10] != readyos_bank:
-        fail("ReadyOS/launcher physical bank header fields do not name Skip+1")
+        fail("ReadyOS/launcher physical bank header fields do not name Skip")
     if schema[0x40 + readyos_bank] != 7:
         fail("ReadyOS physical bank is not marked REU_GLOBAL")
     for entry in layout["apps"]:
@@ -239,15 +239,15 @@ def verify_readyos_schema(dumps: Dict[int, bytes], layout: Dict[str, object]) ->
 def verify_readyos_schema_image(path: Path, layout: Dict[str, object]) -> None:
     if not path.exists():
         fail(f"missing VICE REU image: {path}")
-    readyos_bank = (int(layout["reu_bank_skip"]) + 1) & 0xFF
+    readyos_bank = int(layout["reu_bank_skip"]) & 0xFF
     raw = path.read_bytes()
-    start = readyos_bank * 0x10000 + 0xB800
+    start = readyos_bank * 0x10000 + 0xB600
     schema = raw[start:start + 0x300]
     if len(schema) != 0x300:
         fail("VICE REU image is too short for the ReadyOS-bank schema")
     check_prefix(schema, b"RCB5\x05", "ReadyOS-bank schema header")
     if schema[9] != readyos_bank or schema[10] != readyos_bank:
-        fail("ReadyOS/launcher physical bank header fields do not name Skip+1")
+        fail("ReadyOS/launcher physical bank header fields do not name Skip")
     if schema[0x40 + readyos_bank] != 7:
         fail("ReadyOS physical bank is not marked REU_GLOBAL")
     for entry in layout["apps"]:

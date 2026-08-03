@@ -123,8 +123,7 @@ steps:
     params:
       ranges: &launcher_reu_ranges
         - { label: shim_hot_state_c834, start: 0xC834, end: 0xC83F }
-        - { label: shim_resident_c800, start: 0xC800, end: 0xC9FF }
-        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC7FF }
+        - { label: shim_resident_c600, start: 0xC600, end: 0xC9FF }
   - id: dump_after_exit_reu
     type: dump.reu
     params:
@@ -232,8 +231,7 @@ steps:
     params:
       ranges:
         - { label: shim_hot_state_c834, start: 0xC834, end: 0xC83F }
-        - { label: shim_resident_c800, start: 0xC800, end: 0xC9FF }
-        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC7FF }
+        - { label: shim_resident_c600, start: 0xC600, end: 0xC9FF }
         - { label: readybasic_bridge_c000, start: 0xC000, end: 0xC5FF }
         - { label: readybasic_text_1200, start: 0x1200, end: 0x1400 }
   - id: dump_final_reu

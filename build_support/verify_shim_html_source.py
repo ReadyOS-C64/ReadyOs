@@ -13,16 +13,17 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/boot/readyos_shim.inc"
-MARKER = "Shared ReadyOS shim image ($C800-$C9FF, 512 bytes)"
+MARKER = "Shared ReadyOS shim image ($C600-$C9FF, 1024 bytes)"
 
 REQUIRED_ANNOTATIONS = (
     "$C83B: readyos_bank",
     "Resolve token via the ReadyOS bank",
     "lookup_app_bank",
-    "ADC #<$B940",
+    "ADC #<$B740",
     "fetch physical bank byte",
     "Padding to $C9A0",
     "mark_loaded",
+    "len hi = $B6",
 )
 
 RETIRED_ANNOTATIONS = (
@@ -33,7 +34,6 @@ RETIRED_ANNOTATIONS = (
     "Start+3..Start+25: physical backing banks",
     "Resolve logical token via REU bank 0",
     "ADC #<$2F00",
-    "length hi = $B6",
 )
 
 

@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EDITOR_SRC = ROOT / "src" / "apps" / "editor" / "editor.c"
 EDITOR_MAP = ROOT / "obj" / "editor.map"
-APP_SNAPSHOT_END = 0xC7FF
+APP_SNAPSHOT_END = 0xC5FF
 EDIT_HEIGHT = 20
 MIN_HEADROOM = 11 * 1024
 

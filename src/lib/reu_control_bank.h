@@ -1,9 +1,9 @@
 /*
  * reu_control_bank.h - ReadyOS bank schema and registry API
  *
- * Physical REU bank Skip+1 is the ReadyOS bank.  It contains the launcher
- * snapshot at $0000-$B7FF and the authoritative ReadyOS metadata at
- * $B800-$FFFF.  There is no C64-RAM allocation/loaded-state mirror.
+ * Physical REU bank Skip is the ReadyOS bank.  It contains the launcher
+ * snapshot at $0000-$B5FF and the authoritative ReadyOS metadata at
+ * $B600-$FFFF.  There is no C64-RAM allocation/loaded-state mirror.
  */
 
 #ifndef REU_CONTROL_BANK_H
@@ -21,21 +21,21 @@
 #define REUCB_MAGIC3 0x35u /* ASCII 5 */
 
 #define REUCB_LAUNCHER_SNAPSHOT_OFF  0x0000u
-#define REUCB_LAUNCHER_SNAPSHOT_SIZE 0xB800u
+#define REUCB_LAUNCHER_SNAPSHOT_SIZE 0xB600u
 
-#define REUCB_HEADER_OFF        0xB800u
+#define REUCB_HEADER_OFF        0xB600u
 #define REUCB_HEADER_SIZE       0x0040u
-#define REUCB_BANK_TYPE_OFF     0xB840u
+#define REUCB_BANK_TYPE_OFF     0xB640u
 #define REUCB_BANK_TYPE_SIZE    0x0100u
-#define REUCB_SHIM_LOOKUP_OFF   0xB940u
+#define REUCB_SHIM_LOOKUP_OFF   0xB740u
 #define REUCB_SHIM_LOOKUP_SIZE  0x0100u
-#define REUCB_TOKEN_STATUS_OFF  0xBA40u
+#define REUCB_TOKEN_STATUS_OFF  0xB840u
 #define REUCB_TOKEN_STATUS_SIZE 0x0100u
-#define REUCB_CLIPBOARD_OFF     0xBB40u
+#define REUCB_CLIPBOARD_OFF     0xB940u
 #define REUCB_CLIPBOARD_SIZE    0x0090u
-#define REUCB_HOTKEY_OFF        0xBBD0u
+#define REUCB_HOTKEY_OFF        0xB9D0u
 #define REUCB_HOTKEY_SIZE       9u
-#define REUCB_SETTINGS_OFF      0xBBD9u
+#define REUCB_SETTINGS_OFF      0xB9D9u
 #define REUCB_SETTINGS_SIZE     39u
 #define REUCB_SETTINGS_MAGIC0   0x4Cu /* ASCII L */
 #define REUCB_SETTINGS_MAGIC1   0x53u /* ASCII S */
@@ -48,33 +48,33 @@
 #define REUCB_SETTINGS_OFF_LOAD_ALL     5u
 #define REUCB_SETTINGS_OFF_VARIANT      6u
 #define REUCB_SETTINGS_VARIANT_SIZE     32u
-#define REUCB_APP_REG_OFF       0xBC00u
+#define REUCB_APP_REG_OFF       0xBA00u
 #define REUCB_APP_REG_SIZE      16u
 #define REUCB_APP_REG_COUNT     64u
-#define REUCB_TOKEN_APP_OFF     0xC000u
+#define REUCB_TOKEN_APP_OFF     0xBE00u
 #define REUCB_TOKEN_APP_SIZE    0x0100u
-#define REUCB_APP_META_OFF      0xC100u
+#define REUCB_APP_META_OFF      0xBF00u
 #define REUCB_APP_META_SIZE     13u
 #define REUCB_APP_META_COUNT    64u
-#define REUCB_RSRC_REC_OFF      0xC440u
+#define REUCB_RSRC_REC_OFF      0xC240u
 #define REUCB_RSRC_REC_SIZE     16u
 #define REUCB_RSRC_REC_COUNT    64u
-#define REUCB_DEP_LINE_OFF      0xC840u
+#define REUCB_DEP_LINE_OFF      0xC640u
 #define REUCB_DEP_LINE_SIZE     128u
 #define REUCB_DEP_LINE_COUNT    64u
-#define REUCB_CATALOG_TEXT_OFF  0xE840u
-#define REUCB_CATALOG_NAME_OFF  0xE840u
+#define REUCB_CATALOG_TEXT_OFF  0xE640u
+#define REUCB_CATALOG_NAME_OFF  0xE640u
 #define REUCB_CATALOG_NAME_SIZE 32u
-#define REUCB_CATALOG_DESC_OFF  0xF040u
+#define REUCB_CATALOG_DESC_OFF  0xEE40u
 #define REUCB_CATALOG_DESC_SIZE 39u
-#define REUCB_CATALOG_FILE_OFF  0xFA00u
+#define REUCB_CATALOG_FILE_OFF  0xF800u
 #define REUCB_CATALOG_FILE_SIZE 13u
-#define REUCB_AUDIT_OFF         0xFD40u
+#define REUCB_AUDIT_OFF         0xFB40u
 #define REUCB_AUDIT_SIZE        0x0100u
-#define REUCB_RUNTIME_OFF       0xFE40u
+#define REUCB_RUNTIME_OFF       0xFC40u
 #define REUCB_RUNTIME_SIZE      0x0080u
-#define REUCB_RESERVED_OFF      0xFEC0u
-#define REUCB_RESERVED_SIZE     0x0140u
+#define REUCB_RESERVED_OFF      0xFCC0u
+#define REUCB_RESERVED_SIZE     0x0340u
 
 /* Compatibility names for code which treats the app-record resource fields
  * as dependency slots.  Schema v5 stores those bytes in each app record. */

@@ -145,7 +145,13 @@ def harden_readybasic_prompt_waits(text: str) -> str:
 
 
 def harden_easyflash_launcher_waits(text: str) -> str:
-    """Give cartridge preload enough time to reach the launcher."""
+    """Give cartridge preload enough time to reach the launcher.
+
+    A retry of the wait step observes the same already-stuck cartridge boot.
+    The aggregate runner retries the complete plan with a fresh VICE process,
+    so keep one full readiness window here and preserve functional step retry
+    policy everywhere else.
+    """
     lines = text.splitlines()
     output = []
     in_launcher_wait = False
@@ -159,6 +165,13 @@ def harden_easyflash_launcher_waits(text: str) -> str:
             saw_pre_delay = False
             saw_poll = False
             output.append(line)
+            if in_launcher_wait:
+                output.extend((
+                    "    retry:",
+                    "      max_attempts: 1",
+                    "      backoff_ms: 0",
+                    "      jitter: false",
+                ))
             continue
         if in_launcher_wait and stripped.startswith("pre_delay_s: "):
             saw_pre_delay = True

@@ -64,9 +64,9 @@ def main() -> int:
     shim = (ROOT / "src/boot/readyos_shim.inc").read_text(
         encoding="utf-8", errors="replace"
     )
-    check("physical Skip is the first dynamic bank",
+    check("physical Skip is the ReadyOS bank and Skip+1 is first dynamic",
           "#define REU_FIRST_DYNAMIC 1" in reu_mgr and
-          "*SHIM_READYOS_BANK - 1u" in reu_mgr)
+          "*SHIM_READYOS_BANK + 1u" in reu_mgr)
     check("ReadyOS bank owns authoritative mapping and status pages",
           "REUCB_SHIM_LOOKUP_OFF" in
           (ROOT / "src/lib/reu_control_bank.h").read_text() and
@@ -75,7 +75,7 @@ def main() -> int:
           "REU_ALLOC_TABLE" not in reu_control)
     check("shim resolves app tokens through ReadyOS-bank lookup",
           "lookup_app_bank" in shim and
-          "LDA #>$B940" in shim and
+          "LDA #>$B740" in shim and
           "LDA $C83D (resolved physical bank)" in shim)
     check("shim commits token loaded/resumable state",
           "mark_loaded" in shim and "LDA #VALID|LOADED|RESUMABLE" in shim)

@@ -4,11 +4,11 @@
 #include "reu_control_bank.h"
 
 static unsigned char reu_fixed_bank_type(unsigned char bank) {
-    if (bank < REU_FIRST_DYNAMIC_PHYSICAL()) {
-        return REU_SKIPPED;
-    }
     if (bank == REU_READYOS_GLOBAL_PHYSICAL()) {
         return REU_GLOBAL;
+    }
+    if (bank < REU_FIRST_DYNAMIC_PHYSICAL()) {
+        return REU_SKIPPED;
     }
     return 0xFFu;
 }

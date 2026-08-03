@@ -113,7 +113,7 @@ steps:
         - { label: hidden_visible_a000, start: 0xA000, end: 0xA5FF }
         - { label: hidden_overlay_a800, start: 0xA800, end: 0xA8FF }
         - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
-        - { label: app_snapshot_private_c600, start: 0xC600, end: 0xC6FF }
+        - { label: shim_resident_c600, start: 0xC600, end: 0xC9FF }
 
   - id: direct_ping
     type: input.sequence

@@ -429,7 +429,7 @@ steps:
     params:
       ranges:
         - { label: screen_0400, start: 0x0400, end: 0x07E7 }
-        - { label: shim_c800, start: 0xC800, end: 0xC9FF }
+        - { label: shim_c600, start: 0xC600, end: 0xC9FF }
 YAML
 
 if [ "${READYIRC_C64U_GENERATE_PLAN_ONLY:-0}" = "1" ]; then

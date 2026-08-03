@@ -301,9 +301,9 @@ cat >>"$PLAN" <<'YAML'
     type: dump.memory_ranges
     params:
       ranges:
-        - { label: launcher_shim_c800, start: 0xC800, end: 0xCA00 }
+        - { label: launcher_shim_c600, start: 0xC600, end: 0xCA00 }
         - { label: app_work_1000, start: 0x1000, end: 0x1800 }
-        - { label: upper_app_a000, start: 0xA000, end: 0xC800 }
+        - { label: upper_app_a000, start: 0xA000, end: 0xC600 }
 YAML
 
 if [ "${READYSHELL_GENERATE_PLAN_ONLY:-0}" = "1" ]; then
