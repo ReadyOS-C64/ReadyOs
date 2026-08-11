@@ -6,11 +6,15 @@
 #define UCI_STATE_IDLE 0x00
 #define UCI_STATE_LAST 0x20
 #define UCI_STATE_MORE 0x30
+#define UCI_STAT_BUSY  0x01
+#define UCI_STAT_ACCEPT 0x02
 #define UCI_STAT_ABORT 0x04
 #define UCI_STAT_ERROR 0x08
 
-#define UCI_WAIT_SHORT  1200u
-#define UCI_WAIT_LONG   7000u
+#define UCI_WAIT_SYNC     60000u
+#define UCI_WAIT_RESPONSE 60000u
+/* Four finite passes preserve the proven 16 MHz wall-time at 64 MHz. */
+#define UCI_WAIT_PASSES   4u
 
 static unsigned int uci_base_addr;
 
@@ -27,82 +31,142 @@ static unsigned char probe_base(unsigned int base) {
     return 0u;
 }
 
+static unsigned char status_is_quiet_idle(unsigned char st) {
+    return (unsigned char)(((st & UCI_STATE_MASK) == UCI_STATE_IDLE) &&
+                           ((st & (UCI_STAT_BUSY | UCI_STAT_ACCEPT |
+                                   UCI_STAT_ABORT | UCI_STAT_ERROR)) == 0u));
+}
+
 static unsigned char wait_idle(void) {
+    unsigned char pass;
     unsigned int tries;
     unsigned char st;
 
-    for (tries = 0u; tries < UCI_WAIT_LONG; ++tries) {
-        st = ucitest_uci_asm_status();
-        if ((st & UCI_STAT_ERROR) != 0u) {
-            ucitest_uci_asm_clear_error();
-        }
-        if ((st & UCI_STATE_MASK) == UCI_STATE_IDLE && (st & 0x01u) == 0u) {
-            return 1u;
+    for (pass = 0u; pass < UCI_WAIT_PASSES; ++pass) {
+        for (tries = 0u; tries < UCI_WAIT_RESPONSE; ++tries) {
+            st = ucitest_uci_asm_status();
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                return 0u;
+            }
+            if (status_is_quiet_idle(st)) {
+                return 1u;
+            }
         }
     }
     return 0u;
 }
 
-static unsigned char wait_data_state(void) {
+static unsigned char wait_response_state(void) {
+    unsigned char pass;
     unsigned int tries;
     unsigned char st;
     unsigned char state;
 
-    for (tries = 0u; tries < UCI_WAIT_LONG; ++tries) {
-        st = ucitest_uci_asm_status();
-        if ((st & UCI_STAT_ERROR) != 0u) {
-            return 0u;
+    for (pass = 0u; pass < UCI_WAIT_PASSES; ++pass) {
+        for (tries = 0u; tries < UCI_WAIT_RESPONSE; ++tries) {
+            st = ucitest_uci_asm_status();
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                return 0u;
+            }
+            state = (unsigned char)(st & UCI_STATE_MASK);
+            if (state == UCI_STATE_LAST || state == UCI_STATE_MORE) {
+                return 1u;
+            }
         }
-        state = (unsigned char)(st & UCI_STATE_MASK);
-        if (state == UCI_STATE_LAST || state == UCI_STATE_MORE ||
-            state == UCI_STATE_IDLE) {
-            return 1u;
+    }
+    return 0u;
+}
+
+static unsigned char wait_accept_advance(unsigned char old_state) {
+    unsigned char pass;
+    unsigned int tries;
+    unsigned char st;
+
+    /* DATA_ACC is asynchronous like PUSH_CMD. Require the documented state
+     * transition before reusing a LAST/MORE state value. */
+    for (pass = 0u; pass < UCI_WAIT_PASSES; ++pass) {
+        for (tries = 0u; tries < UCI_WAIT_RESPONSE; ++tries) {
+            st = ucitest_uci_asm_status();
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                return 0u;
+            }
+            if ((st & UCI_STATE_MASK) != old_state) {
+                return 1u;
+            }
         }
     }
     return 0u;
 }
 
 static unsigned char sync_interface(void) {
+    unsigned char pass;
     unsigned int tries;
     unsigned char st;
     unsigned char state;
 
-    for (tries = 0u; tries < UCI_WAIT_SHORT; ++tries) {
-        st = ucitest_uci_asm_status();
-        state = (unsigned char)(st & UCI_STATE_MASK);
+    for (pass = 0u; pass < UCI_WAIT_PASSES; ++pass) {
+        for (tries = 0u; tries < UCI_WAIT_SYNC; ++tries) {
+            st = ucitest_uci_asm_status();
+            state = (unsigned char)(st & UCI_STATE_MASK);
 
-        if ((st & UCI_STAT_ERROR) != 0u) {
-            ucitest_uci_asm_clear_error();
-            tries = 0u;
-            continue;
-        }
-        if ((st & UCI_STAT_ABORT) != 0u) {
-            ucitest_uci_asm_abort();
-            tries = 0u;
-            continue;
-        }
-        if ((st & UCI_STAT_DATA) != 0u) {
-            (void)ucitest_uci_asm_read_data();
-            tries = 0u;
-            continue;
-        }
-        if ((st & UCI_STAT_STAT) != 0u) {
-            (void)ucitest_uci_asm_read_stat();
-            tries = 0u;
-            continue;
-        }
-        if (state == UCI_STATE_LAST || state == UCI_STATE_MORE) {
-            ucitest_uci_asm_accept_data();
-            tries = 0u;
-            continue;
-        }
-        if (state == UCI_STATE_IDLE && (st & 0x01u) == 0u) {
-            return 1u;
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                ucitest_uci_asm_clear_error();
+                continue;
+            }
+            if ((st & UCI_STAT_ABORT) != 0u) {
+                /* ABORT_P is pending already; poll/service it instead of
+                 * repeatedly requesting another asynchronous abort. */
+                continue;
+            }
+            if ((st & UCI_STAT_DATA) != 0u) {
+                (void)ucitest_uci_asm_read_data();
+                continue;
+            }
+            if ((st & UCI_STAT_STAT) != 0u) {
+                (void)ucitest_uci_asm_read_stat();
+                continue;
+            }
+            if (state == UCI_STATE_LAST || state == UCI_STATE_MORE) {
+                ucitest_uci_asm_accept_data();
+                if (!wait_accept_advance(state)) {
+                    return 0u;
+                }
+                continue;
+            }
+            if (status_is_quiet_idle(st)) {
+                return 1u;
+            }
         }
     }
 
-    ucitest_uci_asm_abort();
-    return wait_idle();
+    return 0u;
+}
+
+static unsigned char abort_and_recover(void) {
+    unsigned char st;
+
+    /* Request once, then service queues, ERROR, and DATA_ACC until all pending
+     * control bits clear at IDLE. The poll limit remains only a failure bound. */
+    st = ucitest_uci_asm_status();
+    if ((st & UCI_STAT_ABORT) == 0u) {
+        ucitest_uci_asm_abort();
+    }
+    return sync_interface();
+}
+
+static void record_wait_failure(UciTestTransfer *xfer) {
+    unsigned char st;
+
+    if (xfer == 0) {
+        return;
+    }
+    st = ucitest_uci_asm_status();
+    xfer->last_status = st;
+    if ((st & UCI_STAT_ERROR) != 0u) {
+        xfer->flags |= UCITEST_UCI_ERROR;
+    } else {
+        xfer->flags |= UCITEST_UCI_TIMEOUT;
+    }
 }
 
 unsigned char ucitest_uci_detect(void) {
@@ -150,7 +214,7 @@ unsigned char ucitest_uci_status(void) {
 
 void ucitest_uci_abort(void) {
     if (ucitest_uci_detect()) {
-        ucitest_uci_asm_abort();
+        (void)abort_and_recover();
     }
 }
 
@@ -164,9 +228,9 @@ unsigned char ucitest_uci_command(const unsigned char *cmd,
                                   unsigned int cmd_len,
                                   UciTestTransfer *xfer) {
     unsigned int i;
+    unsigned int drain_tries;
     unsigned char st;
     unsigned char state;
-    unsigned int drain_guard;
 
     if (xfer != 0) {
         xfer->data_len = 0u;
@@ -178,8 +242,7 @@ unsigned char ucitest_uci_command(const unsigned char *cmd,
         return 0u;
     }
     if (!sync_interface()) {
-        ucitest_uci_asm_abort();
-        if (!wait_idle()) {
+        if (!abort_and_recover()) {
             if (xfer != 0) {
                 xfer->flags |= UCITEST_UCI_TIMEOUT;
             }
@@ -192,11 +255,11 @@ unsigned char ucitest_uci_command(const unsigned char *cmd,
     }
     ucitest_uci_asm_push_cmd();
 
-    if (!wait_data_state()) {
-        ucitest_uci_asm_abort();
-        if (xfer != 0) {
-            xfer->flags |= UCITEST_UCI_TIMEOUT;
-        }
+    /* PUSH_CMD is asynchronous.  An immediate IDLE sample only means that
+     * the Ultimate has not observed the push yet; wait for a response state. */
+    if (!wait_response_state()) {
+        record_wait_failure(xfer);
+        (void)abort_and_recover();
         return 0u;
     }
 
@@ -205,24 +268,40 @@ unsigned char ucitest_uci_command(const unsigned char *cmd,
         if (xfer != 0) {
             xfer->last_status = st;
         }
-        state = (unsigned char)(st & UCI_STATE_MASK);
-        if (state == UCI_STATE_IDLE) {
-            break;
+        if ((st & UCI_STAT_ERROR) != 0u) {
+            if (xfer != 0) {
+                xfer->flags |= UCITEST_UCI_ERROR;
+            }
+            (void)abort_and_recover();
+            return 0u;
         }
+        state = (unsigned char)(st & UCI_STATE_MASK);
         if (state != UCI_STATE_LAST && state != UCI_STATE_MORE) {
-            if (!wait_data_state()) {
-                ucitest_uci_asm_abort();
-                if (xfer != 0) {
-                    xfer->flags |= UCITEST_UCI_TIMEOUT;
-                }
+            if (!wait_response_state()) {
+                record_wait_failure(xfer);
+                (void)abort_and_recover();
                 return 0u;
             }
             continue;
         }
 
-        drain_guard = 0u;
-        while (drain_guard < UCI_WAIT_SHORT) {
+        /* A queue-availability bit is authoritative, but it cannot be allowed
+         * to spin forever if hardware is wedged. The count is a failure bound
+         * large enough for the documented 896+256 byte queues. */
+        for (drain_tries = 0u;
+             drain_tries < UCI_WAIT_RESPONSE;
+             ++drain_tries) {
             st = ucitest_uci_asm_status();
+            if (xfer != 0) {
+                xfer->last_status = st;
+            }
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                if (xfer != 0) {
+                    xfer->flags |= UCITEST_UCI_ERROR;
+                }
+                (void)abort_and_recover();
+                return 0u;
+            }
             if ((st & UCI_STAT_DATA) != 0u) {
                 if (xfer != 0 && xfer->data != 0 &&
                     xfer->data_len < xfer->data_cap) {
@@ -234,7 +313,6 @@ unsigned char ucitest_uci_command(const unsigned char *cmd,
                         xfer->flags |= UCITEST_UCI_TRUNC_DATA;
                     }
                 }
-                drain_guard = 0u;
                 continue;
             }
             if ((st & UCI_STAT_STAT) != 0u) {
@@ -248,22 +326,35 @@ unsigned char ucitest_uci_command(const unsigned char *cmd,
                         xfer->flags |= UCITEST_UCI_TRUNC_STAT;
                     }
                 }
-                drain_guard = 0u;
                 continue;
             }
-            ++drain_guard;
+            break;
+        }
+        if (drain_tries == UCI_WAIT_RESPONSE) {
+            if (xfer != 0) {
+                xfer->flags |= UCITEST_UCI_TIMEOUT;
+            }
+            (void)abort_and_recover();
+            return 0u;
         }
 
         ucitest_uci_asm_accept_data();
         if (state == UCI_STATE_LAST) {
-            (void)wait_idle();
+            if (!wait_idle()) {
+                record_wait_failure(xfer);
+                (void)abort_and_recover();
+                return 0u;
+            }
             break;
         }
-        if (!wait_data_state()) {
-            ucitest_uci_asm_abort();
-            if (xfer != 0) {
-                xfer->flags |= UCITEST_UCI_TIMEOUT;
-            }
+        if (!wait_accept_advance(state)) {
+            record_wait_failure(xfer);
+            (void)abort_and_recover();
+            return 0u;
+        }
+        if (!wait_response_state()) {
+            record_wait_failure(xfer);
+            (void)abort_and_recover();
             return 0u;
         }
     }

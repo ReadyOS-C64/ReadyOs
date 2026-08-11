@@ -51,14 +51,23 @@ static void add_status(TuiOutput *out, const UciTestTransfer *xfer) {
     unsigned char ch;
 
     line[0] = 0;
-    append_str(line, sizeof(line), "stat: ");
     if (xfer->stat_len == 0u) {
+        append_str(line, sizeof(line), "stat: ");
         append_str(line, sizeof(line), "(none)");
     } else {
-        for (i = 0u; i < xfer->stat_len && i < 32u; ++i) {
+        i = 0u;
+        if (xfer->stat[0] < 32u || xfer->stat[0] > 126u) {
+            append_str(line, sizeof(line), "stat $");
+            append_hex2(line, sizeof(line), xfer->stat[0]);
+            append_str(line, sizeof(line), ": ");
+            i = 1u;
+        } else {
+            append_str(line, sizeof(line), "stat: ");
+        }
+        for (; i < xfer->stat_len && i < 32u; ++i) {
             ch = xfer->stat[i];
             if (ch < 32u || ch > 126u) {
-                ch = ' ';
+                ch = '.';
             }
             append_char(line, sizeof(line), (char)ch);
         }
@@ -150,6 +159,78 @@ static void add_word(TuiOutput *out, const unsigned char *data,
     append_str(line, sizeof(line), "word: $");
     append_hex4(line, sizeof(line), value);
     tui_output_add(out, line);
+}
+
+static void add_dword(TuiOutput *out, const unsigned char *data,
+                      unsigned int len) {
+    unsigned int lo;
+    unsigned int hi;
+
+    if (len < 4u) {
+        tui_output_add(out, "dword: short response");
+        return;
+    }
+    lo = (unsigned int)data[0] | ((unsigned int)data[1] << 8);
+    hi = (unsigned int)data[2] | ((unsigned int)data[3] << 8);
+    line[0] = 0;
+    append_str(line, sizeof(line), "dword: $");
+    append_hex4(line, sizeof(line), hi);
+    append_hex4(line, sizeof(line), lo);
+    tui_output_add(out, line);
+}
+
+static void add_socket_read(TuiOutput *out, const unsigned char *data,
+                            unsigned int len) {
+    unsigned int payload_len;
+    unsigned int captured;
+
+    if (len < 2u) {
+        tui_output_add(out, "socket: short response");
+        return;
+    }
+    payload_len = (unsigned int)data[0] | ((unsigned int)data[1] << 8);
+    captured = (unsigned int)(len - 2u);
+    if (payload_len < captured) {
+        captured = payload_len;
+    }
+    line[0] = 0;
+    append_str(line, sizeof(line), "socket bytes: $");
+    append_hex4(line, sizeof(line), payload_len);
+    tui_output_add(out, line);
+    if (captured != 0u) {
+        add_text(out, data + 2u, captured);
+    }
+}
+
+static void add_http_handles(TuiOutput *out, const unsigned char *data,
+                             unsigned int len) {
+    if (len < 2u) {
+        tui_output_add(out, "http handles: short response");
+        return;
+    }
+    line[0] = 0;
+    append_str(line, sizeof(line), "response header: $");
+    append_hex2(line, sizeof(line), data[0]);
+    tui_output_add(out, line);
+    line[0] = 0;
+    append_str(line, sizeof(line), "response body: $");
+    append_hex2(line, sizeof(line), data[1]);
+    tui_output_add(out, line);
+}
+
+static void add_iec_name(TuiOutput *out, const unsigned char *data,
+                         unsigned int len) {
+    if (len == 0u) {
+        tui_output_add(out, "iec name: no response");
+        return;
+    }
+    line[0] = 0;
+    append_str(line, sizeof(line), "file type: $");
+    append_hex2(line, sizeof(line), data[0]);
+    tui_output_add(out, line);
+    if (len > 1u) {
+        add_text(out, data + 1u, (unsigned int)(len - 1u));
+    }
 }
 
 static void add_handle(TuiOutput *out, const unsigned char *data,
@@ -279,6 +360,9 @@ void ucitest_format_response(TuiOutput *out,
         append_str(line, sizeof(line), " trunc");
     }
     tui_output_add(out, line);
+    if ((xfer->flags & UCITEST_UCI_TRUNC_STAT) != 0u) {
+        tui_output_add(out, "status capture truncated");
+    }
 
     if (raw_mode || xfer->data_len == 0u) {
         if (xfer->data_len != 0u) {
@@ -311,6 +395,18 @@ void ucitest_format_response(TuiOutput *out,
             break;
         case UC_DEC_HTTP_VALUE:
             add_http_value(out, xfer->data, xfer->data_len);
+            break;
+        case UC_DEC_DWORD:
+            add_dword(out, xfer->data, xfer->data_len);
+            break;
+        case UC_DEC_SOCKET_READ:
+            add_socket_read(out, xfer->data, xfer->data_len);
+            break;
+        case UC_DEC_HTTP_HANDLES:
+            add_http_handles(out, xfer->data, xfer->data_len);
+            break;
+        case UC_DEC_IEC_NAME:
+            add_iec_name(out, xfer->data, xfer->data_len);
             break;
         default:
             tui_output_add_hex(out, xfer->data, xfer->data_len);

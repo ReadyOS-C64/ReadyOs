@@ -1,7 +1,7 @@
 # ReadyOS Documentation Index
 
 This index separates current contracts from historical records. It was audited
-against the `0.2.5` development tree on 2026-08-02.
+against the `0.2.5` development tree on 2026-08-10.
 
 An HTML counterpart is generated as `DOCUMENTATION_INDEX.html`. Every HTML file
 under `docs/` and `privatedocs/`, the root completed-phase HTML report, and the
@@ -17,6 +17,8 @@ deleted or rewritten into claims about a version they did not describe.
   runtime summary, and supported build/run entry points.
 - [`ultimate_dos_dma_loading.md`](ultimate_dos_dma_loading.md): opt-in C64
   Ultimate DOS DMA loading, fallback behavior, configuration, and verification.
+- [`uci_tester.md`](uci_tester.md): UCI Tester controls, protocol rules,
+  selectable prefills, safety notes, and real-world DOS/network/HTTP workflows.
 - [`ReadyOS_SHIM_ARCHITECTURE_0.2.5.md`](ReadyOS_SHIM_ARCHITECTURE_0.2.5.md):
   current resident-shim and schema-v5 ReadyOS-bank architecture, including which
   state remains resident, which state lives in physical `Skip`, and which copy is
@@ -41,6 +43,8 @@ deleted or rewritten into claims about a version they did not describe.
 - C64 Ultimate DMA research evidence:
   [`../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md`](../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md)
   and [`../probes/uci_dma/README.md`](../probes/uci_dma/README.md).
+- C64 Ultimate interactive diagnostics: [`uci_tester.md`](uci_tester.md) and
+  its rendered [`uci_tester.html`](uci_tester.html) counterpart.
 
 ## Generated Reports
 

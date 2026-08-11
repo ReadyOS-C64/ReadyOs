@@ -25,9 +25,9 @@
 #define FORM_X 0u
 #define FORM_Y 12u
 #define FORM_W 40u
-#define FORM_H 5u
+#define FORM_H 6u
 #define OUT_X 0u
-#define OUT_Y 18u
+#define OUT_Y 19u
 #define OUT_W 40u
 #define OUT_H 5u
 #define HELP_Y 24u
@@ -37,11 +37,11 @@
 #define FOCUS_FORM   2u
 #define FOCUS_OUT    3u
 
-#define CMD_BUF_MAX 224u
-#define DATA_BUF_MAX 512u
-#define STAT_BUF_MAX 96u
+#define CMD_BUF_MAX 896u
+#define DATA_BUF_MAX 896u
+#define STAT_BUF_MAX 256u
 #define FORM_MAX_FIELDS 6u
-#define FORM_TEXT_CAP 32u
+#define FORM_TEXT_CAP 64u
 #define OUT_LINES 30u
 
 static unsigned char running;
@@ -52,9 +52,11 @@ static unsigned char raw_mode;
 static unsigned char last_socket;
 static unsigned char last_http_header;
 static unsigned char last_http_body;
+static unsigned char selected_example;
 
 static const char *target_items[8];
 static const char *command_items[96];
+static const char *example_items[16];
 static TuiControlField form_fields[FORM_MAX_FIELDS];
 static char form_text[FORM_MAX_FIELDS][FORM_TEXT_CAP];
 static TuiControlForm form;
@@ -71,6 +73,8 @@ static void draw_header(void);
 static void draw_help(void);
 static void prepare_form(void);
 static void run_selected(void);
+static void show_example_picker(void);
+static void apply_example(unsigned char index);
 static unsigned char current_command_index(void);
 static const UciTestCommandSpec *current_command(void);
 static void handle_global_nav(unsigned char key);
@@ -250,6 +254,12 @@ static void prepare_form(void) {
         form_fields[out_idx].cursor = 0u;
         form_fields[out_idx].choices = spec->choices;
         form_fields[out_idx].choice_count = spec->choice_count;
+        if (spec->kind == UC_FIELD_BYTE && spec->choices != 0 &&
+            spec->choice_count != 0u) {
+            form_fields[out_idx].kind = TUI_CTRL_ENUM;
+            form_fields[out_idx].max_value =
+                (unsigned int)(spec->choice_count - 1u);
+        }
         if (form_fields[out_idx].kind == TUI_CTRL_BYTE) {
             form_fields[out_idx].max_value = 255u;
         }
@@ -265,6 +275,12 @@ static void prepare_form(void) {
             def_value = form_fields[out_idx].value_lo;
             if (strcmp(spec->label, "sock") == 0) {
                 def_value = last_socket;
+            } else if (strcmp(spec->label, "header") == 0 &&
+                       cmd->kind == UC_KIND_HTTP) {
+                def_value = last_http_header;
+            } else if (strcmp(spec->label, "body") == 0 &&
+                       cmd->kind == UC_KIND_HTTP) {
+                def_value = last_http_body;
             } else if (strcmp(spec->label, "handle") == 0 &&
                        cmd->kind == UC_KIND_HTTP) {
                 if (cmd->cmd == 0x12u || cmd->cmd == 0x13u ||
@@ -288,6 +304,8 @@ static void draw_header(void) {
 
     tui_clear_line(0u, 0u, 40u, TUI_COLOR_WHITE);
     tui_puts(0u, 0u, "UCI TESTER", TUI_COLOR_YELLOW);
+    /* Diagnostic register samples only: they never imply command completion.
+     * Executed commands use ucitest_uci_command's full state machine below. */
     base = ucitest_uci_base();
     scratch[0] = 0;
     append_str(scratch, sizeof(scratch), "base ");
@@ -314,7 +332,7 @@ static void draw_header(void) {
 
 static void draw_help(void) {
     tui_clear_line(HELP_Y, 0u, 40u, TUI_COLOR_GRAY3);
-    tui_puts_n(0u, HELP_Y, "f1 target f3 form f5 run f7 raw ctrl+b", 40u,
+    tui_puts_n(0u, HELP_Y, "f1tgt f3form f5run f6out f7raw f8ex", 40u,
                TUI_COLOR_GRAY3);
 }
 
@@ -332,7 +350,7 @@ static void draw_all(void) {
                    focus_area == FOCUS_CMD ? TUI_COLOR_CYAN : TUI_COLOR_WHITE);
     tui_hline(0u, 11u, 40u, TUI_COLOR_LIGHTBLUE);
     tui_form_draw(&form);
-    tui_hline(0u, 17u, 40u, TUI_COLOR_LIGHTBLUE);
+    tui_hline(0u, 18u, 40u, TUI_COLOR_LIGHTBLUE);
     tui_output_draw(&output, OUT_X, OUT_Y, OUT_W, OUT_H);
     draw_help();
 }
@@ -457,11 +475,31 @@ static void add_special_result(const UciTestCommandSpec *cmd) {
         append_hex2(scratch, sizeof(scratch), value);
         tui_output_add(&output, scratch);
     } else if (cmd->cmd == UC_SPECIAL_ABORT) {
+        /* Explicit recovery control. This call requests asynchronous ABORT
+         * once, services pending queues, and waits for fully quiet IDLE. */
         ucitest_uci_abort();
-        tui_output_add(&output, "abort requested");
+        tui_output_add(&output, "abort requested and interface serviced");
     } else if (cmd->cmd == UC_SPECIAL_CLEAR) {
+        /* Manual recovery-only control; command transactions never erase an
+         * ERROR raised while their PUSH is active. */
         ucitest_uci_clear_error();
         tui_output_add(&output, "error flag cleared");
+    } else if (cmd->cmd == UC_SPECIAL_NORMS) {
+        tui_output_add(&output, "uci protocol norms");
+        tui_output_add(&output, "1 idle + pending bits clear first");
+        tui_output_add(&output, "2 write bytes, then push exactly once");
+        tui_output_add(&output, "3 push is async; idle is not done");
+        tui_output_add(&output, "4 wait for data last or data more");
+        tui_output_add(&output, "5 drain data_av and stat_av queues");
+        tui_output_add(&output, "6 accept only after both are clear");
+        tui_output_add(&output, "7 accept async; more must go busy");
+        tui_output_add(&output, "8 last: accept, then wait for idle");
+        tui_output_add(&output, "9 abort is async; wait for idle too");
+        tui_output_add(&output, "10 abort_p pending: do not reissue");
+        tui_output_add(&output, "bounds cover high cpu; never pace uci");
+        tui_output_add(&output, "bound drains above queue capacities");
+        tui_output_add(&output, "queues: command/data 896, status 256");
+        tui_output_add(&output, "verify on real hardware at high speed");
     }
 }
 
@@ -478,6 +516,11 @@ static void update_handles(const UciTestCommandSpec *cmd) {
     }
     if (cmd->kind == UC_KIND_HTTP && cmd->cmd == 0x21u) {
         last_http_body = xfer.data[0];
+    }
+    if (cmd->kind == UC_KIND_HTTP && cmd->cmd == 0x31u &&
+        xfer.data_len >= 2u) {
+        last_http_header = xfer.data[0];
+        last_http_body = xfer.data[1];
     }
 }
 
@@ -506,10 +549,14 @@ static void run_selected(void) {
     xfer.stat = stat_buf;
     xfer.stat_cap = STAT_BUF_MAX;
     tui_output_clear(&output);
+    /* One complete state-driven transaction; no UI delay is protocol pacing. */
     if (!ucitest_uci_command(cmd_buf, cmd_len, &xfer)) {
         tui_output_add(&output, "command failed or timed out");
         if ((xfer.flags & UCITEST_UCI_TIMEOUT) != 0u) {
             tui_output_add(&output, "timeout flag set");
+        }
+        if ((xfer.flags & UCITEST_UCI_ERROR) != 0u) {
+            tui_output_add(&output, "uci transport error flag set");
         }
         draw_all();
         return;
@@ -518,6 +565,87 @@ static void run_selected(void) {
     ucitest_format_response(&output, cmd, &xfer, raw_mode);
     prepare_form();
     draw_all();
+}
+
+static void apply_example(unsigned char index) {
+    const UciTestExampleSpec *example;
+    unsigned char i;
+
+    if (index >= ucitest_example_count) {
+        return;
+    }
+    example = &ucitest_examples[index];
+    for (i = 0u; i < ucitest_target_count; ++i) {
+        if (ucitest_targets[i].kind == example->kind) {
+            selected_target = i;
+            break;
+        }
+    }
+    selected_cmd_rel = ucitest_command_rel_for_kind_cmd(example->kind,
+                                                        example->cmd);
+    prepare_form();
+    if ((example->value_mask & 0x01u) != 0u && form.count > 0u) {
+        form_fields[0].value_lo = example->value0;
+    }
+    if ((example->value_mask & 0x02u) != 0u && form.count > 1u) {
+        form_fields[1].value_lo = example->value1;
+    }
+    if (example->text0 != 0 && form.count > 0u &&
+        form_fields[0].text != 0) {
+        copy_default_text(form_fields[0].text, example->text0);
+    }
+    if (example->text1 != 0 && form.count > 1u &&
+        form_fields[1].text != 0) {
+        copy_default_text(form_fields[1].text, example->text1);
+    }
+    focus_area = form.count == 0u ? FOCUS_CMD : FOCUS_FORM;
+    tui_output_clear(&output);
+    scratch[0] = 0;
+    append_str(scratch, sizeof(scratch), "example: ");
+    append_str(scratch, sizeof(scratch), example->name);
+    tui_output_add(&output, scratch);
+    tui_output_add(&output, example->hint1);
+    tui_output_add(&output, "review fields, then press f5");
+}
+
+static void show_example_picker(void) {
+    TuiRect win;
+    unsigned char key;
+    const UciTestExampleSpec *example;
+
+    win.x = 1u;
+    win.y = 1u;
+    win.w = 38u;
+    win.h = 23u;
+    for (;;) {
+        tui_window_title(&win, "PREFILL EXAMPLE", TUI_COLOR_LIGHTBLUE,
+                         TUI_COLOR_YELLOW);
+        tui_split_list(3u, 3u, 34u, 11u, "select a safe starting point",
+                       example_items, ucitest_example_count, selected_example,
+                       TUI_COLOR_WHITE);
+        example = &ucitest_examples[selected_example];
+        tui_clear_line(15u, 3u, 34u, TUI_COLOR_GRAY3);
+        tui_clear_line(16u, 3u, 34u, TUI_COLOR_GRAY3);
+        tui_puts_n(3u, 15u, example->hint1, 34u, TUI_COLOR_WHITE);
+        tui_puts_n(3u, 16u, example->hint2, 34u, TUI_COLOR_GRAY3);
+        tui_puts_n(3u, 20u, "return:prefill  f8/stop:cancel", 34u,
+                   TUI_COLOR_CYAN);
+        key = tui_getkey();
+        if (key == TUI_KEY_UP && selected_example > 0u) {
+            --selected_example;
+        } else if (key == TUI_KEY_DOWN &&
+                   selected_example + 1u < ucitest_example_count) {
+            ++selected_example;
+        } else if (key == TUI_KEY_RETURN) {
+            apply_example(selected_example);
+            draw_all();
+            return;
+        } else if (key == TUI_KEY_F8 || key == TUI_KEY_RUNSTOP ||
+                   key == TUI_KEY_LARROW) {
+            draw_all();
+            return;
+        }
+    }
 }
 
 static void select_target_delta(signed char delta) {
@@ -568,15 +696,20 @@ static void handle_global_nav(unsigned char key) {
 
 int main(void) {
     unsigned char key;
+    unsigned char i;
 
     running = 1u;
     focus_area = FOCUS_CMD;
     selected_target = 0u;
     selected_cmd_rel = 0u;
     raw_mode = 0u;
-    last_socket = 0u;
-    last_http_header = 0u;
-    last_http_body = 0u;
+    last_socket = 0xFFu;
+    last_http_header = 0xFFu;
+    last_http_body = 0xFFu;
+    selected_example = 0u;
+    for (i = 0u; i < ucitest_example_count; ++i) {
+        example_items[i] = ucitest_examples[i].name;
+    }
 
     tui_init();
     tui_clear(TUI_THEME_BG);
@@ -596,8 +729,13 @@ int main(void) {
         } else if (key == TUI_KEY_F5 || key == TUI_KEY_RETURN) {
             run_selected();
             continue;
+        } else if (key == TUI_KEY_F6) {
+            focus_area = FOCUS_OUT;
         } else if (key == TUI_KEY_F7) {
             raw_mode = (unsigned char)(raw_mode ? 0u : 1u);
+        } else if (key == TUI_KEY_F8) {
+            show_example_picker();
+            continue;
         } else if (key == TUI_KEY_LARROW || key == TUI_KEY_RUNSTOP) {
             tui_return_to_launcher();
         } else if (focus_area == FOCUS_TARGET) {

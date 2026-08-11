@@ -16,9 +16,10 @@ START = "<!-- READYOS-DOC-STATUS:START -->"
 END = "<!-- READYOS-DOC-STATUS:END -->"
 
 CURRENT = {
-    "docs/DOCUMENTATION_INDEX.html": "Current documentation index, audited against the 0.2.5 development tree on 2026-08-02.",
+    "docs/DOCUMENTATION_INDEX.html": "Current documentation index, audited against the 0.2.5 development tree on 2026-08-10.",
     "docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.html": "Current 0.2.5 schema-v5 shim/ReadyOS-bank architecture, including the resident-versus-REU authority split and live token lookup.",
     "docs/ultimate_dos_dma_loading.html": "Current C64 Ultimate DOS DMA behavior. The launcher path is opt-in and disk fallback remains part of the contract.",
+    "docs/uci_tester.html": "Current UCI Tester controls, protocol rules, catalog behavior, selectable examples, and physical-Ultimate workflows.",
     "docs/ReadyShellArchitecture.html": "Current ReadyShell architecture counterpart generated from ReadyShellArchitecture.md.",
     "docs/ReadyShellHostTesting.html": "Current ReadyShell host-testing counterpart generated from ReadyShellHostTesting.md.",
     "docs/readybasic_memory_diagrams.html": "Current generated ReadyBASIC memory visualization. Regenerate after linker or module-layout changes.",

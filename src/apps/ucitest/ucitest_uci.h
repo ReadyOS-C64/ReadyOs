@@ -11,6 +11,7 @@
 #define UCITEST_UCI_TRUNC_DATA 0x01
 #define UCITEST_UCI_TRUNC_STAT 0x02
 #define UCITEST_UCI_TIMEOUT    0x04
+#define UCITEST_UCI_ERROR      0x08
 
 typedef struct {
     unsigned char *data;
@@ -32,6 +33,8 @@ void ucitest_uci_clear_error(void);
 unsigned char ucitest_uci_command(const unsigned char *cmd,
                                   unsigned int cmd_len,
                                   UciTestTransfer *xfer);
+/* ucitest_uci_command owns sync, asynchronous PUSH/LAST-or-MORE, full queue
+ * drains, DATA_ACC, and final quiet IDLE. Callers must not add pacing delays. */
 
 void __fastcall__ ucitest_uci_asm_set_base(unsigned int base);
 unsigned char __fastcall__ ucitest_uci_asm_write_cmd(unsigned char value);

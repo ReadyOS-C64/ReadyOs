@@ -309,7 +309,7 @@ Real C64 versus emulator key forms:
 | 8 | `deminer` | deminer | Minesweeper-style puzzle with suspend/resume |
 | 9 | `readybasic` | ready basic (alpha) | BASIC V2 bridge with ReadyBASIC commands, native `PROC`/`FUNC`, REU-backed command modules, and suspend/resume |
 | 9 | `readyirc` | readyirc | Experimental Ultimate TCP IRC client; cataloged but not yet a complete working IRC app |
-| 9 | `ucitest` | uci tester | Ultimate command interface lab and diagnostics surface |
+| 9 | `ucitest` | uci tester | Ultimate command-interface lab with decoded responses, protocol guidance, and selectable examples ([guide](docs/uci_tester.md)) |
 | 9 | `rirc-rrnet` | readyirc rrnet | Experimental RR-Net TCP IRC client; cataloged but not yet a complete working IRC app |
 
 Notes:
@@ -542,6 +542,7 @@ Public supporting docs in `docs/` currently include:
 
 - [documentation index and freshness policy](docs/DOCUMENTATION_INDEX.md)
 - [C64 Ultimate DOS DMA loading](docs/ultimate_dos_dma_loading.md)
+- [UCI Tester user guide](docs/uci_tester.md)
 - [current 0.2.5 shim and ReadyOS-bank architecture](docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.md)
 - `docs/clipboard_bundle_seq_format.md`
 - `docs/quicknotes_seq_format.md`
@@ -553,6 +554,7 @@ Rendered documentation exports in `docs/` currently include:
 
 - [Documentation Index (HTML)](docs/DOCUMENTATION_INDEX.html)
 - [C64 Ultimate DOS DMA Loading (HTML)](docs/ultimate_dos_dma_loading.html)
+- [UCI Tester User Guide (HTML)](docs/uci_tester.html)
 - [Current 0.2.5 SHIM Architecture Report (HTML)](docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.html)
 - [Preserved 0.2.4 SHIM Architecture Report (HTML)](docs/ReadyOS%20SHIM%20Architecture%20Report%20%280.2%29.html)
 - [ReadyShell Overlay Inventory (HTML)](docs/readyshell_overlay_inventory.html)

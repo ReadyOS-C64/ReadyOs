@@ -39,6 +39,10 @@
 #define UC_DEC_DIR        7
 #define UC_DEC_FILE_INFO  8
 #define UC_DEC_HTTP_VALUE 9
+#define UC_DEC_DWORD      10
+#define UC_DEC_SOCKET_READ 11
+#define UC_DEC_HTTP_HANDLES 12
+#define UC_DEC_IEC_NAME   13
 
 #define UC_SPECIAL_DETECT 1
 #define UC_SPECIAL_ID     2
@@ -46,6 +50,7 @@
 #define UC_SPECIAL_ABORT  4
 #define UC_SPECIAL_CLEAR  5
 #define UC_SPECIAL_RAW    6
+#define UC_SPECIAL_NORMS  7
 
 typedef struct {
     const char *name;
@@ -73,14 +78,31 @@ typedef struct {
     unsigned char field_count;
 } UciTestCommandSpec;
 
+typedef struct {
+    const char *name;
+    const char *hint1;
+    const char *hint2;
+    unsigned char kind;
+    unsigned char cmd;
+    unsigned char value_mask;
+    unsigned int value0;
+    unsigned int value1;
+    const char *text0;
+    const char *text1;
+} UciTestExampleSpec;
+
 extern const UciTestTargetSpec ucitest_targets[];
 extern const unsigned char ucitest_target_count;
 extern const UciTestCommandSpec ucitest_commands[];
 extern const unsigned char ucitest_command_count;
+extern const UciTestExampleSpec ucitest_examples[];
+extern const unsigned char ucitest_example_count;
 
 unsigned char ucitest_command_count_for_kind(unsigned char kind);
 unsigned char ucitest_command_index_for_kind(unsigned char kind,
                                              unsigned char rel_index);
+unsigned char ucitest_command_rel_for_kind_cmd(unsigned char kind,
+                                               unsigned char cmd);
 const char *ucitest_flag_text(unsigned char flags);
 
 #endif /* UCITEST_CATALOG_H */

@@ -1,5 +1,7 @@
 ;
 ; ucitest_uci_asm.s - tiny UCI register accessors
+; Low-level register operations only. ucitest_uci.c owns synchronization,
+; async PUSH/ABORT waits, complete queue drains, DATA_ACC, and quiet IDLE.
 ;
 
         .export _ucitest_uci_asm_write_cmd

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>uci_tester</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current UCI Tester controls, protocol rules, catalog behavior, selectable examples, and physical-Ultimate workflows.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<h1 id="readyos-uci-tester-user-guide">ReadyOS UCI Tester User
+Guide</h1>
+<p>The ReadyOS <strong>UCI Tester</strong> is an interactive laboratory
+for the Ultimate Command Interface available on Ultimate-II+, Ultimate
+64, Ultimate 64 Elite, and Commodore 64 Ultimate systems. It can
+discover the mapped UCI registers, send structured commands to the
+documented targets, show decoded or raw responses, and retain returned
+socket and HTTP handles for the next command.</p>
+<p>The app is intended for development and diagnosis. Several commands
+can alter files, mounts, network state, drive power, the REU, or the
+machine itself. Read the command flag at the top of the screen before
+pressing F5.</p>
+<h2 id="before-you-start">Before You Start</h2>
+<ol type="1">
+<li>Enable <strong>Command Interface</strong> in the Ultimate
+configuration.</li>
+<li>Boot ReadyOS on real Ultimate hardware and launch <strong>UCI
+Tester</strong> from the launcher.</li>
+<li>Start with <strong>Transport → Detect</strong>. A normal result
+shows a base such as <code>$DF1C</code>. If the header says
+<code>base none</code>, check the Ultimate configuration.</li>
+<li>Select <strong>Transport → Protocol norms</strong> for a concise
+in-app copy of the transport rules described below.</li>
+</ol>
+<p>The HTTP target requires Ultimate firmware 3.15 or later. Target
+availability and command details can vary with firmware.</p>
+<h2 id="screen-and-keys">Screen and Keys</h2>
+<p>The screen contains a target list, a command list, an editable form,
+and a five-line output viewport. The output keeps 30 lines of
+history.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F1</td>
+<td>Focus the target list</td>
+</tr>
+<tr>
+<td>F3</td>
+<td>Focus the command form</td>
+</tr>
+<tr>
+<td>F5 or Return</td>
+<td>Execute the selected command</td>
+</tr>
+<tr>
+<td>F6</td>
+<td>Focus output; Up/Down scroll its history</td>
+</tr>
+<tr>
+<td>F7</td>
+<td>Toggle decoded and raw response display</td>
+</tr>
+<tr>
+<td>F8</td>
+<td>Open the selectable example list</td>
+</tr>
+<tr>
+<td>Up/Down</td>
+<td>Move in the focused list, form, or output</td>
+</tr>
+<tr>
+<td>Left/Right</td>
+<td>Move between target/command panes or change numeric fields</td>
+</tr>
+<tr>
+<td>Delete</td>
+<td>Remove the final character from a text field</td>
+</tr>
+<tr>
+<td>Home</td>
+<td>Reset a numeric field to its minimum</td>
+</tr>
+<tr>
+<td>F2/F4</td>
+<td>Switch ReadyOS apps</td>
+</tr>
+<tr>
+<td>Ctrl+B, Left Arrow, or Run/Stop</td>
+<td>Return to the launcher</td>
+</tr>
+</tbody>
+</table>
+<p>Numeric fields are displayed in hexadecimal. Text and raw-byte fields
+are edited as text. Raw bytes may be separated by spaces or commas and
+may use a <code>$</code> prefix, for example <code>04 01</code>,
+<code>$04,$01</code>, or <code>04,01</code>.</p>
+<h2 id="prefilled-examples">Prefilled Examples</h2>
+<p>Press F8, use Up/Down, and press Return to load an example. Loading
+does not run anything: it selects the target and command, prefills the
+form, and leaves you at a review step. Press F5 only after checking the
+values.</p>
+<p>The built-in examples are:</p>
+<ul>
+<li><strong>Detect UCI interface</strong> — locate the register block
+safely.</li>
+<li><strong>Explain UCI protocol</strong> — load the in-app protocol
+guide.</li>
+<li><strong>Identify Ultimate DOS</strong> — query target
+<code>$01</code> safely.</li>
+<li><strong>Show current DOS path</strong> — inspect the independent DOS
+1 working path.</li>
+<li><strong>Inspect ReadyOS image</strong> — prefill File Stat for
+<code>/usb1/readyos.d81</code>.</li>
+<li><strong>Show network address</strong> — query IP, netmask, and
+gateway for interface zero.</li>
+<li><strong>Open TCP example.com</strong> — prefill
+<code>example.com</code> on port 80.</li>
+<li><strong>Prepare HTTP GET</strong> — create a reusable GET header for
+<code>example.com/</code>.</li>
+<li><strong>Query last HTTP body</strong> — query the root of the most
+recently returned HTTP body object.</li>
+<li><strong>Raw Control identify</strong> — send the raw bytes
+<code>04 01</code>.</li>
+</ul>
+<p>Examples are safe starting points, not macros: each one prefills a
+single command. Multi-command workflows remain explicit so you can
+inspect every handle and status response.</p>
+<h2 id="the-uci-transport-rules">The UCI Transport Rules</h2>
+<p>UCI is an asynchronous state machine. It must never be paced by an
+assumed number of C64 instructions or by fixed delays.</p>
+<ol type="1">
+<li>Start only when the interface is idle and the pending
+<code>CMD_BUSY</code>, <code>DATA_ACC</code>, and <code>ABORT_P</code>
+bits are clear.</li>
+<li>Write the complete command, then issue <code>PUSH_CMD</code>
+once.</li>
+<li>Do not interpret an immediate <code>IDLE</code> sample after the
+push as completion. It means the Ultimate may not have observed the
+asynchronous push yet.</li>
+<li>Wait for <code>DATA_LAST</code> or <code>DATA_MORE</code>.</li>
+<li>While <code>DATA_AV</code> or <code>STAT_AV</code> is set, read the
+corresponding queue.</li>
+<li>Issue <code>DATA_ACC</code> only after both availability bits are
+clear.</li>
+<li><code>DATA_ACC</code> is asynchronous. After <code>DATA_MORE</code>,
+do not mistake an immediate unchanged <code>DATA_MORE</code> sample for
+the next block. Require the documented transition back through
+<code>COMMAND_BUSY</code> before consuming the next block. After
+<code>DATA_LAST</code>, wait for a fully quiescent idle state.</li>
+<li>Treat <code>ERROR</code> as a transport/state error. Target success
+or failure is reported separately in the status-data queue.</li>
+<li>Treat <code>ABORT</code> as asynchronous and wait for fully quiet
+idle before sending again. <code>ABORT_P</code> means a request is
+already pending, so keep servicing the interface instead of re-issuing
+<code>ABORT</code> on every poll.</li>
+<li>Use counters only as failure bounds. Do not reset them indefinitely
+while servicing a stuck flag, bound drain loops above the queue
+capacities, and ensure state waits remain long enough at the fastest
+supported CPU speed.</li>
+</ol>
+<p>The hardware queues hold 896 command bytes, 896 response-data bytes
+per block, and 256 status bytes. UCI Tester captures those full queue
+sizes. It continues draining larger multi-block responses and marks
+captured output as truncated rather than leaving the interface
+wedged.</p>
+<h2 id="understanding-results">Understanding Results</h2>
+<p>The output begins with the selected command, its target-status
+response, and the captured data length. A binary status prefix is shown
+explicitly, for example <code>stat $00: OK</code>. HTTP firmware
+commonly returns printable three-digit status text instead.</p>
+<p>Decoded mode recognizes text, handles, 16- and 32-bit values, MAC/IP
+data, directory entries, file information, framed socket reads, HTTP
+response-handle pairs, HTTP values, and SoftwareIEC filename results.
+Press F7 whenever you need the exact bytes.</p>
+<p>The header’s <code>st $xx</code> value is the live transport
+register, not the target status message. If a command fails:</p>
+<ul>
+<li><strong>timeout flag set</strong> means the required state
+transition did not arrive within the failure bound;</li>
+<li><strong>UCI transport error flag set</strong> means the state
+machine rejected the transfer, commonly because a command was pushed
+while it was not idle;</li>
+<li>a normal target error such as <code>FILE NOT FOUND</code> appears in
+the status-data output and does not itself mean the transport is
+broken.</li>
+</ul>
+<h2 id="real-world-workflows">Real-World Workflows</h2>
+<h3 id="confirm-uci-and-discover-targets">Confirm UCI and Discover
+Targets</h3>
+<ol type="1">
+<li>Run <strong>Transport → Detect</strong>.</li>
+<li>Run <strong>Transport → Read ID</strong>; the low seven bits should
+identify UCI.</li>
+<li>Run <strong>Identify</strong> on DOS 1, Network, Control,
+SoftwareIEC, and HTTP as appropriate for the installed firmware.</li>
+</ol>
+<p>This is the safest first test after a firmware or hardware
+configuration change.</p>
+<h3 id="list-a-directory-with-ultimate-dos">List a Directory with
+Ultimate DOS</h3>
+<p>DOS 1 and DOS 2 are independent sessions, each with its own current
+directory and open file.</p>
+<ol type="1">
+<li>Select <strong>DOS 1 → Change dir</strong>, enter
+<code>/usb1</code>, and run it.</li>
+<li>Run <strong>Get path</strong> to confirm the selected
+directory.</li>
+<li>Run <strong>Open dir</strong>.</li>
+<li>Run <strong>Read dir</strong> repeatedly. Each call returns one
+attribute byte followed by the filename. Stop when target status reports
+the end condition.</li>
+</ol>
+<p>Use decoded mode for readable names and F7 raw mode when inspecting
+FAT attribute bits.</p>
+<h3 id="inspect-and-read-a-file">Inspect and Read a File</h3>
+<ol type="1">
+<li>Press F8 and load <strong>Inspect ReadyOS image</strong>, adjust the
+path if necessary, then run File Stat.</li>
+<li>Select <strong>Open file</strong>, set attribute <code>$01</code>
+for read-only access, enter a filename, and run it.</li>
+<li>Select <strong>File info</strong> to inspect size and
+timestamp.</li>
+<li>Select <strong>Read data</strong>, set a modest length such as
+<code>$0040</code>, and run it.</li>
+<li>Select <strong>Close file</strong> when finished.</li>
+</ol>
+<p>For writes, the Ultimate DOS attribute byte is significant:
+<code>$02</code> opens an existing file for writing, <code>$04</code>
+creates a new file, and <code>$08</code> allows replacing an existing
+file. The common create/overwrite combination is <code>$0E</code>. Test
+write operations on disposable files.</p>
+<h3 id="inspect-network-configuration">Inspect Network
+Configuration</h3>
+<ol type="1">
+<li>Press F8 and load <strong>Show network address</strong>.</li>
+<li>Leave interface <code>$00</code> selected and run it.</li>
+<li>Decoded output shows the IP address, netmask, and gateway.</li>
+</ol>
+<p><code>Set IP</code> is intentionally marked as a write. Its raw field
+contains interface, address, mask, and gateway bytes; do not run it
+casually on a remotely managed Ultimate.</p>
+<h3 id="open-and-close-a-tcp-socket">Open and Close a TCP Socket</h3>
+<ol type="1">
+<li>Press F8 and load <strong>Open TCP example.com</strong>.</li>
+<li>Review port <code>$0050</code> (80) and host
+<code>example.com</code>, then run it.</li>
+<li>The returned one-byte socket handle is remembered
+automatically.</li>
+<li>Selecting Read Socket, Write Socket, or Close Socket prefills that
+handle.</li>
+<li>Always run <strong>Close socket</strong> when the experiment is
+complete.</li>
+</ol>
+<p>The Network target’s Read Socket response starts with a two-byte
+little-endian payload length. Decoded mode removes that framing and
+displays the payload.</p>
+<h3 id="perform-an-http-get">Perform an HTTP GET</h3>
+<p>HTTP resources survive a C64 reset, so begin by running <strong>HTTP
+→ Free all</strong>.</p>
+<ol type="1">
+<li>Press F8 and load <strong>Prepare HTTP GET</strong>.</li>
+<li>Run Header Create. The request-header handle is remembered.</li>
+<li>Select <strong>Exchange obj</strong>. The remembered header is
+prefilled and body <code>$FF</code> means “no request body.” Run
+it.</li>
+<li>A successful exchange returns two handles: response header and
+response body. Both are remembered.</li>
+<li>Select <strong>Header list</strong>, use index <code>$00</code>, and
+run it to view the complete response header.</li>
+<li>Press F8 and load <strong>Query last HTTP body</strong>, then run
+it. Its empty path queries the root value of the remembered body
+object.</li>
+<li>Free individual handles when done, or run <strong>Free
+all</strong>.</li>
+</ol>
+<p>Use <strong>Exchange raw</strong> when the response body should be
+returned directly rather than parsed into an HTTP body object. Long
+network requests can legitimately take seconds; the tester waits on UCI
+state transitions rather than inserting CPU-speed-dependent delays.</p>
+<h3 id="compare-structured-and-raw-commands">Compare Structured and Raw
+Commands</h3>
+<p>Run <strong>Control → Identify</strong>, then press F8 and load
+<strong>Raw Control identify</strong>. Both send target
+<code>$04</code>, command <code>$01</code>. The raw form is useful for
+testing a new firmware command before adding a structured catalog entry.
+Prefer structured commands for routine use because they document byte
+order and field widths.</p>
+<h2 id="commands-that-need-extra-care">Commands That Need Extra
+Care</h2>
+<ul>
+<li>Delete, rename, copy, create-directory, mount, unmount, and write
+commands alter storage or drive state.</li>
+<li>REU load/save commands can replace REU contents or files.</li>
+<li>Control Freeze and Reboot interrupt ReadyOS; Reboot has no UCI
+response because it resets the interface itself.</li>
+<li>Drive enable/disable changes emulated hardware state.</li>
+<li>SoftwareIEC partition changes alter virtual filesystem
+mappings.</li>
+<li>HTTP and socket resources should be freed or closed after use.</li>
+<li>The destructive EasyFlash erase command is deliberately not exposed
+in the structured catalog. It can still be investigated through Raw
+Bytes by an expert with disposable media and a recovery plan.</li>
+</ul>
+<h2 id="source-and-compatibility-notes">Source and Compatibility
+Notes</h2>
+<p>The catalog and transport behavior are based on the official Ultimate
+documentation:</p>
+<ul>
+<li><a
+href="https://github.com/GideonZ/1541u-documentation/blob/master/uci/core_uci_architecture.rst">UCI
+core architecture and register protocol</a></li>
+<li><a
+href="https://github.com/GideonZ/1541u-documentation/blob/master/uci/ultimate_dos_target.rst">Ultimate
+DOS target</a></li>
+<li><a
+href="https://github.com/GideonZ/1541u-documentation/blob/master/uci/network_target.rst">Network
+target</a></li>
+<li><a
+href="https://github.com/GideonZ/1541u-documentation/blob/master/uci/control_target.rst">Control
+target</a></li>
+<li><a
+href="https://github.com/GideonZ/1541u-documentation/blob/master/uci/software_iec_target.rst">SoftwareIEC
+target</a></li>
+<li><a
+href="https://github.com/GideonZ/1541u-documentation/blob/master/uci/http_target.rst">HTTP
+target</a></li>
+</ul>
+<p>For Ultimate-specific regressions, validate on physical hardware at
+both normal and accelerated CPU speeds. VICE does not implement the
+Ultimate hardware UCI service and cannot prove this transport
+correct.</p>
+<p>ReadyOS developers can run the focused 16 MHz physical-hardware smoke
+suite with:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> build_support/run_ucitest_c64u_smoke.sh</span></code></pre></div>
+<p>Repeat the same plan at normal CPU speed with:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">UCITEST_C64U_SPEED_MHZ</span><span class="op">=</span>1 <span class="ex">/bin/bash</span> build_support/run_ucitest_c64u_smoke.sh</span></code></pre></div>
+<p>Run it from the Terminal-owned/background shell required by
+<code>AGENTS.md</code>. The suite boots the regular D81 build, exercises
+detection, protocol guidance, DOS, network, and example prefilling, then
+clears REU state and reboots the Ultimate.</p>
+<p>Before any ReadyOS profile build, the source-contract guard checks
+every UCI transport and its app-level call sites for known
+asynchronous-state-machine regressions. It can also be run directly:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_uci_protocol_contract.py</span></code></pre></div>
+<p>For a release-quality physical-hardware check, run the complete
+matrix from a Terminal-owned/background shell:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">UCI_C64U_MATRIX_OUT_DIR</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$PWD</span><span class="st">/logs/uci-matrix&quot;</span> <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">/bin/bash</span> build_support/run_uci_c64u_matrix.sh</span></code></pre></div>
+<p>The matrix exercises the standalone DMA probe, the production
+launcher timing transport, System Info, UCI Tester, and ReadyIRC at both
+1 and 16 MHz. Both disk-image probes upload a fresh uniquely named D81
+for every run and embed that exact basename in the probe; reusing or
+replacing a recently mounted generic filename can corrupt a later boot
+or make Ultimate DOS return a misleading <code>84,NO FILE</code> for
+files that are present in the image.</p>
+</body>
+</html>
