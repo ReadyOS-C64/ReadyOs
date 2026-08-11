@@ -9,6 +9,9 @@ extern const char readyirc_config_channel[];
 extern const char readyirc_config_nick[];
 extern const unsigned int readyirc_config_port;
 
+/* These high-level calls own the complete asynchronous UCI transaction:
+ * quiet-idle sync, PUSH -> LAST/MORE wait, both queue drains, DATA_ACC, and
+ * final quiet-idle wait. App code must not add timing delays around them. */
 unsigned char readyirc_uci_detect(void);
 unsigned int readyirc_uci_base(void);
 unsigned char readyirc_uci_tcp_connect(const char *host,

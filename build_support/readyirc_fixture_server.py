@@ -275,6 +275,12 @@ class ReadyIrcHandler(socketserver.StreamRequestHandler):
                         f":QueueBot!user@fixture PRIVMSG {target} "
                         ":QUEUED WHILE SUSPENDED",
                     )
+                elif message.lower() == "helpwhileopen":
+                    self.schedule_line(
+                        2.0,
+                        f":HelpBot!user@fixture PRIVMSG {target} "
+                        ":QUEUED WHILE HELP OPEN",
+                    )
                 elif message.lower() == "dropwhileaway":
                     self.schedule_close(3.0)
                 elif message.lower() == "fillscroll":

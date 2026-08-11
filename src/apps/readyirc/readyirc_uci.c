@@ -10,11 +10,15 @@
 #define UCI_STATE_IDLE 0x00
 #define UCI_STATE_LAST 0x20
 #define UCI_STATE_MORE 0x30
+#define UCI_STAT_BUSY  0x01
+#define UCI_STAT_ACCEPT 0x02
 #define UCI_STAT_ABORT 0x04
 #define UCI_STAT_ERROR 0x08
 
-#define UCI_WAIT_SHORT  900u
-#define UCI_WAIT_LONG   5000u
+#define UCI_WAIT_SYNC     60000u
+#define UCI_WAIT_RESPONSE 60000u
+/* Four finite passes preserve the proven 16 MHz wall-time at 64 MHz. */
+#define UCI_WAIT_PASSES   4u
 
 #define TARGET_NETWORK 0x03
 #define NET_CMD_TCP_SOCKET_CONNECT 0x07
@@ -71,83 +75,129 @@ static unsigned char status_ok(void) {
                            uci_stat[1] == '0');
 }
 
+/* A reusable UCI transaction may start only from fully quiescent IDLE.
+ * In particular DATA_ACC and ABORT are asynchronous pending bits; seeing the
+ * state nibble become IDLE alone is not enough. */
+static unsigned char status_is_quiet_idle(unsigned char st) {
+    return (unsigned char)(((st & UCI_STATE_MASK) == UCI_STATE_IDLE) &&
+                           ((st & (UCI_STAT_BUSY | UCI_STAT_ACCEPT |
+                                   UCI_STAT_ABORT | UCI_STAT_ERROR)) == 0u));
+}
+
 static unsigned char wait_idle(void) {
+    unsigned char pass;
     unsigned int tries;
     unsigned char st;
 
-    for (tries = 0u; tries < UCI_WAIT_LONG; ++tries) {
-        st = readyirc_uci_asm_status();
-        if ((st & UCI_STAT_ERROR) != 0u) {
-            readyirc_uci_asm_clear_error();
-        }
-        if ((st & UCI_STATE_MASK) == UCI_STATE_IDLE && (st & 0x01u) == 0u) {
-            return 1u;
+    for (pass = 0u; pass < UCI_WAIT_PASSES; ++pass) {
+        for (tries = 0u; tries < UCI_WAIT_RESPONSE; ++tries) {
+            st = readyirc_uci_asm_status();
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                return 0u;
+            }
+            if (status_is_quiet_idle(st)) {
+                return 1u;
+            }
         }
     }
     return 0u;
 }
 
-static unsigned char wait_data_state(void) {
+static unsigned char wait_response_state(void) {
+    unsigned char pass;
     unsigned int tries;
     unsigned char state;
     unsigned char st;
 
-    for (tries = 0u; tries < UCI_WAIT_LONG; ++tries) {
-        st = readyirc_uci_asm_status();
-        if ((st & UCI_STAT_ERROR) != 0u) {
-            return 0u;
+    for (pass = 0u; pass < UCI_WAIT_PASSES; ++pass) {
+        for (tries = 0u; tries < UCI_WAIT_RESPONSE; ++tries) {
+            st = readyirc_uci_asm_status();
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                return 0u;
+            }
+            state = (unsigned char)(st & UCI_STATE_MASK);
+            if (state == UCI_STATE_LAST || state == UCI_STATE_MORE) {
+                return 1u;
+            }
         }
-        state = (unsigned char)(st & UCI_STATE_MASK);
-        if (state == UCI_STATE_LAST ||
-            state == UCI_STATE_MORE ||
-            state == UCI_STATE_IDLE) {
-            return 1u;
+    }
+    return 0u;
+}
+
+static unsigned char wait_accept_advance(unsigned char old_state) {
+    unsigned char pass;
+    unsigned int tries;
+    unsigned char st;
+
+    /* DATA_ACC is asynchronous. At high CPU speed the first sample can still
+     * be the drained block, so require the documented state transition. */
+    for (pass = 0u; pass < UCI_WAIT_PASSES; ++pass) {
+        for (tries = 0u; tries < UCI_WAIT_RESPONSE; ++tries) {
+            st = readyirc_uci_asm_status();
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                return 0u;
+            }
+            if ((st & UCI_STATE_MASK) != old_state) {
+                return 1u;
+            }
         }
     }
     return 0u;
 }
 
 static unsigned char sync_interface(void) {
+    unsigned char pass;
     unsigned int tries;
     unsigned char state;
     unsigned char st;
 
-    for (tries = 0u; tries < UCI_WAIT_SHORT; ++tries) {
-        st = readyirc_uci_asm_status();
-        state = (unsigned char)(st & UCI_STATE_MASK);
+    for (pass = 0u; pass < UCI_WAIT_PASSES; ++pass) {
+        for (tries = 0u; tries < UCI_WAIT_SYNC; ++tries) {
+            st = readyirc_uci_asm_status();
+            state = (unsigned char)(st & UCI_STATE_MASK);
 
-        if ((st & UCI_STAT_ERROR) != 0u) {
-            readyirc_uci_asm_clear_error();
-            tries = 0u;
-            continue;
-        }
-        if ((st & UCI_STAT_ABORT) != 0u) {
-            readyirc_uci_asm_abort();
-            tries = 0u;
-            continue;
-        }
-        if ((st & UCI_STAT_DATA) != 0u) {
-            (void)readyirc_uci_asm_read_data();
-            tries = 0u;
-            continue;
-        }
-        if ((st & UCI_STAT_STAT) != 0u) {
-            (void)readyirc_uci_asm_read_stat();
-            tries = 0u;
-            continue;
-        }
-        if (state == UCI_STATE_LAST || state == UCI_STATE_MORE) {
-            readyirc_uci_asm_accept_data();
-            tries = 0u;
-            continue;
-        }
-        if (state == UCI_STATE_IDLE && (st & 0x01u) == 0u) {
-            return 1u;
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                readyirc_uci_asm_clear_error();
+                continue;
+            }
+            if ((st & UCI_STAT_ABORT) != 0u) {
+                /* ABORT_P already means an asynchronous request is pending. */
+                continue;
+            }
+            if ((st & UCI_STAT_DATA) != 0u) {
+                (void)readyirc_uci_asm_read_data();
+                continue;
+            }
+            if ((st & UCI_STAT_STAT) != 0u) {
+                (void)readyirc_uci_asm_read_stat();
+                continue;
+            }
+            if (state == UCI_STATE_LAST || state == UCI_STATE_MORE) {
+                readyirc_uci_asm_accept_data();
+                if (!wait_accept_advance(state)) {
+                    return 0u;
+                }
+                continue;
+            }
+            if (status_is_quiet_idle(st)) {
+                return 1u;
+            }
         }
     }
 
-    readyirc_uci_asm_abort();
-    return wait_idle();
+    return 0u;
+}
+
+static unsigned char abort_and_recover(void) {
+    unsigned char st;
+
+    /* Request ABORT once, then service stale queues/ERROR/DATA_ACC until the
+     * interface is fully quiet. Never use ABORT_P as a cue to re-request it. */
+    st = readyirc_uci_asm_status();
+    if ((st & UCI_STAT_ABORT) == 0u) {
+        readyirc_uci_asm_abort();
+    }
+    return sync_interface();
 }
 
 static unsigned char command(const unsigned char *cmd,
@@ -156,8 +206,10 @@ static unsigned char command(const unsigned char *cmd,
     unsigned char i;
     unsigned char st;
     unsigned char state;
-    unsigned int drain_guard;
+    unsigned int drain_tries;
 
+    /* Sole ReadyIRC transaction gateway. Keep this state-driven: timeout
+     * counters bound failure but must never pace the Ultimate. */
     uci_data_len = 0u;
     uci_stat_len = 0u;
     last_status[0] = 0;
@@ -167,8 +219,7 @@ static unsigned char command(const unsigned char *cmd,
         return 0u;
     }
     if (!sync_interface()) {
-        readyirc_uci_asm_abort();
-        if (!wait_idle()) {
+        if (!abort_and_recover()) {
             return 0u;
         }
     }
@@ -178,28 +229,38 @@ static unsigned char command(const unsigned char *cmd,
     }
     readyirc_uci_asm_push_cmd();
 
-    if (!wait_data_state()) {
-        readyirc_uci_asm_abort();
+    /* PUSH_CMD is asynchronous.  An immediate IDLE sample means the Ultimate
+     * has not observed the push yet, not that an empty command completed. */
+    if (!wait_response_state()) {
+        (void)abort_and_recover();
         return 0u;
     }
 
     for (;;) {
         st = readyirc_uci_asm_status();
-        state = (unsigned char)(st & UCI_STATE_MASK);
-        if (state == UCI_STATE_IDLE) {
-            break;
+        if ((st & UCI_STAT_ERROR) != 0u) {
+            (void)abort_and_recover();
+            return 0u;
         }
+        state = (unsigned char)(st & UCI_STATE_MASK);
         if (state != UCI_STATE_LAST && state != UCI_STATE_MORE) {
-            if (!wait_data_state()) {
-                readyirc_uci_asm_abort();
+            if (!wait_response_state()) {
+                (void)abort_and_recover();
                 return 0u;
             }
             continue;
         }
 
-        drain_guard = 0u;
-        while (drain_guard < UCI_WAIT_SHORT) {
+        /* Bound a stuck availability bit without using the bound for pacing.
+         * Valid 896-byte data and 256-byte status queues fit comfortably. */
+        for (drain_tries = 0u;
+             drain_tries < UCI_WAIT_RESPONSE;
+             ++drain_tries) {
             st = readyirc_uci_asm_status();
+            if ((st & UCI_STAT_ERROR) != 0u) {
+                (void)abort_and_recover();
+                return 0u;
+            }
             if ((st & UCI_STAT_DATA) != 0u) {
                 if (uci_data_len < data_cap) {
                     uci_data[uci_data_len] = readyirc_uci_asm_read_data();
@@ -207,7 +268,6 @@ static unsigned char command(const unsigned char *cmd,
                 } else {
                     (void)readyirc_uci_asm_read_data();
                 }
-                drain_guard = 0u;
                 continue;
             }
             if ((st & UCI_STAT_STAT) != 0u) {
@@ -217,19 +277,29 @@ static unsigned char command(const unsigned char *cmd,
                 } else {
                     (void)readyirc_uci_asm_read_stat();
                 }
-                drain_guard = 0u;
                 continue;
             }
-            ++drain_guard;
+            break;
+        }
+        if (drain_tries == UCI_WAIT_RESPONSE) {
+            (void)abort_and_recover();
+            return 0u;
         }
 
         readyirc_uci_asm_accept_data();
         if (state == UCI_STATE_LAST) {
-            (void)wait_idle();
+            if (!wait_idle()) {
+                (void)abort_and_recover();
+                return 0u;
+            }
             break;
         }
-        if (!wait_data_state()) {
-            readyirc_uci_asm_abort();
+        if (!wait_accept_advance(state)) {
+            (void)abort_and_recover();
+            return 0u;
+        }
+        if (!wait_response_state()) {
+            (void)abort_and_recover();
             return 0u;
         }
     }

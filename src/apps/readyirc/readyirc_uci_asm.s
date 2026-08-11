@@ -1,5 +1,7 @@
 ;
 ; readyirc_uci_asm.s - tiny Ultimate Command Interface accessors
+; Low-level register operations only. readyirc_uci.c owns synchronization,
+; async PUSH/ABORT waits, complete queue drains, DATA_ACC, and quiet IDLE.
 ;
 
         .export _readyirc_uci_asm_write_cmd

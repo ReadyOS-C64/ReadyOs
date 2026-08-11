@@ -76,6 +76,7 @@ static unsigned char running;
 static unsigned char connected;
 static unsigned char connection_wanted;
 static unsigned char ui_mode;
+static unsigned char help_visible;
 static unsigned char socket_id;
 static unsigned char scroll_bank;
 static unsigned char reu_scroll;
@@ -116,6 +117,8 @@ static unsigned char ram_colors[RAM_MAX_LINES][IRC_LINE_W];
 static void draw_shell(void);
 static void draw_header(void);
 static void draw_output(void);
+static void draw_help_popup(void);
+static void close_help_popup(void);
 static void draw_output_row(unsigned char row, unsigned int rel_index);
 static unsigned int output_start_rel(void);
 static void shift_output_up(void);
@@ -489,6 +492,7 @@ static void draw_setup_field(unsigned char index, unsigned char y,
 }
 
 static void draw_setup(void) {
+    help_visible = 0u;
     tui_init();
     force_lowercase_charset();
     tui_clear(TUI_THEME_BG);
@@ -506,13 +510,16 @@ static void draw_setup(void) {
     tui_puts_n(0u, 22u, "up/down field  left/right/home edit", 40u,
                TUI_COLOR_GRAY3);
     tui_puts_n(0u, 23u, "del erases  return connect", 40u, TUI_COLOR_GRAY3);
-    tui_puts_n(0u, 24u, "ctrl+b home  f2/f4 apps  runstop exit", 40u,
+    tui_puts_n(0u, 24u, "f3 help  f2/f4 apps  ctrl+b home", 40u,
                TUI_COLOR_GRAY3);
 }
 
 static void draw_header(void) {
     char title[41];
 
+    if (help_visible) {
+        return;
+    }
     title[0] = 0;
     append_fit(title, sizeof(title), "readyirc ");
     append_fit(title, sizeof(title), connected ? "online " : "offline ");
@@ -526,21 +533,67 @@ static void draw_header(void) {
 }
 
 static void draw_shell(void) {
+    help_visible = 0u;
     tui_init();
     force_lowercase_charset();
     tui_clear(TUI_THEME_BG);
     draw_header();
     tui_hline(0u, (unsigned char)(OUTPUT_TOP - 1u), 40u, TUI_COLOR_LIGHTBLUE);
     tui_hline(0u, (unsigned char)(INPUT_Y - 1u), 40u, TUI_COLOR_LIGHTBLUE);
-    tui_puts_n(0u, HELP_Y, "f1 disconnect ctrl+b home f2/f4 apps", 40u, TUI_COLOR_GRAY3);
+    tui_puts_n(0u, HELP_Y, "f1 disconnect  f3 help  f2/f4 apps", 40u,
+               TUI_COLOR_GRAY3);
     draw_status("starting", TUI_COLOR_GRAY3);
     draw_output();
     draw_input();
 }
 
 static void draw_status(const char *msg, unsigned char color) {
+    if (help_visible) {
+        return;
+    }
     tui_clear_line(STATUS_Y, 0u, 40u, color);
     tui_puts_n(0u, STATUS_Y, msg, 40u, color);
+}
+
+static void draw_help_popup(void) {
+    TuiRect win;
+
+    help_visible = 1u;
+    win.x = 1u;
+    win.y = 2u;
+    win.w = 38u;
+    win.h = 21u;
+    tui_window_title(&win, "readyirc help", TUI_COLOR_LIGHTBLUE,
+                     TUI_COLOR_YELLOW);
+
+    tui_puts(3u, 4u, "readyirc commands", TUI_COLOR_WHITE);
+    tui_puts(3u, 5u, "text           send to channel", TUI_COLOR_GRAY3);
+    tui_puts(3u, 6u, "/me text       send an action", TUI_COLOR_GRAY3);
+    tui_puts(3u, 7u, "/join #channel switch channel", TUI_COLOR_GRAY3);
+    tui_puts(3u, 8u, "/names [#chan] list members", TUI_COLOR_GRAY3);
+    tui_puts(3u, 9u, "/disconnect    return to setup", TUI_COLOR_GRAY3);
+    tui_puts(3u, 10u, "/quit          leave irc for home", TUI_COLOR_GRAY3);
+    tui_puts(3u, 11u, "/msg ...       direct msgs disabled", TUI_COLOR_GRAY3);
+
+    tui_puts(3u, 13u, "chat keys", TUI_COLOR_WHITE);
+    tui_puts(3u, 14u, "up/down:scroll left/right:cursor", TUI_COLOR_GRAY3);
+    tui_puts(3u, 15u, "del:erase  f1:disconnect", TUI_COLOR_GRAY3);
+    tui_puts(3u, 16u, "f3:help  run/stop:exit", TUI_COLOR_GRAY3);
+
+    tui_puts(3u, 18u, "readyos keys", TUI_COLOR_WHITE);
+    tui_puts(3u, 19u, "f2/f4:apps  ctrl+b:launcher", TUI_COLOR_GRAY3);
+    tui_puts(3u, 21u, "ret/f3/stop/left:close", TUI_COLOR_CYAN);
+}
+
+static void close_help_popup(void) {
+    help_visible = 0u;
+    if (ui_mode == UI_MODE_SETUP) {
+        draw_setup();
+        return;
+    }
+    draw_shell();
+    draw_status(connected ? "connected" : "disconnected",
+                connected ? TUI_COLOR_LIGHTGREEN : TUI_COLOR_GRAY3);
 }
 
 static unsigned int physical_line(unsigned int rel_index) {
@@ -630,6 +683,10 @@ static void draw_input(void) {
     unsigned char display_start;
     unsigned char width;
     unsigned int offset;
+
+    if (help_visible) {
+        return;
+    }
 
     width = 38u;
     if (input_cursor >= width) {
@@ -722,6 +779,17 @@ static void store_line(const char *chars, const unsigned char *colors) {
         memcpy(ram_colors[idx], colors, IRC_LINE_W);
     }
 
+    if (help_visible) {
+        if (old_scroll != 0u) {
+            start = line_count > OUTPUT_H ?
+                    (unsigned int)(line_count - OUTPUT_H) : 0u;
+            if (scroll_back < start && scroll_back < 255u) {
+                ++scroll_back;
+            }
+        }
+        return;
+    }
+
     if (old_scroll != 0u) {
         start = line_count > OUTPUT_H ?
                 (unsigned int)(line_count - OUTPUT_H) : 0u;
@@ -788,6 +856,8 @@ static void add_join_part(const char *nick, const char *verb) {
 
 static void send_raw(const char *s) {
     if (connected) {
+        /* High-level UCI call: the transport performs PUSH/LAST-or-MORE,
+         * drains data+status, acknowledges, and waits for quiet IDLE. */
         (void)readyirc_uci_socket_write(socket_id, s, (unsigned int)strlen(s));
     }
 }
@@ -815,6 +885,8 @@ static void send_login(void) {
 }
 
 static unsigned char connect_irc(void) {
+    /* Detection is read-only; tcp_connect owns one complete asynchronous UCI
+     * transaction. Do not add instruction-delay pacing around either call. */
     if (!readyirc_uci_detect()) {
         add_status_line("uci command interface not detected");
         draw_status("uci not detected", TUI_COLOR_LIGHTRED);
@@ -843,6 +915,7 @@ static unsigned char connect_irc(void) {
 
 static void disconnect_irc(void) {
     if (connected) {
+        /* Close is a complete UCI command, including response drain/accept. */
         readyirc_uci_socket_close(socket_id);
         connected = 0u;
         draw_header();
@@ -868,6 +941,7 @@ static void connection_lost(void) {
     connected = 0u;
     add_status_line("connection expired");
     draw_status("reconnecting", TUI_COLOR_YELLOW);
+    /* Best-effort close still runs the full UCI recovery/transaction path. */
     readyirc_uci_socket_close(socket_id);
     if (connection_wanted && connect_irc()) {
         add_status_line("reconnected");
@@ -1084,6 +1158,8 @@ static void poll_network(void) {
         return;
     }
     for (burst = 0u; burst < NET_READ_BURST; ++burst) {
+        /* Each poll is one fully acknowledged UCI transaction; NO DATA is a
+         * target status, not transport IDLE or a reason to insert a delay. */
         n = readyirc_uci_socket_read(socket_id, net_buf, NET_READ_CHUNK);
         status_code = readyirc_uci_last_status_code();
         if (status_code == UCI_STATUS_NO_DATA) {
@@ -1110,6 +1186,8 @@ static void probe_resumed_connection(void) {
     if (!connection_wanted || !connected) {
         return;
     }
+    /* One state-driven UCI poll. The transport distinguishes target NO DATA
+     * from an ERROR bit and returns only after quiet IDLE. */
     n = readyirc_uci_socket_read(socket_id, net_buf, NET_READ_CHUNK);
     status_code = readyirc_uci_last_status_code();
     if (status_code == UCI_STATUS_NO_DATA) {
@@ -1382,6 +1460,22 @@ static void handle_key(unsigned char key) {
         return;
     }
 
+    if (key == TUI_KEY_F3) {
+        if (help_visible) {
+            close_help_popup();
+        } else {
+            draw_help_popup();
+        }
+        return;
+    }
+    if (help_visible) {
+        if (key == TUI_KEY_RETURN || key == TUI_KEY_RUNSTOP ||
+            key == TUI_KEY_LARROW) {
+            close_help_popup();
+        }
+        return;
+    }
+
     if (ui_mode == UI_MODE_SETUP) {
         handle_setup_key(key);
     } else {
@@ -1507,6 +1601,7 @@ int main(void) {
     connected = 0u;
     connection_wanted = 0u;
     ui_mode = UI_MODE_SETUP;
+    help_visible = 0u;
     socket_id = 0u;
     scroll_bank = 0xFFu;
     reu_scroll = 0u;
