@@ -19,6 +19,7 @@ obj/
 src/apps/readyshell/*.i
 
 # Emulator / automation outputs
+agentworking/
 logs/
 *.log
 *.out
