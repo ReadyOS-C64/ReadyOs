@@ -1,0 +1,68 @@
+{
+  "avg_header_tax_ms": 0,
+  "dir_probe": {
+    "data_len": 0,
+    "data_prefix_hex": "00000000",
+    "status_len": 0,
+    "status_prefix": ""
+  },
+  "done": 1,
+  "dump": "/Users/karlprosserpp/dev/c64projects/agenticdevharness/tools/vice_tasks_dotnet/logs/ultimate_auto_20260810_171534/stages/dump_results/uci_timing_results_3000.bin",
+  "failures": 0,
+  "first_failure": {
+    "debug_status0": 0,
+    "debug_status1": 0,
+    "item": 0,
+    "launcher_error": 0,
+    "name": ""
+  },
+  "header_tax_ms": 0,
+  "items": 29,
+  "loaded_kb": 613,
+  "max_load_ms": 383,
+  "max_load_name": "editor",
+  "phases_ms": {
+    "first_load": 383,
+    "subsequent_loads": 3683
+  },
+  "raw_phase_ticks": {
+    "first_load": 23,
+    "subsequent_loads": 221
+  },
+  "raw_stage_ticks": {
+    "cd_dir": 3,
+    "cd_image": 3,
+    "cd_root": 0,
+    "close": 2,
+    "detect": 0,
+    "drvinfo": 1,
+    "file_info": 34,
+    "identify": 1,
+    "load_reu": 141,
+    "mount": 9,
+    "open": 48,
+    "read_header": 1,
+    "seek_payload": 1
+  },
+  "raw_subsequent_stage_ticks": null,
+  "raw_total_ticks": 244,
+  "stages_ms": {
+    "cd_dir": 50,
+    "cd_image": 50,
+    "cd_root": 0,
+    "close": 33,
+    "detect": 0,
+    "drvinfo": 17,
+    "file_info": 567,
+    "identify": 17,
+    "load_reu": 2350,
+    "mount": 150,
+    "open": 800,
+    "read_header": 17,
+    "seek_payload": 17
+  },
+  "subsequent_stages_ms": null,
+  "successes": 29,
+  "total_ms": 4067,
+  "version": 4
+}
