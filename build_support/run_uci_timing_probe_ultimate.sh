@@ -6,9 +6,16 @@ harness="/Users/karlprosserpp/dev/c64projects/agenticdevharness/tools/vice_tasks
 log="${1:-/tmp/uci_timing_probe_ultimate.log}"
 status="${2:-/tmp/uci_timing_probe_ultimate.status}"
 host="${C64U_HOST:-10.0.0.79}"
-remote_image="${C64U_REMOTE_IMAGE:-USB1/readyos.d81}"
+speed_mhz="${UCI_TIMING_SPEED_MHZ:-16}"
+run_tag="$(date +%Y%m%d-%H%M%S)-${speed_mhz}mhz-$$"
+remote_image="${C64U_REMOTE_IMAGE:-USB1/uci-timing-${run_tag}.d81}"
 plan="/tmp/uci_timing_probe_ultimate.yaml"
 connect_wait_s="${C64U_CONNECT_WAIT_S:-300}"
+
+case "$speed_mhz" in
+  1|2|3|4|6|8|10|12|14|16|20|24|32|40|48|64) ;;
+  *) echo "UCI_TIMING_SPEED_MHZ is not supported: $speed_mhz" >&2; exit 64 ;;
+esac
 
 rm -f "$log" "$status"
 
@@ -45,10 +52,16 @@ wait_for_url() {
   date
   echo "C64U host: $host"
   echo "Remote image: /$remote_image"
+  echo "CPU speed: ${speed_mhz} MHz"
 } > "$log"
 
 cd "$repo" || exit 1
-if ! run /bin/bash probes/uci_timing/build.sh; then
+image_name="${remote_image##*/}"
+# Ultimate DOS can retain mounted-image context by filename. Build the probe
+# with the exact fresh remote basename instead of replacing a generic mounted
+# path; otherwise a valid D81 can misleadingly return 84,NO FILE at OPEN.
+if ! run env UCI_TIMING_IMAGE_NAME="$image_name" \
+  /bin/bash probes/uci_timing/build.sh; then
   exit 1
 fi
 
@@ -57,6 +70,7 @@ sed \
   -e "s#remote_root: USB1#remote_root: ${remote_root}#g" \
   -e "s#remote_disk: USB1/readyos.d81#remote_disk: ${remote_image}#g" \
   -e "s#host: 10.0.0.79#host: ${host}#g" \
+  -e "s#mhz: 16#mhz: ${speed_mhz}#g" \
   "$repo/build_support/uci_timing_probe_ultimate.generated.yaml" > "$plan"
 
 echo "Replacing /$remote_image" >> "$log"

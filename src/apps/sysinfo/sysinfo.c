@@ -662,6 +662,9 @@ static void draw_system_tab(void) {
 }
 
 static unsigned char run_uci(const unsigned char *cmd, unsigned char len) {
+    /* Sole app-level UCI command gateway. sysinfo_uci_command synchronizes,
+     * waits for LAST/MORE (never immediate IDLE), drains both queues, issues
+     * DATA_ACC, and returns only after quiet IDLE. */
     uci_data_len = 0u;
     uci_stat_len = 0u;
     return sysinfo_uci_command(cmd, len,
@@ -961,6 +964,8 @@ static unsigned char format_softiec_info(char *dst, const unsigned char *src, un
         }
     }
 
+    /* This is the documented adjacent SoftIEC bus register, not a UCI command
+     * transaction; it is read only after the command gateway has quiesced. */
     softiec_bus = sysinfo_uci_asm_read_softiec_bus();
     if (softiec_bus >= 4u && softiec_bus <= 30u) {
         dst[0] = 0;
@@ -1074,6 +1079,8 @@ static void draw_ultimate_tab(void) {
     unsigned char softiec_present;
 
     clear_info_pane();
+    /* Detection only probes the documented bases. Every command below goes
+     * through run_uci so refreshes cannot overlap asynchronous UCI state. */
     uci_base = sysinfo_uci_base();
     if (uci_base == 0u) {
         add_row("uci:", "not detected", TUI_COLOR_LIGHTRED);

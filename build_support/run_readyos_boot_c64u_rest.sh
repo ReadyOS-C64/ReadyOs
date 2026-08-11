@@ -90,6 +90,7 @@ reset_machine() {
 }
 
 clear_reu_data() {
+  local attempt
   python3 - "${tmp_dir}/clear_reu.prg" "$clear_reu_banks" <<'PY'
 import pathlib
 import sys
@@ -120,10 +121,24 @@ prg[-1] = banks & 0xFF
 pathlib.Path(sys.argv[1]).write_bytes(prg)
 PY
   echo "clear REU banks=${clear_reu_banks}" >> "$log"
-  run curl --fail --silent --show-error --max-time 30 \
-    -H "Content-Type: application/octet-stream" \
-    --data-binary "@${tmp_dir}/clear_reu.prg" \
-    "${api}/runners:run_prg"
+  # The runners endpoint can briefly return 404 immediately after another
+  # Ultimate automation plan releases the machine even though /v1/drives is
+  # already responsive. Keep this retry finite so a missing endpoint remains
+  # a real failure instead of aborting the next app before it launches.
+  for attempt in $(seq 1 10); do
+    echo "+ curl runners:run_prg attempt=${attempt}" >> "$log"
+    if curl --fail --silent --show-error --max-time 30 \
+      -H "Content-Type: application/octet-stream" \
+      --data-binary "@${tmp_dir}/clear_reu.prg" \
+      "${api}/runners:run_prg" >> "$log" 2>&1; then
+      break
+    fi
+    if (( attempt == 10 )); then
+      echo "runners:run_prg unavailable after ${attempt} attempts" >> "$log"
+      return 1
+    fi
+    sleep 2
+  done
   sleep "${READYOS_CLEAR_REU_WAIT_S:-20}"
 }
 

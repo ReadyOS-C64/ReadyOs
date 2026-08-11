@@ -8,6 +8,10 @@ base_d81="${BASE_D81:-}"
 
 mkdir -p "$build_dir"
 
+# The timing probe links the production launcher transport; enforce its source
+# contract before instrumentation so timing data cannot bless stale semantics.
+python3 "$root_dir/build_support/verify_uci_protocol_contract.py"
+
 if [[ -z "$base_d81" ]]; then
   base_d81="$(ls -t "$root_dir"/Releases/0.2.5/precog-d81/*.d81 2>/dev/null | head -1 || true)"
 fi

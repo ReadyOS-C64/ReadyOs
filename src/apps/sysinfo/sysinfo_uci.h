@@ -6,6 +6,8 @@
 
 unsigned char sysinfo_uci_detect(void);
 unsigned int sysinfo_uci_base(void);
+/* Owns the full asynchronous transaction and always drains overflow before
+ * DATA_ACC. Callers consume captured prefixes; they must not pace this call. */
 unsigned char sysinfo_uci_command(const unsigned char *cmd,
                                   unsigned char cmd_len,
                                   unsigned char *data,

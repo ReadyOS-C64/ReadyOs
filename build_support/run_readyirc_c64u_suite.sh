@@ -12,12 +12,18 @@ FIXTURE_PORT="${READYIRC_FIXTURE_PORT:-16667}"
 FIXTURE_CHANNEL="${READYIRC_FIXTURE_CHANNEL:-#readyostest}"
 SWITCH_CHANNEL="${READYIRC_SWITCH_CHANNEL:-#secondtest}"
 FIXTURE_NICK="${READYIRC_FIXTURE_NICK:-autonick}"
+TEST_SPEED_MHZ="${READYIRC_C64U_SPEED_MHZ:-1}"
 OUT_DIR="${READYIRC_C64U_OUT_DIR:-$READYOS_ROOT/logs/readyirc_c64u}"
 PLAN="$OUT_DIR/readyirc_c64u.generated.yaml"
 FIXTURE_LOG="$OUT_DIR/fixture.log"
 FIXTURE_STATUS="$OUT_DIR/fixture-status.json"
 HARNESS_LOG="$OUT_DIR/harness.log"
 FIXTURE_PID=""
+
+case "$TEST_SPEED_MHZ" in
+  1|2|3|4|6|8|10|12|14|16|20|24|32|40|48|64) ;;
+  *) echo "READYIRC_C64U_SPEED_MHZ is not supported: $TEST_SPEED_MHZ" >&2; exit 64 ;;
+esac
 
 cleanup() {
   if [ -n "$FIXTURE_PID" ] && kill -0 "$FIXTURE_PID" 2>/dev/null; then
@@ -73,17 +79,16 @@ discover_fixture_host() {
 mkdir -p "$OUT_DIR"
 cd "$READYOS_ROOT"
 
+# Fail before touching hardware if any production/probe transport regressed to
+# immediate-IDLE completion or CPU-delay pacing.
+python3 build_support/verify_uci_protocol_contract.py
+
 FIXTURE_HOST="$(discover_fixture_host)"
 
 if [ "${READYIRC_C64U_GENERATE_PLAN_ONLY:-0}" != "1" ] &&
    [ "${READYIRC_C64U_SKIP_BUILD:-0}" != "1" ]; then
-  VERSION_TEXT="$(python3 build_support/update_build_version.py --current)"
-  make -B \
-    BUILD_SUPPORT_DIR=build_support \
-    PROFILE=precog-d81 \
-    LAUNCHER_DMA_LOAD=1 \
-    READYOS_VERSION_TEXT="$VERSION_TEXT" \
-    profile
+  LAUNCHER_DMA_LOAD=1 /bin/bash ./run.sh \
+    --profile precog-d81 --build-only
 fi
 
 if [ -n "${READYIRC_C64U_D81:-}" ]; then
@@ -192,6 +197,9 @@ steps:
   - id: wait_launcher
     type: screen.wait_contains
     params: { text: "READY OS", wait_timeout_s: 360, poll_s: 1.0, pre_delay_s: 90, capture_label: readyirc_launcher }
+  - id: set_test_speed
+    type: ultimate.speed.set
+    params: { mhz: $TEST_SPEED_MHZ }
   - id: select_readyirc
     type: input.sequence
     params: { keys: [$SELECT_READYIRC], inter_key_delay_s: 0.18, post_delay_s: 2.0 }
@@ -204,6 +212,24 @@ steps:
   - id: assert_lowercase_charset
     type: assert.memory
     params: { start: 0xD018, end: 0xD018, equals_hex: "17" }
+  - id: open_setup_help
+    type: input.sequence
+    params: { keys: [134], inter_key_delay_s: 0.1, post_delay_s: 0.2 }
+  - id: wait_setup_help
+    type: screen.wait_contains
+    params: { text: "readyirc help", wait_timeout_s: 10, poll_s: 0.25, capture_label: readyirc_setup_help }
+  - id: assert_setup_help_commands
+    type: assert.screen
+    params: { contains: "/disconnect    return to setup" }
+  - id: close_setup_help
+    type: input.sequence
+    params: { keys: [134], inter_key_delay_s: 0.1, post_delay_s: 0.2 }
+  - id: wait_setup_after_help
+    type: screen.wait_contains
+    params: { text: "readyirc setup", wait_timeout_s: 10, poll_s: 0.25 }
+  - id: assert_setup_retained_after_help
+    type: assert.screen
+    params: { contains: "enteryournick" }
   - id: focus_port
     type: input.sequence
     params: { keys: [17], inter_key_delay_s: 0.1, post_delay_s: 0.2 }
@@ -243,6 +269,24 @@ steps:
   - id: wait_echo
     type: screen.wait_contains
     params: { text: "echo mixed hello", wait_timeout_s: 30, poll_s: 0.5, capture_label: readyirc_echo }
+  - id: schedule_message_behind_help
+    type: input.sequence
+    params: { keys: [$(keys $'helpwhileopen\r'),134], inter_key_delay_s: 0.06, post_delay_s: 0.2 }
+  - id: wait_chat_help
+    type: screen.wait_contains
+    params: { text: "readyirc help", wait_timeout_s: 10, poll_s: 0.25, capture_label: readyirc_chat_help }
+  - id: assert_chat_help_survives_network
+    type: screen.wait_contains
+    params: { text: "readyirc help", wait_timeout_s: 10, poll_s: 0.25, pre_delay_s: 3.0, capture_label: readyirc_chat_help_after_network }
+  - id: assert_chat_help_keys
+    type: assert.screen
+    params: { contains: "up/down:scroll left/right:cursor" }
+  - id: close_chat_help
+    type: input.sequence
+    params: { keys: [134], inter_key_delay_s: 0.1, post_delay_s: 0.2 }
+  - id: wait_message_received_behind_help
+    type: screen.wait_contains
+    params: { text: "queued while help open", wait_timeout_s: 20, poll_s: 0.25, capture_label: readyirc_help_closed }
   - id: fill_scrollback
     type: input.sequence
     params: { keys: [$(keys $'fillscroll\r')], inter_key_delay_s: 0.04, post_delay_s: 0.5 }
@@ -502,13 +546,13 @@ if [ "${READYIRC_C64U_PRESERVE_TEST_STATE:-0}" != "1" ]; then
   /usr/bin/curl --fail --silent --show-error --request PUT \
     "http://$C64U_HOST/v1/machine:reboot" \
     --output "$OUT_DIR/post-suite-reboot.json"
-  sleep 8
-  C64U_HOST="$C64U_HOST" \
-  C64U_SKIP_UPLOAD=1 \
-  C64U_SKIP_CONFIG=1 \
-  READYOS_BOOT_INITIAL_WAIT_S=90 \
-    /bin/bash build_support/run_readyos_boot_c64u_rest.sh \
-      "$D81" READYOS.D81 "$OUT_DIR/post-suite-clean-boot"
+  sleep 4
+  # Leave the hardware at a responsive BASIC screen. A second full ReadyOS
+  # boot here is not part of the ReadyIRC assertions and can stall a 1 MHz
+  # disk boot while REST screen polling is active.
+  /usr/bin/curl --fail --silent --show-error --request PUT \
+    "http://$C64U_HOST/v1/machine:resume" \
+    --output "$OUT_DIR/post-suite-resume.json"
 fi
 
 echo "ReadyIRC C64 Ultimate suite passed; artifacts: $OUT_DIR"

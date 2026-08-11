@@ -6,6 +6,9 @@ build_dir="$root_dir/build/uci_dma_probe"
 
 mkdir -p "$build_dir"
 
+# Prevent a standalone probe from preserving an obsolete UCI state loop.
+python3 "$root_dir/build_support/verify_uci_protocol_contract.py"
+
 ca65_flags=()
 if [[ "${PROBE_DO_CD:-0}" == "1" ]]; then
   ca65_flags+=("-D" "DO_CD")
@@ -14,8 +17,10 @@ image_type="${PROBE_IMAGE_TYPE:-d81}"
 case "$image_type" in
   d64)
     ca65_flags+=("-D" "PROBE_D64")
+    default_image_name="UCI40.D64"
     ;;
   d81)
+    default_image_name="UCI41.D81"
     ;;
   *)
     echo "PROBE_IMAGE_TYPE must be d81 or d64" >&2
@@ -23,10 +28,34 @@ case "$image_type" in
     ;;
 esac
 
+image_name="${UCI_DMA_IMAGE_NAME:-$default_image_name}"
+python3 - "$image_name" "$image_type" "$build_dir/uci_dma_image_name.inc" <<'PY'
+import pathlib
+import re
+import sys
+
+name, image_type, output = sys.argv[1:]
+if not re.fullmatch(r"[A-Za-z0-9._-]{1,48}", name):
+    raise SystemExit("UCI_DMA_IMAGE_NAME must be a 1-48 character basename")
+if not name.lower().endswith("." + image_type):
+    raise SystemExit(f"UCI_DMA_IMAGE_NAME must end in .{image_type}")
+
+def asm_bytes(value):
+    return ", ".join(f"${byte:02X}" for byte in value.encode("ascii")) + ", 0"
+
+text = "\n".join((
+    f"d81_name: .byte {asm_bytes(name)}",
+    f"d81_usb1_abs_name: .byte {asm_bytes('/USB1/' + name)}",
+    f"d81_usb0_abs_name: .byte {asm_bytes('/USB0/' + name)}",
+    "",
+))
+pathlib.Path(output).write_text(text, encoding="ascii")
+PY
+
 if (( ${#ca65_flags[@]} )); then
-  ca65 "${ca65_flags[@]}" -o "$build_dir/uci_dma_probe.o" "$root_dir/probes/uci_dma/uci_dma_probe.s"
+  ca65 -I "$build_dir" "${ca65_flags[@]}" -o "$build_dir/uci_dma_probe.o" "$root_dir/probes/uci_dma/uci_dma_probe.s"
 else
-  ca65 -o "$build_dir/uci_dma_probe.o" "$root_dir/probes/uci_dma/uci_dma_probe.s"
+  ca65 -I "$build_dir" -o "$build_dir/uci_dma_probe.o" "$root_dir/probes/uci_dma/uci_dma_probe.s"
 fi
 ld65 -C "$root_dir/probes/uci_dma/probe.cfg" \
   -o "$build_dir/uci_dma_probe.prg" \

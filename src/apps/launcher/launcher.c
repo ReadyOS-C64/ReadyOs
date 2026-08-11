@@ -296,6 +296,8 @@ static char launcher_resource_open_spec[18];
 #define LAUNCHER_DMA_ERR_NO_UCI   0x01u
 #define LAUNCHER_DMA_ERR_PATH_MIN 0x08u
 #define LAUNCHER_DMA_ERR_PATH_MAX 0x10u
+/* Assembly owns the complete asynchronous UCI lifecycle. C call sites may set
+ * inputs/read results, but must not infer completion or add timing delays. */
 extern unsigned char launcher_uci_dma_detect(void);
 extern unsigned char launcher_uci_dma_load_prg(void);
 extern void launcher_uci_dma_quiesce(void);
@@ -2439,6 +2441,8 @@ static void launcher_dma_probe_after_draw(void) {
         launcher_dma_reset_runtime_state();
         return;
     }
+    /* Read-only base detection; quiesce below performs explicit stale-state
+     * recovery before any later DMA command sequence. */
     if (!launcher_uci_dma_detect()) {
         launcher_dma_available = 0u;
         launcher_dma_reset_runtime_state();
@@ -2545,6 +2549,8 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     launcher_uci_dma_assume_mounted = launcher_dma_image_ready;
     launcher_dma_breadcrumb = 0x35u;
     (*(volatile unsigned char*)0x052D) = 0x35;
+    /* One assembly-owned UCI sequence. It synchronizes each command, waits for
+     * LAST/MORE, drains both queues, acknowledges, and finishes at quiet IDLE. */
     dma_ok = launcher_uci_dma_load_prg();
     if (restore_slash) {
         *slash = '/';

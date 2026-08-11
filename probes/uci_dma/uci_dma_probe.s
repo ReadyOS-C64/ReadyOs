@@ -1,5 +1,7 @@
 ;
 ; Standalone Ultimate UCI + Ultimate DOS REU load probe.
+; Keep its transaction loop aligned with AGENTS.md: async PUSH, LAST/MORE only,
+; drain DATA_AV and STAT_AV, one DATA_ACC, then fully quiescent IDLE.
 ;
 
         .segment "LOADADDR"
@@ -52,8 +54,13 @@ UCI_STATE_MASK = $30
 UCI_STATE_IDLE = $00
 UCI_STATE_LAST = $20
 UCI_STATE_MORE = $30
+UCI_STAT_BUSY  = $01
+UCI_STAT_ACCEPT = $02
 UCI_STAT_ABORT = $04
 UCI_STAT_ERROR = $08
+UCI_QUIET_MASK = $3F
+; Match the production transport's finite bound through the 64 MHz top end.
+UCI_STATE_WAIT_PASSES = $08
 
         .macro PRINT label
         lda #<label
@@ -69,6 +76,12 @@ start:
         lda #$01
         sta $0286
         PRINT title_msg
+        jsr cr
+        PRINT start_prompt_msg
+wait_start_key:
+        jsr GETIN
+        beq wait_start_key
+        PRINT running_msg
         jsr cr
         jsr init_results
         jsr probe_uci
@@ -1110,6 +1123,8 @@ dos_read_ram_sync_ok:
         jsr uci_write_cmd
         lda #$04
         jsr uci_write_cmd
+        ; Ultimate DOS memory-read payload length: 64 bytes.  This is command
+        ; data, not a UCI polling bound; keep it independent of timeout tuning.
         lda #$40
         jsr uci_write_cmd
         lda #$00
@@ -1201,44 +1216,43 @@ softiec_load_ex:
         jmp drain_response
 
 command_fail:
+        jsr abort_and_recover
         clc
         rts
 
 sync_interface:
-        lda #$40
+        ; Explicit recovery for stale state. Normal commands never clear an
+        ; ERROR: they report transport failure and let the next sync recover.
+        lda #$FF
         sta timeout_hi
+        lda #UCI_STATE_WAIT_PASSES
+        sta timeout_outer
+        ldy #$00
 sync_loop:
         jsr uci_status
         sta last_status
         and #UCI_STAT_ERROR
         beq sync_no_error
         jsr uci_clear_error
-        lda #$40
-        sta timeout_hi
         jmp sync_loop
 sync_no_error:
         lda last_status
         and #UCI_STAT_ABORT
         beq sync_no_abort
-        jsr uci_abort
-        lda #$40
-        sta timeout_hi
-        jmp sync_loop
+        ; ABORT_P is an outstanding asynchronous request, not permission to
+        ; request another one. Service the pending operation to quiet IDLE.
+        jmp sync_wait_pending
 sync_no_abort:
         lda last_status
         and #UCI_STAT_DATA
         beq sync_no_data
         jsr uci_read_data
-        lda #$40
-        sta timeout_hi
         jmp sync_loop
 sync_no_data:
         lda last_status
         and #UCI_STAT_STAT
         beq sync_no_stat
         jsr uci_read_stat
-        lda #$40
-        sta timeout_hi
         jmp sync_loop
 sync_no_stat:
         lda last_status
@@ -1248,25 +1262,55 @@ sync_no_stat:
         cmp #UCI_STATE_MORE
         beq sync_accept
         lda last_status
-        and #$31
+        and #UCI_QUIET_MASK
         beq sync_ok
+sync_wait_pending:
+        dey
+        bne sync_loop
         dec timeout_hi
         bne sync_loop
-        jsr uci_abort
+        dec timeout_outer
+        beq sync_timeout
+        lda #$FF
+        sta timeout_hi
+        jmp sync_loop
+sync_timeout:
         clc
         rts
 sync_accept:
+        lda last_status
+        and #UCI_STATE_MASK
+        sta current_state
         jsr uci_accept_data
-        lda #$40
-        sta timeout_hi
+        lda current_state
+        jsr wait_accept_advance
+        bcc sync_accept_fail
         jmp sync_loop
+sync_accept_fail:
+        clc
+        rts
 sync_ok:
         sec
         rts
 
+abort_and_recover:
+        ; ABORT is asynchronous: request once unless already pending, then
+        ; drain/clear/accept as needed until all control bits clear at IDLE.
+        jsr uci_status
+        sta last_status
+        lda last_status
+        and #UCI_STAT_ABORT
+        bne abort_recover_wait
+        jsr uci_abort
+abort_recover_wait:
+        jsr sync_interface
+        rts
+
 wait_data_state:
-        lda #$80
+        lda #$FF
         sta timeout_hi
+        lda #UCI_STATE_WAIT_PASSES
+        sta timeout_outer
         ldy #$00
 wait_state_loop:
         jsr uci_status
@@ -1279,12 +1323,17 @@ wait_state_loop:
         beq wait_state_ok
         cmp #UCI_STATE_MORE
         beq wait_state_ok
-        cmp #UCI_STATE_IDLE
-        beq wait_state_ok
+        ; PUSH_CMD is asynchronous. IDLE here means the Ultimate has not yet
+        ; observed it; only LAST/MORE begins a response.
         dey
         bne wait_state_loop
         dec timeout_hi
         bne wait_state_loop
+        dec timeout_outer
+        beq wait_state_fail
+        lda #$FF
+        sta timeout_hi
+        jmp wait_state_loop
 wait_state_fail:
         clc
         rts
@@ -1292,20 +1341,66 @@ wait_state_ok:
         sec
         rts
 
-wait_idle:
-        lda #$40
+wait_accept_advance:
+        ; DATA_ACC is asynchronous just like PUSH_CMD.  Require evidence that
+        ; the drained block advanced before treating the same MORE value as a
+        ; new block; instruction timing must never provide this handshake.
+        sta accept_state
+        lda #$FF
         sta timeout_hi
+        lda #UCI_STATE_WAIT_PASSES
+        sta timeout_outer
+        ldy #$00
+accept_advance_loop:
+        jsr uci_status
+        sta last_status
+        and #UCI_STAT_ERROR
+        bne accept_advance_fail
+        lda last_status
+        and #UCI_STATE_MASK
+        cmp accept_state
+        bne accept_advance_ok
+accept_advance_wait:
+        dey
+        bne accept_advance_loop
+        dec timeout_hi
+        bne accept_advance_loop
+        dec timeout_outer
+        beq accept_advance_fail
+        lda #$FF
+        sta timeout_hi
+        jmp accept_advance_loop
+accept_advance_fail:
+        clc
+        rts
+accept_advance_ok:
+        sec
+        rts
+
+wait_idle:
+        lda #$FF
+        sta timeout_hi
+        lda #UCI_STATE_WAIT_PASSES
+        sta timeout_outer
         ldy #$00
 wait_idle_loop:
         jsr uci_status
         sta last_status
+        and #UCI_STAT_ERROR
+        bne wait_idle_fail
         lda last_status
-        and #$31
+        and #UCI_QUIET_MASK
         beq wait_idle_ok
         dey
         bne wait_idle_loop
         dec timeout_hi
         bne wait_idle_loop
+        dec timeout_outer
+        beq wait_idle_fail
+        lda #$FF
+        sta timeout_hi
+        jmp wait_idle_loop
+wait_idle_fail:
         clc
         rts
 wait_idle_ok:
@@ -1313,40 +1408,48 @@ wait_idle_ok:
         rts
 
 drain_response:
+        ; State-driven UCI transaction: LAST/MORE, drain DATA_AV and STAT_AV,
+        ; then DATA_ACC. No instruction-count delay may provide pacing.
         lda #$00
         sta data_len
         sta stat_len
         jsr wait_data_state
         bcs drain_loop
-        clc
-        rts
+        jmp drain_failed
 drain_loop:
         jsr uci_status
         sta last_status
         and #UCI_STAT_ERROR
         beq drain_no_error
-        clc
-        rts
+        jmp drain_failed
 drain_no_error:
         lda last_status
         and #UCI_STATE_MASK
         sta current_state
-        beq drain_done
         cmp #UCI_STATE_LAST
         beq drain_state_ok
         cmp #UCI_STATE_MORE
         beq drain_state_ok
         jsr wait_data_state
         bcs drain_loop
-        clc
-        rts
+        jmp drain_failed
 drain_state_ok:
+        ; Queue flags drive draining; this 4096-poll failure bound is larger
+        ; than the documented 896-byte data plus 256-byte status capacity.
         lda #$10
         sta timeout_hi
         ldy #$00
 drain_bytes:
+        dey
+        bne drain_poll
+        dec timeout_hi
+        beq drain_bytes_fail
+drain_poll:
         jsr uci_status
         sta last_status
+        and #UCI_STAT_ERROR
+        bne drain_bytes_fail
+        lda last_status
         and #UCI_STAT_DATA
         beq drain_check_stat
         jsr uci_read_data
@@ -1367,27 +1470,26 @@ drain_check_stat:
         sta stat_buf,x
         inc stat_len
 drain_reset_guard:
-        lda #$10
-        sta timeout_hi
-        ldy #$00
         jmp drain_bytes
 drain_wait_byte:
-        dey
-        bne drain_bytes
-        dec timeout_hi
-        bne drain_bytes
         jsr uci_accept_data
         lda current_state
         cmp #UCI_STATE_LAST
         bne drain_more
         jsr wait_idle
-        sec
-        rts
+        bcs drain_done
+        jmp drain_failed
 drain_more:
+        lda current_state
+        jsr wait_accept_advance
+        bcc drain_more_fail
         jsr wait_data_state
         bcc drain_more_fail
         jmp drain_loop
 drain_more_fail:
+drain_bytes_fail:
+drain_failed:
+        jsr abort_and_recover
         clc
         rts
 drain_done:
@@ -1401,35 +1503,40 @@ drain_response_to_load:
         sta stat_len
         jsr wait_data_state
         bcs drain_load_loop
-        clc
-        rts
+        jmp drain_load_failed
 drain_load_loop:
         jsr uci_status
         sta last_status
         and #UCI_STAT_ERROR
         beq drain_load_no_error
-        clc
-        rts
+        jmp drain_load_failed
 drain_load_no_error:
         lda last_status
         and #UCI_STATE_MASK
         sta current_state
-        beq drain_load_done
         cmp #UCI_STATE_LAST
         beq drain_load_state_ok
         cmp #UCI_STATE_MORE
         beq drain_load_state_ok
         jsr wait_data_state
         bcs drain_load_loop
-        clc
-        rts
+        jmp drain_load_failed
 drain_load_state_ok:
+        ; Apply the same non-pacing failure bound to direct-to-load drains.
         lda #$10
         sta timeout_hi
         ldy #$00
 drain_load_bytes:
+        dey
+        bne drain_load_poll
+        dec timeout_hi
+        beq drain_load_bytes_fail
+drain_load_poll:
         jsr uci_status
         sta last_status
+        and #UCI_STAT_ERROR
+        bne drain_load_bytes_fail
+        lda last_status
         and #UCI_STAT_DATA
         beq drain_load_check_stat
         jsr uci_read_data
@@ -1456,27 +1563,26 @@ drain_load_check_stat:
         sta stat_buf,x
         inc stat_len
 drain_load_reset_guard:
-        lda #$10
-        sta timeout_hi
-        ldy #$00
         jmp drain_load_bytes
 drain_load_wait_byte:
-        dey
-        bne drain_load_bytes
-        dec timeout_hi
-        bne drain_load_bytes
         jsr uci_accept_data
         lda current_state
         cmp #UCI_STATE_LAST
         bne drain_load_more
         jsr wait_idle
-        sec
-        rts
+        bcs drain_load_done
+        jmp drain_load_failed
 drain_load_more:
+        lda current_state
+        jsr wait_accept_advance
+        bcc drain_load_more_fail
         jsr wait_data_state
         bcc drain_load_more_fail
         jmp drain_load_loop
 drain_load_more_fail:
+drain_load_bytes_fail:
+drain_load_failed:
+        jsr abort_and_recover
         clc
         rts
 drain_load_done:
@@ -2141,6 +2247,8 @@ copy_ui_stat_msg: .byte "COPYUI STAT UDMA1", 0
 ok_msg:     .byte "OK", 0
 fail_msg:   .byte "FAIL", 0
 done_msg:   .byte "PROBE DONE", 0
+start_prompt_msg: .byte "PRESS KEY TO START", 0
+running_msg: .byte "RUNNING", 0
 ; Ultimate DOS command spelling that matched the known-good D64 probe run.
 file1_name: .byte "udma1", 0
 file2_name: .byte "udma2", 0
@@ -2150,15 +2258,9 @@ usb1_name:  .byte "USB1", 0
 usb1_abs_name: .byte "/USB1", 0
 usb0_name:  .byte "USB0", 0
 usb0_abs_name: .byte "/USB0", 0
-.ifdef PROBE_D64
-d81_name:   .byte "UCI40.D64", 0
-d81_usb1_abs_name: .byte "/USB1/UCI40.D64", 0
-d81_usb0_abs_name: .byte "/USB0/UCI40.D64", 0
-.else
-d81_name:   .byte "UCI41.D81", 0
-d81_usb1_abs_name: .byte "/USB1/UCI41.D81", 0
-d81_usb0_abs_name: .byte "/USB0/UCI41.D81", 0
-.endif
+; Generated by build.sh so the path used inside Ultimate DOS exactly matches
+; the fresh remote image mounted by physical-hardware automation.
+        .include "uci_dma_image_name.inc"
 
         .segment "DATA"
 uci_base_lo:     .byte <$DF1C
@@ -2170,7 +2272,9 @@ softiec_bus:     .byte 0
 selected_usb:    .byte 1
 last_status:     .byte 0
 current_state:   .byte 0
+accept_state:    .byte 0
 timeout_hi:      .byte 0
+timeout_outer:   .byte 0
 data_len:        .byte 0
 data_full:       .byte 0
 stat_len:        .byte 0

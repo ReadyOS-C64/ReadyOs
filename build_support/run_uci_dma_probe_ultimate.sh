@@ -8,15 +8,23 @@ status="${2:-/tmp/uci_dma_probe_ultimate.status}"
 
 host="${C64U_HOST:-10.0.0.79}"
 image_type="${PROBE_IMAGE_TYPE:-d81}"
+speed_mhz="${UCI_DMA_SPEED_MHZ:-16}"
+run_tag="$(date +%Y%m%d-%H%M%S)-${speed_mhz}mhz-$$"
+case "$speed_mhz" in
+  1|2|3|4|6|8|10|12|14|16|20|24|32|40|48|64) ;;
+  *) echo "UCI_DMA_SPEED_MHZ is not supported: $speed_mhz" >&2; exit 64 ;;
+esac
 case "$image_type" in
   d64)
     image_upper="D64"
+    image_name="UCI40-${run_tag}.D64"
     drive_type="1541"
     expected_title="UCI DOS REU PROBE V40"
     expected_version="40"
     ;;
   d81)
     image_upper="D81"
+    image_name="UCI41-${run_tag}.D81"
     drive_type="1581"
     expected_title="UCI DOS REU PROBE V41"
     expected_version="41"
@@ -72,6 +80,7 @@ probe_endpoint() {
   date
   echo "Requested C64U host: ${requested_host}"
   echo "Discovery mode: ${C64U_DISCOVER:-0}"
+  echo "CPU speed: ${speed_mhz} MHz"
 } > "$log"
 
 if [[ "$requested_host" == "auto" || "${C64U_DISCOVER:-0}" == "1" ]]; then
@@ -110,12 +119,13 @@ probe_endpoint curl --max-time 5 --silent --show-error \
 echo "Building Ultimate DOS REU probe ${image_upper} and payloads" >> "$log"
 
 cd "$repo" || exit 1
-if ! run env PROBE_IMAGE_TYPE="$image_type" /bin/bash probes/uci_dma/build.sh; then
+if ! run env PROBE_IMAGE_TYPE="$image_type" UCI_DMA_IMAGE_NAME="$image_name" \
+  /bin/bash probes/uci_dma/build.sh; then
   exit 1
 fi
 
 for candidate in "${candidate_dirs[@]}"; do
-  candidate_image="${candidate}/UCI.${image_upper}"
+  candidate_image="${candidate}/${image_name}"
   candidate_url="ftp://anonymous:anonymous%40@${host}/${candidate_image}"
   candidate_plan="/tmp/uci_dma_probe_ultimate_${candidate}.yaml"
 
@@ -127,6 +137,7 @@ for candidate in "${candidate_dirs[@]}"; do
     -e "s#drive_b_type: '1581'#drive_b_type: '${drive_type}'#g" \
     -e "s#drive_type: '1581'#drive_type: '${drive_type}'#g" \
     -e "s#UCI DOS REU PROBE V41#${expected_title}#g" \
+    -e "s#mhz: 16#mhz: ${speed_mhz}#g" \
     "$repo/build_support/uci_dma_probe_ultimate.generated.yaml" > "$candidate_plan"
 
   echo "Replacing /${candidate_image}" >> "$log"

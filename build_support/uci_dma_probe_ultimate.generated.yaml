@@ -67,6 +67,16 @@ steps:
     text: "UCI DOS REU PROBE V41"
     wait_timeout_s: 90
     capture_label: uci_dma_probe_started
+- id: set_probe_speed
+  type: ultimate.speed.set
+  params:
+    mhz: 16
+- id: start_probe_at_test_speed
+  type: input.sequence
+  params:
+    keys: [32]
+    inter_key_delay_s: 0.05
+    post_delay_s: 0.2
 - id: wait_probe_done
   type: screen.wait_contains
   criticality: observe

@@ -1,5 +1,7 @@
 ;
 ; sysinfo_uci_asm.s - tiny UCI register accessors for System Info
+; Low-level register operations only. sysinfo_uci.c owns synchronization,
+; async PUSH/ABORT waits, complete queue drains, DATA_ACC, and quiet IDLE.
 ;
 
         .export _sysinfo_uci_asm_write_cmd

@@ -467,6 +467,8 @@ static unsigned char cmd_add_raw(unsigned char pos, const char *s) {
 }
 
 static unsigned char uci_cmd(unsigned char len) {
+    /* Probe the production System Info transport itself. This call owns the
+     * async PUSH/LAST-or-MORE lifecycle and cannot be surrounded by pacing. */
     return sysinfo_uci_command(cmd_buf, len, data_buf, sizeof(data_buf),
                                &data_len, stat_buf, sizeof(stat_buf), &stat_len);
 }

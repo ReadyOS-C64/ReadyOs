@@ -28,8 +28,14 @@ LAUNCHER_STAGES = [
 
 
 def find_dump(run_dir: pathlib.Path) -> pathlib.Path:
-    candidates = list(run_dir.rglob("*uci_timing_results_3000*"))
-    candidates += list(run_dir.rglob("*3000*.bin"))
+    candidates = [
+        path for path in run_dir.rglob("*uci_timing_results_3000*.bin")
+        if path.is_file()
+    ]
+    candidates += [
+        path for path in run_dir.rglob("*3000*.bin")
+        if path.is_file() and path not in candidates
+    ]
     if not candidates:
         raise SystemExit(f"no uci timing result dump found under {run_dir}")
     return max(candidates, key=lambda p: p.stat().st_mtime)
@@ -92,6 +98,7 @@ def decode(path: pathlib.Path) -> dict[str, object]:
             "launcher_error": b[65],
             "debug_status0": b[66],
             "debug_status1": b[67],
+            "transport_trace": b[68:72].hex(),
             "name": b[72:80].split(b"\0", 1)[0].decode("latin1", errors="replace"),
         }
         avg_header_tax_ms = 0

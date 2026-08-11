@@ -190,6 +190,8 @@ basic_next:
         .import _launcher_uci_dma_last_error
         .import _launcher_uci_dma_dbg_stat0
         .import _launcher_uci_dma_dbg_stat1
+        .import _launcher_uci_dma_trace
+        .import _launcher_uci_dma_fail_trace
         .import _launcher_uci_dma_image_dir
         .import _launcher_uci_dma_image_name
         .import _launcher_uci_dma_mount_name
@@ -225,6 +227,12 @@ start:
         lda #'/'
         jsr CHROUT
         PRINT image_name
+        jsr cr
+        PRINT start_prompt_msg
+wait_start_key:
+        jsr GETIN
+        beq wait_start_key
+        PRINT running_msg
         jsr cr
         jsr _launcher_uci_dma_detect
         cmp #$00
@@ -433,6 +441,14 @@ store_first_failure:
         sta first_fail_dbg0
         lda _launcher_uci_dma_dbg_stat1
         sta first_fail_dbg1
+        lda _launcher_uci_dma_fail_trace
+        sta first_fail_trace
+        lda _launcher_uci_dma_fail_trace+1
+        sta first_fail_trace+1
+        lda _launcher_uci_dma_fail_trace+2
+        sta first_fail_trace+2
+        lda _launcher_uci_dma_fail_trace+3
+        sta first_fail_trace+3
         ldy #$00
 copy_fail_name:
         cpy #$0f
@@ -582,6 +598,13 @@ copy_max_result:
         lda first_fail_dbg1
         sta RESULTS+67
         ldx #$00
+copy_first_trace:
+        lda first_fail_trace,x
+        sta RESULTS+68,x
+        inx
+        cpx #$04
+        bne copy_first_trace
+        ldx #$00
 copy_fail_result:
         lda first_fail_name,x
         sta RESULTS+72,x
@@ -726,6 +749,8 @@ ticks_msg: .byte " TICKS:", 0
 max_msg: .byte "MAX:", 0
 first_fail_msg: .byte "FIRST FAIL:", 0
 probe_done_msg: .byte "PROBE DONE", 0
+start_prompt_msg: .byte "PRESS KEY TO START", 0
+running_msg: .byte "RUNNING", 0
 
         .segment "DATA"
 done_code:       .byte 0
@@ -749,6 +774,7 @@ first_fail_item: .byte 0
 first_fail_error:.byte 0
 first_fail_dbg0: .byte 0
 first_fail_dbg1: .byte 0
+first_fail_trace:.res 4
 max_load_name:   .res 16
 first_fail_name: .res 16
 stage_id:        .byte 0

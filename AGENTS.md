@@ -27,6 +27,51 @@
 - Never call `run.sh` with a specific app name such as `launcher`, `editor`, or any other single-app mode; those paths are not valid for normal ReadyOS verification.
 - Avoid ad-hoc `make`, direct artifact launches, and single-app run modes so all generated assets and preserved D71 user files are included and restored correctly.
 
+## Ultimate Command Interface (UCI) Protocol Discipline
+
+- Treat UCI as an asynchronous state machine, not as a timing-sensitive byte
+  port. Use the official Ultimate UCI documentation as the protocol authority.
+- Before writing a command, synchronize to `STATE=IDLE` with `CMD_BUSY`,
+  `DATA_ACC`, and `ABORT_P` clear. Clear stale `ERROR` only as part of explicit
+  recovery; an `ERROR` raised during a command is a transport failure, not the
+  target's status response.
+- Write every command byte while idle, then issue `PUSH_CMD` exactly once.
+  `PUSH_CMD` is asynchronous: an immediate post-push `STATE=IDLE` sample means
+  the Ultimate has not observed the push yet. It is never command completion.
+- After `PUSH_CMD`, wait for `STATE=DATA_LAST` or `STATE=DATA_MORE`. Do not use
+  fixed delays or quiet-loop counts to decide that a response is ready.
+- In each data state, drain the response register while `DATA_AV` is set and
+  the status register while `STAT_AV` is set. Only when both queue flags are
+  clear may the C64 issue `DATA_ACC`.
+- `DATA_ACC` is asynchronous too. After accepting `DATA_MORE`, do not treat an
+  immediate unchanged `DATA_MORE` sample as the next block. The documented
+  transition must leave `DATA_MORE` for `COMMAND_BUSY` before software waits
+  for the next `DATA_LAST`/`DATA_MORE` block. After accepting `DATA_LAST`, wait
+  for idle with all pending control bits clear before starting another command.
+- `ABORT` is asynchronous. After requesting it, keep servicing/clearing the
+  interface as needed and wait for a fully quiescent idle state. `ABORT_P`
+  means a request is already pending; poll/service it rather than re-issuing
+  `ABORT` on every status sample.
+- Poll-count limits are failure bounds only; they must not provide protocol
+  pacing, and servicing a flag must not reset the limit indefinitely. Bound
+  each queue-drain loop too, with a limit above the documented queue capacity,
+  so a stuck availability bit cannot hang the caller. A state-wait bound must
+  also remain long enough for legitimate slow commands at the fastest tested
+  CPU speed; a 16-bit instruction-count loop can become less than one second
+  at 16 MHz and four times shorter again at 64 MHz. Validate UCI transports on
+  physical Ultimate hardware at 1 MHz, 16 MHz, and the configured top end such
+  as 64 MHz so accidental instruction delays cannot hide races. VICE is not
+  evidence for Ultimate-specific UCI behavior.
+- Respect the hardware queue capacities: 896 command bytes, 896 response-data
+  bytes per queue block, and 256 status bytes. Always drain oversized replies
+  even when the caller's capture buffer truncates them.
+- Every app-level UCI call site and every standalone UCI probe must carry a
+  nearby comment naming the state-machine contract it relies on: the transport
+  owns synchronization, asynchronous PUSH/ABORT handling, complete queue
+  draining, DATA_ACC, and the final quiet-idle wait. Run
+  `python3 build_support/verify_uci_protocol_contract.py` after UCI changes;
+  never copy an older transaction loop without bringing it under this check.
+
 ### ReadyOS Launch Cookbook
 
 - `run.sh` is not guaranteed to be executable in this checkout; invoke it as `/bin/bash ./run.sh ...`, not `./run.sh ...`.

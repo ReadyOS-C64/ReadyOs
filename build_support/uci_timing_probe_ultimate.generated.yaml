@@ -59,12 +59,22 @@ steps:
       remote_disk: USB1/readyos.d81
       mount_mode: readwrite
     boot_drive: 8
-- id: wait_probe_started
+- id: wait_probe_loaded
   type: screen.wait_contains
   params:
-    text: "uci timing probe"
-    wait_timeout_s: 360
-    capture_label: uci_timing_started
+    text: "UCI TIMING LAUNCHER"
+    wait_timeout_s: 90
+    capture_label: uci_timing_loaded
+- id: set_probe_speed
+  type: ultimate.speed.set
+  params:
+    mhz: 16
+- id: start_probe_at_test_speed
+  type: input.sequence
+  params:
+    keys: [32]
+    inter_key_delay_s: 0.05
+    post_delay_s: 0.2
 - id: wait_probe_done
   type: screen.wait_contains
   criticality: observe
@@ -72,6 +82,13 @@ steps:
     text: "PROBE DONE"
     wait_timeout_s: 420
     capture_label: uci_timing_done
+- id: restore_probe_speed
+  type: ultimate.speed.set
+  # Restore while the plan still owns the active Ultimate session.  Relying
+  # only on generic teardown proved unsafe after a mount-heavy 16 MHz run:
+  # teardown could fail to buffer its config attachment and strand the API.
+  params:
+    mhz: 1
 - id: capture_final
   type: screen.capture
   criticality: observe

@@ -426,7 +426,11 @@ $(BIN_DIR):
 $(PROGRAMS): | $(BIN_DIR)
 
 # Default target
-all: profile
+.PHONY: uci-protocol-check
+uci-protocol-check:
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_uci_protocol_contract.py
+
+all: uci-protocol-check profile
 	@echo ""
 	@echo "=== Build complete ==="
 	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
@@ -1015,7 +1019,7 @@ programs: prepare-version $(PROGRAMS)
 profiles:
 	@$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py list-ids
 
-profile: programs
+profile: uci-protocol-check programs
 	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py build-release \
 		--profile "$(PROFILE)" \
@@ -1173,6 +1177,7 @@ clean:
 
 # Verify all generated binaries and memory layout constraints
 verify: profile
+	python3 $(BUILD_SUPPORT_DIR)/verify_uci_protocol_contract.py
 	python3 verify.py --profile "$(PROFILE)"
 	python3 $(BUILD_SUPPORT_DIR)/audit_release_seq_rel.py --profile "$(PROFILE)"
 	python3 $(BUILD_SUPPORT_DIR)/editor_host_smoke.py
