@@ -1,0 +1,25 @@
+00:  .........LOADING APPS TO REU..........
+01:  .                                    .
+02:  ......................................
+03: 
+04:       8 EDITOR                OK 24  KB
+05:       8 READYSHELL (BETA)     OK 27  KB
+06:       8 SIMPLE FILES          OK 29  KB
+07:       8 CLIPBOARD   85        OK 30  KB
+08:       8 READY BASIC (ALPHA)   OK 28  KB
+09:       8 CALENDAR 26           OK 31  KB
+10:       8 TASK LIST             OK 30  KB
+11:       8 REU VIEWER            OK 14  KB
+12:       8 SYSTEM INFO           OK 15  KB
+13:       8 QUICKNOTES            OK 30  KB
+14:       8 CALC PLUS             OK 36  KB
+15:       8 HEX VIEWER            OK 12  KB
+16:       8 SIMPLE CELLS (ALPHA)  OK 34  KB
+17:     2048 GAME           LOADING...
+18: 
+19: 
+20: 
+21: 
+22: 
+23:     13/20
+24:     ................................

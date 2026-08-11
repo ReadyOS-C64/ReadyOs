@@ -1,0 +1,25 @@
+00: ..........BROWSE APP MANIFEST...........
+01: .                                      .
+02: .> RBM.SAMPLE1      SEQ                .
+03: .  RBM.SAMPLE2      SEQ                .
+04: .  RBM.SAMPLE3      SEQ                .
+05: .  APPS.CFG         SEQ                .
+06: .  APP.SIDETRIS     SEQ                .
+07: .  EDITOR HELP      SEQ                .
+08: .  RSHELP           SEQ                .
+09: .  EXAMPLE TASKS    SEQ                .
+10: .  CLIPBOARDEXAMPLE SEQ                .
+11: .  EXAMPLETXT       SEQ                .
+12: .  QUICKNOTESREF    SEQ                .
+13: .  SHEET2           SEQ                .
+14: .                                      .
+15: .                                      .
+16: .                                      .
+17: .                                      .
+18: .                                      .
+19: .                                      .
+20: .                                      .
+21: .                                      .
+22: .DRIVE: 8   12 FILE(S)                 .
+23: ........................................
+24:  F3:DRV UP/DN SEL RET: LOAD STOP

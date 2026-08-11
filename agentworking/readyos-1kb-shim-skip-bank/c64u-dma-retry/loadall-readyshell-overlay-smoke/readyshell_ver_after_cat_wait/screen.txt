@@ -1,0 +1,25 @@
+00: ...........READYOS READYSHELL...........
+01: .       READYSHELL V0.2 (BETA)         .
+02: ........................................
+03: LOADING DONE
+04: RUN: CAT "RSHELP" . MORE
+05: >VER
+06: VERSION 0.2
+07: >LST "RSHELP"
+08:  NAME:RSHELP,BLOCKS:5,TYPE:SEQ
+09: >VER
+10: VERSION 0.2
+11: >CAT "RSHELP" . TOP 1
+12: READYSHELL QUICK REF
+13: >VER
+14: VERSION 0.2
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 

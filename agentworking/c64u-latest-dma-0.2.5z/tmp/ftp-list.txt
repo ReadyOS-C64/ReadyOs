@@ -1,0 +1,46 @@
+drw-rw-rw-   1 user     ftp            0 May 07 16:41 0.2.3
+drw-rw-rw-   1 user     ftp            0 May 22 00:12 0.2.4
+drw-rw-rw-   1 user     ftp            0 Jun 17 22:13 0.2.5
+drw-rw-rw-   1 user     ftp            0 May 28 22:03 automation
+drw-rw-rw-   1 user     ftp            0 May 28 13:49 kp
+drw-rw-rw-   1 user     ftp            0 Mar 13  2021 LexarDataShield_1.0.39.app
+drw-rw-rw-   1 user     ftp            0 May 29 18:23 readyaudio
+drw-rw-rw-   1 user     ftp            0 Jun 18 13:30 UCI
+-rw-rw-rw-   1 user     ftp      1131690 Jul 17  2020 Lexar DataShield Quick Start Guide_Mac-20200716.pdf
+-rw-rw-rw-   1 user     ftp       974880 Jul 17  2020 Lexar DataShield Quick Start Guide_Windows-20200716.pdf
+-rw-rw-rw-   1 user     ftp     15508480 Jul 07  2020 Lexar DataShield_windows.exe
+-rw-rw-rw-   1 user     ftp       819200 Aug 02 20:53 r1k250802a.d81
+-rw-rw-rw-   1 user     ftp       819200 Jul 06 00:05 readyos-badpath-diskverify.d81
+-rw-rw-rw-   1 user     ftp       819200 Jul 06 00:16 readyos-badpath-enterverify.d81
+-rw-rw-rw-   1 user     ftp       819200 Jul 05 23:56 readyos-badpath-s-diag.d81
+-rw-rw-rw-   1 user     ftp       819200 Jul 05 23:30 readyos-badpath-s-png.d81
+-rw-rw-rw-   1 user     ftp       819200 Jul 06 13:23 READYOS-BADPATH.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 22:49 readyos-codex-20260618_224913.d81
+-rw-rw-rw-   1 user     ftp       819200 Jun 19 11:28 readyos-dma-resident.d81
+-rw-rw-rw-   1 user     ftp       819200 Jun 19 01:07 readyos-dma-test.d81
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 22:57 readyos-normal-20260618_225741.d81
+-rw-rw-rw-   1 user     ftp       819200 Jul 05 23:52 readyos-png-lock-diag.d81
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 23:04 readyos-quiet-20260618_230357.d81
+-rw-rw-rw-   1 user     ftp       819200 Jul 27 20:34 readyos-v0.2.5e-d81.d81
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 22:54 readyos-verbose-20260618_225438.d81
+-rw-rw-rw-   1 user     ftp       819200 Aug 02 21:58 readyos.d81
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 19:37 READYUCI.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 19:40 READYUCIX.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 19:44 READYUCIX2.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 19:48 READYUCIY.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 20:47 U1F204725.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 20:56 U1L205557.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 20:51 U1M205142.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 20:42 U1S204202.D81
+-rw-rw-rw-   1 user     ftp       174848 Jun 18 19:06 UCI.D64
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 18:38 UCI.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 18 18:00 UCI.D81;
+-rw-rw-rw-   1 user     ftp       174848 Jun 18 19:13 UCI40.D64
+-rw-rw-rw-   1 user     ftp       819200 Jul 06 18:34 UCI41.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 20:34 ULG203352.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 20:29 USM202939.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 19:52 UT195200.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 20:19 UTF201931.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 20:05 UTS200519.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 20:11 UTV201111.D81
+-rw-rw-rw-   1 user     ftp       819200 Jun 29 19:55 UU195520.D81

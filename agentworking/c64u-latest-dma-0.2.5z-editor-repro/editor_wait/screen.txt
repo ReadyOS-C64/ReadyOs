@@ -1,0 +1,25 @@
+00: ............READY OS V0.2.5Z............
+01: .              PRECOG D81              .
+02: ........................................
+03:   APPLICATIONS:
+04:        BROWSE AND LOAD
+05:        LOAD ALL TO REU
+06:   >  8 EDITOR
+07:      8 READYSHELL (BETA)
+08:      8 SIMPLE FILES
+09:      8 CLIPBOARD
+10:      8 READY BASIC (ALPHA)
+11:      8 CALENDAR 26
+12:      8 TASK LIST
+13:      8 REU VIEWER
+14:      8 SYSTEM INFO
+15:      8 QUICKNOTES
+16:   TEXT EDITOR WITH CLIPBOARD
+17:   LAUNCH FROM DISK
+18: ........................................
+19: . REU: 16MB DMA:YES   *=IN REU         .
+20: ........................................
+21:  APP LOAD FAILED
+22:  F1:ALL F3:LOAD F5:BROWSE F7:UN
+23:  F2:NEXT APP  F4:PREV  STOP:QUIT
+24: 
