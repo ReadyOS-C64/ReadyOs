@@ -21,6 +21,8 @@
         .export _launcher_uci_dma_last_error
         .export _launcher_uci_dma_dbg_stat0
         .export _launcher_uci_dma_dbg_stat1
+        .export _launcher_uci_dma_trace
+        .export _launcher_uci_dma_fail_trace
         .export _launcher_uci_dma_image_dir
         .export _launcher_uci_dma_image_name
         .export _launcher_uci_dma_mount_name
@@ -34,8 +36,14 @@ UCI_STATE_MASK = $30
 UCI_STATE_IDLE = $00
 UCI_STATE_LAST = $20
 UCI_STATE_MORE = $30
+UCI_STAT_BUSY  = $01
+UCI_STAT_ACCEPT = $02
 UCI_STAT_ABORT = $04
 UCI_STAT_ERROR = $08
+UCI_QUIET_MASK = $3F
+; Eight finite 16-bit passes cover the observed first-mount response at the
+; 64 MHz top end without turning an instruction loop into protocol pacing.
+UCI_STATE_WAIT_PASSES = $08
 
 ERR_NO_UCI  = $01
 ERR_OPEN    = $02
@@ -117,12 +125,14 @@ _launcher_uci_dma_load_prg:
         sta _launcher_uci_dma_loaded_size+1
         sta _launcher_uci_dma_last_error
         sta clipped_load
-        lda _launcher_uci_dma_assume_mounted
-        beq load_regular_detect
-        lda #'5'
-        jsr debug_stage
-        jmp load_open_current_dir
-load_regular_detect:
+        sta _launcher_uci_dma_trace
+        sta _launcher_uci_dma_trace+1
+        sta _launcher_uci_dma_trace+2
+        sta _launcher_uci_dma_trace+3
+        sta _launcher_uci_dma_fail_trace
+        sta _launcher_uci_dma_fail_trace+1
+        sta _launcher_uci_dma_fail_trace+2
+        sta _launcher_uci_dma_fail_trace+3
         jsr utime_call_detect
         bne load_have_uci
         lda #ERR_NO_UCI
@@ -259,27 +269,134 @@ load_open_current_dir:
         lda #'7'
         jsr debug_stage
 
+        jsr utime_call_info
+        BCC_FAR load_stat_fail
+        jsr data_or_status_ok
+        BCC_FAR load_stat_fail
+        lda data_len
+        cmp #$04
+        BCC_FAR load_stat_fail
+        lda data_buf+2
+        ora data_buf+3
+        BNE_FAR load_size_fail
+        lda data_buf
+        sec
+        sbc #$02
+        sta remaining_lo
+        lda data_buf+1
+        sbc #$00
+        sta remaining_hi
+        BCC_FAR load_size_fail
+        lda remaining_lo
+        ora remaining_hi
+        BEQ_FAR load_size_fail
+        lda _launcher_uci_dma_max_len+1
+        cmp remaining_hi
+        bcc load_size_fail_local
+        bne load_size_ok
+        lda _launcher_uci_dma_max_len
+        cmp remaining_lo
+        bcs load_size_ok
+load_size_fail_local:
+        lda _launcher_uci_dma_expected_load_addr
+        cmp #$00
+        BNE_FAR load_size_fail
+        lda _launcher_uci_dma_expected_load_addr+1
+        cmp #$8E
+        BNE_FAR load_size_fail
+        lda _launcher_uci_dma_max_len
+        BNE_FAR load_size_fail
+        lda _launcher_uci_dma_max_len+1
+        cmp #$38
+        BNE_FAR load_size_fail
+        lda remaining_hi
+        cmp #$3A
+        bcc load_size_clip_overlay
+        BNE_FAR load_size_fail
+        lda remaining_lo
+        BNE_FAR load_size_fail
+load_size_clip_overlay:
+        lda #$00
+        sta remaining_lo
+        lda #$38
+        sta remaining_hi
+        lda #$01
+        sta clipped_load
+        jmp load_size_ok
+load_size_ok:
+        lda #$00
+        sta _launcher_uci_dma_loaded_size
+        sta _launcher_uci_dma_loaded_size+1
+
+        jsr utime_call_read_header
+        BCC_FAR load_header_fail
+        jsr data_or_status_ok
+        BCC_FAR load_header_fail
+        lda #'8'
+        jsr debug_stage
+        lda data_len
+        cmp #$02
+        BCC_FAR load_header_fail
+        lda data_buf
+        cmp _launcher_uci_dma_expected_load_addr
+        BNE_FAR load_header_fail
+        lda data_buf+1
+        cmp _launcher_uci_dma_expected_load_addr+1
+        BNE_FAR load_header_fail
+
+        jsr utime_call_seek
+        BCC_FAR load_seek_fail
+        jsr status_ok
+        BCC_FAR load_seek_fail
+        lda #'9'
+        jsr debug_stage
+
         lda _launcher_uci_dma_reu_offset
         sta current_off_lo
         lda _launcher_uci_dma_reu_offset+1
         sta current_off_hi
-        lda _launcher_uci_dma_max_len
+load_loop:
+        lda remaining_lo
+        ora remaining_hi
+        beq load_success
+        lda remaining_lo
         sta chunk_lo
-        sta _launcher_uci_dma_loaded_size
-        lda _launcher_uci_dma_max_len+1
+        lda remaining_hi
         sta chunk_hi
-        sta _launcher_uci_dma_loaded_size+1
-        lda chunk_lo
-        ora chunk_hi
-        BEQ_FAR load_size_fail
-
         lda #'9'
         jsr debug_stage
         jsr utime_call_load_reu
         BCC_FAR load_load_fail
         jsr status_ok
-        BCC_FAR load_load_fail
-        jmp load_success
+        bcs load_chunk_status_ok
+        lda clipped_load
+        BEQ_FAR load_load_fail
+load_chunk_status_ok:
+
+        lda current_off_lo
+        clc
+        adc chunk_lo
+        sta current_off_lo
+        lda current_off_hi
+        adc chunk_hi
+        sta current_off_hi
+
+        lda _launcher_uci_dma_loaded_size
+        clc
+        adc chunk_lo
+        sta _launcher_uci_dma_loaded_size
+        lda _launcher_uci_dma_loaded_size+1
+        adc chunk_hi
+        sta _launcher_uci_dma_loaded_size+1
+
+        lda remaining_lo
+        sec
+        sbc chunk_lo
+        sta remaining_lo
+        lda remaining_hi
+        sbc chunk_hi
+        sta remaining_hi
+        jmp load_loop
 
 load_success:
         jsr utime_call_close
@@ -341,10 +458,31 @@ load_cd_image_status_fail:
 load_path_fail:
         lda #ERR_PATH
 load_fail_close:
+        ; Preserve the failed command's Ultimate DOS status before CLOSE
+        ; replaces stat_buf (commonly with 84,NO FILE). These bytes are the
+        ; evidence needed to distinguish target rejection from UCI transport.
         pha
+        lda stat_buf
+        sta _launcher_uci_dma_dbg_stat0
+        lda stat_buf+1
+        sta _launcher_uci_dma_dbg_stat1
+        lda _launcher_uci_dma_fail_trace+3
+        bne load_fail_trace_saved
+        jsr preserve_transport_trace
+load_fail_trace_saved:
         jsr dos_close
         pla
+        sta _launcher_uci_dma_last_error
+        lda #$00
+        tax
+        rts
 load_fail:
+        pha
+        lda _launcher_uci_dma_fail_trace+3
+        bne load_fail_direct_trace_saved
+        jsr preserve_transport_trace
+load_fail_direct_trace_saved:
+        pla
         sta _launcher_uci_dma_last_error
         lda stat_buf
         sta _launcher_uci_dma_dbg_stat0
@@ -352,6 +490,15 @@ load_fail:
         sta _launcher_uci_dma_dbg_stat1
         lda #$00
         tax
+        rts
+
+preserve_transport_trace:
+        ldx #$03
+preserve_trace_loop:
+        lda _launcher_uci_dma_trace,x
+        sta _launcher_uci_dma_fail_trace,x
+        dex
+        bpl preserve_trace_loop
         rts
 load_no_uci_fail:
         lda #ERR_NO_UCI
@@ -591,40 +738,53 @@ debug_stage:
         rts
 
 sync_interface:
-        lda #$40
+        ; Recovery is the only place that clears stale ERROR and accepts
+        ; orphaned blocks. A new command may start only at quiescent IDLE.
+        lda #$FF
         sta timeout_hi
+        lda #UCI_STATE_WAIT_PASSES
+        sta timeout_outer
+        lda #$01
+        sta sync_first
+        lda #$00
+        sta _launcher_uci_dma_trace+1
+        ldy #$00
 sync_loop:
         jsr uci_status
         sta last_status
+        sta _launcher_uci_dma_trace+2
+        ora _launcher_uci_dma_trace+1
+        sta _launcher_uci_dma_trace+1
+        lda sync_first
+        beq sync_trace_done
+        lda last_status
+        sta _launcher_uci_dma_trace
+        lda #$00
+        sta sync_first
+sync_trace_done:
+        lda last_status
         and #UCI_STAT_ERROR
         beq sync_no_error
         jsr uci_clear_error
-        lda #$40
-        sta timeout_hi
         jmp sync_loop
 sync_no_error:
         lda last_status
         and #UCI_STAT_ABORT
         beq sync_no_abort
-        jsr uci_abort
-        lda #$40
-        sta timeout_hi
-        jmp sync_loop
+        ; ABORT_P already represents an outstanding asynchronous request.
+        ; Never re-issue ABORT while it is pending; keep polling it to quiet.
+        jmp sync_wait_pending
 sync_no_abort:
         lda last_status
         and #UCI_STAT_DATA
         beq sync_no_data
         jsr uci_read_data
-        lda #$40
-        sta timeout_hi
         jmp sync_loop
 sync_no_data:
         lda last_status
         and #UCI_STAT_STAT
         beq sync_no_stat
         jsr uci_read_stat
-        lda #$40
-        sta timeout_hi
         jmp sync_loop
 sync_no_stat:
         lda last_status
@@ -634,25 +794,63 @@ sync_no_stat:
         cmp #UCI_STATE_MORE
         beq sync_accept
         lda last_status
-        and #$31
+        and #UCI_QUIET_MASK
         beq sync_ok
+sync_wait_pending:
+        dey
+        bne sync_loop
         dec timeout_hi
         bne sync_loop
-        jsr uci_abort
+        dec timeout_outer
+        beq sync_timeout
+        lda #$FF
+        sta timeout_hi
+        jmp sync_loop
+sync_timeout:
+        lda #$B1
+        sta _launcher_uci_dma_trace+3
         clc
         rts
 sync_accept:
+        lda last_status
+        and #UCI_STATE_MASK
+        sta current_state
         jsr uci_accept_data
-        lda #$40
-        sta timeout_hi
+        lda current_state
+        jsr wait_accept_advance
+        bcc sync_accept_fail
         jmp sync_loop
+sync_accept_fail:
+        lda #$B2
+        sta _launcher_uci_dma_trace+3
+        clc
+        rts
 sync_ok:
+        lda #$B0
+        sta _launcher_uci_dma_trace+3
         sec
         rts
 
+abort_and_recover:
+        ; ABORT is asynchronous. Request it once unless ABORT_P is already
+        ; pending, then service ERROR/queues/DATA_ACC through quiet IDLE.
+        jsr uci_status
+        sta last_status
+        lda last_status
+        and #UCI_STAT_ABORT
+        bne abort_recover_wait
+        jsr uci_abort
+abort_recover_wait:
+        jsr sync_interface
+        rts
+
 wait_data_state:
-        lda #$80
+        ; After asynchronous PUSH, only LAST/MORE is a response. IDLE is the
+        ; pre-observation window and must keep polling.
+        lda #$FF
         sta timeout_hi
+        lda #UCI_STATE_WAIT_PASSES
+        sta timeout_outer
         ldy #$00
 wait_state_loop:
         jsr uci_status
@@ -665,74 +863,152 @@ wait_state_loop:
         beq wait_state_ok
         cmp #UCI_STATE_MORE
         beq wait_state_ok
-        cmp #UCI_STATE_IDLE
-        beq wait_state_ok
+        ; PUSH_CMD is asynchronous.  IDLE here means the Ultimate has not
+        ; observed the push yet; it is not a completed empty response.
         dey
         bne wait_state_loop
         dec timeout_hi
         bne wait_state_loop
+        dec timeout_outer
+        beq wait_state_fail
+        lda #$FF
+        sta timeout_hi
+        jmp wait_state_loop
 wait_state_fail:
+        lda #$C1
+        sta _launcher_uci_dma_trace+3
         clc
         rts
 wait_state_ok:
+        lda #$C0
+        sta _launcher_uci_dma_trace+3
+        sec
+        rts
+
+wait_accept_advance:
+        ; DATA_ACC is asynchronous.  At high CPU speed an immediate sample can still
+        ; be the drained MORE block, so do not re-accept that same block.
+        sta accept_state
+        sta _launcher_uci_dma_trace
+        lda #$00
+        sta _launcher_uci_dma_trace+1
+        lda #$FF
+        sta timeout_hi
+        lda #UCI_STATE_WAIT_PASSES
+        sta timeout_outer
+        ldy #$00
+accept_advance_loop:
+        jsr uci_status
+        sta last_status
+        sta _launcher_uci_dma_trace+2
+        ora _launcher_uci_dma_trace+1
+        sta _launcher_uci_dma_trace+1
+        lda last_status
+        and #UCI_STAT_ERROR
+        bne accept_advance_fail
+        lda last_status
+        and #UCI_STATE_MASK
+        cmp accept_state
+        bne accept_advance_ok
+accept_advance_wait:
+        dey
+        bne accept_advance_loop
+        dec timeout_hi
+        bne accept_advance_loop
+        dec timeout_outer
+        beq accept_advance_fail
+        lda #$FF
+        sta timeout_hi
+        jmp accept_advance_loop
+accept_advance_fail:
+        lda #$A1
+        sta _launcher_uci_dma_trace+3
+        clc
+        rts
+accept_advance_ok:
+        lda #$A0
+        sta _launcher_uci_dma_trace+3
         sec
         rts
 
 wait_idle:
-        lda #$40
+        lda #$FF
         sta timeout_hi
+        lda #UCI_STATE_WAIT_PASSES
+        sta timeout_outer
         ldy #$00
 wait_idle_loop:
         jsr uci_status
         sta last_status
+        and #UCI_STAT_ERROR
+        bne wait_idle_fail
         lda last_status
-        and #$31
+        and #UCI_QUIET_MASK
         beq wait_idle_ok
         dey
         bne wait_idle_loop
         dec timeout_hi
         bne wait_idle_loop
+        dec timeout_outer
+        beq wait_idle_fail
+        lda #$FF
+        sta timeout_hi
+        jmp wait_idle_loop
+wait_idle_fail:
+        lda #$D1
+        sta _launcher_uci_dma_trace+3
         clc
         rts
 wait_idle_ok:
+        lda #$D0
+        sta _launcher_uci_dma_trace+3
         sec
         rts
 
 drain_response:
+        ; Every command builder reaches this immediately after PUSH_CMD.  The
+        ; push is asynchronous: wait for LAST/MORE, drain both queues until
+        ; their availability flags clear, then acknowledge exactly once.
         lda #$00
         sta data_len
         sta stat_len
         jsr wait_data_state
         bcs drain_loop
-        clc
-        rts
+        jmp drain_failed
 drain_loop:
         jsr uci_status
         sta last_status
         and #UCI_STAT_ERROR
         beq drain_no_error
-        clc
-        rts
+        jmp drain_failed
 drain_no_error:
         lda last_status
         and #UCI_STATE_MASK
         sta current_state
-        beq drain_done
         cmp #UCI_STATE_LAST
         beq drain_state_ok
         cmp #UCI_STATE_MORE
         beq drain_state_ok
         jsr wait_data_state
         bcs drain_loop
-        clc
-        rts
+        jmp drain_failed
 drain_state_ok:
+        ; 4096 status/queue polls exceeds the documented 896 data + 256
+        ; status bytes, while bounding a hardware flag that never clears.
         lda #$10
         sta timeout_hi
         ldy #$00
 drain_bytes:
+        dey
+        bne drain_poll
+        dec timeout_hi
+        beq drain_bytes_fail
+drain_poll:
         jsr uci_status
         sta last_status
+        and #UCI_STAT_ERROR
+        bne drain_bytes_fail
+        lda last_status
         and #UCI_STAT_DATA
         beq drain_check_stat
         jsr uci_read_data
@@ -757,27 +1033,29 @@ drain_check_stat:
         sta stat_buf,x
         inc stat_len
 drain_reset_guard:
-        lda #$10
-        sta timeout_hi
-        ldy #$00
         jmp drain_bytes
 drain_wait_byte:
-        dey
-        bne drain_bytes
-        dec timeout_hi
-        bne drain_bytes
         jsr uci_accept_data
         lda current_state
         cmp #UCI_STATE_LAST
         bne drain_more
         jsr wait_idle
-        sec
-        rts
+        bcs drain_done
+        jmp drain_failed
 drain_more:
+        lda current_state
+        jsr wait_accept_advance
+        bcc drain_more_fail
         jsr wait_data_state
         bcc drain_more_fail
         jmp drain_loop
 drain_more_fail:
+drain_bytes_fail:
+        lda #$E1
+        sta _launcher_uci_dma_trace+3
+drain_failed:
+        jsr preserve_transport_trace
+        jsr abort_and_recover
         clc
         rts
 drain_done:
@@ -928,6 +1206,8 @@ uci_stat_abs:
         rts
 
 uci_push_cmd:
+        ; Low-level asynchronous request only.  Callers must immediately enter
+        ; drain_response; IDLE observed after this store is not completion.
         php
         sei
         lda CPU_PORT
@@ -995,7 +1275,10 @@ _launcher_uci_dma_quiesce:
         lda _launcher_uci_dma_available
         beq quiesce_done
         jsr sync_interface
-        bcc quiesce_done
+        bcs quiesce_wait_idle
+        jsr abort_and_recover
+        jmp quiesce_done
+quiesce_wait_idle:
         jsr wait_idle
 quiesce_done:
         rts
@@ -1165,6 +1448,8 @@ _launcher_uci_dma_loaded_size:         .res 2
 _launcher_uci_dma_last_error:          .res 1
 _launcher_uci_dma_dbg_stat0:           .res 1
 _launcher_uci_dma_dbg_stat1:           .res 1
+_launcher_uci_dma_trace:               .res 4
+_launcher_uci_dma_fail_trace:          .res 4
 _launcher_uci_dma_image_dir:           .res 2
 _launcher_uci_dma_image_name:          .res 2
 _launcher_uci_dma_mount_name:          .res 2
@@ -1175,7 +1460,10 @@ uci_base_hi:       .res 1
 uci_value:         .res 1
 last_status:       .res 1
 current_state:     .res 1
+accept_state:      .res 1
+sync_first:        .res 1
 timeout_hi:        .res 1
+timeout_outer:     .res 1
 data_len:          .res 1
 stat_len:          .res 1
 remaining_lo:      .res 1

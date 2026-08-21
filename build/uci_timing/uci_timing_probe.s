@@ -22,6 +22,8 @@ basic_next:
         .import _launcher_uci_dma_last_error
         .import _launcher_uci_dma_dbg_stat0
         .import _launcher_uci_dma_dbg_stat1
+        .import _launcher_uci_dma_trace
+        .import _launcher_uci_dma_fail_trace
         .import _launcher_uci_dma_image_dir
         .import _launcher_uci_dma_image_name
         .import _launcher_uci_dma_mount_name
@@ -57,6 +59,12 @@ start:
         lda #'/'
         jsr CHROUT
         PRINT image_name
+        jsr cr
+        PRINT start_prompt_msg
+wait_start_key:
+        jsr GETIN
+        beq wait_start_key
+        PRINT running_msg
         jsr cr
         jsr _launcher_uci_dma_detect
         cmp #$00
@@ -265,6 +273,14 @@ store_first_failure:
         sta first_fail_dbg0
         lda _launcher_uci_dma_dbg_stat1
         sta first_fail_dbg1
+        lda _launcher_uci_dma_fail_trace
+        sta first_fail_trace
+        lda _launcher_uci_dma_fail_trace+1
+        sta first_fail_trace+1
+        lda _launcher_uci_dma_fail_trace+2
+        sta first_fail_trace+2
+        lda _launcher_uci_dma_fail_trace+3
+        sta first_fail_trace+3
         ldy #$00
 copy_fail_name:
         cpy #$0f
@@ -344,7 +360,7 @@ clear_results:
         sta RESULTS+2
         lda #'M'
         sta RESULTS+3
-        lda #$06
+        lda #$04
         sta RESULTS+4
         lda #WORKLOAD_COUNT
         sta RESULTS+6
@@ -352,7 +368,7 @@ clear_results:
         rts
 
 update_runtime_results:
-        lda #$06
+        lda #$04
         sta RESULTS+4
         lda done_code
         sta RESULTS+5
@@ -413,6 +429,13 @@ copy_max_result:
         sta RESULTS+66
         lda first_fail_dbg1
         sta RESULTS+67
+        ldx #$00
+copy_first_trace:
+        lda first_fail_trace,x
+        sta RESULTS+68,x
+        inx
+        cpx #$04
+        bne copy_first_trace
         ldx #$00
 copy_fail_result:
         lda first_fail_name,x
@@ -553,9 +576,9 @@ workload_run:
         sta current_off
         lda #>$0000
         sta current_off+1
-        lda #<$605D
+        lda #<$B600
         sta current_max
-        lda #>$605D
+        lda #>$B600
         sta current_max+1
         lda #<$1000
         sta current_expected
@@ -565,6 +588,604 @@ workload_run:
         bcs @item_0_ok
         inc failures
 @item_0_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_readyshell
+        sta current_name
+        lda #>name_readyshell
+        sta current_name+1
+        lda #$41
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_1_ok
+        inc failures
+@item_1_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rsparser
+        sta current_name
+        lda #>name_rsparser
+        sta current_name+1
+        lda #$80
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$3800
+        sta current_max
+        lda #>$3800
+        sta current_max+1
+        lda #<$8E00
+        sta current_expected
+        lda #>$8E00
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_2_ok
+        inc failures
+@item_2_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rsvm
+        sta current_name
+        lda #>name_rsvm
+        sta current_name+1
+        lda #$80
+        sta current_bank
+        lda #<$3800
+        sta current_off
+        lda #>$3800
+        sta current_off+1
+        lda #<$3800
+        sta current_max
+        lda #>$3800
+        sta current_max+1
+        lda #<$8E00
+        sta current_expected
+        lda #>$8E00
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_3_ok
+        inc failures
+@item_3_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rsdrvilst
+        sta current_name
+        lda #>name_rsdrvilst
+        sta current_name+1
+        lda #$80
+        sta current_bank
+        lda #<$7000
+        sta current_off
+        lda #>$7000
+        sta current_off+1
+        lda #<$3800
+        sta current_max
+        lda #>$3800
+        sta current_max+1
+        lda #<$8E00
+        sta current_expected
+        lda #>$8E00
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_4_ok
+        inc failures
+@item_4_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rsldv
+        sta current_name
+        lda #>name_rsldv
+        sta current_name+1
+        lda #$81
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$3800
+        sta current_max
+        lda #>$3800
+        sta current_max+1
+        lda #<$8E00
+        sta current_expected
+        lda #>$8E00
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_5_ok
+        inc failures
+@item_5_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rsstv
+        sta current_name
+        lda #>name_rsstv
+        sta current_name+1
+        lda #$80
+        sta current_bank
+        lda #<$A800
+        sta current_off
+        lda #>$A800
+        sta current_off+1
+        lda #<$3800
+        sta current_max
+        lda #>$3800
+        sta current_max+1
+        lda #<$8E00
+        sta current_expected
+        lda #>$8E00
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_6_ok
+        inc failures
+@item_6_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rsfops
+        sta current_name
+        lda #>name_rsfops
+        sta current_name+1
+        lda #$81
+        sta current_bank
+        lda #<$3800
+        sta current_off
+        lda #>$3800
+        sta current_off+1
+        lda #<$3800
+        sta current_max
+        lda #>$3800
+        sta current_max+1
+        lda #<$8E00
+        sta current_expected
+        lda #>$8E00
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_7_ok
+        inc failures
+@item_7_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rscat
+        sta current_name
+        lda #>name_rscat
+        sta current_name+1
+        lda #$81
+        sta current_bank
+        lda #<$7000
+        sta current_off
+        lda #>$7000
+        sta current_off+1
+        lda #<$3800
+        sta current_max
+        lda #>$3800
+        sta current_max+1
+        lda #<$8E00
+        sta current_expected
+        lda #>$8E00
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_8_ok
+        inc failures
+@item_8_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rscopy
+        sta current_name
+        lda #>name_rscopy
+        sta current_name+1
+        lda #$81
+        sta current_bank
+        lda #<$A800
+        sta current_off
+        lda #>$A800
+        sta current_off+1
+        lda #<$3800
+        sta current_max
+        lda #>$3800
+        sta current_max+1
+        lda #<$8E00
+        sta current_expected
+        lda #>$8E00
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_9_ok
+        inc failures
+@item_9_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rsedit
+        sta current_name
+        lda #>name_rsedit
+        sta current_name+1
+        lda #$82
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$3800
+        sta current_max
+        lda #>$3800
+        sta current_max+1
+        lda #<$8E00
+        sta current_expected
+        lda #>$8E00
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_10_ok
+        inc failures
+@item_10_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_simplefiles
+        sta current_name
+        lda #>name_simplefiles
+        sta current_name+1
+        lda #$42
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_11_ok
+        inc failures
+@item_11_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_clipmgr
+        sta current_name
+        lda #>name_clipmgr
+        sta current_name+1
+        lda #$43
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_12_ok
+        inc failures
+@item_12_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_readybasic
+        sta current_name
+        lda #>name_readybasic
+        sta current_name+1
+        lda #$44
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_13_ok
+        inc failures
+@item_13_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_cal26
+        sta current_name
+        lda #>name_cal26
+        sta current_name+1
+        lda #$45
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_14_ok
+        inc failures
+@item_14_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_tasklist
+        sta current_name
+        lda #>name_tasklist
+        sta current_name+1
+        lda #$46
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_15_ok
+        inc failures
+@item_15_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_reuviewer
+        sta current_name
+        lda #>name_reuviewer
+        sta current_name+1
+        lda #$47
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_16_ok
+        inc failures
+@item_16_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_sysinfo
+        sta current_name
+        lda #>name_sysinfo
+        sta current_name+1
+        lda #$48
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_17_ok
+        inc failures
+@item_17_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_quicknotes
+        sta current_name
+        lda #>name_quicknotes
+        sta current_name+1
+        lda #$49
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_18_ok
+        inc failures
+@item_18_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_calcplus
+        sta current_name
+        lda #>name_calcplus
+        sta current_name+1
+        lda #$4A
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_19_ok
+        inc failures
+@item_19_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_hexview
+        sta current_name
+        lda #>name_hexview
+        sta current_name+1
+        lda #$4B
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_20_ok
+        inc failures
+@item_20_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_simplecells
+        sta current_name
+        lda #>name_simplecells
+        sta current_name+1
+        lda #$4C
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_21_ok
+        inc failures
+@item_21_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_game2048
+        sta current_name
+        lda #>name_game2048
+        sta current_name+1
+        lda #$4D
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_22_ok
+        inc failures
+@item_22_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_deminer
+        sta current_name
+        lda #>name_deminer
+        sta current_name+1
+        lda #$4E
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_23_ok
+        inc failures
+@item_23_ok:
         inc item_index
         jsr update_runtime_results
 
@@ -579,29 +1200,160 @@ workload_run:
         sta current_off
         lda #>$0000
         sta current_off+1
-        lda #<$9621
+        lda #<$B600
         sta current_max
-        lda #>$9621
+        lda #>$B600
         sta current_max+1
         lda #<$1000
         sta current_expected
         lda #>$1000
         sta current_expected+1
         jsr load_one_launcher_timed
-        bcs @item_1_ok
+        bcs @item_24_ok
         inc failures
-@item_1_ok:
+@item_24_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_readyirc
+        sta current_name
+        lda #>name_readyirc
+        sta current_name+1
+        lda #$50
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_25_ok
+        inc failures
+@item_25_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_ucitest
+        sta current_name
+        lda #>name_ucitest
+        sta current_name+1
+        lda #$51
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_26_ok
+        inc failures
+@item_26_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_rirc_rrnet
+        sta current_name
+        lda #>name_rirc_rrnet
+        sta current_name+1
+        lda #$52
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_27_ok
+        inc failures
+@item_27_ok:
+        inc item_index
+        jsr update_runtime_results
+
+
+        lda #<name_readme
+        sta current_name
+        lda #>name_readme
+        sta current_name+1
+        lda #$53
+        sta current_bank
+        lda #<$0000
+        sta current_off
+        lda #>$0000
+        sta current_off+1
+        lda #<$B600
+        sta current_max
+        lda #>$B600
+        sta current_max+1
+        lda #<$1000
+        sta current_expected
+        lda #>$1000
+        sta current_expected+1
+        jsr load_one_launcher_timed
+        bcs @item_28_ok
+        inc failures
+@item_28_ok:
         inc item_index
         jsr update_runtime_results
 
         rts
 
-WORKLOAD_COUNT = 2
+WORKLOAD_COUNT = 29
 name_editor: .byte $65, $64, $69, $74, $6F, $72, 0
+name_readyshell: .byte $72, $65, $61, $64, $79, $73, $68, $65, $6C, $6C, 0
+name_rsparser: .byte $72, $73, $70, $61, $72, $73, $65, $72, 0
+name_rsvm: .byte $72, $73, $76, $6D, 0
+name_rsdrvilst: .byte $72, $73, $64, $72, $76, $69, $6C, $73, $74, 0
+name_rsldv: .byte $72, $73, $6C, $64, $76, 0
+name_rsstv: .byte $72, $73, $73, $74, $76, 0
+name_rsfops: .byte $72, $73, $66, $6F, $70, $73, 0
+name_rscat: .byte $72, $73, $63, $61, $74, 0
+name_rscopy: .byte $72, $73, $63, $6F, $70, $79, 0
+name_rsedit: .byte $72, $73, $65, $64, $69, $74, 0
+name_simplefiles: .byte $73, $69, $6D, $70, $6C, $65, $66, $69, $6C, $65, $73, 0
+name_clipmgr: .byte $63, $6C, $69, $70, $6D, $67, $72, 0
+name_readybasic: .byte $72, $65, $61, $64, $79, $62, $61, $73, $69, $63, 0
+name_cal26: .byte $63, $61, $6C, $32, $36, 0
+name_tasklist: .byte $74, $61, $73, $6B, $6C, $69, $73, $74, 0
+name_reuviewer: .byte $72, $65, $75, $76, $69, $65, $77, $65, $72, 0
+name_sysinfo: .byte $73, $79, $73, $69, $6E, $66, $6F, 0
+name_quicknotes: .byte $71, $75, $69, $63, $6B, $6E, $6F, $74, $65, $73, 0
+name_calcplus: .byte $63, $61, $6C, $63, $70, $6C, $75, $73, 0
+name_hexview: .byte $68, $65, $78, $76, $69, $65, $77, 0
+name_simplecells: .byte $73, $69, $6D, $70, $6C, $65, $63, $65, $6C, $6C, $73, 0
+name_game2048: .byte $67, $61, $6D, $65, $32, $30, $34, $38, 0
+name_deminer: .byte $64, $65, $6D, $69, $6E, $65, $72, 0
 name_dizzy: .byte $64, $69, $7A, $7A, $79, 0
+name_readyirc: .byte $72, $65, $61, $64, $79, $69, $72, $63, 0
+name_ucitest: .byte $75, $63, $69, $74, $65, $73, $74, 0
+name_rirc_rrnet: .byte $72, $69, $72, $63, $2D, $72, $72, $6E, $65, $74, 0
+name_readme: .byte $72, $65, $61, $64, $6D, $65, 0
 image_dir: .byte $2F, $75, $73, $62, $31, 0
-image_name: .byte $75, $31, $6C, $32, $30, $35, $35, $35, $37, $2E, $64, $38, $31, 0
-title_msg: .byte $55, $43, $49, $20, $54, $49, $4D, $49, $4E, $47, $20, $46, $41, $53, $54, $20, $52, $41, $57, 0
+image_name: .byte $75, $63, $69, $2D, $74, $69, $6D, $69, $6E, $67, $2D, $32, $30, $32, $36, $30, $38, $31, $31, $2D, $31, $30, $30, $31, $30, $31, $2D, $36, $34, $6D, $68, $7A, $2D, $33, $32, $30, $37, $32, $2E, $64, $38, $31, 0
+title_msg: .byte $55, $43, $49, $20, $54, $49, $4D, $49, $4E, $47, $20, $4C, $41, $55, $4E, $43, $48, $45, $52, 0
 path_msg: .byte "PATH ", 0
 uci_msg: .byte "UCI OK", 0
 no_uci_msg: .byte "NO UCI", 0
@@ -615,6 +1367,8 @@ ticks_msg: .byte " TICKS:", 0
 max_msg: .byte "MAX:", 0
 first_fail_msg: .byte "FIRST FAIL:", 0
 probe_done_msg: .byte "PROBE DONE", 0
+start_prompt_msg: .byte "PRESS KEY TO START", 0
+running_msg: .byte "RUNNING", 0
 
         .segment "DATA"
 done_code:       .byte 0
@@ -638,6 +1392,7 @@ first_fail_item: .byte 0
 first_fail_error:.byte 0
 first_fail_dbg0: .byte 0
 first_fail_dbg1: .byte 0
+first_fail_trace:.res 4
 max_load_name:   .res 16
 first_fail_name: .res 16
 stage_id:        .byte 0
