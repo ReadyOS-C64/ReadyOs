@@ -44,7 +44,7 @@ SIMPLEFILES_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_simplefiles.cfg
 SIMPLECELLS_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_simplecells.cfg -Os
 CAL26_CFLAGS = $(APP_CFLAGS) -Os
 LAUNCHER_CFG_VERBOSE ?= 0
-LAUNCHER_DMA_LOAD ?= 0
+LAUNCHER_DMA_LOAD ?= $(shell $(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py launcher-dma-load --profile $(PROFILE))
 LAUNCHER_CFLAGS = $(APP_CFLAGS) -Os -DLAUNCHER_CFG_VERBOSE=$(LAUNCHER_CFG_VERBOSE) -DLAUNCHER_DMA_LOAD=$(LAUNCHER_DMA_LOAD)
 ifeq ($(LAUNCHER_DMA_LOAD),1)
 LAUNCHER_DMA_SRCS = $(APPS_DIR)/launcher/launcher_uci_dma.s
@@ -57,6 +57,7 @@ BOOT = $(BIN_DIR)/boot.prg
 PREBOOT = $(BIN_DIR)/preboot.prg
 SETD71 = $(BIN_DIR)/setd71.prg
 SHOWCFG = $(BIN_DIR)/showcfg.prg
+SETUP = $(BIN_DIR)/setup.prg
 TEST_REU = $(BIN_DIR)/test_reu.prg
 LAUNCHER = $(BIN_DIR)/launcher.prg
 EDITOR = $(BIN_DIR)/editor.prg
@@ -377,6 +378,7 @@ TUI_BASE_INPUT_NAV = $(TUI_BASE) $(TUI_INPUT_SRC) $(TUI_NAV_SRC)
 TUI_BASE_INPUT_NAV_MISC = $(TUI_BASE) $(TUI_INPUT_SRC) $(TUI_NAV_SRC) $(TUI_MISC_SRC)
 TUI_BASE_MENU_INPUT_NAV_MISC = $(TUI_BASE) $(TUI_MENU_SRC) $(TUI_INPUT_SRC) $(TUI_NAV_SRC) $(TUI_MISC_SRC)
 TUI_UCITEST = $(TUI_BASE_NAV) $(TUI_CONTROLS_SRC) $(TUI_SPLIT_SRC) $(TUI_OUTPUT_SRC)
+TUI_SETUP = $(TUI_BASE_MENU_MISC)
 
 LIB_LAUNCHER = $(TUI_BASE_MENU_MISC) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(REU_PHYS_SRC) $(REU_PHYS_PROBE_SRC) $(REU_CONTROL_BANK_SRC) $(REU_CONTROL_REGISTRY_SRC) $(RESUME_STATE_SEGMENT_SRCS)
 LIB_LAUNCHER_DISK = $(LIB_LAUNCHER) $(STORAGE_DEVICE_SRC) $(LAUNCHER_DIR_PAGE_SRC) $(FILE_DIALOG_SRC)
@@ -411,7 +413,7 @@ LIB_UCITEST = $(TUI_UCITEST) $(TUI_HOTKEY_LITE_SRC)
 EASYFLASH_PAYLOADS = $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(READYBASIC) $(UCITEST) $(READMEAPP) $(READYSHELL_OVL1_PRG) $(READYSHELL_OVL2_PRG) $(READYSHELL_OVL3_PRG) $(READYSHELL_OVL4_PRG) $(READYSHELL_OVL5_PRG) $(READYSHELL_OVL6_PRG) $(READYSHELL_OVL7_PRG) $(READYSHELL_OVL8_PRG) $(READYSHELL_OVL9_PRG)
 
 # Primary binaries shared across profiles
-PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(READYBASIC) $(READYBASIC_RBTEST1) $(READYBASIC_RBPROC1) $(READYBASIC_RBPROCERR) $(READYBASIC_GFX_DEMOS) $(READYBASIC_SOUND_DEMOS) $(READYBASIC_MODULES) $(UCITEST) $(READMEAPP) $(READYSHELL)
+PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(SETUP) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(READYBASIC) $(READYBASIC_RBTEST1) $(READYBASIC_RBPROC1) $(READYBASIC_RBPROCERR) $(READYBASIC_GFX_DEMOS) $(READYBASIC_SOUND_DEMOS) $(READYBASIC_MODULES) $(UCITEST) $(READMEAPP) $(READYSHELL)
 
 $(BIN_DIR):
 	@mkdir -p "$@"
@@ -419,11 +421,25 @@ $(BIN_DIR):
 $(PROGRAMS): | $(BIN_DIR)
 
 # Default target
-.PHONY: uci-protocol-check
+.PHONY: uci-protocol-check setup-host-tests setup-contract-check
 uci-protocol-check:
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_uci_protocol_contract.py
 
-all: uci-protocol-check profile
+setup-host-tests:
+	@mkdir -p $(OBJ_DIR)/host_tests
+	$(CLANG) -std=c99 -Wall -Wextra -Werror -I. \
+		$(BUILD_SUPPORT_DIR)/setup_config_test.c $(SRC_DIR)/setup/setup_config.c \
+		-o $(OBJ_DIR)/host_tests/setup_config_test
+	$(OBJ_DIR)/host_tests/setup_config_test
+	$(CLANG) -std=c99 -Wall -Wextra -Werror -D__fastcall__= -I. \
+		$(BUILD_SUPPORT_DIR)/setup_uci_test.c $(SRC_DIR)/setup/setup_uci.c \
+		-o $(OBJ_DIR)/host_tests/setup_uci_test
+	$(OBJ_DIR)/host_tests/setup_uci_test
+
+setup-contract-check:
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_setup_contract.py
+
+all: uci-protocol-check setup-contract-check setup-host-tests profile
 	@echo ""
 	@echo "=== Build complete ==="
 	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
@@ -467,6 +483,13 @@ $(XTEXTCHK_BOOT): $(BOOT_DIR)/xtextchk_boot.bas
 # C64 BASIC apps.cfg inspector (read-only diagnostics)
 $(SHOWCFG): $(BOOT_DIR)/showcfg.bas
 	$(PETCAT) -w2 -o $@ $<
+
+# Standalone C64 Ultimate first-run utility. It uses the shared ReadyOS TUI
+# micromodules directly and deliberately has no ReadyOS shim or overlay link.
+$(SETUP): $(SRC_DIR)/setup/setup.c $(SRC_DIR)/setup/setup_backend.c \
+	$(SRC_DIR)/setup/setup_config.c $(SRC_DIR)/setup/setup_uci.c \
+	$(SRC_DIR)/setup/setup_uci_asm.s $(TUI_SETUP)
+	$(CC) $(CFLAGS) -Os -I$(SRC_DIR)/setup -m $(OBJ_DIR)/setup.map -o $@ $^
 
 # Build apps.cfg payload from sectioned config source
 $(CATALOG_SEQ): FORCE $(CATALOG_SRC) $(BUILD_SUPPORT_DIR)/build_apps_catalog_petscii.py
@@ -932,7 +955,7 @@ programs: prepare-version $(PROGRAMS)
 profiles:
 	@$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py list-ids
 
-profile: uci-protocol-check programs
+profile: uci-protocol-check setup-contract-check setup-host-tests programs
 	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py build-release \
 		--profile "$(PROFILE)" \
@@ -953,6 +976,7 @@ release-all: prepare-version
 
 audit-profile-assets:
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/audit_release_seq_rel.py --profile "$(PROFILE)"
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_release_directory_order.py --profile "$(PROFILE)"
 
 easyflash: prepare-version programs $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH) $(EASYFLASH_LAYOUT_JSON) $(BOOT_EASYFLASH_ROML) $(BOOT_EASYFLASH_ROMH)
 	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
@@ -1052,6 +1076,7 @@ easyflash-clean:
 
 audit-release-assets:
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/audit_release_seq_rel.py
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_release_directory_order.py
 
 # Clean
 clean:
@@ -1093,6 +1118,7 @@ verify: profile
 	python3 $(BUILD_SUPPORT_DIR)/verify_uci_protocol_contract.py
 	python3 verify.py --profile "$(PROFILE)"
 	python3 $(BUILD_SUPPORT_DIR)/audit_release_seq_rel.py --profile "$(PROFILE)"
+	python3 $(BUILD_SUPPORT_DIR)/verify_release_directory_order.py --profile "$(PROFILE)"
 	python3 $(BUILD_SUPPORT_DIR)/editor_host_smoke.py
 	python3 $(BUILD_SUPPORT_DIR)/tasklist_host_smoke.py
 	python3 $(BUILD_SUPPORT_DIR)/simplefiles_host_smoke.py

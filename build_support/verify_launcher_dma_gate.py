@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+import subprocess
 import sys
 
 
@@ -52,10 +53,27 @@ def main() -> int:
     launcher = read("src/apps/launcher/launcher.c")
     dma_asm = read("src/apps/launcher/launcher_uci_dma.s")
     lessons = read("ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md")
+    setup_states_runner = read(
+        "build_support/run_launcher_setup_states_c64u.sh")
+    setup_states_plan = read(
+        "build_support/launcher_setup_states_ultimate.generated.yaml")
 
     require(
-        make_var(makefile, "LAUNCHER_DMA_LOAD") == "0",
-        "Makefile defaults LAUNCHER_DMA_LOAD to 0",
+        "readyos_profiles.py launcher-dma-load --profile $(PROFILE)" in
+        (make_var(makefile, "LAUNCHER_DMA_LOAD") or ""),
+        "Makefile derives the DMA compile gate from the selected profile",
+        failures,
+    )
+    profile_tool = ROOT / "build_support" / "readyos_profiles.py"
+    regular_dma = subprocess.check_output(
+        [sys.executable, str(profile_tool), "launcher-dma-load",
+         "--profile", "precog-d81"], cwd=ROOT, text=True).strip()
+    ultimate_dma = subprocess.check_output(
+        [sys.executable, str(profile_tool), "launcher-dma-load",
+         "--profile", "precog-ultimate"], cwd=ROOT, text=True).strip()
+    require(
+        regular_dma == "0" and ultimate_dma == "1",
+        "regular D81 compiles portable loading while Ultimate compiles DMA",
         failures,
     )
     require(
@@ -75,8 +93,57 @@ def main() -> int:
         failures,
     )
     require(
+        'strcmp(key, "dma_loading")' in launcher
+        and "launcher_cfg_dma_loading" in launcher,
+        "runtime apps.cfg DMA enable remains distinct from the compile gate",
+        failures,
+    )
+    require(
         '"DMA:"' in launcher and "launcher_dma_used" in launcher,
         "experimental DMA UI indicator remains explicit when enabled",
+        failures,
+    )
+    require(
+        '"run SETUP app for fast app loading"' in launcher
+        and "launcher_dma_advise_setup();" in launcher,
+        "configured but unavailable DMA directs users to the SETUP app",
+        failures,
+    )
+    require(
+        "launcher_uci_dma_validate_image()" in launcher
+        and "_launcher_uci_dma_validate_image" in dma_asm,
+        "launcher validates the configured image before advertising DMA:YES",
+        failures,
+    )
+    require(
+        "jsr dos_cd_path" in dma_asm
+        and dma_asm.count("jsr cd_path_advance\n        ldy #$00") == 2,
+        "launcher walks nested host paths without carrying a stale Y index",
+        failures,
+    )
+    require(
+        "sty path_segment_len" in dma_asm
+        and "lda path_segment_len\n        jsr cd_path_advance" in dma_asm,
+        "launcher preserves each component length across asynchronous UCI draining",
+        failures,
+    )
+    require(
+        "uci_write_path_cmd" not in dma_asm,
+        "launcher preserves exact UltimateDOS host-path bytes",
+        failures,
+    )
+    require(
+        "launcher_c64u_image_path[i] = (char)0x5Fu" in launcher,
+        "launcher converts target-charset underscores back to host ASCII in the configured path",
+        failures,
+    )
+    require(
+        all(token in setup_states_plan for token in (
+            "DMA:NO", "DMA:YES", "DMA:ON",
+            "RUN SETUP APP FOR FAST APP LOADING",
+            "invalid_path_editor_loaded_disk", "DMA LOADING",
+        )) and "READYOS_SETUP_TEST" in setup_states_runner,
+        "physical launcher matrix covers bad/good paths and IEC/DMA behavior",
         failures,
     )
     require(

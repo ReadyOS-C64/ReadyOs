@@ -476,12 +476,26 @@ def build_data_disk(catalog: Dict[str, object], output_path: Path) -> None:
     if output_path.exists():
         output_path.unlink()
     readyos_profiles.run(["c1541", "-format", "readyosdata,ro", "d64", str(output_path)])
-    for item in readyos_profiles.authoritative_support_entries(apps_set):
-        readyos_profiles.write_authoritative_support_file(item, output_path)
+    support_entries = readyos_profiles.ordered_disk_entries(
+        readyos_profiles.authoritative_support_entries(apps_set)
+    )
+    for group in readyos_profiles.DISK_DIRECTORY_GROUPS:
+        for item in support_entries:
+            if readyos_profiles.disk_directory_group(
+                    str(item["disk_name"]),
+                    str(item["type"]),
+                    item.get("directory_group")) == group:
+                readyos_profiles.write_authoritative_support_file(item, output_path)
+        if backup is not None and group == "seq_usr":
+            _stage_dir, manifest_path = backup
+            readyos_profiles.restore_user_files(output_path, manifest_path, {"seq", "usr"})
+        if backup is not None and group == "rel":
+            _stage_dir, manifest_path = backup
+            readyos_profiles.restore_user_files(output_path, manifest_path, {"rel"})
     if backup is not None:
-        stage_dir, manifest_path = backup
-        readyos_profiles.restore_user_files(output_path, manifest_path)
+        stage_dir, _manifest_path = backup
         shutil.rmtree(stage_dir, ignore_errors=True)
+    readyos_profiles.verify_disk_directory_order(output_path)
 
 
 def raw_offset(bank: int, addr: int) -> int:
@@ -537,6 +551,11 @@ def build_help_text(output_dir: Path) -> str:
         "- mount `readyos_data.d64` on drive `8`",
         "- enable REU with at least `1MB`; `8MB` or `16MB` is recommended where available",
         "- if an app snapshot preloaded from the cartridge is unloaded from REU, ReadyOS cannot load it again from the cartridge until you restart ReadyOS",
+        "",
+        "## directory order",
+        "",
+        "- the CRT uses its cartridge-bank layout and is not governed by floppy directory order",
+        "- the companion `readyos_data.d64` writes ordinary SEQ/USR data before REL data",
         "",
         "## vice example",
         "",

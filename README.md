@@ -12,11 +12,12 @@ than being explicitly tailored to the new C64 Ultimate. This cycle is expected
 to push further in that Ultimate-first direction while still trying to stay
 usable on other REU-capable C64 setups.
 
-The current tree also contains an opt-in C64 Ultimate DOS DMA launcher path.
-It loads disk PRGs directly into loader-assigned REU destinations when built
-with `LAUNCHER_DMA_LOAD=1`; normal release builds leave it disabled, and an
-enabled build falls back to the established disk loader whenever UCI, image
-mounting, file lookup, or transfer verification is unavailable. See
+The current tree also contains a C64 Ultimate DOS DMA launcher path. It loads
+disk PRGs directly into loader-assigned REU destinations. The dedicated
+`precog-ultimate` D81 compiles and enables it by default and includes the
+standalone `SETUP` utility; portable SKUs leave it disabled. Every enabled
+build falls back to the established disk loader whenever UCI, image mounting,
+file lookup, or transfer verification is unavailable. See
 [`docs/ultimate_dos_dma_loading.md`](docs/ultimate_dos_dma_loading.md).
 
 ## The Concept
@@ -54,6 +55,7 @@ Project links:
 The canonical release layout is:
 
 - `Releases/<version>/precog-d81/`
+- `Releases/<version>/precog-ultimate/`
 - `Releases/<version>/precog-easyflash/`
 - `Releases/<version>/precog-dual-d71/`
 - `Releases/<version>/precog-kung-fu-flash-2-d81/`
@@ -114,12 +116,13 @@ additional release work will be recorded here as it lands.
   tiles/tilemaps, multicolor bitmap operations, and immediate SID voice/filter
   commands. The tree includes 32 graphics demonstrations and 6 sound
   demonstrations, with regular-disk and EasyFlash automation.
-- The regular launcher gained an opt-in C64 Ultimate DOS/UCI direct-to-REU
+- The regular launcher gained a gated C64 Ultimate DOS/UCI direct-to-REU
   loader. It validates exact PRG sizes, handles packed ReadyShell resources,
   reuses a suitable mounted image, reports `DMA:YES` / `DMA:ON` / `DMA:NO`, and
   falls back to the portable KERNAL/disk path on any unavailable or failed DMA
-  operation. Production builds keep `LAUNCHER_DMA_LOAD=0` unless explicitly
-  overridden.
+  operation. Portable profiles keep `LAUNCHER_DMA_LOAD=0`; the dedicated
+  Ultimate profile compiles and enables it and adds a guided standalone setup
+  utility.
 - UCI callers in the launcher, ReadyIRC, UCITest, and SysInfo now share the
   asynchronous state-machine discipline proven on physical Ultimate hardware:
   quiet-idle synchronization, asynchronous PUSH/ABORT handling, complete data
@@ -155,12 +158,13 @@ additional release work will be recorded here as it lands.
 
 ## Release Variants
 
-ReadyOS now ships the same runtime in `11` public media variants because the
+ReadyOS now ships the same runtime in `12` public media variants because the
 target drive types, disk capacities, and cartridge support are different.
 
 | Profile | Media | Why It Exists | Boot Flow | App Set |
 | --- | --- | --- | --- | --- |
 | `precog-d81` | one `D81` image on drive `8` | recommended main ReadyOS SKU and default build/run target | `PREBOOT -> BOOT` | 19 launcher apps plus ReadyBASIC modules and the complete example set; `sidetris` is also present through `app.sidetris` |
+| `precog-ultimate` | one `D81` image on drive `8` | C64 Ultimate-first full-content SKU with DMA loading enabled and guided image-path setup | run standalone `SETUP` once, then `PREBOOT -> BOOT` | same full app/module/example set as `precog-d81`, plus non-catalog `SETUP` utility |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | full cartridge cold-boot path for VICE and Ultimate-family setups that can keep a disk mounted | reset into cartridge boot | full current app catalog |
 | `precog-dual-d71` | two boot-time `D71` images on drives `8` and `9`, plus an optional third `D71` swapped into drive `9` | full core `1571` profile with capacity for optional apps and examples without crowding the boot pair | `PREBOOT -> SETD71 -> BOOT` | 16 core launcher apps; optional disk adds app-config versions of `sidetris`, `deminer`, `ucitest`, and `readme`, followed by all ReadyBASIC examples |
 | `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | broad Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | same 19-app set as `precog-d81` |
@@ -180,6 +184,21 @@ runtime files, help content, and app data.
 Those cartridge-preloaded app snapshots are a cold-boot preload only. If one is
 unloaded from REU, ReadyOS cannot load it again from the cartridge until you
 restart ReadyOS.
+
+The Ultimate D81 is deliberately separate from the portable main D81. Copy it
+to Ultimate storage, mount it on drive `8`, and run
+`LOAD"SETUP",8,1` followed by `RUN` before the first ReadyOS boot. SETUP checks
+the REU, UCI, and Ultimate DOS; browses active storage volumes, folders, and
+D81 files; mounts and validates the selected image; and updates that image's
+`apps.cfg` with `dma_loading=1` and its exact host path. It uses staged
+`rdyset.seq`/`rdyset.bak.seq` replacement with verification and rollback. It
+addresses the final C64 `apps.cfg` SEQ entry as `apps.cfg.seq`, as required by
+Ultimate DOS's mounted-image filename mapping. SETUP is
+not a launcher app: it is a standalone program that reuses only focused
+ReadyOS TUI micromodules and has no ReadyOS shim or overlay dependency.
+Its physical acceptance matrix passed at 1, 16, and 64 MHz, including folder
+navigation, invalid-path rejection, staged commit/readback, and disabled
+REU/UCI guidance. VICE has no acceptance value for this Ultimate-only SKU.
 
 The cartridge SKU also now performs an explicit early REU check. If REU is not
 present, the boot loader shows a clear error, waits for a keypress, and returns
@@ -209,6 +228,27 @@ image because their REL files must not be separated onto the optional disk.
 The ReadyBASIC-focused D64 fits on a single image, so no second examples disk is
 needed. It is the most direct `1541`-compatible way to try the complete
 ReadyBASIC beta environment rather than a general-purpose ReadyOS app subset.
+
+### Disk Directory Order
+
+Every generated D64, D71, and D81 uses one semantic directory order, adjusted
+to the files that are actually present on that particular image:
+
+1. Boot-chain PRGs: `PREBOOT` first, then any `SETD71` / `SHOWCFG`, `BOOT`, and
+   `LAUNCHER`. Keeping `PREBOOT` as the first directory entry makes
+   `LOAD"*",8` select the correct bootstrap.
+2. Launcher/app configuration files such as `apps.cfg` and `app.*`.
+3. Ordinary SEQ and USR data files.
+4. Complete ReadyOS application PRGs.
+5. Runtime overlays and modules, including ReadyShell overlays and `rbm.*`.
+6. REL data files.
+7. ReadyBASIC example/test PRGs, when that image includes them.
+
+An image simply omits groups it does not need, while retaining the relative
+group order. The EasyFlash CRT has its own cartridge-bank layout; its companion
+data D64 follows the applicable data-file portion of this contract. The build
+enforces the policy and `build_support/verify_release_directory_order.py`
+audits the finished images.
 
 The solo-D64 variants exist for environments that can mount only one `D64`
 at a time, such as some web emulators and simplified media loaders. The split

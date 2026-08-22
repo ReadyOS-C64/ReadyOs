@@ -16,8 +16,10 @@ deleted or rewritten into claims about a version they did not describe.
 
 - [`../README.md`](../README.md): project overview, current SKUs, app catalog,
   runtime summary, and supported build/run entry points.
-- [`ultimate_dos_dma_loading.md`](ultimate_dos_dma_loading.md): opt-in C64
-  Ultimate DOS DMA loading, fallback behavior, configuration, and verification.
+- [`ultimate_setup.md`](ultimate_setup.md): first-run flow, controls, safe
+  config commit, prerequisites, and automation contract for the Ultimate D81.
+- [`ultimate_dos_dma_loading.md`](ultimate_dos_dma_loading.md): C64 Ultimate
+  DOS DMA loading, profile/runtime gates, fallback behavior, and verification.
 - [`uci_tester.md`](uci_tester.md): UCI Tester controls, protocol rules,
   selectable prefills, safety notes, and real-world DOS/network/HTTP workflows.
 - [`ReadyOS_SHIM_ARCHITECTURE_0.5.md`](ReadyOS_SHIM_ARCHITECTURE_0.5.md):

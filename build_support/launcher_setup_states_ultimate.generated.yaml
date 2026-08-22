@@ -1,0 +1,128 @@
+version: 1
+kind: ultimate_task_plan
+plan_id: launcher_setup_path_states
+run_mode: ultimate64
+global_defaults:
+  retry_policy: { max_attempts: 1, backoff_ms: 500, jitter: false }
+  timeouts: { launch_s: 120, step_s: 720, read_s: 60 }
+  artifact_policy: { capture_screen: true, capture_state: true, capture_dump: true }
+  ultimate:
+    host: 10.0.0.79
+    password: null
+    ftp_user: anonymous
+    ftp_password: anonymous@
+    remote_root: USB1/READYOS_SETUP_TEST/LAUNCHER-RUN
+    disk8: build/setup_ultimate/launcher-invalid.d81
+    disk9: null
+    autostart_prg: null
+    drive_a_bus_id: 8
+    drive_b_bus_id: 11
+    drive_a_type: '1581'
+    drive_b_type: '1581'
+    drive_a_enabled: true
+    drive_b_enabled: false
+    mount_mode: readwrite
+    boot_drive: 8
+    capture_video_stream: true
+    stream_port: 12000
+    stream_timeout_s: 4.0
+    default_speed_mhz: 1
+    warp_equivalent_mhz: 8
+steps:
+- id: launch_invalid_path_image
+  type: ultimate.launch
+  params:
+    boot_mode: disk
+    drives:
+    - { slot: a, bus_id: 8, drive_type: '1581', enabled: true, disk: build/setup_ultimate/launcher-invalid.d81, remote_disk: USB1/READYOS_SETUP_TEST/LAUNCHER-RUN/INVALID.D81, image_type: d81, mount_mode: readwrite }
+    - { slot: b, bus_id: 11, drive_type: '1581', enabled: false, disk: build/setup_ultimate/launcher-invalid.d81, remote_disk: USB1/READYOS_SETUP_TEST/LAUNCHER-RUN/INVALID.D81, image_type: d81, mount_mode: readwrite }
+    boot_drive: 8
+    boot_command: "LOAD\"BOOT\",8\r"
+    reset_before_boot: true
+    post_reset_delay_s: 3.0
+    boot_inter_chunk_delay_s: 0.25
+- id: wait_invalid_boot_loaded
+  type: screen.wait_contains
+  params: { text: "LOADING", wait_timeout_s: 60, poll_s: 0.5, capture_label: invalid_boot_loading }
+- id: run_invalid_readyos
+  type: input.sequence
+  params: { pre_delay_s: 45, keys: [82,85,78,13], inter_key_delay_s: 0.25, post_delay_s: 1.0 }
+- id: wait_invalid_launcher
+  type: screen.wait_contains
+  params: { text: "READY OS", pre_delay_s: 120, wait_timeout_s: 360, poll_s: 1.0, capture_label: launcher_invalid_path }
+- id: assert_invalid_dma_off
+  type: assert.screen
+  params: { contains: "DMA:NO" }
+- id: assert_invalid_setup_guidance
+  type: assert.screen
+  params: { contains: "RUN SETUP APP FOR FAST APP LOADING" }
+- id: capture_invalid_launcher
+  type: screen.capture
+  params: { label: launcher_invalid_path_guidance, note: "Missing configured path falls back and recommends SETUP", capture_state: true }
+- id: select_invalid_editor
+  type: input.sequence
+  params: { keys: [19,17,17,13], inter_key_delay_s: 0.15, post_delay_s: 0.5 }
+- id: wait_invalid_editor
+  type: screen.wait_contains
+  params: { text: "EDITOR:", pre_delay_s: 90, wait_timeout_s: 240, poll_s: 1.0, capture_label: invalid_path_editor_loaded_disk }
+- id: return_from_invalid_editor
+  type: input.key
+  params: { key: 2, post_delay_s: 1.0 }
+- id: wait_invalid_launcher_return
+  type: screen.wait_contains
+  params: { text: "READY OS", wait_timeout_s: 90, capture_label: invalid_path_launcher_return }
+- id: launch_valid_path_image
+  type: ultimate.launch
+  params:
+    boot_mode: disk
+    drives:
+    - { slot: a, bus_id: 8, drive_type: '1581', enabled: true, disk: build/setup_ultimate/launcher-valid.d81, remote_disk: USB1/READYOS_SETUP_TEST/LAUNCHER-RUN/VALID.D81, image_type: d81, mount_mode: readwrite }
+    - { slot: b, bus_id: 11, drive_type: '1581', enabled: false, disk: build/setup_ultimate/launcher-valid.d81, remote_disk: USB1/READYOS_SETUP_TEST/LAUNCHER-RUN/VALID.D81, image_type: d81, mount_mode: readwrite }
+    boot_drive: 8
+    boot_command: "LOAD\"BOOT\",8\r"
+    reset_before_boot: true
+    post_reset_delay_s: 3.0
+    boot_inter_chunk_delay_s: 0.25
+- id: wait_valid_boot_loaded
+  type: screen.wait_contains
+  params: { text: "LOADING", wait_timeout_s: 60, poll_s: 0.5, capture_label: valid_boot_loading }
+- id: run_valid_readyos
+  type: input.sequence
+  params: { pre_delay_s: 45, keys: [82,85,78,13], inter_key_delay_s: 0.25, post_delay_s: 1.0 }
+- id: wait_valid_launcher
+  type: screen.wait_contains
+  params: { text: "READY OS", pre_delay_s: 120, wait_timeout_s: 360, poll_s: 1.0, capture_label: launcher_valid_path }
+- id: assert_valid_dma_ready
+  type: assert.screen
+  params: { contains: "DMA:YES" }
+- id: assert_valid_has_no_setup_guidance
+  type: assert.screen_not_contains
+  params: { not_contains: "RUN SETUP APP FOR FAST APP LOADING" }
+- id: capture_valid_launcher
+  type: screen.capture
+  params: { label: launcher_valid_path_ready, note: "Exact configured path enables DMA without SETUP guidance", capture_state: true }
+- id: select_valid_editor
+  type: input.sequence
+  params: { keys: [19,17,17,13], inter_key_delay_s: 0.15, post_delay_s: 0.0 }
+- id: wait_valid_dma_load
+  type: screen.wait_contains
+  criticality: observe
+  params: { text: "DMA LOADING", wait_timeout_s: 8, poll_s: 0.05, capture_label: valid_path_dma_loading }
+- id: wait_valid_editor
+  type: screen.wait_contains
+  params: { text: "EDITOR:", pre_delay_s: 5, wait_timeout_s: 120, poll_s: 0.5, capture_label: valid_path_editor_loaded }
+- id: return_from_valid_editor
+  type: input.key
+  params: { key: 2, post_delay_s: 1.0 }
+- id: wait_valid_launcher_return
+  type: screen.wait_contains
+  params: { text: "READY OS", wait_timeout_s: 90, poll_s: 0.5, capture_label: valid_path_launcher_return }
+- id: assert_valid_dma_used
+  type: assert.screen
+  params: { contains: "DMA:ON" }
+- id: capture_valid_dma_used
+  type: screen.capture
+  params: { label: valid_path_dma_on, note: "Returning from Editor proves its load used UltimateDOS DMA", capture_state: true }
+- id: restore_speed
+  type: ultimate.speed.set
+  params: { mhz: 1 }

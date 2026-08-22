@@ -238,37 +238,43 @@
 </head>
 <body>
 <!-- READYOS-DOC-STATUS:START -->
-<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current C64 Ultimate DOS DMA behavior. The launcher path is opt-in and disk fallback remains part of the contract.</aside>
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current C64 Ultimate DOS DMA behavior. The Ultimate SKU enables it and disk fallback remains part of the contract.</aside>
 <!-- READYOS-DOC-STATUS:END -->
 <h1 id="c64-ultimate-dos-dma-loading">C64 Ultimate DOS DMA Loading</h1>
-<p>ReadyOS has an opt-in launcher path that reads PRG payloads from a
-configured C64 Ultimate disk image directly into their allocated REU
-locations through the Ultimate Command Interface (UCI). This accelerates
-preload and cold app or resource loading without changing the resident
-shim or the <code>$1000-$C5FF</code> snapshot contract.</p>
+<p>ReadyOS has a profile-gated launcher path that reads PRG payloads
+from a configured C64 Ultimate disk image directly into their allocated
+REU locations through the Ultimate Command Interface (UCI). This
+accelerates preload and cold app or resource loading without changing
+the resident shim or the <code>$1000-$C5FF</code> snapshot contract.</p>
 <h2 id="availability">Availability</h2>
 <ul>
-<li>Build gate: <code>LAUNCHER_DMA_LOAD=1</code>.</li>
-<li>Default: disabled (<code>LAUNCHER_DMA_LOAD=0</code>). Normal release
-artifacts therefore use KERNAL/disk loading unless explicitly built with
-the gate enabled.</li>
+<li>Compile gate: <code>LAUNCHER_DMA_LOAD</code>. The Makefile derives
+it from the selected profile: <code>precog-ultimate</code> sets it to
+<code>1</code>; portable profiles set it to <code>0</code>.</li>
+<li>Runtime gate: <code>dma_loading=1</code> in <code>apps.cfg</code>,
+plus a non-empty <code>c64u_image_path</code>. Both must be present
+before the launcher attempts DMA.</li>
+<li>The Ultimate SKU ships with DMA enabled but its image path empty, so
+the standalone SETUP utility can record the actual installed location
+safely.</li>
 <li>Launcher variant: regular disk launcher only; EasyFlash does not
 link this path because cartridge preload already supplies its REU
 payloads.</li>
 <li>Hardware target: C64 Ultimate/Ultimate-family UCI with Ultimate DOS
 support.</li>
-<li>Catalog key: <code>c64u_image_path</code>, currently configured by
-<code>cfg/profiles/precog-d81.ini</code> as
-<code>/usb1/readyos.d81</code>.</li>
+<li>Catalog keys: <code>dma_loading</code> and
+<code>c64u_image_path</code>.</li>
+<li>First-run guide: <a
+href="ultimate_setup.md"><code>ultimate_setup.md</code></a>.</li>
 </ul>
 <p>Build and run ReadyOS itself through the normal workflow:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="va">LAUNCHER_DMA_LOAD</span><span class="op">=</span>1 <span class="ex">/bin/bash</span> ./run.sh <span class="at">--profile</span> precog-d81 <span class="at">--vice-fast</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> ./run.sh <span class="at">--profile</span> precog-ultimate <span class="at">--vice-fast</span></span></code></pre></div>
 <p>VICE does not provide the hardware UCI service. An enabled build
 detects that condition and continues through the normal disk path.</p>
 <h2 id="runtime-flow">Runtime Flow</h2>
 <ol type="1">
-<li>The launcher parses <code>c64u_image_path</code> from
-<code>apps.cfg</code>.</li>
+<li>The launcher parses <code>dma_loading</code> and
+<code>c64u_image_path</code> from <code>apps.cfg</code>.</li>
 <li>After drawing the launcher, it probes UCI and validates the image
 path.</li>
 <li>For an app or resource load, Ultimate DOS mounts or reuses the
@@ -292,9 +298,14 @@ operations.</p>
 no successful DMA load has yet been recorded.</li>
 <li><code>DMA:ON</code>: at least one current or cached load used the
 DMA path.</li>
-<li><code>DMA:NO</code>: DMA is unavailable; disk fallback remains
-active.</li>
+<li><code>DMA:NO</code>: DMA is disabled or unavailable; disk fallback
+remains active.</li>
 </ul>
+<p>When <code>dma_loading=1</code> but the configured path is empty or
+malformed, UCI or Ultimate DOS cannot be reached, or the configured
+directory/image cannot be opened, the launcher also shows
+<code>RUN SETUP APP FOR FAST APP LOADING</code> on its home screen. Normal
+drive loading remains available.</p>
 <p>Transient <code>DMA LOADING n/n</code> progress text is used by
 hardware smoke tests.</p>
 <h2 id="exact-size-rule">Exact-Size Rule</h2>

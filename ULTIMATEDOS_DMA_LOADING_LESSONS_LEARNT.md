@@ -2,8 +2,21 @@
 
 This note records what was learned from the standalone C64 Ultimate DMA probe
 and the launcher-local DMA experiments. It is specifically about Ultimate DOS
-UCI technique; the launcher integration remains gated behind
-`LAUNCHER_DMA_LOAD=1`.
+UCI technique. The launcher integration remains compile- and runtime-gated:
+portable profiles use `LAUNCHER_DMA_LOAD=0`, while `precog-ultimate` uses
+`LAUNCHER_DMA_LOAD=1` plus `dma_loading=1` in `apps.cfg`.
+
+> **Ultimate SKU update (2026-08-21):** the dedicated Ultimate D81 now ships a
+> standalone `SETUP` utility. SETUP reuses focused ReadyOS TUI micromodules but
+> is not a ReadyOS app and uses neither overlays nor ReadyFS architecture. It
+> applies the exact host D81 path with a verified
+> `rdyset.seq`/`rdyset.bak.seq` transaction. Within an image, Ultimate DOS
+> addresses the C64 `apps.cfg` SEQ entry as `apps.cfg.seq`; naming the rename
+> destination only `apps.cfg` silently produces a PRG entry.
+> Physical SETUP acceptance passed at 1, 16, and 64 MHz on 2026-08-22,
+> including invalid-path recovery and restored REU/UCI-off failure cases. The
+> historical pathless-loader limitation below remains true and is
+> precisely why explicit first-run path selection is required.
 
 > **Schema-v5 update (2026-08-02):** current main-app DMA destinations and
 > shim transfers cover `$1000-$C5FF` (`$B600`). Older `$C7FF/$B800` values in

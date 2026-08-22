@@ -176,6 +176,8 @@ Disk layout:
 - The main release variants are:
   - `precog-d81`: recommended main SKU; 19 catalog apps plus Sidetris
     on demand, ReadyBASIC modules, and all examples on one `1581` disk
+  - `precog-ultimate`: the full D81 plus standalone `SETUP`; DMA loading
+    is compiled and enabled, while normal disk fallback remains available
   - `precog-dual-d71`: 16 core apps on two boot-time `1571` disks;
     a third optional drive-9 swap adds four apps and all BASIC examples
   - `precog-kung-fu-flash-2-d81`: the D81 set adapted for 1MB-REU KFF2
@@ -183,6 +185,24 @@ Disk layout:
   - `precog-solo-d64-readybasic`: ReadyOS, ReadyBASIC, all modules, and
     the full 41-program example/test set on one `1541` disk
   - `precog-easyflash`: EasyFlash `CRT` plus companion `D64` on drive `8`
+
+Disk directory order is deliberate. Bootable images put `PREBOOT` first,
+followed by any boot helpers, `BOOT`, and `LAUNCHER`, so `LOAD"*",8` works.
+The remaining groups are configs, ordinary SEQ/USR data, app PRGs,
+overlays/modules, REL data, and finally any ReadyBASIC examples. Each image
+omits groups it does not contain. The EasyFlash CRT uses a separate bank layout.
+
+Ultimate D81 first run:
+- Copy and mount the image on drive 8.
+- Run `LOAD"SETUP",8,1`, then `RUN` before booting ReadyOS.
+- SETUP checks REU, UCI, and Ultimate DOS, then browses Ultimate storage for
+  the D81 and safely records its exact host path in that image's `apps.cfg`.
+- F7 can apply a saved path or accept an absolute D81 path directly; config
+  replacement is verified and preserves `apps.cfg` as a SEQ file.
+- SETUP is standalone and reuses focused ReadyOS TUI micromodules; it is not
+  a launcher app and uses no ReadyOS or ReadyFS overlays.
+- This Ultimate-only workflow is accepted on physical hardware at 1, 16, and
+  64 MHz. VICE does not provide meaningful UCI/Ultimate DOS acceptance here.
 
 ### Cartridge Variant
 

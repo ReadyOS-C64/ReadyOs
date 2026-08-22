@@ -8,6 +8,7 @@
 ;
 
         .export _launcher_uci_dma_detect
+        .export _launcher_uci_dma_validate_image
         .export _launcher_uci_dma_load_prg
         .export _launcher_uci_dma_quiesce
         .export _launcher_uci_dma_clear_stage
@@ -117,6 +118,17 @@ try_base_yes:
         sec
         rts
 
+_launcher_uci_dma_validate_image:
+        lda #$01
+        sta validate_only
+        jsr _launcher_uci_dma_load_prg
+        pha
+        lda #$00
+        sta validate_only
+        pla
+        tax
+        rts
+
 _launcher_uci_dma_load_prg:
         lda #'0'
         jsr debug_stage
@@ -173,15 +185,17 @@ load_mount_image_path:
         sta cd_name_abs+2
         jsr dos_cd
         BCC_FAR load_cd_root_fail
+        jsr status_ok
+        BCC_FAR load_cd_root_status_fail
 
         lda _launcher_uci_dma_image_dir
         sta cd_dir_check_abs+1
-        sta cd_dir_retry_slash_abs+1
-        sta cd_name_abs+1
+        sta cd_path_read_abs+1
+        sta cd_path_seg_read_abs+1
         lda _launcher_uci_dma_image_dir+1
         sta cd_dir_check_abs+2
-        sta cd_dir_retry_slash_abs+2
-        sta cd_name_abs+2
+        sta cd_path_read_abs+2
+        sta cd_path_seg_read_abs+2
         ldy #$00
 cd_dir_check_abs:
         lda $FFFF,y
@@ -191,29 +205,8 @@ cd_dir_check_abs:
 cd_dir_has_text:
         lda #'2'
         jsr debug_stage
-        jsr dos_cd
+        jsr dos_cd_path
         BCC_FAR load_cd_dir_fail
-        jsr status_ok
-        bcs cd_dir_ready
-        ldy #$00
-cd_dir_retry_slash_abs:
-        lda $FFFF,y
-        cmp #'/'
-        bne cd_dir_status_retry_fail
-        iny
-        lda _launcher_uci_dma_image_dir
-        clc
-        adc #$01
-        sta cd_name_abs+1
-        lda _launcher_uci_dma_image_dir+1
-        adc #$00
-        sta cd_name_abs+2
-        jsr dos_cd
-        BCC_FAR load_cd_dir_fail
-        jsr status_ok
-        bcs cd_dir_ready
-cd_dir_status_retry_fail:
-        jmp load_cd_dir_status_fail
 
 cd_dir_ready:
         lda _launcher_uci_dma_image_name
@@ -262,6 +255,14 @@ cd_image_status_ok:
         jsr debug_stage
 
 load_open_current_dir:
+        lda validate_only
+        beq load_open_prg
+        lda #$00
+        sta _launcher_uci_dma_last_error
+        lda #$01
+        tax
+        rts
+load_open_prg:
         jsr dos_open_read
         BCC_FAR load_open_fail
         jsr status_ok
@@ -548,7 +549,9 @@ dos_cd_name:
 cd_name_abs:
         lda $FFFF,y
         beq dos_cd_push
-        jsr uci_write_path_cmd
+        ; Host paths are exact UltimateDOS bytes.  Do not case-fold them:
+        ; SETUP preserves the directory spelling returned by the device too.
+        jsr uci_write_cmd
         iny
         bne dos_cd_name
 dos_cd_push:
@@ -564,6 +567,7 @@ cd_path_read_abs:
         bne dos_cd_path_segment
         lda #$01
         jsr cd_path_advance
+        ldy #$00
         jmp dos_cd_path
 dos_cd_path_segment:
         jsr sync_interface
@@ -579,17 +583,22 @@ cd_path_seg_read_abs:
         beq dos_cd_path_seg_push
         cmp #'/'
         beq dos_cd_path_seg_push
-        jsr uci_write_path_cmd
+        jsr uci_write_cmd
         iny
         bne dos_cd_path_seg_loop
 dos_cd_path_seg_push:
+        ; PUSH/drain owns Y while polling the asynchronous interface.  Save
+        ; the component length first or a successful CD would advance by the
+        ; drain routine's final Y value and repeat the same directory.
+        sty path_segment_len
         jsr uci_push_cmd
         jsr drain_response
         bcc dos_cd_path_fail
         jsr status_ok
         bcc dos_cd_path_fail
-        tya
+        lda path_segment_len
         jsr cd_path_advance
+        ldy #$00
         jmp dos_cd_path
 dos_cd_path_done:
         sec
@@ -623,7 +632,7 @@ dos_mount_name:
 cd_mount_name_abs:
         lda $FFFF,y
         beq dos_mount_push
-        jsr uci_write_path_cmd
+        jsr uci_write_cmd
         iny
         bne dos_mount_name
 dos_mount_push:
@@ -719,15 +728,6 @@ dos_load_reu_chunk:
 command_fail:
         clc
         rts
-
-uci_write_path_cmd:
-        cmp #'a'
-        bcc uci_write_path_raw
-        cmp #'z'+1
-        bcs uci_write_path_raw
-        and #$DF
-uci_write_path_raw:
-        jmp uci_write_cmd
 
 debug_stage:
         ; Hardware note: this visible screen store is part of the
@@ -1324,6 +1324,7 @@ uci_value:         .res 1
 last_status:       .res 1
 current_state:     .res 1
 accept_state:      .res 1
+path_segment_len:  .res 1
 sync_first:        .res 1
 timeout_hi:        .res 1
 timeout_outer:     .res 1
@@ -1336,5 +1337,6 @@ chunk_hi:          .res 1
 current_off_lo:    .res 1
 current_off_hi:    .res 1
 clipped_load:      .res 1
+validate_only:     .res 1
 data_buf:          .res 32
 stat_buf:          .res 8

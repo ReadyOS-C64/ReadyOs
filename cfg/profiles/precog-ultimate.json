@@ -1,0 +1,23 @@
+{
+  "extends": "precog-d81",
+  "id": "precog-ultimate",
+  "display_name": "precog ultimate (d81)",
+  "kind": "ultimate",
+  "default_run": false,
+  "catalog_source": "cfg/profiles/precog-ultimate.ini",
+  "launcher_dma_load": 1,
+  "disk_overrides": [
+    {
+      "index": 1,
+      "label": "readyultimate,ro",
+      "append_contents": [
+        {
+          "artifact": "setup.prg",
+          "name": "setup",
+          "type": "prg",
+          "directory_group": "program"
+        }
+      ]
+    }
+  ]
+}

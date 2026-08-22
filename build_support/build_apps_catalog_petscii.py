@@ -207,6 +207,7 @@ def parse_source(path: str) -> Tuple[Dict[str, str], Dict[str, str], List[Tuple[
     launcher_cfg: Dict[str, str] = {
         "load_all_to_reu": "0",
         "runappfirst": "",
+        "dma_loading": "0",
         "c64u_image_path": "",
     }
     apps: List[Tuple[str, str, str]] = []
@@ -255,6 +256,10 @@ def parse_source(path: str) -> Tuple[Dict[str, str], Dict[str, str], List[Tuple[
                     launcher_cfg[key] = normalize_prg_token(value, path, idx)
                 else:
                     launcher_cfg[key] = ""
+            elif key == "dma_loading":
+                if value not in ("0", "1"):
+                    fail(path, idx, "dma_loading must be 0 or 1")
+                launcher_cfg[key] = value
             elif key == "c64u_image_path":
                 launcher_cfg[key] = value.strip()
             continue
@@ -308,6 +313,7 @@ def render_lines(system_cfg: Dict[str, str],
         "[launcher]",
         f"load_all_to_reu={launcher_cfg['load_all_to_reu']}",
         f"runappfirst={launcher_cfg['runappfirst']}",
+        f"dma_loading={launcher_cfg['dma_loading']}",
         f"c64u_image_path={launcher_cfg['c64u_image_path']}",
         "[apps]",
     ]

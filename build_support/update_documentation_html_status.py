@@ -18,7 +18,8 @@ END = "<!-- READYOS-DOC-STATUS:END -->"
 CURRENT = {
     "docs/DOCUMENTATION_INDEX.html": "Current documentation index, audited against the initial 0.5 development tree on 2026-08-21; its production baseline is 0.2.5.",
     "docs/ReadyOS_SHIM_ARCHITECTURE_0.5.html": "Current 0.5 schema-v5 shim/ReadyOS-bank architecture, including the resident-versus-REU authority split and live token lookup.",
-    "docs/ultimate_dos_dma_loading.html": "Current C64 Ultimate DOS DMA behavior. The launcher path is opt-in and disk fallback remains part of the contract.",
+    "docs/ultimate_dos_dma_loading.html": "Current C64 Ultimate DOS DMA behavior. The Ultimate SKU enables it and disk fallback remains part of the contract.",
+    "docs/ultimate_setup.html": "Current first-run, safety, and automation contract for the C64 Ultimate D81 SETUP utility.",
     "docs/uci_tester.html": "Current UCI Tester controls, protocol rules, catalog behavior, selectable examples, and physical-Ultimate workflows.",
     "docs/ReadyShellArchitecture.html": "Current ReadyShell architecture counterpart generated from ReadyShellArchitecture.md.",
     "docs/ReadyShellHostTesting.html": "Current ReadyShell host-testing counterpart generated from ReadyShellHostTesting.md.",

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ultimate_setup</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current first-run, safety, and automation contract for the C64 Ultimate D81 SETUP utility.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<h1 id="ultimate-d81-setup">Ultimate D81 SETUP</h1>
+<p><code>precog-ultimate</code> is the C64 Ultimate-first full-content
+D81 SKU. Its launcher is compiled with Ultimate DOS DMA support, and its
+generated <code>apps.cfg</code> begins with <code>dma_loading=1</code>
+and an empty <code>c64u_image_path</code>. The image also contains
+<code>SETUP</code>, a standalone first-run utility that records the
+exact Ultimate host path of that D81 before ReadyOS boots.</p>
+<p>SETUP is deliberately not a ReadyOS launcher app. It is a normal
+<code>$0801</code> C64 program that links only the focused ReadyOS TUI
+micromodules needed for its screen, window, menu, and small UI helpers.
+It has no ReadyOS shim, ReadyFS architecture, or overlay dependency.
+ReadyFS was used only as a reference for the proven Ultimate DOS command
+spellings and resilient UCI state machine.</p>
+<h2 id="first-run">First Run</h2>
+<ol type="1">
+<li>Copy the Ultimate SKU D81 into a permanent folder on
+<code>usb1</code> or the SD card.</li>
+<li>Mount that same D81 on emulated drive <code>8</code>.</li>
+<li>From BASIC, run <code>LOAD"SETUP",8,1</code>, then
+<code>RUN</code>.</li>
+<li>Resolve any prerequisite marked <code>MISSING</code> or
+<code>OFF/ERROR</code>, then press <code>F5</code>.</li>
+<li>Browse from <code>/</code> through the active Ultimate storage
+volumes and folders. SETUP displays folders and D81 files only.</li>
+<li>Select the ReadyOS D81 and confirm the update.</li>
+<li>After <code>CONFIGURED - READYOS DMA IS READY</code>, exit with
+RUN/STOP and reset or boot <code>PREBOOT</code> normally.</li>
+</ol>
+<p>Do not move or rename the D81 after setup. If its host path changes,
+mount it on drive <code>8</code> and run SETUP again.</p>
+<h2 id="controls">Controls</h2>
+<ul>
+<li>cursor up/down: move selection</li>
+<li>RETURN: enter a folder or select a D81</li>
+<li>LEFT or DELETE: parent folder</li>
+<li>F1 / F3: previous / next page</li>
+<li>F5: retest REU, UCI, Ultimate DOS, and the saved path</li>
+<li>F7: reapply and verify the currently saved path; if no path is
+available, enter an absolute host D81 path directly</li>
+<li>RUN/STOP: exit</li>
+</ul>
+<p>Pages contain 14 filtered entries. SETUP rescans the Ultimate DOS
+directory stream for each page and still drains every response block,
+even after the visible page is full.</p>
+<p>Directory and path labels normalize host-ASCII letters and underscores
+for the C64 display. This affects only the visible copy; navigation and
+Ultimate DOS commands retain the exact filename bytes returned by the
+device.</p>
+<p>The screen follows the normal ReadyOS app header language without
+enclosing the whole display: a shallow light-blue 40-column title box
+contains separate REU, UCI, and Ultimate DOS label and value rows, its
+closing rule ends the header, and the current host path appears immediately
+below it. A blank row separates the path from the browser. The browser,
+guidance, and notice areas have no side or bottom border.</p>
+<h2 id="prerequisites-and-failure-guidance">Prerequisites and Failure
+Guidance</h2>
+<p>SETUP performs three independent checks:</p>
+<ul>
+<li><code>REU</code>: a non-destructive stash/fetch probe that restores
+the tested bytes; 16 MB is recommended, while ReadyOS requires at least
+1 MB.</li>
+<li><code>UCI</code>: the Ultimate Command Interface ID is probed at the
+supported register bases.</li>
+<li><code>ULT.DOS</code>: target 1 must answer IDENTIFY with an Ultimate
+DOS identity.</li>
+</ul>
+<p>If a check fails, enable the REU, Command Interface/UCI, and Ultimate
+DOS in the Ultimate settings, then reset and run SETUP again. VICE has
+no Ultimate UCI service and provides no useful acceptance coverage for
+this Ultimate-only SKU; all SETUP UI and integration acceptance runs on
+physical Ultimate hardware.</p>
+<p>SETUP initially reads <code>apps.cfg</code> from the mounted drive-8
+image through IEC. This is the one bootstrap boundary: Ultimate DOS does
+not expose a proven pathless mapping from an already mounted IEC image
+back to its host pathname. All host browsing, image mounting, path
+validation, and config mutation use Ultimate DOS exclusively.</p>
+<h2 id="safe-config-commit">Safe Config Commit</h2>
+<p>Selecting a D81 mounts it on drive <code>8</code>, enters the image
+through Ultimate DOS, and requires a readable <code>apps.cfg</code>
+containing both <code>dma_loading</code> and
+<code>c64u_image_path</code>. SETUP preserves all other bytes and
+values, changes those two values, and then uses this checked commit:</p>
+<ol type="1">
+<li>create new <code>rdyset.seq</code> without replacing an existing
+file, preserving the final C64 SEQ type;</li>
+<li>read it back and compare every byte;</li>
+<li>rename Ultimate DOS name <code>apps.cfg.seq</code> to
+<code>rdyset.bak.seq</code>;</li>
+<li>rename <code>rdyset.seq</code> to <code>apps.cfg.seq</code> (the C64
+directory still shows <code>apps.cfg</code> with type SEQ);</li>
+<li>read back and compare the committed file;</li>
+<li>roll back from <code>rdyset.bak.seq</code> if commit verification
+fails;</li>
+<li>remove the backup only after a verified commit.</li>
+</ol>
+<p>Pre-existing staging names cause a safe failure; SETUP does not
+delete them or unrelated files to make progress.</p>
+<h2 id="automation-contract">Automation Contract</h2>
+<p>Host tests cover config parsing, growth/shrink rewrites,
+preservation, malformed configs, and the UCI transaction state machine.
+Physical C64 Ultimate automation covers both UI and integration behavior
+using fresh, uniquely named images under owned
+<code>READYOS_SETUP_TEST</code> folders on <code>usb1</code> or the SD
+card; it never deletes or renames unrelated storage content.</p>
+<p>The physical acceptance matrix passed on 2026-08-22 at 1, 16, and 64
+MHz. At each speed it navigates into and back out of the
+<code>USB1</code> volume, rejects a missing D81 path, performs the
+staged commit with a valid path, downloads the resulting image, verifies
+the exact path and <code>dma_loading=1</code>, proves
+<code>apps.cfg</code> remains a SEQ file, and proves no staging file
+remains. Separate physical UI cases disable Command Interface/UCI and
+the REU in turn, verify SETUP’s corrective guidance, and restore the
+original Ultimate settings afterward.</p>
+<p>A separate physical launcher matrix boots complete ReadyOS images in
+both path states. A missing configured image must show
+<code>DMA:NO</code>, recommend SETUP, and load an app through the normal
+disk fallback. An exact configured image must show <code>DMA:YES</code>,
+omit the SETUP recommendation, and load the same app through Ultimate
+DOS DMA; returning from that app must then show <code>DMA:ON</code>. Both
+fixtures live under a fresh
+<code>USB1/READYOS_SETUP_TEST</code> folder.</p>
+<p>The transport never uses CPU-speed delays as protocol pacing. It
+synchronizes to quiet IDLE, handles asynchronous PUSH/ABORT, drains data
+and status queues, observes the
+<code>DATA_MORE -&gt; COMMAND_BUSY</code> transition next to
+<code>DATA_ACC</code>, and waits for final quiet IDLE.</p>
+<p>Relevant checks are:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> setup-host-tests setup-contract-check uci-protocol-check</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_launcher_dma_gate.py</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_release_directory_order.py <span class="at">--profile</span> precog-ultimate</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Launch these only through their Terminal-owned wrappers:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> build_support/start_setup_c64u_matrix.sh</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> build_support/start_setup_c64u_prereq_failures.sh</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> build_support/start_launcher_setup_states_c64u.sh</span></code></pre></div>
+</body>
+</html>

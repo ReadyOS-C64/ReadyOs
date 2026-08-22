@@ -1,0 +1,161 @@
+version: 1
+kind: ultimate_task_plan
+plan_id: readyos_setup_ultimate
+run_mode: ultimate64
+global_defaults:
+  retry_policy: { max_attempts: 1, backoff_ms: 500, jitter: false }
+  timeouts: { launch_s: 60, step_s: 360, read_s: 60 }
+  artifact_policy: { capture_screen: true, capture_state: true, capture_dump: true }
+  ultimate:
+    host: 10.0.0.79
+    password: null
+    ftp_user: anonymous
+    ftp_password: anonymous@
+    remote_root: USB1/READYOS_SETUP_TEST/RUN
+    disk8: build/setup_ultimate/fixture.d81
+    disk9: null
+    autostart_prg: null
+    drive_a_bus_id: 8
+    drive_b_bus_id: 11
+    drive_a_type: '1581'
+    drive_b_type: '1581'
+    drive_a_enabled: true
+    drive_b_enabled: false
+    mount_mode: readwrite
+    boot_drive: 8
+    capture_video_stream: true
+    stream_port: 11000
+    stream_timeout_s: 4.0
+    default_speed_mhz: 1
+    warp_equivalent_mhz: 8
+steps:
+- id: mount_fixture
+  type: ultimate.launch
+  params:
+    boot_mode: none
+    drives:
+    - slot: a
+      bus_id: 8
+      drive_type: '1581'
+      enabled: true
+      disk: build/setup_ultimate/fixture.d81
+      remote_disk: USB1/READYOS_SETUP_TEST/RUN/fixture.d81
+      mount_mode: readwrite
+    - slot: b
+      bus_id: 11
+      drive_type: '1581'
+      enabled: false
+      disk: build/setup_ultimate/fixture.d81
+      remote_disk: USB1/READYOS_SETUP_TEST/RUN/fixture.d81
+      mount_mode: readwrite
+    boot_drive: 8
+- id: settle_reset
+  type: ultimate.launch
+  params:
+    boot_mode: disk
+    drives:
+    - { slot: a, bus_id: 8, drive_type: '1581', enabled: true, disk: "", remote_disk: "", mount_mode: readwrite }
+    - { slot: b, bus_id: 11, drive_type: '1581', enabled: false, disk: "", remote_disk: "", mount_mode: readwrite }
+    boot_drive: 8
+    boot_command: ""
+    reset_before_boot: true
+    post_reset_delay_s: 4.0
+- id: launch_setup
+  type: ultimate.launch
+  params:
+    boot_mode: prg
+    prg: bin/setup.prg
+    drives:
+    - { slot: a, bus_id: 8, drive_type: '1581', enabled: true, disk: "", remote_disk: "", mount_mode: readwrite }
+    - { slot: b, bus_id: 11, drive_type: '1581', enabled: false, disk: "", remote_disk: "", mount_mode: readwrite }
+- id: wait_title
+  type: screen.wait_contains
+  params: { text: "READYOS ULTIMATE SETUP", wait_timeout_s: 90, capture_label: setup_title }
+- id: wait_browser
+  type: screen.wait_contains
+  params: { text: "F7 PATH", wait_timeout_s: 120, capture_label: setup_browser }
+- id: wait_usb1_volume
+  type: screen.wait_contains
+  params: { text: "/ USB1", wait_timeout_s: 30 }
+- id: select_usb1
+  type: input.sequence
+  params: { keys: [17,17,17], inter_key_delay_s: 0.08, post_delay_s: 3.0 }
+- id: capture_usb1_selected
+  type: screen.capture
+  params: { label: setup_usb1_selected, note: "USB1 storage volume selected", capture_state: true }
+- id: enter_usb1
+  type: input.key
+  params: { key: 13, post_delay_s: 3.0 }
+- id: wait_usb1_path
+  type: screen.wait_contains
+  params: { text: "PATH: /USB1", wait_timeout_s: 60, pre_delay_s: 2.0, capture_label: setup_usb1 }
+- id: return_to_root
+  type: input.key
+  params: { key: 157, post_delay_s: 0.5 }
+- id: wait_root_again
+  type: screen.wait_contains
+  params: { text: "/ USB1", wait_timeout_s: 60 }
+- id: set_speed
+  type: ultimate.speed.set
+  params: { mhz: 16 }
+- id: open_invalid_path_prompt
+  type: input.key
+  params: { key: 136, post_delay_s: 0.5 }
+- id: capture_empty_path_prompt
+  type: screen.capture
+  params: { label: setup_path_prompt_empty, note: "Manual D81 path selector", capture_state: true }
+- id: enter_invalid_path
+  type: input.sequence
+  params:
+    keys: [SETUP_INVALID_PATH_KEYS]
+    inter_key_delay_s: 0.03
+    post_delay_s: 0.5
+- id: capture_invalid_path_entered
+  type: screen.capture
+  params: { label: setup_path_prompt_invalid, note: "Missing configured D81 path entered", capture_state: true }
+- id: submit_invalid_path
+  type: input.key
+  params: { key: 13, post_delay_s: 0.5 }
+- id: wait_invalid_path_rejected
+  type: screen.wait_contains
+  params: { text: "NOT", wait_timeout_s: 90, capture_label: setup_invalid_path }
+- id: reopen_path_prompt
+  type: input.key
+  params: { key: 136, post_delay_s: 0.5 }
+- id: enter_path
+  type: input.sequence
+  params:
+    keys: [SETUP_PATH_KEYS]
+    inter_key_delay_s: 0.03
+    post_delay_s: 0.5
+- id: capture_valid_path_entered
+  type: screen.capture
+  params: { label: setup_path_prompt_valid, note: "Existing ReadyOS D81 path entered", capture_state: true }
+- id: submit_valid_path
+  type: input.key
+  params: { key: 13, post_delay_s: 0.5 }
+- id: wait_committed
+  type: screen.wait_contains
+  params: { text: "CONFIGURED - READYOS DMA IS READY", wait_timeout_s: 180 }
+- id: wait_redraw_reu
+  type: screen.wait_contains
+  params: { text: "16384", wait_timeout_s: 30, capture_label: setup_redrawn }
+- id: wait_redraw_ultimate_dos
+  type: screen.wait_contains
+  params: { text: "ULT.DOS", wait_timeout_s: 30 }
+- id: capture_configured
+  type: screen.capture
+  params: { label: setup_configured, note: "Existing D81 found and configured", capture_state: true }
+- id: retest_saved_path
+  type: input.key
+  params: { key: 135, post_delay_s: 0.5 }
+- id: wait_saved_path_valid
+  type: screen.wait_contains
+  params: { text: "CONFIGURED - PATH VALID", wait_timeout_s: 120, capture_label: setup_path_valid }
+- id: restore_speed
+  type: ultimate.speed.set
+  params: { mhz: 1 }
+- id: capture_final
+  type: screen.capture
+  criticality: observe
+  params: { label: setup_final, note: "Verified SETUP staged config commit", capture_state: true }

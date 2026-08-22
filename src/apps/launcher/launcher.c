@@ -296,9 +296,11 @@ static char launcher_resource_open_spec[18];
 #define LAUNCHER_DMA_ERR_NO_UCI   0x01u
 #define LAUNCHER_DMA_ERR_PATH_MIN 0x08u
 #define LAUNCHER_DMA_ERR_PATH_MAX 0x10u
+#define LAUNCHER_DMA_SETUP_NOTICE "run SETUP app for fast app loading"
 /* Assembly owns the complete asynchronous UCI lifecycle. C call sites may set
  * inputs/read results, but must not infer completion or add timing delays. */
 extern unsigned char launcher_uci_dma_detect(void);
+extern unsigned char launcher_uci_dma_validate_image(void);
 extern unsigned char launcher_uci_dma_load_prg(void);
 extern void launcher_uci_dma_quiesce(void);
 extern void launcher_uci_dma_clear_stage(void);
@@ -317,6 +319,7 @@ extern const char *launcher_uci_dma_image_name;
 extern const char *launcher_uci_dma_mount_name;
 extern unsigned char launcher_uci_dma_assume_mounted;
 static char launcher_c64u_image_path[LAUNCHER_C64U_IMAGE_PATH_LEN + 1];
+static unsigned char launcher_cfg_dma_loading;
 static const char launcher_dma_root_dir[] = "/";
 static char launcher_dma_name_buf[MAX_FILE_LEN + 1];
 static unsigned char launcher_dma_available;
@@ -1157,6 +1160,7 @@ static void catalog_init_defaults(void) {
     launcher_variant_boot_name[0] = 0;
     launcher_runappfirst_prg[0] = 0;
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    launcher_cfg_dma_loading = 0u;
     copy_text_limit(launcher_c64u_image_path, sizeof(launcher_c64u_image_path),
                     LAUNCHER_C64U_IMAGE_PATH_DEFAULT);
     launcher_dma_available = 0u;
@@ -1195,7 +1199,8 @@ static void launcher_resume_save(unsigned char selected,
     launcher_resume_blob.scroll_offset = scroll_offset;
     launcher_resume_blob.suppress_startup_once = suppress_startup_once;
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-    launcher_resume_blob.reserved = launcher_dma_used;
+    launcher_resume_blob.reserved = (unsigned char)(launcher_dma_used |
+        (launcher_cfg_dma_loading ? 0x02u : 0u));
 #else
     launcher_resume_blob.reserved = 0;
 #endif
@@ -1489,6 +1494,7 @@ static unsigned char load_catalog_from_disk(unsigned char *detail_a,
     unsigned char entry_index = 1;
     unsigned char err;
     unsigned char parse_detail;
+    unsigned char i;
     unsigned char section = 0;
     unsigned char pending_state = 0;
 
@@ -1567,9 +1573,20 @@ static unsigned char load_catalog_from_disk(unsigned char *detail_a,
                         }
                     }
 #if LAUNCHER_DMA_LOAD
+                } else if (strcmp(key, "dma_loading") == 0) {
+                    launcher_cfg_dma_loading =
+                        (unsigned char)(strcmp(value, "1") == 0);
                 } else if (strcmp(key, "c64u_image_path") == 0) {
                     copy_text_limit(launcher_c64u_image_path,
                                     sizeof(launcher_c64u_image_path), value);
+                    /* cfg_read_line uses the C64 target spelling $A4 so
+                     * underscore-bearing config keys compare correctly.
+                     * UltimateDOS host paths require raw ASCII $5F, exactly
+                     * as SETUP sends its non-display copy. */
+                    for (i = 0u; launcher_c64u_image_path[i] != 0u; ++i) {
+                        if ((unsigned char)launcher_c64u_image_path[i] == 0xA4u)
+                            launcher_c64u_image_path[i] = (char)0x5Fu;
+                    }
 #endif
                 }
             }
@@ -2399,7 +2416,15 @@ static void launcher_dma_reset_runtime_state(void) {
 
 static void launcher_dma_init_from_config(void) {
     launcher_dma_reset_runtime_state();
-    launcher_dma_available = (unsigned char)(launcher_c64u_image_path[0] != 0u);
+    launcher_dma_available = (unsigned char)(launcher_cfg_dma_loading &&
+                                              launcher_c64u_image_path[0] != 0u);
+}
+
+static void launcher_dma_advise_setup(void) {
+    if (launcher_cfg_dma_loading) {
+        launcher_set_notice_if_empty(LAUNCHER_DMA_SETUP_NOTICE,
+                                     TUI_COLOR_YELLOW);
+    }
 }
 
 static char *launcher_dma_prepare_image_path(unsigned char *restore_slash) {
@@ -2429,6 +2454,7 @@ static char *launcher_dma_prepare_image_path(unsigned char *restore_slash) {
     }
     launcher_uci_dma_image_dir = dir_start;
     launcher_uci_dma_image_name = slash + 1;
+    launcher_uci_dma_mount_name = slash + 1;
     return slash;
 }
 
@@ -2439,6 +2465,7 @@ static void launcher_dma_probe_after_draw(void) {
     if (launcher_c64u_image_path[0] == 0u) {
         launcher_dma_available = 0u;
         launcher_dma_reset_runtime_state();
+        launcher_dma_advise_setup();
         return;
     }
     /* Read-only base detection; quiesce below performs explicit stale-state
@@ -2447,6 +2474,7 @@ static void launcher_dma_probe_after_draw(void) {
         launcher_dma_available = 0u;
         launcher_dma_reset_runtime_state();
         launcher_dma_breadcrumb = LAUNCHER_DMA_ERR_NO_UCI;
+        launcher_dma_advise_setup();
         return;
     }
 
@@ -2455,7 +2483,21 @@ static void launcher_dma_probe_after_draw(void) {
         launcher_dma_available = 0u;
         launcher_dma_reset_runtime_state();
         launcher_dma_breadcrumb = LAUNCHER_DMA_ERR_PATH_MIN;
-        launcher_set_notice_if_empty("dma image path invalid", TUI_COLOR_LIGHTRED);
+        launcher_dma_advise_setup();
+        launcher_uci_dma_quiesce();
+        return;
+    }
+    launcher_uci_dma_assume_mounted = 0u;
+    /* Assembly owns the UCI state machine: synchronization, asynchronous
+     * PUSH/ABORT, complete queue draining, DATA_ACC, and quiet-IDLE finish. */
+    if (!launcher_uci_dma_validate_image()) {
+        if (restore_slash) {
+            *slash = '/';
+        }
+        launcher_dma_available = 0u;
+        launcher_dma_reset_runtime_state();
+        launcher_dma_breadcrumb = launcher_uci_dma_last_error;
+        launcher_dma_advise_setup();
         launcher_uci_dma_quiesce();
         return;
     }
@@ -2465,8 +2507,8 @@ static void launcher_dma_probe_after_draw(void) {
 
     launcher_dma_available = 1u;
     launcher_dma_probe_ok = 1u;
-    launcher_dma_image_ready = 0u;
-    launcher_uci_dma_assume_mounted = 0u;
+    launcher_dma_image_ready = 1u;
+    launcher_uci_dma_assume_mounted = 1u;
     if (launcher_dma_breadcrumb < 0x20u) {
         launcher_dma_breadcrumb = 0u;
     }
@@ -2583,6 +2625,7 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         launcher_dma_available = 0u;
         launcher_dma_image_ready = 0u;
         launcher_uci_dma_assume_mounted = 0u;
+        launcher_dma_advise_setup();
     } else {
         launcher_dma_image_ready = 1u;
         launcher_uci_dma_assume_mounted = 1u;
@@ -4380,9 +4423,12 @@ static void launcher_init(void) {
     }
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
     launcher_dma_init_from_config();
-    if (used_cached_catalog && launcher_dma_available &&
-        launcher_resume_blob.reserved) {
-        launcher_dma_used = 1u;
+    if (used_cached_catalog) {
+        launcher_cfg_dma_loading =
+            (unsigned char)((launcher_resume_blob.reserved & 0x02u) != 0u);
+        launcher_dma_init_from_config();
+        if ((launcher_resume_blob.reserved & 0x01u) != 0u &&
+            launcher_dma_available) launcher_dma_used = 1u;
     }
 #endif
     if (shim_suppress_startup_once) {

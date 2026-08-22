@@ -120,6 +120,51 @@ for rel, (idle_name, response_name) in c_transports.items():
     if "UCI_STAT_ABORT" not in recover or "== 0u" not in recover:
         ERRORS.append(f"{rel}: abort recovery must check ABORT_P before requesting ABORT")
 
+# SETUP deliberately carries the later ReadyFS form of the ReadyIRC transport:
+# identical state-machine contract, plus an assembly-adjacent MORE->BUSY edge
+# observer proven at 64 MHz. Keep this separate from the older symbol spellings
+# above so a mechanical rename is never mistaken for protocol evidence.
+setup_transport = "src/setup/setup_uci.c"
+require(
+    setup_transport,
+    (
+        "quiet_idle",
+        "wait_response",
+        "PUSH is asynchronous",
+        "wait_advance",
+        "sync_interface",
+        "recover",
+        "UCI_PASSES",
+        "setup_uci_asm_accept_more_transition",
+        "drain",
+    ),
+)
+setup_source = text(setup_transport)
+for wait_name in ("wait_idle", "wait_response", "wait_advance"):
+    body = function_body(setup_source, wait_name)
+    if not body or "UCI_PASSES" not in body:
+        ERRORS.append(f"{setup_transport}: {wait_name} must retain bounded top-speed passes")
+setup_sync = function_body(setup_source, "sync_interface")
+if "setup_uci_asm_abort" in setup_sync:
+    ERRORS.append(f"{setup_transport}: sync_interface must not re-issue ABORT_P")
+setup_recover = function_body(setup_source, "recover")
+if "UCI_ABORT" not in setup_recover or "== 0u" not in setup_recover:
+    ERRORS.append(f"{setup_transport}: recovery must check ABORT_P before requesting ABORT")
+setup_command = function_body(setup_source, "setup_uci_command")
+if "setup_uci_asm_accept_more_transition(state)" not in setup_command:
+    ERRORS.append(f"{setup_transport}: MORE blocks must use adjacent accept/transition helper")
+
+require(
+    "src/setup/setup_uci_asm.s",
+    (
+        "setup_uci.c owns synchronization",
+        "_setup_uci_asm_accept_more_transition",
+        "The bound detects failure; it is not pacing",
+        "more_write",
+        "more_read",
+    ),
+)
+
 
 asm_transports = (
     "src/apps/launcher/launcher_uci_dma.s",
@@ -186,6 +231,14 @@ require(
     ("Assembly owns the complete asynchronous UCI lifecycle", "One assembly-owned UCI sequence"),
 )
 require(
+    "src/setup/setup_backend.c",
+    (
+        "sole state-machine gateway",
+        "multi-block stream",
+        "MOUNT follows the same target-status contract",
+    ),
+)
+require(
     "probes/uci_timing/uci_timing_probe.c",
     ("Probe the production System Info transport itself",),
 )
@@ -228,4 +281,4 @@ if ERRORS:
         print(f"- {error}", file=sys.stderr)
     raise SystemExit(1)
 
-print("UCI PROTOCOL CONTRACT VERIFICATION PASSED: 3 C transports, 2 asm transports, 5 call-site groups")
+print("UCI PROTOCOL CONTRACT VERIFICATION PASSED: 4 C transports, 3 asm/accessor transports, 6 call-site groups")

@@ -1,6 +1,6 @@
 # C64 Ultimate DOS DMA Loading
 
-ReadyOS has an opt-in launcher path that reads PRG payloads from a configured
+ReadyOS has a profile-gated launcher path that reads PRG payloads from a configured
 C64 Ultimate disk image directly into their allocated REU locations through
 the Ultimate Command Interface (UCI). This accelerates preload and cold app or
 resource loading without changing the resident shim or the `$1000-$C5FF`
@@ -8,19 +8,22 @@ snapshot contract.
 
 ## Availability
 
-- Build gate: `LAUNCHER_DMA_LOAD=1`.
-- Default: disabled (`LAUNCHER_DMA_LOAD=0`). Normal release artifacts therefore
-  use KERNAL/disk loading unless explicitly built with the gate enabled.
+- Compile gate: `LAUNCHER_DMA_LOAD`. The Makefile derives it from the selected
+  profile: `precog-ultimate` sets it to `1`; portable profiles set it to `0`.
+- Runtime gate: `dma_loading=1` in `apps.cfg`, plus a non-empty
+  `c64u_image_path`. Both must be present before the launcher attempts DMA.
+- The Ultimate SKU ships with DMA enabled but its image path empty, so the
+  standalone SETUP utility can record the actual installed location safely.
 - Launcher variant: regular disk launcher only; EasyFlash does not link this
   path because cartridge preload already supplies its REU payloads.
 - Hardware target: C64 Ultimate/Ultimate-family UCI with Ultimate DOS support.
-- Catalog key: `c64u_image_path`, currently configured by
-  `cfg/profiles/precog-d81.ini` as `/usb1/readyos.d81`.
+- Catalog keys: `dma_loading` and `c64u_image_path`.
+- First-run guide: [`ultimate_setup.md`](ultimate_setup.md).
 
 Build and run ReadyOS itself through the normal workflow:
 
 ```sh
-LAUNCHER_DMA_LOAD=1 /bin/bash ./run.sh --profile precog-d81 --vice-fast
+/bin/bash ./run.sh --profile precog-ultimate --vice-fast
 ```
 
 VICE does not provide the hardware UCI service. An enabled build detects that
@@ -28,7 +31,7 @@ condition and continues through the normal disk path.
 
 ## Runtime Flow
 
-1. The launcher parses `c64u_image_path` from `apps.cfg`.
+1. The launcher parses `dma_loading` and `c64u_image_path` from `apps.cfg`.
 2. After drawing the launcher, it probes UCI and validates the image path.
 3. For an app or resource load, Ultimate DOS mounts or reuses the configured
    image, obtains the exact PRG file size, skips the two-byte PRG load header,
@@ -48,7 +51,12 @@ stash/fetch operations.
 - `DMA:YES`: UCI and the configured path are available, but no successful DMA
   load has yet been recorded.
 - `DMA:ON`: at least one current or cached load used the DMA path.
-- `DMA:NO`: DMA is unavailable; disk fallback remains active.
+- `DMA:NO`: DMA is disabled or unavailable; disk fallback remains active.
+
+When `dma_loading=1` but the configured path is empty or malformed, UCI or
+Ultimate DOS cannot be reached, or the configured directory/image cannot be
+opened, the launcher also shows `RUN SETUP APP FOR FAST APP LOADING` on its
+home screen. Normal drive loading remains available.
 
 Transient `DMA LOADING n/n` progress text is used by hardware smoke tests.
 

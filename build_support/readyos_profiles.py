@@ -34,6 +34,7 @@ MAIN_SITE_URL = "https://readyos64.com"
 WIKI_URL = "https://readyos.notion.site"
 PUBLIC_VARIANT_ORDER = [
     "precog-d81",
+    "precog-ultimate",
     "precog-dual-d71",
     "precog-kung-fu-flash-2-d81",
     "precog-dual-d64",
@@ -46,6 +47,7 @@ PUBLIC_VARIANT_ORDER = [
 ]
 VARIANT_NOTES = {
     "d81": "Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples.",
+    "ultimate": "C64 Ultimate D81 with DMA loading enabled in apps.cfg and a standalone SETUP browser for locating and validating the image through Ultimate DOS.",
     "dual-d71": "Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and all ReadyBASIC examples.",
     "kung-fu-flash-2-d81": "Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks.",
     "dual-d64": "Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media.",
@@ -58,6 +60,7 @@ VARIANT_NOTES = {
 }
 VARIANT_BEST_FIT = {
     "d81": "C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU.",
+    "ultimate": "C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility.",
     "dual-d71": "C64 Ultimate, Ultimate 64, or VICE setups using two 1571-class drives, with optional drive-9 disk swapping.",
     "kung-fu-flash-2-d81": "Kung Fu Flash 2 users who want one full-content D81 and the cartridge's 1MB REU mode instead of CRT cartridge mode.",
     "dual-d64": "Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media.",
@@ -180,6 +183,37 @@ LEGACY_SYNCABLE_SUPPORT_FILES = (
     },
 )
 C1541_LIST_LINE_RE = re.compile(r'^\s*\d+\s+"([^"]+)"\s+([a-zA-Z]+)')
+DISK_DIRECTORY_GROUPS = (
+    "boot",
+    "config",
+    "seq_usr",
+    "program",
+    "overlay",
+    "rel",
+    "readybasic_example",
+)
+DISK_DIRECTORY_GROUP_INDEX = {
+    group: index for index, group in enumerate(DISK_DIRECTORY_GROUPS)
+}
+BOOT_DIRECTORY_NAMES = (
+    "preboot",
+    "setd71",
+    "showcfg",
+    "boot",
+    "launcher",
+)
+READYSHELL_OVERLAY_NAMES = {
+    "rsparser",
+    "rsvm",
+    "rsdrvilst",
+    "rsldv",
+    "rsstv",
+    "rsfops",
+    "rscat",
+    "rscopy",
+    "rsedit",
+}
+READYBASIC_EXAMPLE_RE = re.compile(r"^(?:rbtest\d+|rbproc(?:\d+|err)|rbgfx\d+|rbsnd\d+)$")
 KNOWN_APP_NAMES = {
     "editor",
     "quicknotes",
@@ -201,6 +235,121 @@ KNOWN_APP_NAMES = {
     "readme",
     "readyshell",
 }
+
+
+def disk_directory_group(name: str,
+                         file_type: str,
+                         explicit_group: object | None = None) -> str:
+    """Return the stable release-directory group for one disk file.
+
+    Profiles may use ``directory_group`` for an unusual future payload. The
+    normal ReadyOS names are classified here so every SKU follows one policy
+    even when its particular mix of apps and data files differs.
+    """
+    if explicit_group not in (None, ""):
+        group = str(explicit_group).lower()
+        if group not in DISK_DIRECTORY_GROUP_INDEX:
+            fail(f"unsupported directory_group {explicit_group!r} for {name}")
+        return group
+
+    lower_name = name.strip().lower()
+    lower_type = file_type.strip().lower()
+    if lower_name in BOOT_DIRECTORY_NAMES:
+        return "boot"
+    if lower_name == "apps.cfg" or lower_name.startswith("app."):
+        return "config"
+    if READYBASIC_EXAMPLE_RE.match(lower_name):
+        return "readybasic_example"
+    if lower_name in READYSHELL_OVERLAY_NAMES or lower_name.startswith("rbm."):
+        return "overlay"
+    if lower_type == "rel":
+        return "rel"
+    if lower_type in {"seq", "usr"}:
+        return "seq_usr"
+    if lower_type == "prg":
+        return "program"
+    fail(f"unsupported disk file type for directory ordering: {name} ({file_type})")
+
+
+def disk_directory_sort_key(entry: Dict[str, object], original_index: int = 0) -> tuple[int, int, int]:
+    name = str(entry.get("name", entry.get("disk_name", "")))
+    file_type = str(entry.get("type", ""))
+    group = disk_directory_group(name, file_type, entry.get("directory_group"))
+    within_group = original_index
+    lower_name = name.lower()
+    if group == "boot":
+        if lower_name in BOOT_DIRECTORY_NAMES:
+            within_group = BOOT_DIRECTORY_NAMES.index(lower_name)
+        else:
+            within_group = len(BOOT_DIRECTORY_NAMES) + original_index
+    elif group == "config":
+        within_group = 0 if lower_name == "apps.cfg" else original_index + 1
+    return (DISK_DIRECTORY_GROUP_INDEX[group], within_group, original_index)
+
+
+def ordered_disk_entries(entries: List[Dict[str, object]]) -> List[Dict[str, object]]:
+    indexed = list(enumerate(entries))
+    indexed.sort(key=lambda item: disk_directory_sort_key(item[1], item[0]))
+    return [entry for _index, entry in indexed]
+
+
+def list_disk_directory(disk_path: Path) -> List[Dict[str, str]]:
+    proc = run(["c1541", str(disk_path), "-list"], check=False, capture_output=True)
+    if proc.returncode != 0:
+        fail(f"c1541 list failed for {disk_path}: {proc.stderr.strip()}")
+
+    entries: List[Dict[str, str]] = []
+    for line in proc.stdout.splitlines():
+        match = C1541_LIST_LINE_RE.match(line)
+        if not match:
+            continue
+        file_type = match.group(2).strip().lower()
+        if file_type not in {"prg", "seq", "usr", "rel"}:
+            # c1541's disk-header row has the same shape but uses the disk ID
+            # marker (for example "ro") where a file type would otherwise be.
+            continue
+        entries.append({
+            "name": match.group(1).strip(),
+            "type": file_type,
+        })
+    return entries
+
+
+def verify_disk_directory_order(disk_path: Path,
+                                group_overrides: Dict[str, str] | None = None,
+                                expected_boot_names: List[str] | None = None) -> None:
+    entries = list_disk_directory(disk_path)
+    overrides = group_overrides or {}
+    previous_index = -1
+    for entry in entries:
+        name = str(entry["name"])
+        group = disk_directory_group(name, str(entry["type"]), overrides.get(name.lower()))
+        group_index = DISK_DIRECTORY_GROUP_INDEX[group]
+        if group_index < previous_index:
+            fail(
+                f"disk directory order violation in {disk_path}: {name} ({group}) "
+                f"appears after {DISK_DIRECTORY_GROUPS[previous_index]} files"
+            )
+        previous_index = group_index
+
+    expected_boot = [name.lower() for name in (expected_boot_names or [])]
+    if expected_boot:
+        actual_boot = [
+            str(entry["name"]).lower()
+            for entry in entries
+            if disk_directory_group(
+                str(entry["name"]),
+                str(entry["type"]),
+                overrides.get(str(entry["name"]).lower()),
+            ) == "boot"
+        ]
+        if actual_boot != expected_boot:
+            fail(
+                f"boot directory prefix mismatch in {disk_path}: "
+                f"actual={actual_boot}, expected={expected_boot}"
+            )
+        if not entries or str(entries[0]["name"]).lower() != "preboot":
+            fail(f"bootable image does not begin with PREBOOT for LOAD\"*\": {disk_path}")
 
 
 def fail(message: str) -> None:
@@ -376,13 +525,27 @@ def load_profile(profile_id: str) -> Dict[str, object]:
     if not path.exists():
         fail(f"unknown profile: {profile_id}")
     profile = json.loads(path.read_text(encoding="utf-8"))
+    local_profile = profile
     base_profile_id = profile.get("extends")
     if base_profile_id:
         if str(base_profile_id) == profile_id:
             fail(f"profile cannot extend itself: {profile_id}")
         inherited = load_profile(str(base_profile_id))
+        inherited_disks = json.loads(json.dumps(inherited.get("disks", [])))
         inherited.update(profile)
         profile = inherited
+        if "disks" not in local_profile:
+            profile["disks"] = inherited_disks
+        for override in profile.get("disk_overrides", []):
+            wanted = int(override["index"])
+            disk = next((item for item in profile["disks"]
+                         if int(item["index"]) == wanted), None)
+            if disk is None:
+                fail(f"disk override {wanted} not found for {profile_id}")
+            for key, value in override.items():
+                if key not in {"index", "append_contents"}:
+                    disk[key] = value
+            disk["contents"].extend(override.get("append_contents", []))
     profile["_path"] = str(path)
     return profile
 
@@ -391,6 +554,13 @@ def readyshell_parse_trace_debug(profile: Dict[str, object]) -> int:
     value = int(profile.get("readyshell_parse_trace_debug", 0))
     if value not in (0, 1):
         fail(f"invalid readyshell_parse_trace_debug for profile {profile.get('id', '<unknown>')}: {value}")
+    return value
+
+
+def launcher_dma_load(profile: Dict[str, object]) -> int:
+    value = int(profile.get("launcher_dma_load", 0))
+    if value not in (0, 1):
+        fail(f"invalid launcher_dma_load for profile {profile.get('id', '<unknown>')}: {value}")
     return value
 
 
@@ -910,13 +1080,17 @@ def backup_user_files(disk_path: Path, managed_names: set[str]) -> tuple[Path, P
     return stage_dir, manifest_path
 
 
-def restore_user_files(disk_path: Path, manifest_path: Path) -> None:
+def restore_user_files(disk_path: Path,
+                       manifest_path: Path,
+                       allowed_types: set[str] | None = None) -> None:
     if not manifest_path.exists():
         return
     for line in manifest_path.read_text(encoding="ascii").splitlines():
         if not line.strip():
             continue
         name, ftype, rec_len, host_path = line.split("\t")
+        if allowed_types is not None and ftype not in allowed_types:
+            continue
         host = Path(host_path)
         if not host.exists():
             continue
@@ -1231,7 +1405,7 @@ def build_help_text(profile: Dict[str, object],
             "- The optional drive-9 swap contains `app.*` manifests followed by `sidetris`, `deminer`, `ucitest`, and `readme`, then every ReadyBASIC example.",
             "- No REL-backed app is placed on the optional disk: CAL26 and Dizzy remain on the boot-time drive-8 image.",
         ])
-    if str(profile.get("kind")) in {"d81", "kung-fu-flash-2-d81"}:
+    if str(profile.get("kind")) in {"d81", "ultimate", "kung-fu-flash-2-d81"}:
         lines.extend([
             "- ReadyBASIC is accompanied by all three external `rbm.*` module packages and the complete 41-program procedure, graphics, and sound example/test set.",
             "- ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable rather than as separate disk files.",
@@ -1243,31 +1417,50 @@ def build_help_text(profile: Dict[str, object],
         ])
     lines.extend([
         "",
-        "## VICE Setup",
+        "## Disk Directory Order",
         "",
-        reu_setup_line,
-        "- The host-side boot PRGs are convenience autostart files. The disk copy of `PREBOOT` is still the normal disk-side bootstrap.",
+        "- Each image uses the groups it needs in this order: boot chain; configs; ordinary SEQ/USR data; main app PRGs; overlays/modules; REL data; ReadyBASIC examples.",
+        "- On bootable images, `PREBOOT` is the first directory entry, followed by any `SETD71` / `SHOWCFG`, then `BOOT` and `LAUNCHER`, so `LOAD\"*\",8` selects the bootstrap.",
+        "- ReadyShell overlay PRGs and ReadyBASIC `rbm.*` module packages stay in the overlay/module group even though their file types differ.",
+        "- Images that do not carry a category simply omit it without changing the relative order of the remaining categories.",
     ])
-    for disk in boot_disks:
-        true_drive_suffix = " with true drive enabled" if disk.get("true_drive") else ""
-        lines.append(
-            f"- Configure drive {disk['drive']} as `{disk['vice_drive_type']}`{true_drive_suffix} and attach `{Path(disk['path']).name}`."
-        )
-    for disk in optional_disks:
-        lines.append(
-            f"- After ReadyOS boots, replace the disk in drive `{disk['drive']}` with `{Path(disk['path']).name}` when you want its optional apps or ReadyBASIC examples."
-        )
-    lines.extend([
-        "",
-        "### VICE Command Example",
-        "",
-        f"- Autostart target: `{autostart_name}`",
-        "",
-        "```sh",
-        vice_command,
-        "```",
-        "",
-    ])
+    if str(profile.get("kind")) == "ultimate":
+        lines.extend([
+            "",
+            "## Validation Target",
+            "",
+            "- This is an Ultimate-only SKU. VICE does not provide the Ultimate UCI/Ultimate DOS services SETUP requires, so VICE testing has no acceptance value for this variant.",
+            "- SETUP and DMA acceptance run on physical C64 Ultimate hardware at 1, 16, and 64 MHz.",
+            "",
+        ])
+    else:
+        lines.extend([
+            "",
+            "## VICE Setup",
+            "",
+            reu_setup_line,
+            "- The host-side boot PRGs are convenience autostart files. The disk copy of `PREBOOT` is still the normal disk-side bootstrap.",
+        ])
+        for disk in boot_disks:
+            true_drive_suffix = " with true drive enabled" if disk.get("true_drive") else ""
+            lines.append(
+                f"- Configure drive {disk['drive']} as `{disk['vice_drive_type']}`{true_drive_suffix} and attach `{Path(disk['path']).name}`."
+            )
+        for disk in optional_disks:
+            lines.append(
+                f"- After ReadyOS boots, replace the disk in drive `{disk['drive']}` with `{Path(disk['path']).name}` when you want its optional apps or ReadyBASIC examples."
+            )
+        lines.extend([
+            "",
+            "### VICE Command Example",
+            "",
+            f"- Autostart target: `{autostart_name}`",
+            "",
+            "```sh",
+            vice_command,
+            "```",
+            "",
+        ])
     if reu_size_kb <= 1024:
         lines.extend([
             "## 1MB REU Budget",
@@ -1312,8 +1505,17 @@ def build_help_text(profile: Dict[str, object],
         "- Copy the listed disk image files to the target storage.",
         c64_ultimate_reu_line,
         "- The host-side boot PRGs are optional convenience files for emulator launching; the disk-side `PREBOOT` entry is the standard hardware boot path.",
-        "- Choosing a disk SKU does not enable the experimental Ultimate DOS DMA launcher. Normal release artifacts use the portable disk loader; DMA requires an explicit `LAUNCHER_DMA_LOAD=1` source build and retains disk fallback.",
     ])
+    if str(profile.get("kind")) == "ultimate":
+        lines.extend([
+            "- This SKU compiles the regular launcher with Ultimate DOS DMA support and ships `apps.cfg` with `dma_loading=1`; disk fallback remains active whenever DMA is unavailable.",
+            "- Before the first ReadyOS boot, mount the D81 on drive `8`, run `LOAD\"SETUP\",8,1`, then `RUN`.",
+            "- SETUP is a standalone utility built from focused ReadyOS TUI micromodules. It checks REU, UCI, and Ultimate DOS, browses active Ultimate storage volumes/folders for D81 images, mounts the selection, validates its `apps.cfg`, and stages the exact host path into that image.",
+            "- SETUP uses F1/F3 for pages, cursor keys for selection, RETURN to enter/select, LEFT or DELETE to go to the parent, F5 to retest prerequisites, and F7 to apply a saved path or enter an absolute D81 path when none is available.",
+            "- After SETUP reports `CONFIGURED`, exit with RUN/STOP and reset or boot `PREBOOT`. Do not rename or move the D81 afterward without running SETUP again.",
+        ])
+    else:
+        lines.append("- This profile compiles the portable launcher without Ultimate DOS DMA. Use `precog-ultimate` for the guided DMA-enabled D81, or explicitly override `LAUNCHER_DMA_LOAD=1` for development testing.")
     if preboot_mode == "setd71":
         lines.extend([
             "- Attach both disk images before boot and use `1571`-compatible drive assignments for the two-disk set.",
@@ -1329,6 +1531,42 @@ def build_help_text(profile: Dict[str, object],
         lines.append("- This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.")
     lines.append("")
     return "\n".join(lines)
+
+
+def profile_content_enabled(entry: Dict[str, object], apps_set: set[str]) -> bool:
+    keep_on_demand = bool(entry.get("include_even_if_not_catalog", False))
+    if (not keep_on_demand and entry["type"] == "prg" and
+            str(entry["name"]) in KNOWN_APP_NAMES and
+            str(entry["name"]) not in apps_set):
+        return False
+    app_name = entry.get("app")
+    if app_name and str(app_name) not in apps_set:
+        return False
+    return True
+
+
+def write_profile_content(profile_id: str,
+                          disk_path: Path,
+                          entry: Dict[str, object]) -> None:
+    host_path = repo_artifact_path(str(entry["artifact"]))
+    if not host_path.exists():
+        fail(f"missing artifact for {profile_id}: {host_path}")
+
+    disk_name = str(entry["name"])
+    file_type = str(entry["type"]).lower()
+    if file_type == "seq":
+        write_spec = f"{disk_name},s"
+    elif file_type == "usr":
+        write_spec = f"{disk_name},u"
+    elif file_type == "rel":
+        if "record_length" not in entry:
+            fail(f"REL profile entry requires record_length: {profile_id}:{disk_name}")
+        write_spec = f"{disk_name},l,{int(entry['record_length'])}"
+    elif file_type == "prg":
+        write_spec = disk_name
+    else:
+        fail(f"unsupported profile disk file type: {profile_id}:{disk_name} ({file_type})")
+    run(["c1541", str(disk_path), "-write", str(host_path), write_spec])
 
 
 def build_release(profile_id: str,
@@ -1372,36 +1610,66 @@ def build_release(profile_id: str,
         if disk_path.exists():
             disk_path.unlink()
         run(["c1541", "-format", str(disk_meta["label"]), str(disk_meta["image_type"]), str(disk_path)])
-        for entry in disk_meta["contents"]:
-            keep_on_demand = bool(entry.get("include_even_if_not_catalog", False))
-            if (not keep_on_demand and entry["type"] == "prg" and
-                    str(entry["name"]) in KNOWN_APP_NAMES and
-                    str(entry["name"]) not in apps_set):
-                continue
-            app_name = entry.get("app")
-            if app_name and str(app_name) not in apps_set:
-                continue
-            host_path = repo_artifact_path(str(entry["artifact"]))
-            if not host_path.exists():
-                fail(f"missing artifact for {profile_id}: {host_path}")
-            write_spec = str(entry["name"])
-            if entry["type"] == "seq":
-                write_spec = f"{write_spec},s"
-            run(["c1541", str(disk_path), "-write", str(host_path), write_spec])
+        profile_entries = ordered_disk_entries([
+            entry for entry in disk_meta["contents"]
+            if profile_content_enabled(entry, apps_set)
+        ])
+        support_entries = ordered_disk_entries([
+            entry for entry in authoritative_support_entries(apps_set)
+            if support_target_drive(profile, entry, entries) == disk_drive
+        ])
+        backup_manifest = backups.get(disk_index, (None, None))[1]
 
-        for op in disk_meta.get("post_build", []):
-            if op["type"] == "seed_cal26_rel" and "cal26" in apps_set:
-                run([sys.executable, str(ROOT / "build_support" / "seed_cal26_rel.py"),
-                     "--disk", str(disk_path)])
+        for group in DISK_DIRECTORY_GROUPS:
+            for entry in profile_entries:
+                if disk_directory_group(
+                        str(entry["name"]),
+                        str(entry["type"]),
+                        entry.get("directory_group")) == group:
+                    write_profile_content(profile_id, disk_path, entry)
 
-        for support_entry in authoritative_support_entries(apps_set):
-            if support_target_drive(profile, support_entry, entries) != disk_drive:
-                continue
-            write_authoritative_support_file(support_entry, disk_path)
+            if group == "rel":
+                for op in disk_meta.get("post_build", []):
+                    if op["type"] == "seed_cal26_rel" and "cal26" in apps_set:
+                        run([sys.executable, str(ROOT / "build_support" / "seed_cal26_rel.py"),
+                             "--disk", str(disk_path)])
 
-        if disk_index in backups:
-            _stage_dir, manifest = backups[disk_index]
-            restore_user_files(disk_path, manifest)
+            for support_entry in support_entries:
+                if disk_directory_group(
+                        str(support_entry["disk_name"]),
+                        str(support_entry["type"]),
+                        support_entry.get("directory_group")) == group:
+                    write_authoritative_support_file(support_entry, disk_path)
+
+            if backup_manifest is not None and group == "seq_usr":
+                restore_user_files(disk_path, backup_manifest, {"seq", "usr"})
+            if backup_manifest is not None and group == "rel":
+                restore_user_files(disk_path, backup_manifest, {"rel"})
+
+        group_overrides = {
+            str(entry["name"]).lower(): str(entry["directory_group"])
+            for entry in profile_entries
+            if entry.get("directory_group") not in (None, "")
+        }
+        group_overrides.update({
+            str(entry["disk_name"]).lower(): str(entry["directory_group"])
+            for entry in support_entries
+            if entry.get("directory_group") not in (None, "")
+        })
+        expected_boot_names = [
+            str(entry["name"])
+            for entry in profile_entries
+            if disk_directory_group(
+                str(entry["name"]),
+                str(entry["type"]),
+                entry.get("directory_group"),
+            ) == "boot"
+        ]
+        verify_disk_directory_order(
+            disk_path,
+            group_overrides=group_overrides,
+            expected_boot_names=expected_boot_names,
+        )
 
     for backup in backups.values():
         stage_dir, _manifest = backup
@@ -1537,6 +1805,9 @@ def main() -> int:
     parse_trace_parser = sub.add_parser("readyshell-parse-trace-debug")
     parse_trace_parser.add_argument("--profile", required=True)
 
+    dma_parser = sub.add_parser("launcher-dma-load")
+    dma_parser.add_argument("--profile", required=True)
+
     resolve_parser = sub.add_parser("resolve")
     resolve_parser.add_argument("--profile", required=True)
     resolve_group = resolve_parser.add_mutually_exclusive_group()
@@ -1584,6 +1855,10 @@ def main() -> int:
         if args.cmd == "readyshell-parse-trace-debug":
             profile = load_profile(args.profile)
             print(readyshell_parse_trace_debug(profile))
+            return 0
+        if args.cmd == "launcher-dma-load":
+            profile = load_profile(args.profile)
+            print(launcher_dma_load(profile))
             return 0
         if args.cmd == "resolve":
             payload = resolve_profile(args.profile, getattr(args, "version", None), getattr(args, "latest", False))
