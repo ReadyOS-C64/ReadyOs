@@ -65,6 +65,13 @@ VARIANT_BEST_FIT = {
     "solo-d64-d": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
     "solo-d64-e": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
 }
+VARIANT_WARNINGS = {
+    "kung-fu-flash-2-d81": (
+        "This SKU may not currently work on Kung Fu Flash 2 hardware. The "
+        "latest version has not yet been tested on KFF2; treat the current "
+        "artifacts as unverified until hardware testing is completed."
+    ),
+}
 REL_SEED_D71_CANDIDATES = [
     ROOT / "readyos0-1-5.d71",
     ROOT.parent / "readyos0-1-5.d71",
@@ -1158,9 +1165,19 @@ def build_help_text(profile: Dict[str, object],
         "",
         f"- {VARIANT_NOTES.get(str(profile['kind']), 'Profile-specific ReadyOS media layout.')}",
         "",
+    ]
+    variant_warning = VARIANT_WARNINGS.get(str(profile["kind"]))
+    if variant_warning:
+        lines.extend([
+            "## Compatibility Warning",
+            "",
+            f"- **{variant_warning}**",
+            "",
+        ])
+    lines.extend([
         "## Artifacts",
         "",
-    ]
+    ])
     for disk in resolved["disks"]:
         lines.append(f"- Drive {disk['drive']}: `{Path(disk['path']).name}`")
     for boot_prg in boot_prgs:

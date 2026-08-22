@@ -8,6 +8,10 @@
 
 - Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks.
 
+## Compatibility Warning
+
+- **This SKU may not currently work on Kung Fu Flash 2 hardware. The latest version has not yet been tested on KFF2; treat the current artifacts as unverified until hardware testing is completed.**
+
 ## Artifacts
 
 - Drive 8: `readyos-v0.5-kung-fu-flash-2-d81.d81`
@@ -76,4 +80,3 @@ x64sc -reu -reusize 1024 -drive8type 1581 -devicebackend8 0 +busdevice8 -8 ready
 - Choosing a disk SKU does not enable the experimental Ultimate DOS DMA launcher. Normal release artifacts use the portable disk loader; DMA requires an explicit `LAUNCHER_DMA_LOAD=1` source build and retains disk fallback.
 - Attach the single disk image on drive `8`, then boot with `LOAD "PREBOOT",8` and `RUN`.
 - This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.
-

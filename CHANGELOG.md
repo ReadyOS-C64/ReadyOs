@@ -17,6 +17,8 @@
   ReadyIRC app.
 - ReadyIRC is now documented and packaged as a regular release app without a
   maturity qualifier in its name, description, UI, or documentation.
+- Marked the current Kung Fu Flash 2 D81 SKU as hardware-unverified: it may not
+  currently work, and the latest 0.5 artifacts have not yet been tested on KFF2.
 
 ## 0.2.5
 
