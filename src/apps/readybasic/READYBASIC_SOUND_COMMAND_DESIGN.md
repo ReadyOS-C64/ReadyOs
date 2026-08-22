@@ -28,7 +28,7 @@ This keeps all persistent behavior out of resident ReadyBASIC RAM.
   setup; `VOICE` is the compact 1 MHz path.
 - Do not install interrupts for playback yet.
 - Command names used in stored BASIC demos must be BASIC-token-safe and should
-  be written lowercase in host `.bas` sources before `petcat`. This alpha build
+  be written lowercase in host `.bas` sources before `petcat`. This beta build
   does not register duplicate legacy spellings, so demos use `sidrst`,
   `sidoff`, `frq`, and `pitch` and avoid names that contain BASIC V2 tokens
   such as `CLR`, `LEN`, `FRE`, and `NOT`.

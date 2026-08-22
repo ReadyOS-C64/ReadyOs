@@ -22,7 +22,7 @@
 - Drive 8: `readyshell` - readyshell (beta)
 - Drive 9: `simplefiles` - simple files
 - Drive 9: `clipmgr` - clipboard
-- Drive 9: `readybasic` - ready basic (alpha)
+- Drive 9: `readybasic` - ready basic (beta)
 - Drive 8: `cal26` - calendar 26
 - Drive 9: `tasklist` - task list
 - Drive 9: `reuviewer` - reu viewer

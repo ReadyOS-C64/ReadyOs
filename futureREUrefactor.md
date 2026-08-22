@@ -194,8 +194,8 @@ rsparser@0:0000,rsvm@0:3800,rsdrvilst@0:7000,rsldv@1:0000,rsstv@0:a800,rsfops@1:
 ```
 
 ```text
-9:readybasic:ready basic (alpha):3:roles:2:rbasic-v1+
-scoped basic v2 bridge poc
+9:readybasic:ready basic (beta):3:roles:2:rbasic-v1+
+beta basic v2 bridge with modules
 core=rbcore@0:0000,code=rbcode@1:0000
 ```
 

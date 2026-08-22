@@ -295,7 +295,7 @@ overlay:
 | `SPRMUL` | `SPRMUL(N,ON)` | Phase 2 VIC sprite multicolor enable. |
 | `SPRMCO` | `SPRMCO(C1,C2)` | Phase 2 shared sprite multicolor registers. |
 
-This alpha build intentionally keeps one public spelling per command behavior.
+This beta build intentionally keeps one public spelling per command behavior.
 ReadyBASIC can create aliases by adding extra 32-byte descriptors that share a
 command id, parser signature, payload, and entrypoint, but duplicate spellings
 consume registry slots and preserve tokenizer hazards. New demos and stored

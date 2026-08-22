@@ -61,8 +61,8 @@
     {
       "drive": 8,
       "prg": "readybasic",
-      "label": "ready basic (alpha)",
-      "desc": "scoped basic v2 bridge poc"
+      "label": "ready basic (beta)",
+      "desc": "beta basic v2 bridge with modules"
     },
     {
       "drive": 8,

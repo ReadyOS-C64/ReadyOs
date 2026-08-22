@@ -9,6 +9,12 @@
   release preparation and product changes will be recorded in this section.
 - Advanced the build version, compiled Read.Me content, documentation index,
   current architecture report, and production artifact naming to `0.5`.
+- Promoted ReadyBASIC from alpha to beta across launcher names, catalog
+  descriptions, current documentation, the compiled Read.Me app, and all 0.5
+  release artifacts.
+- Shelved the obsolete RR-Net/IP65 ReadyIRC implementation as reference source.
+  The current build and every SKU now ship only the more complete C64 Ultimate
+  ReadyIRC app.
 
 ## 0.2.5
 

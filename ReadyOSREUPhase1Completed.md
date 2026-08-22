@@ -1193,8 +1193,8 @@ metadata block; it does not link the full bank `0` registry manager.
 ReadyBASIC example:
 
 ```text
-9:readybasic:ready basic (alpha):3:rbcore+
-scoped basic v2 bridge poc
+9:readybasic:ready basic (beta):3:rbcore+
+beta basic v2 bridge with modules
 rbcore,rbcode
 ```
 

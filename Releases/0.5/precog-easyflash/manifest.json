@@ -46,8 +46,8 @@
     {
       "bank": 5,
       "prg": "readybasic",
-      "label": "ready basic (alpha)",
-      "desc": "scoped basic v2 bridge poc",
+      "label": "ready basic (beta)",
+      "desc": "beta basic v2 bridge with modules",
       "default_slot": 3,
       "resource_set": 2
     },
@@ -177,8 +177,8 @@
     "start_bank": 1,
     "bank_span": 2,
     "load_addr": 4096,
-    "payload_len": 26916,
-    "checksum16": 10688
+    "payload_len": 26922,
+    "checksum16": 13208
   },
   "overlays": [
     {

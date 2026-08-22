@@ -220,7 +220,7 @@ Each descriptor is 32 bytes:
   attack/decay and sustain/release bytes to avoid resident parser growth; no
   IRQ playback engine is installed.
 
-This alpha build registers no duplicate public command spellings. ReadyBASIC
+This beta build registers no duplicate public command spellings. ReadyBASIC
 can implement an alias by adding a second 32-byte descriptor that points at the
 same command id, signature, payload, and entrypoint, so the command body cost is
 usually zero. The descriptor cost is still real: each alias consumes one of the

@@ -324,7 +324,7 @@ generated `manifest.json` are authoritative.
 | `readme` | read.me | In-system ReadyOS guide viewer |
 | `readyshell` | ready shell | A C64 command language with file commands and an object-pipeline programming model, including wildcard directory queries and `cat`, `put`, `add`, `del`, `ren`, and `copy` |
 | `deminer` | deminer | Minesweeper-style puzzle with suspend/resume |
-| `readybasic` | ready basic (alpha) | BASIC V2 bridge with ReadyBASIC commands, native `PROC`/`FUNC`, REU-backed command modules, graphics/sound, and suspend/resume |
+| `readybasic` | ready basic (beta) | Beta BASIC V2 bridge with ReadyBASIC commands, native `PROC`/`FUNC`, REU-backed command modules, graphics/sound, and suspend/resume |
 | `readyirc` | readyirc | Ultimate TCP IRC client with setup, reconnect, channels, common IRC event parsing, help, editing, and REU-backed scrollback |
 | `ucitest` | uci tester | Ultimate command-interface lab with decoded responses, protocol guidance, and selectable examples ([guide](docs/uci_tester.md)) |
 

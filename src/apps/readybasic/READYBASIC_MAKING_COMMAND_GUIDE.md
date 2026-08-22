@@ -100,7 +100,7 @@ or fail. Host `.bas` demo sources should also spell ReadyBASIC commands in
 lowercase so `petcat` writes ordinary PETSCII letters rather than shifted
 uppercase bytes.
 
-This alpha build does not keep duplicate public command spellings. ReadyBASIC
+This beta build does not keep duplicate public command spellings. ReadyBASIC
 can alias a command by registering another 32-byte descriptor that points at the
 same command id, parser signature, payload, and entrypoint, but that costs one
 registry slot, increases documentation and test surface, and can preserve names

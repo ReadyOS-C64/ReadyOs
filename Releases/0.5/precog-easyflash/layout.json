@@ -5,8 +5,8 @@
     "start_bank": 1,
     "bank_span": 2,
     "load_addr": 4096,
-    "payload_len": 26916,
-    "checksum16": 10688
+    "payload_len": 26922,
+    "checksum16": 13208
   },
   "apps": [
     {
@@ -69,7 +69,7 @@
       "bank": 5,
       "reu_bank": 37,
       "prg": "readybasic",
-      "label": "ready basic (alpha)",
+      "label": "ready basic (beta)",
       "artifact": "bin/readybasic.prg",
       "start_bank": 11,
       "bank_span": 2,
@@ -284,8 +284,8 @@
       "start_bank": 41,
       "bank_span": 2,
       "load_addr": 4096,
-      "payload_len": 25533,
-      "checksum16": 50342,
+      "payload_len": 25556,
+      "checksum16": 56328,
       "default_slot": 0,
       "resource_set": 0
     }

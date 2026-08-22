@@ -318,9 +318,9 @@ Live map view for REU usage and allocation categories.
 Read-only hardware status for the current machine, REU, cartridge
 visibility, Ultimate UCI details, and drives `8` through `11`.
 
-### ReadyBASIC
+### ReadyBASIC (Beta)
 
-BASIC V2 bridge with native control-flow helpers, disk-loadable command
+Beta BASIC V2 bridge with native control-flow helpers, disk-loadable command
 modules, REU buffers and surfaces, graphics, sprites, input, polygons,
 display lists, tilemaps, multicolor drawing, and immediate SID sound.
 
