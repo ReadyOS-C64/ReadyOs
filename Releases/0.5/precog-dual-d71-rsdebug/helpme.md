@@ -39,6 +39,13 @@
 - The optional drive-9 swap contains `app.*` manifests followed by `sidetris`, `deminer`, `ucitest`, and `readme`, then every ReadyBASIC example.
 - No REL-backed app is placed on the optional disk: CAL26 and Dizzy remain on the boot-time drive-8 image.
 
+## Disk Directory Order
+
+- Each image uses the groups it needs in this order: boot chain; configs; ordinary SEQ/USR data; main app PRGs; overlays/modules; REL data; ReadyBASIC examples.
+- On bootable images, `PREBOOT` is the first directory entry, followed by any `SETD71` / `SHOWCFG`, then `BOOT` and `LAUNCHER`, so `LOAD"*",8` selects the bootstrap.
+- ReadyShell overlay PRGs and ReadyBASIC `rbm.*` module packages stay in the overlay/module group even though their file types differ.
+- Images that do not carry a category simply omit it without changing the relative order of the remaining categories.
+
 ## VICE Setup
 
 - Enable REU with at least `1MB`; `8MB` or `16MB` is recommended where available.
@@ -68,7 +75,7 @@ x64sc -reu -reusize 16384 -drive8type 1571 -drive8truedrive -devicebackend8 0 +b
 - Copy the listed disk image files to the target storage.
 - Enable the REU with at least `1MB`; use `8MB` or `16MB` where available.
 - The host-side boot PRGs are optional convenience files for emulator launching; the disk-side `PREBOOT` entry is the standard hardware boot path.
-- Choosing a disk SKU does not enable the experimental Ultimate DOS DMA launcher. Normal release artifacts use the portable disk loader; DMA requires an explicit `LAUNCHER_DMA_LOAD=1` source build and retains disk fallback.
+- This profile compiles the portable launcher without Ultimate DOS DMA. Use `precog-ultimate` for the guided DMA-enabled D81, or explicitly override `LAUNCHER_DMA_LOAD=1` for development testing.
 - Attach both disk images before boot and use `1571`-compatible drive assignments for the two-disk set.
 - Boot with `LOAD "PREBOOT",8` then `RUN`; this variant then chains through `SETD71` before loading `BOOT`.
 - After boot, swap the optional app-data image into drive `9` only when you want to use its manifests, apps, or examples.

@@ -1,18 +1,18 @@
-# precog (d81)
+# precog ultimate (d81)
 
 - Release Line: `0.5`
 - Artifact Build: `0.5`
-- Kind: `d81`
+- Kind: `ultimate`
 
 ## Why This Variant Exists
 
-- Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples.
+- C64 Ultimate D81 with DMA loading enabled in apps.cfg and a standalone SETUP browser for locating and validating the image through Ultimate DOS.
 
 ## Artifacts
 
-- Boot-time drive 8: `readyos-v0.5-d81.d81`
-- Host-Side Boot PRG: `readyos-v0.5-d81-preboot.prg`
-- Host-Side Boot PRG: `readyos-v0.5-d81-boot.prg`
+- Boot-time drive 8: `readyos-v0.5-ultimate.d81`
+- Host-Side Boot PRG: `readyos-v0.5-ultimate-preboot.prg`
+- Host-Side Boot PRG: `readyos-v0.5-ultimate-boot.prg`
 
 ## Included Apps
 
@@ -45,31 +45,26 @@
 - ReadyShell overlay PRGs and ReadyBASIC `rbm.*` module packages stay in the overlay/module group even though their file types differ.
 - Images that do not carry a category simply omit it without changing the relative order of the remaining categories.
 
-## VICE Setup
+## Validation Target
 
-- Enable REU with at least `1MB`; `8MB` or `16MB` is recommended where available.
-- The host-side boot PRGs are convenience autostart files. The disk copy of `PREBOOT` is still the normal disk-side bootstrap.
-- Configure drive 8 as `1581` with true drive enabled and attach `readyos-v0.5-d81.d81`.
-
-### VICE Command Example
-
-- Autostart target: `readyos-v0.5-d81-preboot.prg`
-
-```sh
-x64sc -reu -reusize 16384 -drive8type 1581 -drive8truedrive -devicebackend8 0 +busdevice8 -8 readyos-v0.5-d81.d81 -autostart readyos-v0.5-d81-preboot.prg
-```
+- This is an Ultimate-only SKU. VICE does not provide the Ultimate UCI/Ultimate DOS services SETUP requires, so VICE testing has no acceptance value for this variant.
+- SETUP and DMA acceptance run on physical C64 Ultimate hardware at 1, 16, and 64 MHz.
 
 ## Boot
 
 - This profile uses the direct boot chain `PREBOOT -> BOOT`.
 - There is no `SETD71` stage for this variant.
-- Attach the single disk on drive `8`, then autostart `readyos-v0.5-d81-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
+- Attach the single disk on drive `8`, then autostart `readyos-v0.5-ultimate-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
 
 ## C64 Ultimate
 
 - Copy the listed disk image files to the target storage.
 - Enable the REU with at least `1MB`; use `8MB` or `16MB` where available.
 - The host-side boot PRGs are optional convenience files for emulator launching; the disk-side `PREBOOT` entry is the standard hardware boot path.
-- This profile compiles the portable launcher without Ultimate DOS DMA. Use `precog-ultimate` for the guided DMA-enabled D81, or explicitly override `LAUNCHER_DMA_LOAD=1` for development testing.
+- This SKU compiles the regular launcher with Ultimate DOS DMA support and ships `apps.cfg` with `dma_loading=1`; disk fallback remains active whenever DMA is unavailable.
+- Before the first ReadyOS boot, mount the D81 on drive `8`, run `LOAD"SETUP",8,1`, then `RUN`.
+- SETUP is a standalone utility built from focused ReadyOS TUI micromodules. It checks REU, UCI, and Ultimate DOS, browses active Ultimate storage volumes/folders for D81 images, mounts the selection, validates its `apps.cfg`, and stages the exact host path into that image.
+- SETUP uses F1/F3 for pages, cursor keys for selection, RETURN to enter/select, LEFT or DELETE to go to the parent, F5 to retest prerequisites, and F7 to apply a saved path or enter an absolute D81 path when none is available.
+- After SETUP reports `CONFIGURED`, exit with RUN/STOP and reset or boot `PREBOOT`. Do not rename or move the D81 afterward without running SETUP again.
 - Attach the single disk image on drive `8`, then boot with `LOAD "PREBOOT",8` and `RUN`.
 - This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.

@@ -5,6 +5,11 @@
 - enable REU with at least `1MB`; `8MB` or `16MB` is recommended where available
 - if an app snapshot preloaded from the cartridge is unloaded from REU, ReadyOS cannot load it again from the cartridge until you restart ReadyOS
 
+## directory order
+
+- the CRT uses its cartridge-bank layout and is not governed by floppy directory order
+- the companion `readyos_data.d64` writes ordinary SEQ/USR data before REL data
+
 ## vice example
 
 ```sh

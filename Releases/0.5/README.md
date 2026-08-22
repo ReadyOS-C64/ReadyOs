@@ -18,15 +18,15 @@ If this folder is distributed as a GitHub release or a packaged download, this
 README is the landing page for the whole release line. The profile folders next
 to it are the actual ReadyOS SKUs for different disk and drive constraints.
 
-The current public `0.5` release is still comparatively generic
-rather than being explicitly tailored to the new C64 Ultimate. The next release
-is expected to push further in that Ultimate-first direction while still trying
-to stay usable on other REU-capable C64 setups.
+The shared ReadyOS runtime remains broadly usable on REU-capable C64 setups.
+Release `0.5` also begins the explicit new-Commodore-64-Ultimate
+path through a dedicated SKU, while retaining portable disk-based variants for
+other environments.
 
-The source tree may also contain an experimental C64 Ultimate DOS DMA launcher
-build. It is not implied by choosing a D81 SKU: normal public artifacts use the
-portable disk path unless explicitly built with `LAUNCHER_DMA_LOAD=1`, and the
-experimental path retains disk fallback.
+The dedicated `precog-ultimate` D81 compiles and enables the C64 Ultimate DOS
+DMA launcher and includes a standalone first-run SETUP utility. Other public
+profiles use the portable disk path. The Ultimate path always retains normal
+disk fallback when UCI, the image, or a transfer is unavailable.
 
 ## What ReadyOS Is
 
@@ -94,9 +94,11 @@ packaging changes to match the target.
 
 ## Quick Recommendation By Environment
 
-- If you are on C64 Ultimate, Ultimate 64, or VICE and want the fullest,
-  easiest default: use `precog-d81`. It is the main ReadyOS SKU and default
-  build/run target.
+- If you are on the new Commodore 64 Ultimate and want Ultimate DOS DMA plus
+  guided first-run path setup, use `precog-ultimate`.
+- If you are on Ultimate 64, VICE, or another 1581-capable setup and want the
+  fullest portable default, use `precog-d81`. It remains the main ReadyOS SKU
+  and default build/run target.
 - If your setup uses two `1571` drives, use `precog-dual-d71`. Its two-image
   boot set can be supplemented after boot by swapping the optional app-data
   D71 into drive `9`.
@@ -111,12 +113,13 @@ packaging changes to match the target.
 
 ## Public Variant Matrix
 
-This release line currently has `11` public variants.
+This release line currently has `12` public variants.
 
 | Folder | Media | Best Fit | Why It Exists | Boot |
 | --- | --- | --- | --- | --- |
 | `precog-d81` | 1x `D81` on drive `8` | C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU. | Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples. | `PREBOOT -> BOOT` |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | Full catalog cartridge preload plus the required companion data disk. | `cartridge reset` |
+| `precog-ultimate` | 1x `D81` on drive `8` | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | C64 Ultimate D81 with DMA loading enabled in apps.cfg and a standalone SETUP browser for locating and validating the image through Ultimate DOS. | `PREBOOT -> BOOT` |
 | `precog-dual-d71` | 2x `D71` boot set on drives `8` and `9`; 1x optional `D71` drive-9 swap | C64 Ultimate, Ultimate 64, or VICE setups using two 1571-class drives, with optional drive-9 disk swapping. | Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and all ReadyBASIC examples. | `PREBOOT -> SETD71 -> BOOT` |
 | `precog-kung-fu-flash-2-d81` | 1x `D81` on drive `8` | Kung Fu Flash 2 users who want one full-content D81 and the cartridge's 1MB REU mode instead of CRT cartridge mode. | Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks. | `PREBOOT -> BOOT` |
 | `precog-dual-d64` | 2x `D64` on drives `8` and `9` | Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media. | Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media. | `PREBOOT -> BOOT` |
@@ -133,6 +136,7 @@ The release line is centered on these public folders:
 
 - `precog-d81/`
 - `precog-easyflash/`
+- `precog-ultimate/`
 - `precog-dual-d71/`
 - `precog-kung-fu-flash-2-d81/`
 - `precog-dual-d64/`
@@ -163,9 +167,19 @@ question: "What is the best ReadyOS shape for this storage environment?"
   at `D64`, but can at least keep two images mounted.
 - The solo `D64` variants exist for the environments that cannot do more than
   one `D64` at a time. Instead of forcing a bloated or broken one-disk build,
-  ReadyOS splits into intentional subsets.
+ReadyOS splits into intentional subsets.
 - `precog-solo-d64-readybasic` is the exception to the subset split: the full
   ReadyBASIC runtime, modules, and examples fit together on one focused D64.
+
+## Disk Directory Order
+
+Every D64, D71, and D81 applies the same semantic ordering to the files it
+contains: boot-chain PRGs (`PREBOOT` first, followed by any `SETD71` / `SHOWCFG`,
+then `BOOT` and `LAUNCHER`); configs; ordinary SEQ/USR data; main app PRGs;
+overlays/modules; REL data; and finally any ReadyBASIC examples. This keeps
+`LOAD"*",8` safe on bootable images while allowing each SKU and disk side to
+omit categories it does not need. The EasyFlash CRT uses cartridge banks
+instead; its companion D64 follows the applicable data-file ordering.
 
 That last category matters more than it may seem. A web emulator that only
 mounts one `D64` is a very different target from VICE on a desktop with REU and
