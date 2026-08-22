@@ -1,2 +1,2 @@
-8:deminer:deminer
+9:deminer:deminer
 minesweeper-style puzzle

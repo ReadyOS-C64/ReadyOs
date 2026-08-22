@@ -14,7 +14,7 @@
 
 ## Artifacts
 
-- Drive 8: `readyos-v0.5-kung-fu-flash-2-d81.d81`
+- Boot-time drive 8: `readyos-v0.5-kung-fu-flash-2-d81.d81`
 - Host-Side Boot PRG: `readyos-v0.5-kung-fu-flash-2-d81-preboot.prg`
 - Host-Side Boot PRG: `readyos-v0.5-kung-fu-flash-2-d81-boot.prg`
 
@@ -39,6 +39,8 @@
 - Drive 8: `readyirc` - readyirc
 - Drive 8: `ucitest` - uci tester
 - Drive 8: `readme` - read.me
+- ReadyBASIC is accompanied by all three external `rbm.*` module packages and the complete 41-program procedure, graphics, and sound example/test set.
+- ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable rather than as separate disk files.
 
 ## VICE Setup
 

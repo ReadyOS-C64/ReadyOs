@@ -26,7 +26,7 @@ GEN_DIR = src/generated
 THIRD_PARTY_DIR = third_party
 BUILD_SUPPORT_DIR ?= build_support
 VICE_DEBUG_TOOLS_DIR ?= ../agenticdevharness/tools
-PROFILE ?= precog-dual-d71
+PROFILE ?= precog-d81
 PROFILE_CATALOG_SRC = $(shell $(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py catalog-source --profile $(PROFILE))
 READYOS_VERSION_CURRENT = $(shell $(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current)
 READYOS_PUBLIC_VERSION = $(shell $(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current | sed 's/[A-Za-z]$$//')
@@ -943,7 +943,7 @@ profile: uci-protocol-check programs
 
 release-all: prepare-version
 	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
-	for profile in precog-dual-d71 $$($(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py list-ids | grep -v '^precog-dual-d71$$'); do \
+	for profile in precog-d81 $$($(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py list-ids | grep -v '^precog-d81$$'); do \
 		RS_PARSE_TRACE_DEBUG=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py readyshell-parse-trace-debug --profile "$$profile"); \
 		echo "==> $$profile ($$VERSION_TEXT, READYSHELL_PARSE_TRACE_DEBUG=$$RS_PARSE_TRACE_DEBUG)"; \
 		$(MAKE) PROFILE="$$profile" READYOS_VERSION_TEXT="$$VERSION_TEXT" READYSHELL_PARSE_TRACE_DEBUG="$$RS_PARSE_TRACE_DEBUG" profile; \

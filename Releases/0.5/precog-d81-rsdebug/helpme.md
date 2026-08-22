@@ -6,11 +6,11 @@
 
 ## Why This Variant Exists
 
-- Full-content single-disk profile for 1581 and D81 setups where the whole current app catalog fits on one image.
+- Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples.
 
 ## Artifacts
 
-- Drive 8: `readyos-v0.5-d81.d81`
+- Boot-time drive 8: `readyos-v0.5-d81.d81`
 - Host-Side Boot PRG: `readyos-v0.5-d81-preboot.prg`
 - Host-Side Boot PRG: `readyos-v0.5-d81-boot.prg`
 
@@ -35,6 +35,8 @@
 - Drive 8: `readyirc` - readyirc
 - Drive 8: `ucitest` - uci tester
 - Drive 8: `readme` - read.me
+- ReadyBASIC is accompanied by all three external `rbm.*` module packages and the complete 41-program procedure, graphics, and sound example/test set.
+- ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable rather than as separate disk files.
 
 ## VICE Setup
 
@@ -64,4 +66,3 @@ x64sc -reu -reusize 16384 -drive8type 1581 -drive8truedrive -devicebackend8 0 +b
 - Choosing a disk SKU does not enable the experimental Ultimate DOS DMA launcher. Normal release artifacts use the portable disk loader; DMA requires an explicit `LAUNCHER_DMA_LOAD=1` source build and retains disk fallback.
 - Attach the single disk image on drive `8`, then boot with `LOAD "PREBOOT",8` and `RUN`.
 - This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.
-

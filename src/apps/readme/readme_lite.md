@@ -80,8 +80,8 @@ Key attributes:
 - Deep links between apps to specific views or contexts.
 - Hardware-friendly speed scaling for stable UI/input behavior across
   slower and faster machines.
-- Profile-based disk layout so the same ReadyOS runtime can ship as
-  dual-d71, d81, or dual-d64 media.
+- Profile-based disk layout so the same ReadyOS runtime can ship on the main
+  D81, dual-D71, general D64, or ReadyBASIC-focused D64 media.
 - UltimateBuddy can extend launch/control workflows when present,
   while ReadyOS remains fully usable without it.
 
@@ -174,10 +174,14 @@ Disk layout:
 - The exact disk image names depend on the selected build profile.
 - Drive assignments are documented in the external profile `helpme.md`.
 - The main release variants are:
-  - `precog-dual-d71`: broad 16-app set on two `1571` disks
-  - `precog-d81`: broad 20-app set on one `1581` disk
-  - `precog-kung-fu-flash-2-d81`: same 20-app set for 1MB-REU KFF2
+  - `precog-d81`: recommended main SKU; 19 catalog apps plus Sidetris
+    on demand, ReadyBASIC modules, and all examples on one `1581` disk
+  - `precog-dual-d71`: 16 core apps on two boot-time `1571` disks;
+    a third optional drive-9 swap adds four apps and all BASIC examples
+  - `precog-kung-fu-flash-2-d81`: the D81 set adapted for 1MB-REU KFF2
   - `precog-dual-d64`: reduced 8-app set on two `1541` disks
+  - `precog-solo-d64-readybasic`: ReadyOS, ReadyBASIC, all modules, and
+    the full 41-program example/test set on one `1541` disk
   - `precog-easyflash`: EasyFlash `CRT` plus companion `D64` on drive `8`
 
 ### Cartridge Variant

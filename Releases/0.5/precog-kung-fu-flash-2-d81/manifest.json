@@ -16,6 +16,9 @@
       "image_type": "d81",
       "vice_drive_type": "1581",
       "true_drive": false,
+      "mount_on_boot": true,
+      "role": "boot",
+      "description": "",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-kung-fu-flash-2-d81/readyos-v0.5-kung-fu-flash-2-d81.d81"
     }
   ],

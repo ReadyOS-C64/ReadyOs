@@ -92,6 +92,9 @@ function Get-ViceAttachArgs {
 
     $args = @()
     foreach ($disk in $Manifest.disks) {
+        if ($null -ne $disk.mount_on_boot -and -not [bool]$disk.mount_on_boot) {
+            continue
+        }
         $drive = [string]$disk.drive
         $args += @("-drive${drive}type", [string]$disk.vice_drive_type)
         if ($disk.true_drive) {
@@ -192,7 +195,12 @@ function Print-Info {
     Write-Host ("Profile: {0}" -f $script:ProfileManifest.display_name)
     Write-Host ("Target: {0}" -f $Target)
     foreach ($disk in $script:ProfileManifest.disks) {
-        Write-Host ("Drive {0}: {1}" -f $disk.drive, $disk.path)
+        if ($null -ne $disk.mount_on_boot -and -not [bool]$disk.mount_on_boot) {
+            Write-Host ("Optional drive-{0} swap: {1}" -f $disk.drive, $disk.path)
+        }
+        else {
+            Write-Host ("Drive {0}: {1}" -f $disk.drive, $disk.path)
+        }
     }
     Write-Host ("Build Support: {0}" -f $script:BuildSupportDir)
     Write-Host ("ReadyShell parse trace: {0}" -f (Current-ParseTraceLabel))

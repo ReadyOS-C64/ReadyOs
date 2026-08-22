@@ -570,8 +570,10 @@ def build_release(catalog_path: Path,
     ])
     build_data_disk(catalog, d64_path)
     shutil.copyfile(layout_path, output_dir / "layout.json")
-    (output_dir / "helpme.md").write_text(build_help_text(output_dir), encoding="utf-8")
-    (output_dir / "help.md").write_text(build_help_text(output_dir), encoding="utf-8")
+    help_text = build_help_text(output_dir)
+    (output_dir / "README.md").write_text(help_text, encoding="utf-8")
+    (output_dir / "helpme.md").write_text(help_text, encoding="utf-8")
+    (output_dir / "help.md").write_text(help_text, encoding="utf-8")
     manifest = {
         "id": "precog-easyflash",
         "display_name": "precog easyflash",

@@ -16,6 +16,9 @@
       "image_type": "d64",
       "vice_drive_type": "1541",
       "true_drive": true,
+      "mount_on_boot": true,
+      "role": "boot",
+      "description": "",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-dual-d64/readyos-v0.5-dual-d64_1.d64"
     },
     {
@@ -24,6 +27,9 @@
       "image_type": "d64",
       "vice_drive_type": "1541",
       "true_drive": true,
+      "mount_on_boot": true,
+      "role": "boot",
+      "description": "",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-dual-d64/readyos-v0.5-dual-d64_2.d64"
     }
   ],

@@ -95,16 +95,19 @@ packaging changes to match the target.
 ## Quick Recommendation By Environment
 
 - If you are on C64 Ultimate, Ultimate 64, or VICE and want the fullest,
-  easiest default: start with `precog-d81` or `precog-dual-d71`.
-- If your setup wants the main local verification target and is comfortable with
-  two mounted `1571` drives: use `precog-dual-d71`.
-- If your setup prefers one full-content image on a `1581` / `D81` path: use
-  `precog-d81`.
+  easiest default: use `precog-d81`. It is the main ReadyOS SKU and default
+  build/run target.
+- If your setup uses two `1571` drives, use `precog-dual-d71`. Its two-image
+  boot set can be supplemented after boot by swapping the optional app-data
+  D71 into drive `9`.
 - If you only have `1541`-class compatibility but can mount two disks: use
   `precog-dual-d64`.
 - If you can only mount one `D64` at a time, especially in simpler emulators,
   loaders, THEC64-style flows, or web environments: choose one of the solo
   `D64` subsets based on the app group you care about.
+- If that one-D64 environment is specifically for ReadyBASIC, choose
+  `precog-solo-d64-readybasic`; it includes ReadyOS, ReadyBASIC, all module
+  packages, and the complete example set on one image.
 
 ## Public Variant Matrix
 
@@ -122,22 +125,25 @@ Depending on whether a local workflow built one profile or all profiles, a
 working tree may not contain every folder until the full multi-profile build has
 been run. The intended GitHub release layout is this shared root README plus the
 variant folders that carry the actual images, boot PRGs, `manifest.json`, and
-per-variant `help.md` / `helpme.md`.
+per-variant `README.md` plus compatibility copies in `help.md` / `helpme.md`.
 
 ## How To Think About The Variants
 
 The variants are not random repacks. They are different answers to the same
 question: "What is the best ReadyOS shape for this storage environment?"
 
-- `precog-dual-d71` is the broadest "mainline" profile when two `1571`-class
-  drives are available. It remains the primary local verification target.
-- `precog-d81` is the cleanest single-image full-content option when `1581`
-  support is available.
+- `precog-d81` is the mainline, recommended profile and the cleanest
+  single-image full-content option when `1581` support is available.
+- `precog-dual-d71` is the 1571-oriented alternative. Its two boot disks keep
+  the core app set and ReadyBASIC modules online; its optional third disk is a
+  post-boot drive-9 swap for lesser apps and all ReadyBASIC examples.
 - `precog-dual-d64` exists because many C64-adjacent environments still top out
   at `D64`, but can at least keep two images mounted.
 - The solo `D64` variants exist for the environments that cannot do more than
   one `D64` at a time. Instead of forcing a bloated or broken one-disk build,
   ReadyOS splits into intentional subsets.
+- `precog-solo-d64-readybasic` is the exception to the subset split: the full
+  ReadyBASIC runtime, modules, and examples fit together on one focused D64.
 
 That last category matters more than it may seem. A web emulator that only
 mounts one `D64` is a very different target from VICE on a desktop with REU and
@@ -170,7 +176,8 @@ If you are just trying to run ReadyOS, prefer the non-debug variants first.
 ## Where To Go Next
 
 - Start with the variant folder that matches your environment.
-- Read that folder's `helpme.md` for exact boot and VICE setup details.
+- Read that folder's `README.md` for exact boot and VICE setup details;
+  `help.md` and `helpme.md` carry the same content for existing workflows.
 - Use [readyos64.com]({{MAIN_SITE_URL}}) as the public front door.
 - Use [readyos.notion.site]({{WIKI_URL}}) for the more wiki-like working docs.
 - Use [GitHub]({{GITHUB_URL}}) for source, issues, and future packaged releases.

@@ -16,6 +16,9 @@
       "image_type": "d64",
       "vice_drive_type": "1541",
       "true_drive": true,
+      "mount_on_boot": true,
+      "role": "boot",
+      "description": "",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-solo-d64-a/readyos-v0.5-solo-d64-a.d64"
     }
   ],

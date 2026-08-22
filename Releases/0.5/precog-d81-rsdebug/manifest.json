@@ -16,6 +16,9 @@
       "image_type": "d81",
       "vice_drive_type": "1581",
       "true_drive": true,
+      "mount_on_boot": true,
+      "role": "boot",
+      "description": "",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-d81-rsdebug/readyos-v0.5-d81.d81"
     }
   ],

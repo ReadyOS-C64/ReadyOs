@@ -284,8 +284,8 @@
       "start_bank": 41,
       "bank_span": 2,
       "load_addr": 4096,
-      "payload_len": 25556,
-      "checksum16": 56328,
+      "payload_len": 25925,
+      "checksum16": 17866,
       "default_slot": 0,
       "resource_set": 0
     }

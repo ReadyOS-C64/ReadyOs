@@ -16,6 +16,9 @@
       "image_type": "d71",
       "vice_drive_type": "1571",
       "true_drive": true,
+      "mount_on_boot": true,
+      "role": "boot",
+      "description": "",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-dual-d71/readyos-v0.5-dual-d71_1.d71"
     },
     {
@@ -24,7 +27,21 @@
       "image_type": "d71",
       "vice_drive_type": "1571",
       "true_drive": true,
+      "mount_on_boot": true,
+      "role": "boot",
+      "description": "",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-dual-d71/readyos-v0.5-dual-d71_2.d71"
+    },
+    {
+      "index": 3,
+      "drive": 9,
+      "image_type": "d71",
+      "vice_drive_type": "1571",
+      "true_drive": true,
+      "mount_on_boot": false,
+      "role": "optional_app_data",
+      "description": "Optional app-data and ReadyBASIC example disk; swap it into drive 9 after ReadyOS boots.",
+      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-dual-d71/readyos-v0.5-dual-d71_3.d71"
     }
   ],
   "boot_prgs": [

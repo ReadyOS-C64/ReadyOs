@@ -33,10 +33,11 @@ GITHUB_URL = "https://github.com/ReadyOS-C64/ReadyOs"
 MAIN_SITE_URL = "https://readyos64.com"
 WIKI_URL = "https://readyos.notion.site"
 PUBLIC_VARIANT_ORDER = [
-    "precog-dual-d71",
     "precog-d81",
+    "precog-dual-d71",
     "precog-kung-fu-flash-2-d81",
     "precog-dual-d64",
+    "precog-solo-d64-readybasic",
     "precog-solo-d64-a",
     "precog-solo-d64-b",
     "precog-solo-d64-c",
@@ -44,10 +45,11 @@ PUBLIC_VARIANT_ORDER = [
     "precog-solo-d64-e",
 ]
 VARIANT_NOTES = {
-    "dual-d71": "Default full-content profile for two 1571-class drives and the main local verification target.",
-    "d81": "Full-content single-disk profile for 1581 and D81 setups where the whole current app catalog fits on one image.",
+    "d81": "Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples.",
+    "dual-d71": "Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and all ReadyBASIC examples.",
     "kung-fu-flash-2-d81": "Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks.",
     "dual-d64": "Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media.",
+    "solo-d64-readybasic": "Focused single-D64 ReadyBASIC profile with ReadyOS, ReadyBASIC, every module package, and the complete example set.",
     "solo-d64-a": "Single-D64 subset focused on editor, reference, and dizzy for one-disk-only environments.",
     "solo-d64-b": "Single-D64 productivity subset centered on quicknotes, clipboard, calculator, and files.",
     "solo-d64-c": "Single-D64 planning subset centered on tasklist, calendar, and REU viewer.",
@@ -55,10 +57,11 @@ VARIANT_NOTES = {
     "solo-d64-e": "Single-D64 shell-focused subset for readyshell and its overlay payloads in one-disk-only environments.",
 }
 VARIANT_BEST_FIT = {
-    "dual-d71": "C64 Ultimate, Ultimate 64, or VICE setups that can keep two 1571-class drives mounted.",
-    "d81": "C64 Ultimate, VICE, or other 1581-capable setups that prefer one full-content image.",
+    "d81": "C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU.",
+    "dual-d71": "C64 Ultimate, Ultimate 64, or VICE setups using two 1571-class drives, with optional drive-9 disk swapping.",
     "kung-fu-flash-2-d81": "Kung Fu Flash 2 users who want one full-content D81 and the cartridge's 1MB REU mode instead of CRT cartridge mode.",
     "dual-d64": "Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media.",
+    "solo-d64-readybasic": "1541-only users who primarily want the complete ReadyBASIC environment and examples on one disk.",
     "solo-d64-a": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
     "solo-d64-b": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
     "solo-d64-c": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
@@ -373,6 +376,13 @@ def load_profile(profile_id: str) -> Dict[str, object]:
     if not path.exists():
         fail(f"unknown profile: {profile_id}")
     profile = json.loads(path.read_text(encoding="utf-8"))
+    base_profile_id = profile.get("extends")
+    if base_profile_id:
+        if str(base_profile_id) == profile_id:
+            fail(f"profile cannot extend itself: {profile_id}")
+        inherited = load_profile(str(base_profile_id))
+        inherited.update(profile)
+        profile = inherited
     profile["_path"] = str(path)
     return profile
 
@@ -508,8 +518,18 @@ def format_drive_list(drives: List[int]) -> str:
 
 def media_summary(resolved: Dict[str, object]) -> str:
     disks = list(resolved["disks"])
-    drives = [int(disk["drive"]) for disk in disks]
+    boot_disks = [disk for disk in disks if bool(disk.get("mount_on_boot", True))]
+    optional_disks = [disk for disk in disks if not bool(disk.get("mount_on_boot", True))]
+    drives = [int(disk["drive"]) for disk in boot_disks]
     image_types = {str(disk["image_type"]).upper() for disk in disks}
+    if optional_disks:
+        boot_types = {str(disk["image_type"]).upper() for disk in boot_disks}
+        optional_types = {str(disk["image_type"]).upper() for disk in optional_disks}
+        if len(boot_types) == 1 and len(optional_types) == 1:
+            return (
+                f"{len(boot_disks)}x `{next(iter(boot_types))}` boot set on drives {format_drive_list(drives)}; "
+                f"{len(optional_disks)}x optional `{next(iter(optional_types))}` drive-9 swap"
+            )
     if len(disks) == 1:
         image_type = str(disks[0]["image_type"]).upper()
         return f"1x `{image_type}` on drive {format_drive_list(drives)}"
@@ -539,6 +559,12 @@ def build_public_variant_matrix(version_text: str) -> str:
             f"{VARIANT_NOTES.get(kind, 'Profile-specific ReadyOS media layout.')} | "
             f"`{boot_flow_text(str(resolved['preboot_mode']))}` |"
         )
+        if profile_id == "precog-d81":
+            lines.append(
+                "| `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | "
+                "VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | "
+                "Full catalog cartridge preload plus the required companion data disk. | `cartridge reset` |"
+            )
     return "\n".join(lines)
 
 
@@ -564,6 +590,8 @@ def render_release_root_readme(version_text: str) -> str:
     template = RELEASE_ROOT_README_TEMPLATE.read_text(encoding="utf-8")
     public_version = public_release_version(version_text)
     public_ids = public_profile_ids()
+    release_ids = list(public_ids)
+    release_ids.insert(release_ids.index("precog-d81") + 1, "precog-easyflash")
     replacements = {
         "PUBLIC_VERSION": public_version,
         "VERSION_TEXT": version_text,
@@ -571,8 +599,8 @@ def render_release_root_readme(version_text: str) -> str:
         "MAIN_SITE_URL": MAIN_SITE_URL,
         "WIKI_URL": WIKI_URL,
         "CURRENT_APP_COUNT": str(default_catalog_app_count()),
-        "PUBLIC_VARIANT_COUNT": str(len(public_ids)),
-        "PUBLIC_VARIANT_FOLDERS": build_release_folder_list(public_ids),
+        "PUBLIC_VARIANT_COUNT": str(len(release_ids)),
+        "PUBLIC_VARIANT_FOLDERS": build_release_folder_list(release_ids),
         "PUBLIC_VARIANT_MATRIX": build_public_variant_matrix(version_text),
         "DEBUG_VARIANT_NOTE": build_debug_variant_note(),
     }
@@ -678,6 +706,9 @@ def resolve_profile(profile_id: str, version_text: str | None, latest: bool) -> 
                 "image_type": str(disk["image_type"]),
                 "vice_drive_type": str(disk["vice_drive_type"]),
                 "true_drive": bool(disk.get("true_drive", False)),
+                "mount_on_boot": bool(disk.get("mount_on_boot", True)),
+                "role": str(disk.get("role", "boot")),
+                "description": str(disk.get("description", "")),
                 "path": str(disk_path),
             }
         )
@@ -1136,7 +1167,9 @@ def build_help_text(profile: Dict[str, object],
         reu_setup_line = "- Enable REU with at least `1MB`; `8MB` or `16MB` is recommended where available."
         c64_ultimate_reu_line = "- Enable the REU with at least `1MB`; use `8MB` or `16MB` where available."
     vice_parts: List[str] = ["x64sc", "-reu", "-reusize", str(reu_size_kb)]
-    for disk in resolved["disks"]:
+    boot_disks = [disk for disk in resolved["disks"] if bool(disk.get("mount_on_boot", True))]
+    optional_disks = [disk for disk in resolved["disks"] if not bool(disk.get("mount_on_boot", True))]
+    for disk in boot_disks:
         drive = str(disk["drive"])
         vice_parts.extend([f"-drive{drive}type", str(disk["vice_drive_type"])])
         if disk.get("true_drive"):
@@ -1152,7 +1185,7 @@ def build_help_text(profile: Dict[str, object],
     vice_parts.extend(["-autostart", autostart_name])
     vice_command = " ".join(vice_parts)
     preboot_mode = str(resolved["preboot_mode"])
-    disk_count = len(resolved["disks"])
+    disk_count = len(boot_disks)
 
     lines = [
         f"# {profile['display_name']}",
@@ -1178,8 +1211,11 @@ def build_help_text(profile: Dict[str, object],
         "## Artifacts",
         "",
     ])
-    for disk in resolved["disks"]:
-        lines.append(f"- Drive {disk['drive']}: `{Path(disk['path']).name}`")
+    for disk in boot_disks:
+        lines.append(f"- Boot-time drive {disk['drive']}: `{Path(disk['path']).name}`")
+    for disk in optional_disks:
+        description = str(disk.get("description", "Optional disk; mount after ReadyOS has booted."))
+        lines.append(f"- Optional drive-{disk['drive']} swap: `{Path(disk['path']).name}` - {description}")
     for boot_prg in boot_prgs:
         lines.append(f"- Host-Side Boot PRG: `{Path(str(boot_prg['path'])).name}`")
     lines.extend([
@@ -1190,7 +1226,21 @@ def build_help_text(profile: Dict[str, object],
     for entry in entries:
         lines.append(f"- Drive {entry['drive']}: `{entry['prg']}` - {entry['label']}")
     if str(profile.get("id")) in {"precog-dual-d71", "precog-dual-d71-rsdebug"}:
-        lines.append("- `readme` is intentionally omitted from the dual-D71 variants to preserve disk space for app growth.")
+        lines.extend([
+            "- The boot pair includes ReadyBASIC and all three external `rbm.*` module packages on its normal drive-9 disk; the banked `rbcore`/`rbcode` resources are carried inside `readybasic` itself.",
+            "- The optional drive-9 swap contains `app.*` manifests followed by `sidetris`, `deminer`, `ucitest`, and `readme`, then every ReadyBASIC example.",
+            "- No REL-backed app is placed on the optional disk: CAL26 and Dizzy remain on the boot-time drive-8 image.",
+        ])
+    if str(profile.get("kind")) in {"d81", "kung-fu-flash-2-d81"}:
+        lines.extend([
+            "- ReadyBASIC is accompanied by all three external `rbm.*` module packages and the complete 41-program procedure, graphics, and sound example/test set.",
+            "- ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable rather than as separate disk files.",
+        ])
+    if str(profile.get("kind")) == "solo-d64-readybasic":
+        lines.extend([
+            "- This one D64 contains ReadyBASIC, all three external `rbm.*` module packages, and the complete 41-program procedure, graphics, and sound example/test set.",
+            "- ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable; no second examples disk is required.",
+        ])
     lines.extend([
         "",
         "## VICE Setup",
@@ -1198,10 +1248,14 @@ def build_help_text(profile: Dict[str, object],
         reu_setup_line,
         "- The host-side boot PRGs are convenience autostart files. The disk copy of `PREBOOT` is still the normal disk-side bootstrap.",
     ])
-    for disk in resolved["disks"]:
+    for disk in boot_disks:
         true_drive_suffix = " with true drive enabled" if disk.get("true_drive") else ""
         lines.append(
             f"- Configure drive {disk['drive']} as `{disk['vice_drive_type']}`{true_drive_suffix} and attach `{Path(disk['path']).name}`."
+        )
+    for disk in optional_disks:
+        lines.append(
+            f"- After ReadyOS boots, replace the disk in drive `{disk['drive']}` with `{Path(disk['path']).name}` when you want its optional apps or ReadyBASIC examples."
         )
     lines.extend([
         "",
@@ -1240,6 +1294,8 @@ def build_help_text(profile: Dict[str, object],
             "- `SETD71` is part of this variant and reasserts the dual-1571 setup before loading `BOOT`.",
             f"- In VICE, autostart `{autostart_name}`, or manually run `LOAD \"{Path(autostart_disk_name).stem.upper()}\",8` then `RUN`.",
         ])
+        if optional_disks:
+            lines.append("- Do not attach the optional app-data image until boot is complete; it replaces the normal drive-9 disk on demand.")
     else:
         lines.extend([
             "- This profile uses the direct boot chain `PREBOOT -> BOOT`.",
@@ -1263,6 +1319,8 @@ def build_help_text(profile: Dict[str, object],
             "- Attach both disk images before boot and use `1571`-compatible drive assignments for the two-disk set.",
             "- Boot with `LOAD \"PREBOOT\",8` then `RUN`; this variant then chains through `SETD71` before loading `BOOT`.",
         ])
+        if optional_disks:
+            lines.append("- After boot, swap the optional app-data image into drive `9` only when you want to use its manifests, apps, or examples.")
     else:
         if disk_count == 1:
             lines.append("- Attach the single disk image on drive `8`, then boot with `LOAD \"PREBOOT\",8` and `RUN`.")
@@ -1356,11 +1414,11 @@ def build_release(profile_id: str,
             fail(f"missing boot-chain artifact for {profile_id}: {source}")
         shutil.copyfile(source, target)
 
-    help_text = build_help_text(profile, resolved, entries)
-    (output_dir / "helpme.md").write_text(help_text + "\n", encoding="utf-8")
-    (output_dir / "help.md").write_text(help_text + "\n", encoding="utf-8")
-    if bool(profile.get("write_readme", False)):
-        (output_dir / "README.md").write_text(help_text + "\n", encoding="utf-8")
+    help_text = build_help_text(profile, resolved, entries).rstrip() + "\n"
+    (output_dir / "helpme.md").write_text(help_text, encoding="utf-8")
+    (output_dir / "help.md").write_text(help_text, encoding="utf-8")
+    if readyshell_parse_trace_debug(profile) == 0 or bool(profile.get("write_readme", False)):
+        (output_dir / "README.md").write_text(help_text, encoding="utf-8")
 
     manifest = {
         "id": profile["id"],
@@ -1412,10 +1470,14 @@ def print_shell_exports(profile_id: str, version_text: str) -> None:
     print(f"PROFILE_PREBOOT_MODE={shell_quote(str(resolved['preboot_mode']))}")
     print("PROFILE_DISK_PATHS=(" + " ".join(shell_quote(str(disk["path"])) for disk in disks) + ")")
     print("PROFILE_DISK_DRIVES=(" + " ".join(shell_quote(str(disk["drive"])) for disk in disks) + ")")
+    print("PROFILE_DISK_MOUNT_ON_BOOT=(" + " ".join(
+        shell_quote("1" if bool(disk.get("mount_on_boot", True)) else "0") for disk in disks
+    ) + ")")
+    mounted_disks = [disk for disk in disks if bool(disk.get("mount_on_boot", True))]
     print("PROFILE_VICE_ATTACH_ARGS=(" +
           " ".join(
               shell_quote(arg)
-              for disk in disks
+              for disk in mounted_disks
               for arg in (
                   f"-drive{disk['drive']}type",
                   str(disk["vice_drive_type"]),

@@ -697,7 +697,11 @@ print_info() {
     echo "Profile: $PROFILE_DISPLAY_NAME"
     echo "Target: $target"
     for idx in "${!PROFILE_DISK_PATHS[@]}"; do
-        echo "Drive ${PROFILE_DISK_DRIVES[$idx]}: ${PROFILE_DISK_PATHS[$idx]}"
+        if [ "${PROFILE_DISK_MOUNT_ON_BOOT[$idx]:-1}" = "0" ]; then
+            echo "Optional drive-${PROFILE_DISK_DRIVES[$idx]} swap: ${PROFILE_DISK_PATHS[$idx]}"
+        else
+            echo "Drive ${PROFILE_DISK_DRIVES[$idx]}: ${PROFILE_DISK_PATHS[$idx]}"
+        fi
     done
     echo "Build Support: $BUILD_SUPPORT_DIR"
     echo "REU: ${REU_SIZE_KB}KB"

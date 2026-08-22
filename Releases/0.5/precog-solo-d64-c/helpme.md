@@ -10,7 +10,7 @@
 
 ## Artifacts
 
-- Drive 8: `readyos-v0.5-solo-d64-c.d64`
+- Boot-time drive 8: `readyos-v0.5-solo-d64-c.d64`
 - Host-Side Boot PRG: `readyos-v0.5-solo-d64-c-preboot.prg`
 - Host-Side Boot PRG: `readyos-v0.5-solo-d64-c-boot.prg`
 
@@ -49,4 +49,3 @@ x64sc -reu -reusize 16384 -drive8type 1541 -drive8truedrive -devicebackend8 0 +b
 - Choosing a disk SKU does not enable the experimental Ultimate DOS DMA launcher. Normal release artifacts use the portable disk loader; DMA requires an explicit `LAUNCHER_DMA_LOAD=1` source build and retains disk fallback.
 - Attach the single disk image on drive `8`, then boot with `LOAD "PREBOOT",8` and `RUN`.
 - This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.
-

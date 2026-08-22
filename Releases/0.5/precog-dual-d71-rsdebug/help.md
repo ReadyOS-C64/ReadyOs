@@ -6,12 +6,13 @@
 
 ## Why This Variant Exists
 
-- Default full-content profile for two 1571-class drives and the main local verification target.
+- Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and all ReadyBASIC examples.
 
 ## Artifacts
 
-- Drive 8: `readyos-v0.5-dual-d71_1.d71`
-- Drive 9: `readyos-v0.5-dual-d71_2.d71`
+- Boot-time drive 8: `readyos-v0.5-dual-d71_1.d71`
+- Boot-time drive 9: `readyos-v0.5-dual-d71_2.d71`
+- Optional drive-9 swap: `readyos-v0.5-dual-d71_3.d71` - Optional app-data and ReadyBASIC example disk; swap it into drive 9 after ReadyOS boots.
 - Host-Side Boot PRG: `readyos-v0.5-dual-d71-preboot.prg`
 - Host-Side Boot PRG: `readyos-v0.5-dual-d71-boot.prg`
 - Host-Side Boot PRG: `readyos-v0.5-dual-d71-setd71.prg`
@@ -34,7 +35,9 @@
 - Drive 9: `game2048` - 2048 game
 - Drive 8: `dizzy` - dizzy kanban
 - Drive 9: `readyirc` - readyirc
-- `readme` is intentionally omitted from the dual-D71 variants to preserve disk space for app growth.
+- The boot pair includes ReadyBASIC and all three external `rbm.*` module packages on its normal drive-9 disk; the banked `rbcore`/`rbcode` resources are carried inside `readybasic` itself.
+- The optional drive-9 swap contains `app.*` manifests followed by `sidetris`, `deminer`, `ucitest`, and `readme`, then every ReadyBASIC example.
+- No REL-backed app is placed on the optional disk: CAL26 and Dizzy remain on the boot-time drive-8 image.
 
 ## VICE Setup
 
@@ -42,6 +45,7 @@
 - The host-side boot PRGs are convenience autostart files. The disk copy of `PREBOOT` is still the normal disk-side bootstrap.
 - Configure drive 8 as `1571` with true drive enabled and attach `readyos-v0.5-dual-d71_1.d71`.
 - Configure drive 9 as `1571` with true drive enabled and attach `readyos-v0.5-dual-d71_2.d71`.
+- After ReadyOS boots, replace the disk in drive `9` with `readyos-v0.5-dual-d71_3.d71` when you want its optional apps or ReadyBASIC examples.
 
 ### VICE Command Example
 
@@ -57,6 +61,7 @@ x64sc -reu -reusize 16384 -drive8type 1571 -drive8truedrive -devicebackend8 0 +b
 - Both disks must already be attached before boot, and both drives must be configured as `1571`.
 - `SETD71` is part of this variant and reasserts the dual-1571 setup before loading `BOOT`.
 - In VICE, autostart `readyos-v0.5-dual-d71-preboot.prg`, or manually run `LOAD "PREBOOT",8` then `RUN`.
+- Do not attach the optional app-data image until boot is complete; it replaces the normal drive-9 disk on demand.
 
 ## C64 Ultimate
 
@@ -66,4 +71,4 @@ x64sc -reu -reusize 16384 -drive8type 1571 -drive8truedrive -devicebackend8 0 +b
 - Choosing a disk SKU does not enable the experimental Ultimate DOS DMA launcher. Normal release artifacts use the portable disk loader; DMA requires an explicit `LAUNCHER_DMA_LOAD=1` source build and retains disk fallback.
 - Attach both disk images before boot and use `1571`-compatible drive assignments for the two-disk set.
 - Boot with `LOAD "PREBOOT",8` then `RUN`; this variant then chains through `SETD71` before loading `BOOT`.
-
+- After boot, swap the optional app-data image into drive `9` only when you want to use its manifests, apps, or examples.

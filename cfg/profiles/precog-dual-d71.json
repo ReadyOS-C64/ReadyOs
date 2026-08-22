@@ -2,7 +2,7 @@
   "id": "precog-dual-d71",
   "display_name": "precog (dual d71)",
   "kind": "dual-d71",
-  "default_run": true,
+  "default_run": false,
   "catalog_source": "cfg/profiles/precog-dual-d71.ini",
   "app_manifests": [
     {
@@ -14,6 +14,16 @@
       "source": "cfg/profiles/precog-dual-d71-app-deminer.txt",
       "output": "obj/app_deminer_dual_d71.seq",
       "disk_name": "app.deminer"
+    },
+    {
+      "source": "cfg/profiles/precog-dual-d71-app-ucitest.txt",
+      "output": "obj/app_ucitest_dual_d71.seq",
+      "disk_name": "app.ucitest"
+    },
+    {
+      "source": "cfg/profiles/precog-dual-d71-app-readme.txt",
+      "output": "obj/app_readme_dual_d71.seq",
+      "disk_name": "app.readme"
     }
   ],
   "boot": {
@@ -35,7 +45,6 @@
         { "artifact": "boot.prg", "name": "boot", "type": "prg" },
         { "artifact": "launcher.prg", "name": "launcher", "type": "prg" },
         { "artifact": "quicknotes.prg", "name": "quicknotes", "type": "prg" },
-        { "artifact": "deminer.prg", "name": "deminer", "type": "prg", "include_even_if_not_catalog": true },
         { "artifact": "cal26.prg", "name": "cal26", "type": "prg" },
         { "artifact": "dizzy.prg", "name": "dizzy", "type": "prg" },
         { "artifact": "readyshell.prg", "name": "readyshell", "type": "prg" },
@@ -48,9 +57,7 @@
         { "artifact": "obj/rscat.prg", "name": "rscat", "type": "prg" },
         { "artifact": "obj/rscopy.prg", "name": "rscopy", "type": "prg" },
         { "artifact": "obj/rsedit.prg", "name": "rsedit", "type": "prg" },
-        { "artifact": "obj/rbtest1.prg", "name": "rbtest1", "type": "prg" },
-        { "artifact": "obj/apps_cfg_petscii.seq", "name": "apps.cfg", "type": "seq" },
-        { "artifact": "obj/app_deminer_dual_d71.seq", "name": "app.deminer", "type": "seq" }
+        { "artifact": "obj/apps_cfg_petscii.seq", "name": "apps.cfg", "type": "seq" }
       ],
       "post_build": [
         { "type": "seed_cal26_rel" }
@@ -74,14 +81,73 @@
         { "artifact": "simplefiles.prg", "name": "simplefiles", "type": "prg" },
         { "artifact": "simplecells.prg", "name": "simplecells", "type": "prg" },
         { "artifact": "game2048.prg", "name": "game2048", "type": "prg" },
-        { "artifact": "sidetris.prg", "name": "sidetris", "type": "prg", "include_even_if_not_catalog": true },
         { "artifact": "readyirc.prg", "name": "readyirc", "type": "prg" },
         { "artifact": "readybasic.prg", "name": "readybasic", "type": "prg" },
         { "artifact": "obj/readybasic_modules/rbm.sample1.seq", "name": "rbm.sample1", "type": "seq" },
         { "artifact": "obj/readybasic_modules/rbm.sample2.seq", "name": "rbm.sample2", "type": "seq" },
-        { "artifact": "obj/readybasic_modules/rbm.sample3.seq", "name": "rbm.sample3", "type": "seq" },
-        { "artifact": "ucitest.prg", "name": "ucitest", "type": "prg" },
-        { "artifact": "obj/app_sidetris_dual_d71.seq", "name": "app.sidetris", "type": "seq" }
+        { "artifact": "obj/readybasic_modules/rbm.sample3.seq", "name": "rbm.sample3", "type": "seq" }
+      ]
+    },
+    {
+      "index": 3,
+      "drive": 9,
+      "label": "readyosapps,ro",
+      "image_type": "d71",
+      "vice_drive_type": "1571",
+      "true_drive": true,
+      "mount_on_boot": false,
+      "role": "optional_app_data",
+      "description": "Optional app-data and ReadyBASIC example disk; swap it into drive 9 after ReadyOS boots.",
+      "contents": [
+        { "artifact": "obj/app_sidetris_dual_d71.seq", "name": "app.sidetris", "type": "seq" },
+        { "artifact": "obj/app_deminer_dual_d71.seq", "name": "app.deminer", "type": "seq" },
+        { "artifact": "obj/app_ucitest_dual_d71.seq", "name": "app.ucitest", "type": "seq" },
+        { "artifact": "obj/app_readme_dual_d71.seq", "name": "app.readme", "type": "seq" },
+        { "artifact": "sidetris.prg", "name": "sidetris", "type": "prg", "include_even_if_not_catalog": true },
+        { "artifact": "deminer.prg", "name": "deminer", "type": "prg", "include_even_if_not_catalog": true },
+        { "artifact": "ucitest.prg", "name": "ucitest", "type": "prg", "include_even_if_not_catalog": true },
+        { "artifact": "readme.prg", "name": "readme", "type": "prg", "include_even_if_not_catalog": true },
+        { "artifact": "obj/rbtest1.prg", "name": "rbtest1", "type": "prg" },
+        { "artifact": "obj/rbproc1.prg", "name": "rbproc1", "type": "prg" },
+        { "artifact": "obj/rbprocerr.prg", "name": "rbprocerr", "type": "prg" },
+        { "artifact": "obj/rbgfx01_modes.prg", "name": "rbgfx01", "type": "prg" },
+        { "artifact": "obj/rbgfx02_hires_plot.prg", "name": "rbgfx02", "type": "prg" },
+        { "artifact": "obj/rbgfx03_hires_lines.prg", "name": "rbgfx03", "type": "prg" },
+        { "artifact": "obj/rbgfx04_rects.prg", "name": "rbgfx04", "type": "prg" },
+        { "artifact": "obj/rbgfx05_point_read.prg", "name": "rbgfx05", "type": "prg" },
+        { "artifact": "obj/rbgfx06_reu_surface.prg", "name": "rbgfx06", "type": "prg" },
+        { "artifact": "obj/rbgfx07_mbitmap.prg", "name": "rbgfx07", "type": "prg" },
+        { "artifact": "obj/rbgfx08_tile.prg", "name": "rbgfx08", "type": "prg" },
+        { "artifact": "obj/rbgfx09_sprites.prg", "name": "rbgfx09", "type": "prg" },
+        { "artifact": "obj/rbgfx10_collision.prg", "name": "rbgfx10", "type": "prg" },
+        { "artifact": "obj/rbgfx11_input.prg", "name": "rbgfx11", "type": "prg" },
+        { "artifact": "obj/rbgfx12_showcase.prg", "name": "rbgfx12", "type": "prg" },
+        { "artifact": "obj/rbgfx13_sprite_steps.prg", "name": "rbgfx13", "type": "prg" },
+        { "artifact": "obj/rbgfx14_phase2_prims.prg", "name": "rbgfx14", "type": "prg" },
+        { "artifact": "obj/rbgfx15_phase2_tiles.prg", "name": "rbgfx15", "type": "prg" },
+        { "artifact": "obj/rbgfx16_phase2_sprite_ctrl.prg", "name": "rbgfx16", "type": "prg" },
+        { "artifact": "obj/rbgfx17_poly_array.prg", "name": "rbgfx17", "type": "prg" },
+        { "artifact": "obj/rbgfx18_fpoly_array.prg", "name": "rbgfx18", "type": "prg" },
+        { "artifact": "obj/rbgfx19_poly_reu.prg", "name": "rbgfx19", "type": "prg" },
+        { "artifact": "obj/rbgfx20_fpoly_reu_showcase.prg", "name": "rbgfx20", "type": "prg" },
+        { "artifact": "obj/rbgfx21_mbitmap_prims.prg", "name": "rbgfx21", "type": "prg" },
+        { "artifact": "obj/rbgfx22_mbitmap_point.prg", "name": "rbgfx22", "type": "prg" },
+        { "artifact": "obj/rbgfx23_dlist.prg", "name": "rbgfx23", "type": "prg" },
+        { "artifact": "obj/rbgfx24_tilemap.prg", "name": "rbgfx24", "type": "prg" },
+        { "artifact": "obj/rbgfx25_mbcells.prg", "name": "rbgfx25", "type": "prg" },
+        { "artifact": "obj/rbgfx26_mode_matrix.prg", "name": "rbgfx26", "type": "prg" },
+        { "artifact": "obj/rbgfx27_target_blit.prg", "name": "rbgfx27", "type": "prg" },
+        { "artifact": "obj/rbgfx28_tile_visible.prg", "name": "rbgfx28", "type": "prg" },
+        { "artifact": "obj/rbgfx29_mtile_visible.prg", "name": "rbgfx29", "type": "prg" },
+        { "artifact": "obj/rbgfx30_mbitmap_dlist.prg", "name": "rbgfx30", "type": "prg" },
+        { "artifact": "obj/rbgfx31_sync_blit.prg", "name": "rbgfx31", "type": "prg" },
+        { "artifact": "obj/rbgfx32_convex_poly.prg", "name": "rbgfx32", "type": "prg" },
+        { "artifact": "obj/rbsnd01_sid_basics.prg", "name": "rbsnd01", "type": "prg" },
+        { "artifact": "obj/rbsnd02_voice_state.prg", "name": "rbsnd02", "type": "prg" },
+        { "artifact": "obj/rbsnd03_notes.prg", "name": "rbsnd03", "type": "prg" },
+        { "artifact": "obj/rbsnd04_filter.prg", "name": "rbsnd04", "type": "prg" },
+        { "artifact": "obj/rbsnd05_voice_batch.prg", "name": "rbsnd05", "type": "prg" },
+        { "artifact": "obj/rbsnd06_three_voice.prg", "name": "rbsnd06", "type": "prg" }
       ]
     }
   ]

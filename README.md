@@ -53,11 +53,12 @@ Project links:
 
 The canonical release layout is:
 
+- `Releases/<version>/precog-d81/`
 - `Releases/<version>/precog-easyflash/`
 - `Releases/<version>/precog-dual-d71/`
-- `Releases/<version>/precog-d81/`
 - `Releases/<version>/precog-kung-fu-flash-2-d81/`
 - `Releases/<version>/precog-dual-d64/`
+- `Releases/<version>/precog-solo-d64-readybasic/`
 - `Releases/<version>/precog-solo-d64-a/`
 - `Releases/<version>/precog-solo-d64-b/`
 - `Releases/<version>/precog-solo-d64-c/`
@@ -154,16 +155,17 @@ additional release work will be recorded here as it lands.
 
 ## Release Variants
 
-ReadyOS now ships the same runtime in `10` public media variants because the
+ReadyOS now ships the same runtime in `11` public media variants because the
 target drive types, disk capacities, and cartridge support are different.
 
 | Profile | Media | Why It Exists | Boot Flow | App Set |
 | --- | --- | --- | --- | --- |
+| `precog-d81` | one `D81` image on drive `8` | recommended main ReadyOS SKU and default build/run target | `PREBOOT -> BOOT` | 19 launcher apps plus ReadyBASIC modules and the complete example set; `sidetris` is also present through `app.sidetris` |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | full cartridge cold-boot path for VICE and Ultimate-family setups that can keep a disk mounted | reset into cartridge boot | full current app catalog |
-| `precog-dual-d71` | two `D71` images on drives `8` and `9` | broad `1571` profile and the main local verification target | `PREBOOT -> SETD71 -> BOOT` | 16 apps; omits `sidetris`, `deminer`, `ucitest`, and `readme` for D71 capacity |
-| `precog-d81` | one `D81` image on drive `8` | broad single-disk profile for `1581`/`D81` setups | `PREBOOT -> BOOT` | 19 apps; full EasyFlash catalog except `sidetris` |
+| `precog-dual-d71` | two boot-time `D71` images on drives `8` and `9`, plus an optional third `D71` swapped into drive `9` | full core `1571` profile with capacity for optional apps and examples without crowding the boot pair | `PREBOOT -> SETD71 -> BOOT` | 16 core launcher apps; optional disk adds app-config versions of `sidetris`, `deminer`, `ucitest`, and `readme`, followed by all ReadyBASIC examples |
 | `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | broad Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | same 19-app set as `precog-d81` |
 | `precog-dual-d64` | two `D64` images on drives `8` and `9` | reduced profile for `1541`-compatible capacity limits | `PREBOOT -> BOOT` | curated subset of the current app catalog |
+| `precog-solo-d64-readybasic` | one `D64` image on drive `8` | complete ReadyBASIC environment for `1541`-only systems | `PREBOOT -> BOOT` | ReadyOS launcher, ReadyBASIC, all three module packages, and every procedure, graphics, and sound example |
 | `precog-solo-d64-a` | one `D64` image on drive `8` | standalone single-disk subset with editor, reference, and dizzy | `PREBOOT -> BOOT` | `editor`, `hexview`, `readme`, `dizzy` |
 | `precog-solo-d64-b` | one `D64` image on drive `8` | standalone single-disk notes/files subset | `PREBOOT -> BOOT` | `simplefiles`, `clipmgr`, `quicknotes` |
 | `precog-solo-d64-c` | one `D64` image on drive `8` | standalone single-disk planning/system subset | `PREBOOT -> BOOT` | `cal26`, `tasklist`, `reuviewer`, `sysinfo` |
@@ -194,6 +196,19 @@ banks, then launch the app again.
 The dual-D64 profile is intentionally smaller. Right now it keeps the eight-app
 productivity path that fits on two `D64`s: `editor`, `readyshell`,
 `simplefiles`, `clipmgr`, `cal26`, `tasklist`, `quicknotes`, and `calcplus`.
+
+The dual-D71 profile now treats its first two images as the stable boot set.
+ReadyBASIC and all `rbm.*` module packages stay on the normal drive-9 image.
+Its banked `rbcore` and `rbcode` resources are contained inside the ReadyBASIC
+executable, so no ReadyBASIC overlay payload is stranded on the swap disk.
+The third image is an optional post-boot drive-9 swap: its `app.*` manifests
+come first, followed by the four lesser apps they describe, then the complete
+ReadyBASIC example collection. CAL26 and Dizzy remain on the boot-time drive-8
+image because their REL files must not be separated onto the optional disk.
+
+The ReadyBASIC-focused D64 fits on a single image, so no second examples disk is
+needed. It is the most direct `1541`-compatible way to try the complete
+ReadyBASIC beta environment rather than a general-purpose ReadyOS app subset.
 
 The solo-D64 variants exist for environments that can mount only one `D64`
 at a time, such as some web emulators and simplified media loaders. The split
@@ -440,7 +455,7 @@ working registry arrays from the ReadyOS app records after every return.
 Disk layout:
 
 - media shape depends on the selected release profile
-- dual-d71 is the default local run/test target
+- d81 is the default local run/test target and recommended main SKU
 - d81 and dual-d64 profiles reuse the same runtime with different media maps
 
 ## Build And Run
