@@ -92,7 +92,7 @@ Boot note:
 - Audited production baseline: `0.2.5`
 - Local builds use the existing rolling suffix flow for artifact filenames only
 - Builds release media per profile
-- Full-content profiles currently include about `20` launcher-visible entries
+- Full-content profiles currently include about `19` to `20` launcher-visible entries
   depending on media capacity; the catalog table below is the current app-token
   union across profiles.
 - App snapshots and app-owned resource banks are allocated on demand and
@@ -148,7 +148,7 @@ additional release work will be recorded here as it lands.
   Viewer can identify the owner and launcher unload can free those banks with
   the app.
 - The 0.2.4 EasyFlash, Kung Fu Flash 2, SysInfo, dynamic-resource, ReadyBASIC,
-  ReadyIRC, RR-Net, and UCITest foundations remain part of 0.2.5. Their build
+  ReadyIRC, and UCITest foundations remain part of 0.2.5. Their build
   products, boot diagnostics, REU-required behavior, and cartridge verification
   are retained rather than being reintroduced as new 0.2.5 features.
 
@@ -160,9 +160,9 @@ target drive types, disk capacities, and cartridge support are different.
 | Profile | Media | Why It Exists | Boot Flow | App Set |
 | --- | --- | --- | --- | --- |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | full cartridge cold-boot path for VICE and Ultimate-family setups that can keep a disk mounted | reset into cartridge boot | full current app catalog |
-| `precog-dual-d71` | two `D71` images on drives `8` and `9` | broad `1571` profile and the main local verification target | `PREBOOT -> SETD71 -> BOOT` | 16 apps; omits `sidetris`, `deminer`, `ucitest`, `rirc-rrnet`, and `readme` for D71 capacity |
-| `precog-d81` | one `D81` image on drive `8` | broad single-disk profile for `1581`/`D81` setups | `PREBOOT -> BOOT` | 20 apps; full EasyFlash catalog except `sidetris` |
-| `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | broad Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | same 20-app set as `precog-d81` |
+| `precog-dual-d71` | two `D71` images on drives `8` and `9` | broad `1571` profile and the main local verification target | `PREBOOT -> SETD71 -> BOOT` | 16 apps; omits `sidetris`, `deminer`, `ucitest`, and `readme` for D71 capacity |
+| `precog-d81` | one `D81` image on drive `8` | broad single-disk profile for `1581`/`D81` setups | `PREBOOT -> BOOT` | 19 apps; full EasyFlash catalog except `sidetris` |
+| `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | broad Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | same 19-app set as `precog-d81` |
 | `precog-dual-d64` | two `D64` images on drives `8` and `9` | reduced profile for `1541`-compatible capacity limits | `PREBOOT -> BOOT` | curated subset of the current app catalog |
 | `precog-solo-d64-a` | one `D64` image on drive `8` | standalone single-disk subset with editor, reference, and dizzy | `PREBOOT -> BOOT` | `editor`, `hexview`, `readme`, `dizzy` |
 | `precog-solo-d64-b` | one `D64` image on drive `8` | standalone single-disk notes/files subset | `PREBOOT -> BOOT` | `simplefiles`, `clipmgr`, `quicknotes` |
@@ -327,7 +327,6 @@ generated `manifest.json` are authoritative.
 | `readybasic` | ready basic (alpha) | BASIC V2 bridge with ReadyBASIC commands, native `PROC`/`FUNC`, REU-backed command modules, graphics/sound, and suspend/resume |
 | `readyirc` | readyirc | Ultimate TCP IRC client with setup, reconnect, channels, common IRC event parsing, help, editing, and REU-backed scrollback |
 | `ucitest` | uci tester | Ultimate command-interface lab with decoded responses, protocol guidance, and selectable examples ([guide](docs/uci_tester.md)) |
-| `rirc-rrnet` | readyirc rrnet | Experimental RR-Net TCP IRC client; cataloged but not yet a complete working IRC app |
 
 Notes:
 

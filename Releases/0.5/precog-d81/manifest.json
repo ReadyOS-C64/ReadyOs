@@ -144,12 +144,6 @@
     },
     {
       "drive": 8,
-      "prg": "rirc-rrnet",
-      "label": "readyirc rrnet",
-      "desc": "rr-net tcp irc client"
-    },
-    {
-      "drive": 8,
       "prg": "readme",
       "label": "read.me",
       "desc": "readyos, ultimate buddy, precog poc os"

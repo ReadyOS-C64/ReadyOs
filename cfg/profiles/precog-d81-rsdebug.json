@@ -43,7 +43,6 @@
         { "artifact": "obj/readybasic_modules/rbm.sample2.seq", "name": "rbm.sample2", "type": "seq" },
         { "artifact": "obj/readybasic_modules/rbm.sample3.seq", "name": "rbm.sample3", "type": "seq" },
         { "artifact": "ucitest.prg", "name": "ucitest", "type": "prg" },
-        { "artifact": "rirc-rrnet.prg", "name": "rirc-rrnet", "type": "prg" },
         { "artifact": "readme.prg", "name": "readme", "type": "prg" },
         { "artifact": "readyshell.prg", "name": "readyshell", "type": "prg" },
         { "artifact": "obj/rsparser.prg", "name": "rsparser", "type": "prg" },

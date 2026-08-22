@@ -188,7 +188,6 @@ KNOWN_APP_NAMES = {
     "dizzy",
     "readyirc",
     "ucitest",
-    "rirc-rrnet",
     "readme",
     "readyshell",
 }

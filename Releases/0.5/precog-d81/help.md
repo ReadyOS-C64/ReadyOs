@@ -34,7 +34,6 @@
 - Drive 8: `dizzy` - dizzy kanban
 - Drive 8: `readyirc` - readyirc
 - Drive 8: `ucitest` - uci tester
-- Drive 8: `rirc-rrnet` - readyirc rrnet
 - Drive 8: `readme` - read.me
 
 ## VICE Setup

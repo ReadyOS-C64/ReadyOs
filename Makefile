@@ -77,7 +77,6 @@ DIZZY = $(BIN_DIR)/dizzy.prg
 READMEAPP = $(BIN_DIR)/readme.prg
 READYSHELL = $(BIN_DIR)/readyshell.prg
 READYIRC = $(BIN_DIR)/readyirc.prg
-RIRC_RRNET = $(BIN_DIR)/rirc-rrnet.prg
 READYBASIC = $(BIN_DIR)/readybasic.prg
 READYBASIC_RBTEST1 = $(OBJ_DIR)/rbtest1.prg
 READYBASIC_RBPROC1 = $(OBJ_DIR)/rbproc1.prg
@@ -140,11 +139,6 @@ EASYFLASH_SMOKE_LOG = $(OBJ_DIR)/easyflash_smoke.log
 EASYFLASH_SMOKE_RUNTIME_CRT = $(OBJ_DIR)/easyflash_smoke.runtime.crt
 EASYFLASH_SMOKE_REU_IMAGE = $(OBJ_DIR)/easyflash_smoke.reu
 EASYFLASH_BOOT_MAP = $(OBJ_DIR)/boot_easyflash_roml.map
-IP65_DIR = $(THIRD_PARTY_DIR)/ip65
-IP65_TCP_OBJ_DIR = $(OBJ_DIR)/ip65/tcp
-IP65_DRIVER_OBJ_DIR = $(OBJ_DIR)/ip65/drivers
-IP65_TCP_LIB = $(OBJ_DIR)/ip65/ip65_tcp.lib
-IP65_C64_LIB = $(OBJ_DIR)/ip65/ip65_c64.lib
 XEFPROBE_DIR = $(APPS_DIR)/xefprobe
 XEFPROBE_HOST = $(BIN_DIR)/xefprobe_host.prg
 XEFPROBE_PAYLOAD = $(BIN_DIR)/xefprobe_payload.prg
@@ -413,12 +407,11 @@ LIB_DIZZY = $(TUI_BASE_INPUT_NAV) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STAT
 LIB_README = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_READYSHELL = $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_READYIRC = $(TUI_BASE_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(REU_OWNED_ALLOC_SRC) $(RESUME_STATE_SIMPLE_SRCS)
-LIB_RIRC_RRNET = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(REU_OWNED_ALLOC_SRC) $(RESUME_STATE_SIMPLE_SRCS) $(IP65_TCP_LIB) $(IP65_C64_LIB)
 LIB_UCITEST = $(TUI_UCITEST) $(TUI_HOTKEY_LITE_SRC)
-EASYFLASH_PAYLOADS = $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(RIRC_RRNET) $(READYBASIC) $(UCITEST) $(READMEAPP) $(READYSHELL_OVL1_PRG) $(READYSHELL_OVL2_PRG) $(READYSHELL_OVL3_PRG) $(READYSHELL_OVL4_PRG) $(READYSHELL_OVL5_PRG) $(READYSHELL_OVL6_PRG) $(READYSHELL_OVL7_PRG) $(READYSHELL_OVL8_PRG) $(READYSHELL_OVL9_PRG)
+EASYFLASH_PAYLOADS = $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(READYBASIC) $(UCITEST) $(READMEAPP) $(READYSHELL_OVL1_PRG) $(READYSHELL_OVL2_PRG) $(READYSHELL_OVL3_PRG) $(READYSHELL_OVL4_PRG) $(READYSHELL_OVL5_PRG) $(READYSHELL_OVL6_PRG) $(READYSHELL_OVL7_PRG) $(READYSHELL_OVL8_PRG) $(READYSHELL_OVL9_PRG)
 
 # Primary binaries shared across profiles
-PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(RIRC_RRNET) $(READYBASIC) $(READYBASIC_RBTEST1) $(READYBASIC_RBPROC1) $(READYBASIC_RBPROCERR) $(READYBASIC_GFX_DEMOS) $(READYBASIC_SOUND_DEMOS) $(READYBASIC_MODULES) $(UCITEST) $(READMEAPP) $(READYSHELL)
+PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(READYBASIC) $(READYBASIC_RBTEST1) $(READYBASIC_RBPROC1) $(READYBASIC_RBPROCERR) $(READYBASIC_GFX_DEMOS) $(READYBASIC_SOUND_DEMOS) $(READYBASIC_MODULES) $(UCITEST) $(READMEAPP) $(READYSHELL)
 
 $(BIN_DIR):
 	@mkdir -p "$@"
@@ -597,89 +590,9 @@ $(CAL26): $(APPS_DIR)/cal26/cal26.c $(LIB_CAL26)
 $(DIZZY): $(APPS_DIR)/dizzy/dizzy.c $(LIB_DIZZY)
 	$(CC) $(APP_CFLAGS) -m $(OBJ_DIR)/dizzy.map -o $@ $^
 
-IP65_TCP_OBJS = \
-	$(IP65_TCP_OBJ_DIR)/arithmetic.o \
-	$(IP65_TCP_OBJ_DIR)/arp.o \
-	$(IP65_TCP_OBJ_DIR)/config.o \
-	$(IP65_TCP_OBJ_DIR)/config_c.o \
-	$(IP65_TCP_OBJ_DIR)/copymem.o \
-	$(IP65_TCP_OBJ_DIR)/dhcp.o \
-	$(IP65_TCP_OBJ_DIR)/dhcp_c.o \
-	$(IP65_TCP_OBJ_DIR)/dns.o \
-	$(IP65_TCP_OBJ_DIR)/dns_c.o \
-	$(IP65_TCP_OBJ_DIR)/dottedquad.o \
-	$(IP65_TCP_OBJ_DIR)/dottedquad_c.o \
-	$(IP65_TCP_OBJ_DIR)/download.o \
-	$(IP65_TCP_OBJ_DIR)/download_c.o \
-	$(IP65_TCP_OBJ_DIR)/error.o \
-	$(IP65_TCP_OBJ_DIR)/eth.o \
-	$(IP65_TCP_OBJ_DIR)/eth_buffer.o \
-	$(IP65_TCP_OBJ_DIR)/eth_c.o \
-	$(IP65_TCP_OBJ_DIR)/http.o \
-	$(IP65_TCP_OBJ_DIR)/http_c.o \
-	$(IP65_TCP_OBJ_DIR)/httpd.o \
-	$(IP65_TCP_OBJ_DIR)/httpd_c.o \
-	$(IP65_TCP_OBJ_DIR)/icmp_c.o \
-	$(IP65_TCP_OBJ_DIR)/input_c.o \
-	$(IP65_TCP_OBJ_DIR)/ip65.o \
-	$(IP65_TCP_OBJ_DIR)/ip65_c.o \
-	$(IP65_TCP_OBJ_DIR)/tcp_c.o \
-	$(IP65_TCP_OBJ_DIR)/tftp.o \
-	$(IP65_TCP_OBJ_DIR)/tftp_c.o \
-	$(IP65_TCP_OBJ_DIR)/timer.o \
-	$(IP65_TCP_OBJ_DIR)/timer_c.o \
-	$(IP65_TCP_OBJ_DIR)/output_buffer.o \
-	$(IP65_TCP_OBJ_DIR)/parser.o \
-	$(IP65_TCP_OBJ_DIR)/sntp.o \
-	$(IP65_TCP_OBJ_DIR)/sntp_c.o \
-	$(IP65_TCP_OBJ_DIR)/string_utils.o \
-	$(IP65_TCP_OBJ_DIR)/udp.o \
-	$(IP65_TCP_OBJ_DIR)/udp_c.o \
-	$(IP65_TCP_OBJ_DIR)/url.o \
-	$(IP65_TCP_OBJ_DIR)/url_c.o \
-	$(IP65_TCP_OBJ_DIR)/ip_tcp.o \
-	$(IP65_TCP_OBJ_DIR)/icmp_tcp.o \
-	$(IP65_TCP_OBJ_DIR)/tcp.o
-
-IP65_C64_OBJS = \
-	$(IP65_DRIVER_OBJ_DIR)/rr-net.o \
-	$(IP65_DRIVER_OBJ_DIR)/eth64.o \
-	$(IP65_DRIVER_OBJ_DIR)/c64combo.o \
-	$(IP65_DRIVER_OBJ_DIR)/c64init.o \
-	$(IP65_DRIVER_OBJ_DIR)/clk_timer.o \
-	$(IP65_DRIVER_OBJ_DIR)/c64_cps.o \
-	$(IP65_DRIVER_OBJ_DIR)/c64_input.o
-
-$(IP65_TCP_OBJ_DIR) $(IP65_DRIVER_OBJ_DIR):
-	@mkdir -p "$@"
-
-$(IP65_TCP_OBJ_DIR)/%.o: $(IP65_DIR)/ip65/%.s | $(IP65_TCP_OBJ_DIR)
-	cd $(IP65_DIR)/ip65 && $(AS) -o ../../../$@ $(notdir $<)
-
-$(IP65_TCP_OBJ_DIR)/ip_tcp.o: $(IP65_DIR)/ip65/ip.s | $(IP65_TCP_OBJ_DIR)
-	cd $(IP65_DIR)/ip65 && $(AS) -DTCP -o ../../../$@ ip.s
-
-$(IP65_TCP_OBJ_DIR)/icmp_tcp.o: $(IP65_DIR)/ip65/icmp.s | $(IP65_TCP_OBJ_DIR)
-	cd $(IP65_DIR)/ip65 && $(AS) -DTCP -o ../../../$@ icmp.s
-
-$(IP65_DRIVER_OBJ_DIR)/%.o: $(IP65_DIR)/drivers/%.s | $(IP65_DRIVER_OBJ_DIR)
-	cd $(IP65_DIR)/drivers && $(AS) -o ../../../$@ $(notdir $<)
-
-$(IP65_TCP_LIB): $(IP65_TCP_OBJS)
-	rm -f $@
-	$(AR) a $@ $^
-
-$(IP65_C64_LIB): $(IP65_C64_OBJS)
-	rm -f $@
-	$(AR) a $@ $^
-
 # ReadyIRC app (loads at $1000)
 $(READYIRC): $(APPS_DIR)/readyirc/readyirc.c $(APPS_DIR)/readyirc/readyirc_uci.c $(APPS_DIR)/readyirc/readyirc_uci_asm.s $(APPS_DIR)/readyirc/readyirc_config.s $(APPS_DIR)/readyirc/readyirc_config.inc $(LIB_READYIRC)
 	$(CC) $(APP_CFLAGS) -Os -m $(OBJ_DIR)/readyirc.map -o $@ $(APPS_DIR)/readyirc/readyirc.c $(APPS_DIR)/readyirc/readyirc_uci.c $(APPS_DIR)/readyirc/readyirc_uci_asm.s $(APPS_DIR)/readyirc/readyirc_config.s $(LIB_READYIRC)
-
-# ReadyIRC RR-Net app (loads at $1000)
-$(RIRC_RRNET): $(APPS_DIR)/rirc-rrnet/rirc-rrnet.c $(APPS_DIR)/rirc-rrnet/rirc_rrnet.c $(APPS_DIR)/rirc-rrnet/rirc_rrnet.h $(APPS_DIR)/rirc-rrnet/rirc_rrnet_config.s $(APPS_DIR)/rirc-rrnet/rirc_rrnet_config.inc $(LIB_RIRC_RRNET)
-	$(CC) $(APP_CFLAGS) -I$(IP65_DIR)/inc -Os -m $(OBJ_DIR)/rirc-rrnet.map -o $@ $(APPS_DIR)/rirc-rrnet/rirc-rrnet.c $(APPS_DIR)/rirc-rrnet/rirc_rrnet.c $(APPS_DIR)/rirc-rrnet/rirc_rrnet_config.s $(LIB_RIRC_RRNET)
 
 # ReadyBASIC POC app (loads at $1000)
 $(READYBASIC): $(APPS_DIR)/readybasic/readybasic.s $(CFG_DIR)/ready_app_readybasic.cfg
