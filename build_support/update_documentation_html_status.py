@@ -16,8 +16,8 @@ START = "<!-- READYOS-DOC-STATUS:START -->"
 END = "<!-- READYOS-DOC-STATUS:END -->"
 
 CURRENT = {
-    "docs/DOCUMENTATION_INDEX.html": "Current documentation index, audited against the production-stamped 0.2.5 tree on 2026-08-21.",
-    "docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.html": "Current 0.2.5 schema-v5 shim/ReadyOS-bank architecture, including the resident-versus-REU authority split and live token lookup.",
+    "docs/DOCUMENTATION_INDEX.html": "Current documentation index, audited against the initial 0.5 development tree on 2026-08-21; its production baseline is 0.2.5.",
+    "docs/ReadyOS_SHIM_ARCHITECTURE_0.5.html": "Current 0.5 schema-v5 shim/ReadyOS-bank architecture, including the resident-versus-REU authority split and live token lookup.",
     "docs/ultimate_dos_dma_loading.html": "Current C64 Ultimate DOS DMA behavior. The launcher path is opt-in and disk fallback remains part of the contract.",
     "docs/uci_tester.html": "Current UCI Tester controls, protocol rules, catalog behavior, selectable examples, and physical-Ultimate workflows.",
     "docs/ReadyShellArchitecture.html": "Current ReadyShell architecture counterpart generated from ReadyShellArchitecture.md.",
@@ -32,12 +32,12 @@ CURRENT = {
 }
 
 HISTORICAL = {
-    "ReadyOSREUPhase1Completed.html": "Preserved completed-phase record. Its full commented shim appendix is byte-verified current; other values describe the phase at the time and are not a live 0.2.5 memory contract.",
-    "docs/ReadyOS SHIM Architecture Report (0.2).html": "Preserved 0.2.4 shim report with its full commented source appendix refreshed and byte-verified against the current shim. ReadyOS_SHIM_ARCHITECTURE_0.2.5.html is the current architecture contract.",
-    "docs/reports/ReadyOSREUPhase1Completed.html": "Preserved completed-phase record. Its full commented shim appendix is byte-verified current; other values describe the phase at the time and are not a live 0.2.5 memory contract.",
+    "ReadyOSREUPhase1Completed.html": "Preserved completed-phase record. Its full commented shim appendix is byte-verified current; other values describe the phase at the time and are not a live 0.5 memory contract.",
+    "docs/ReadyOS SHIM Architecture Report (0.2).html": "Preserved 0.2.4 shim report with its full commented source appendix refreshed and byte-verified against the current shim. ReadyOS_SHIM_ARCHITECTURE_0.5.html is the current architecture contract.",
+    "docs/reports/ReadyOSREUPhase1Completed.html": "Preserved completed-phase record. Its full commented shim appendix is byte-verified current; other values describe the phase at the time and are not a live 0.5 memory contract.",
     "docs/reports/function_key_audit.html": "Preserved function-key audit snapshot. Revalidate profile/app coverage before treating counts as current.",
-    "docs/reports/readyos_memory_size_comparison_0_1_5_vs_now.html": "Preserved 0.1.5-to-0.2.4 comparison. Sections saying “current” mean the 0.2.4 audit point, not the present 0.2.5 tree.",
-    "docs/reports/readyos_shim_architecture_report_v3.html": "Preserved 0.2.4 v3 report with its full commented source appendix refreshed and byte-verified current. Use ReadyOS_SHIM_ARCHITECTURE_0.2.5.html for current architecture.",
+    "docs/reports/readyos_memory_size_comparison_0_1_5_vs_now.html": "Preserved 0.1.5-to-0.2.4 comparison. Sections saying “current” mean the 0.2.4 audit point, not the present 0.5 tree.",
+    "docs/reports/readyos_shim_architecture_report_v3.html": "Preserved 0.2.4 v3 report with its full commented source appendix refreshed and byte-verified current. Use ReadyOS_SHIM_ARCHITECTURE_0.5.html for current architecture.",
     "docs/reports/simplefiles_once_bss_resume_headroom_0_1_8w.html": "Preserved 0.1.8W measurement report; it is evidence from that build, not current headroom.",
     "privatedocs/reports/easyflash_boot_flow.html": "Preserved older styled EasyFlash report. The current public Markdown/HTML boot-flow pair supersedes its fixed-slot and app-count measurements.",
     "privatedocs/reports/function_key_audit.html": "Preserved function-key audit snapshot. Revalidate profile/app coverage before treating counts as current.",
@@ -49,10 +49,10 @@ HISTORICAL = {
     "privatedocs/reports/readyos_c64os_interop_design.html": "Historical interop proposal. Fixed-slot and schema-4 control-bank descriptions are superseded by the schema-v5 combined ReadyOS bank.",
     "privatedocs/reports/readyos_c64os_interop_design_v2.html": "Versioned interop proposal retained for reference; it is not a current ReadyOS memory or compatibility contract.",
     "privatedocs/reports/readyos_memory_layout_print.html": "Historical memory-layout options report. Use the canonical private MEMORY_MAP.md for current spatial layout and sizes.",
-    "privatedocs/reports/readyos_memory_size_comparison_0_1_5_vs_now.html": "Preserved 0.1.5-to-0.2.4 comparison. “Current” values refer to that audit point, not the present 0.2.5 tree.",
-    "privatedocs/reports/readyos_shim_architecture_report.html": "Historical shim report retained for ABI evolution context; its fixed app-slot REU layout is superseded by the current public 0.2.5 shim report.",
-    "privatedocs/reports/readyos_shim_architecture_report_v2.html": "Historical shim v2 report retained for ABI evolution context; use docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.html for current behavior.",
-    "privatedocs/reports/readyos_shim_architecture_report_v3 copy.html": "Preserved intermediate v3 copy. It is intentionally not normalized into the current contract; use the current public 0.2.5 shim report.",
+    "privatedocs/reports/readyos_memory_size_comparison_0_1_5_vs_now.html": "Preserved 0.1.5-to-0.2.4 comparison. “Current” values refer to that audit point, not the present 0.5 tree.",
+    "privatedocs/reports/readyos_shim_architecture_report.html": "Historical shim report retained for ABI evolution context; its fixed app-slot REU layout is superseded by the current public 0.5 shim report.",
+    "privatedocs/reports/readyos_shim_architecture_report_v2.html": "Historical shim v2 report retained for ABI evolution context; use docs/ReadyOS_SHIM_ARCHITECTURE_0.5.html for current behavior.",
+    "privatedocs/reports/readyos_shim_architecture_report_v3 copy.html": "Preserved intermediate v3 copy. It is intentionally not normalized into the current contract; use the current public 0.5 shim report.",
     "privatedocs/reports/readyos_shim_architecture_report_v3.html": "Historical 0.2.4 report with its full commented source appendix refreshed and byte-verified current. Other fixed-slot and ReadyShell measurements are superseded.",
     "privatedocs/reports/readyshell_command_overlay_experiment_2026-04-10.html": "Dated experiment record retained unchanged apart from this status notice; it is not the current overlay contract.",
     "privatedocs/reports/readyshell_overlay_bss_resume_headroom_0_1_8a.html": "Preserved 0.1.8A overlay/headroom measurement report; current values are in the generated overlay inventory.",

@@ -1,7 +1,8 @@
 # ReadyOS Documentation Index
 
 This index separates current contracts from historical records. It was audited
-against the production-stamped `0.2.5` tree on 2026-08-21.
+against the initial `0.5` development tree on 2026-08-21. That tree is based
+on the audited, production-stamped `0.2.5` release state.
 
 An HTML counterpart is generated as `DOCUMENTATION_INDEX.html`. Every HTML file
 under `docs/` and `privatedocs/`, the root completed-phase HTML report, and the
@@ -19,7 +20,7 @@ deleted or rewritten into claims about a version they did not describe.
   Ultimate DOS DMA loading, fallback behavior, configuration, and verification.
 - [`uci_tester.md`](uci_tester.md): UCI Tester controls, protocol rules,
   selectable prefills, safety notes, and real-world DOS/network/HTTP workflows.
-- [`ReadyOS_SHIM_ARCHITECTURE_0.2.5.md`](ReadyOS_SHIM_ARCHITECTURE_0.2.5.md):
+- [`ReadyOS_SHIM_ARCHITECTURE_0.5.md`](ReadyOS_SHIM_ARCHITECTURE_0.5.md):
   current resident-shim and schema-v5 ReadyOS-bank architecture, including which
   state remains resident, which state lives in physical `Skip`, and which copy is
   authoritative for each operation.

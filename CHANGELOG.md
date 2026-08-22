@@ -1,6 +1,16 @@
 # Changelog
 
-## 0.2.5 (development)
+## 0.5 (development)
+
+### Release Preparation Baseline
+
+- Started the `0.5` development line from the audited, production-stamped
+  `0.2.5` tree. The branch begins without a runtime-contract change; further
+  release preparation and product changes will be recorded in this section.
+- Advanced the build version, compiled Read.Me content, documentation index,
+  current architecture report, and production artifact naming to `0.5`.
+
+## 0.2.5
 
 ### ReadyBASIC Graphics/Sound, C64 Ultimate DMA, Documentation
 

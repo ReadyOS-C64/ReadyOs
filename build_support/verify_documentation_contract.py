@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED: dict[str, tuple[str, ...]] = {
     "README.md": (
+        "`0.5` is the current development line",
+        "The `0.5` line starts from the audited, production-stamped `0.2.5` tree",
         "tuned and hardware-tested from `1MHz` through `64MHz` Ultimate turbo operation",
         "ReadyOS now ships the same runtime in `10` public media variants",
         "| `precog-dual-d71` | two `D71` images on drives `8` and `9` | broad `1571` profile",
@@ -32,6 +34,8 @@ REQUIRED: dict[str, tuple[str, ...]] = {
     ),
     "src/apps/readme/readme_lite.md": (
         "tuned and hardware-tested from 1MHz through 64MHz",
+        "Current development version: **0.5**",
+        "New in 0.5: the development line begins from the audited 0.2.5",
         "New in 0.2.5: ReadyBASIC graphics/sound, resilient asynchronous UCI",
         "`precog-dual-d71`: broad 16-app set",
         "`precog-d81`: broad 20-app set",
@@ -40,7 +44,7 @@ REQUIRED: dict[str, tuple[str, ...]] = {
         "### ReadyIRC",
         "### UCI Tester",
     ),
-    "Releases/0.2.5/README.md": (
+    "Releases/0.5/README.md": (
         "active app snapshot is `$1000-$C5FF` (`$B600` bytes)",
         "Physical REU bank `Skip` is the **ReadyOS bank**",
         "Physical `Skip+1` is the first dynamic bank",
@@ -49,14 +53,14 @@ REQUIRED: dict[str, tuple[str, ...]] = {
         "active app snapshot is `$1000-$C5FF` (`$B600` bytes)",
         "Physical REU bank `Skip` is the **ReadyOS bank**",
     ),
-    "docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.md": (
+    "docs/ReadyOS_SHIM_ARCHITECTURE_0.5.md": (
         "Physical `Skip` is the ReadyOS bank",
         "Physical `Skip+1` is the first dynamic app/resource bank",
         "full shim region is restored to 1 KB at `$C600-$C9FF`",
         "ReadyOS:$B740 + token",
         "token validity/loaded/resumable state | ReadyOS `$B840-$B93F`",
     ),
-    "docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.html": (
+    "docs/ReadyOS_SHIM_ARCHITECTURE_0.5.html": (
         "Physical <code>Skip</code> is the ReadyOS bank",
         "<code>$C600-$C9FF</code>",
         "<code>ReadyOS:$B740 + token</code>",
@@ -98,7 +102,7 @@ REQUIRED: dict[str, tuple[str, ...]] = {
         "ReadyOS snapshot window: `$1000-$C5FF` (`46592` bytes)",
         "Overlay execution window: `$8E00-$C5FF` (`14336` bytes)",
     ),
-    "Releases/0.2.5/precog-kung-fu-flash-2-d81/README.md": (
+    "Releases/0.5/precog-kung-fu-flash-2-d81/README.md": (
         "Fresh launcher state uses `1` bank by default",
         "That leaves `15` banks",
         "about `6/16` banks in use including the ReadyOS bank",
@@ -132,7 +136,7 @@ FORBIDDEN: dict[str, tuple[str, ...]] = {
         "clipboard metadata lives in ReadyOS `$BB40-$BBCF`",
         "agentworking/readyos-bank-refactor/headroom_comparison.md",
     ),
-    "Releases/0.2.5/precog-kung-fu-flash-2-d81/README.md": (
+    "Releases/0.5/precog-kung-fu-flash-2-d81/README.md": (
         "Fresh launcher state uses `2` banks by default",
         "That leaves `14` banks",
         "about `7/16` banks in use",

@@ -1,8 +1,9 @@
-# ReadyOS 0.2.5 Shim and ReadyOS-Bank Architecture
+# ReadyOS 0.5 Shim and ReadyOS-Bank Architecture
 
 This is the current implementation-backed explanation of the resident shim
 and the combined ReadyOS bank. It was audited
-against the `0.2.5` development tree on 2026-08-01.
+against the initial `0.5` development tree on 2026-08-21. The runtime contract
+is carried forward unchanged from the audited production `0.2.5` baseline.
 
 The most important correction to older descriptions is that **physical
 `Skip` is the ReadyOS bank and is the single source of truth**. It combines
@@ -229,7 +230,7 @@ filename; the DMA fallback reacquires the filename after republishing state.
 The shim never needs the launcher's normal app RAM structures to survive this
 sequence; that is the reason the small resident state remains resident.
 
-## Relationship to 0.2.5 Ultimate DOS DMA Loading
+## Relationship to Ultimate DOS DMA Loading
 
 The opt-in Ultimate DOS/UCI DMA path changes how a cold PRG payload reaches an
 already allocated REU snapshot bank. It does **not** enlarge or relocate the

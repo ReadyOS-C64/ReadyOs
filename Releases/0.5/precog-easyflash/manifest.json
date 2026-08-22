@@ -1,0 +1,301 @@
+{
+  "id": "precog-easyflash",
+  "display_name": "precog easyflash",
+  "kind": "easyflash",
+  "version_text": "0.5",
+  "catalog_source": "cfg/flavors/readyos_easyflash.ini",
+  "artifacts": {
+    "crt": "Releases/0.5/precog-easyflash/readyos_easyflash.crt",
+    "data_disk": "Releases/0.5/precog-easyflash/readyos_data.d64",
+    "raw_bin": "Releases/0.5/precog-easyflash/readyos_easyflash.bin",
+    "layout": "Releases/0.5/precog-easyflash/layout.json"
+  },
+  "apps": [
+    {
+      "bank": 1,
+      "prg": "editor",
+      "label": "editor",
+      "desc": "text editor with clipboard",
+      "default_slot": 1,
+      "resource_set": 0
+    },
+    {
+      "bank": 2,
+      "prg": "readyshell",
+      "label": "readyshell (beta)",
+      "desc": "command shell poc scaffold",
+      "default_slot": 2,
+      "resource_set": 1
+    },
+    {
+      "bank": 3,
+      "prg": "simplefiles",
+      "label": "simple files",
+      "desc": "dual pane file manager and seq viewer",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 4,
+      "prg": "clipmgr",
+      "label": "clipboard",
+      "desc": "manage clipboard items",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 5,
+      "prg": "readybasic",
+      "label": "ready basic (alpha)",
+      "desc": "scoped basic v2 bridge poc",
+      "default_slot": 3,
+      "resource_set": 2
+    },
+    {
+      "bank": 6,
+      "prg": "cal26",
+      "label": "calendar 26",
+      "desc": "calendar for 2026 with appointments",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 7,
+      "prg": "tasklist",
+      "label": "task list",
+      "desc": "outliner with notes and search",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 8,
+      "prg": "reuviewer",
+      "label": "reu viewer",
+      "desc": "view reu memory usage",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 9,
+      "prg": "sysinfo",
+      "label": "system info",
+      "desc": "system, reu, and ultimate status",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 10,
+      "prg": "quicknotes",
+      "label": "quicknotes",
+      "desc": "reu-backed note editor",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 11,
+      "prg": "calcplus",
+      "label": "calc plus",
+      "desc": "keyboard-first expression calculator",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 12,
+      "prg": "hexview",
+      "label": "hex viewer",
+      "desc": "browse memory in hex format",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 13,
+      "prg": "simplecells",
+      "label": "simple cells (alpha)",
+      "desc": "spreadsheet with formulas and colors",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 14,
+      "prg": "game2048",
+      "label": "2048 game",
+      "desc": "2048 tile puzzle",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 15,
+      "prg": "sidetris",
+      "label": "sidetris",
+      "desc": "sideways tetris",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 16,
+      "prg": "deminer",
+      "label": "deminer",
+      "desc": "minesweeper-style puzzle",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 17,
+      "prg": "dizzy",
+      "label": "dizzy kanban",
+      "desc": "fizzy inspired kanban app",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 18,
+      "prg": "readyirc",
+      "label": "readyirc",
+      "desc": "ultimate tcp irc client",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 19,
+      "prg": "ucitest",
+      "label": "uci tester",
+      "desc": "ultimate command interface lab",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 20,
+      "prg": "rirc-rrnet",
+      "label": "readyirc rrnet",
+      "desc": "rr-net tcp irc client",
+      "default_slot": 0,
+      "resource_set": 0
+    },
+    {
+      "bank": 21,
+      "prg": "readme",
+      "label": "read.me",
+      "desc": "readyos, ultimate buddy, precog poc os",
+      "default_slot": 0,
+      "resource_set": 0
+    }
+  ],
+  "launcher": {
+    "artifact": "bin/launcher_easyflash.prg",
+    "start_bank": 1,
+    "bank_span": 2,
+    "load_addr": 4096,
+    "payload_len": 26974,
+    "checksum16": 28930
+  },
+  "overlays": [
+    {
+      "name": "rsparser",
+      "artifact": "bin/rsparser.prg",
+      "start_bank": 45,
+      "bank_span": 1,
+      "load_addr": 36352,
+      "payload_len": 13005,
+      "checksum16": 24021,
+      "reu_bank": 54,
+      "reu_off": 0,
+      "valid_bit": 1
+    },
+    {
+      "name": "rsvm",
+      "artifact": "bin/rsvm.prg",
+      "start_bank": 46,
+      "bank_span": 1,
+      "load_addr": 36352,
+      "payload_len": 14028,
+      "checksum16": 19620,
+      "reu_bank": 54,
+      "reu_off": 14336,
+      "valid_bit": 2
+    },
+    {
+      "name": "rsdrvilst",
+      "artifact": "bin/rsdrvilst.prg",
+      "start_bank": 47,
+      "bank_span": 1,
+      "load_addr": 36352,
+      "payload_len": 11258,
+      "checksum16": 52473,
+      "reu_bank": 54,
+      "reu_off": 28672,
+      "valid_bit": 4
+    },
+    {
+      "name": "rsldv",
+      "artifact": "bin/rsldv.prg",
+      "start_bank": 48,
+      "bank_span": 1,
+      "load_addr": 36352,
+      "payload_len": 11894,
+      "checksum16": 62081,
+      "reu_bank": 55,
+      "reu_off": 0,
+      "valid_bit": 8
+    },
+    {
+      "name": "rsstv",
+      "artifact": "bin/rsstv.prg",
+      "start_bank": 49,
+      "bank_span": 1,
+      "load_addr": 36352,
+      "payload_len": 10249,
+      "checksum16": 23078,
+      "reu_bank": 54,
+      "reu_off": 43008,
+      "valid_bit": 16
+    },
+    {
+      "name": "rsfops",
+      "artifact": "bin/rsfops.prg",
+      "start_bank": 50,
+      "bank_span": 1,
+      "load_addr": 36352,
+      "payload_len": 14325,
+      "checksum16": 20202,
+      "reu_bank": 55,
+      "reu_off": 14336,
+      "valid_bit": 32
+    },
+    {
+      "name": "rscat",
+      "artifact": "bin/rscat.prg",
+      "start_bank": 51,
+      "bank_span": 1,
+      "load_addr": 36352,
+      "payload_len": 8081,
+      "checksum16": 28204,
+      "reu_bank": 55,
+      "reu_off": 28672,
+      "valid_bit": 64
+    },
+    {
+      "name": "rscopy",
+      "artifact": "bin/rscopy.prg",
+      "start_bank": 52,
+      "bank_span": 1,
+      "load_addr": 36352,
+      "payload_len": 6599,
+      "checksum16": 43284,
+      "reu_bank": 55,
+      "reu_off": 43008,
+      "valid_bit": 128
+    },
+    {
+      "name": "rsedit",
+      "artifact": "bin/rsedit.prg",
+      "start_bank": 53,
+      "bank_span": 1,
+      "load_addr": 36352,
+      "payload_len": 2002,
+      "checksum16": 13,
+      "reu_bank": 56,
+      "reu_off": 0,
+      "valid_bit": 256
+    }
+  ]
+}

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>ReadyOS_SHIM_ARCHITECTURE_0.2.5</title>
+  <title>ReadyOS_SHIM_ARCHITECTURE_0.5</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -238,13 +238,18 @@
 </head>
 <body>
 <!-- READYOS-DOC-STATUS:START -->
-<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current 0.2.5 schema-v5 shim/ReadyOS-bank architecture, including the resident-versus-REU authority split and live token lookup.</aside>
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current 0.5 schema-v5 shim/ReadyOS-bank architecture, including the resident-versus-REU authority split and live token lookup.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<h1 id="readyos-0.2.5-shim-and-readyos-bank-architecture">ReadyOS 0.2.5
-Shim and ReadyOS-Bank Architecture</h1>
+<header id="title-block-header">
+<h1 class="title">ReadyOS_SHIM_ARCHITECTURE_0.5</h1>
+</header>
+<h1 id="readyos-05-shim-and-readyos-bank-architecture">ReadyOS 0.5 Shim
+and ReadyOS-Bank Architecture</h1>
 <p>This is the current implementation-backed explanation of the resident
-shim and the combined ReadyOS bank. It was audited against the
-<code>0.2.5</code> development tree on 2026-08-01.</p>
+shim and the combined ReadyOS bank. It was audited against the initial
+<code>0.5</code> development tree on 2026-08-21. The runtime contract is
+carried forward unchanged from the audited production <code>0.2.5</code>
+baseline.</p>
 <p>The most important correction to older descriptions is that
 <strong>physical <code>Skip</code> is the ReadyOS bank and is the single
 source of truth</strong>. It combines the launcher snapshot and
@@ -261,7 +266,7 @@ Skip (ReadyOS bank)                       Skip+1 ... detected end
 <code>$C83B</code> stores the direct physical ReadyOS bank number
 (<code>Skip</code>).</p>
 <h2 id="what-changed">What Changed</h2>
-<p>The older shim calculated every app snapshot’s physical bank from a
+<p>The older shim calculated every app snapshot's physical bank from a
 fixed layout. A nonzero logical app bank <code>N</code> was tied to a
 reserved physical slot after the global, launcher, and launcher-overlay
 reservations. That made the resident shim depend on a fixed block of app
@@ -311,11 +316,6 @@ Simply Moved</h2>
 overwritten remain resident. All scalable state is authoritative in the
 ReadyOS bank.</p>
 <table>
-<colgroup>
-<col style="width: 33%" />
-<col style="width: 33%" />
-<col style="width: 33%" />
-</colgroup>
 <thead>
 <tr>
 <th>State</th>
@@ -472,11 +472,6 @@ preload code.</p>
 </table>
 <h3 id="resident-data-bytes">Resident data bytes</h3>
 <table>
-<colgroup>
-<col style="width: 40%" />
-<col style="width: 30%" />
-<col style="width: 30%" />
-</colgroup>
 <thead>
 <tr>
 <th style="text-align: right;">Address</th>
@@ -586,11 +581,6 @@ scalable logical token without carrying a large resident table.</p>
 <h2 id="readyos-bank-skip-schema-5">ReadyOS Bank (<code>Skip</code>,
 Schema 5)</h2>
 <table>
-<colgroup>
-<col style="width: 36%" />
-<col style="width: 36%" />
-<col style="width: 27%" />
-</colgroup>
 <thead>
 <tr>
 <th style="text-align: right;">Offset</th>
@@ -730,7 +720,7 @@ ReadyOS.</li>
 bank.</li>
 <li>The app is loaded into <code>$1000</code>, then stashed using its
 nonzero token.</li>
-<li>Shim reads that token’s physical bank from ReadyOS
+<li>Shim reads that token's physical bank from ReadyOS
 <code>$B740</code> and performs the transfer.</li>
 <li>Shim restores the launcher from the ReadyOS bank.</li>
 </ol>
@@ -744,11 +734,11 @@ current and target tokens.</li>
 <li>Returning to the launcher resolves token <code>0</code> directly to
 <code>$C83B</code>.</li>
 </ol>
-<p>The shim never needs the launcher’s normal app RAM structures to
+<p>The shim never needs the launcher's normal app RAM structures to
 survive this sequence; that is the reason the small resident state
 remains resident.</p>
-<h2 id="relationship-to-0.2.5-ultimate-dos-dma-loading">Relationship to
-0.2.5 Ultimate DOS DMA Loading</h2>
+<h2 id="relationship-to-ultimate-dos-dma-loading">Relationship to
+Ultimate DOS DMA Loading</h2>
 <p>The opt-in Ultimate DOS/UCI DMA path changes how a cold PRG payload
 reaches an already allocated REU snapshot bank. It does
 <strong>not</strong> enlarge or relocate the resident shim and does not
@@ -766,7 +756,7 @@ resident shim/ReadyOS-bank switching architecture.</p>
 <h2 id="source-of-truth">Source of Truth</h2>
 <ul>
 <li>resident byte image: <code>src/boot/readyos_shim.inc</code></li>
-<li>ReadyOS-bank schema and publisher (retaining the source module’s
+<li>ReadyOS-bank schema and publisher (retaining the source module's
 historical filename): <code>src/lib/reu_control_bank.h</code> and
 <code>src/lib/reu_control_bank.c</code></li>
 <li>normalized app registry publisher:

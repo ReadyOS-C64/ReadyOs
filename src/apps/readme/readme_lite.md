@@ -1,20 +1,23 @@
-## ReadyOS PRECOG 0.2.5
+## ReadyOS PRECOG 0.5
 
 The goal is **fast app switching** for Commodore 64 Ultimate use,
 tuned and hardware-tested from 1MHz through 64MHz while remaining
 C64-class practical.
 
 Current snapshot:
-- Base release: **0.2.5**
+- Current development version: **0.5**
+- Audited production baseline: **0.2.5**
 - Runtime target: clean behavior from stock-speed C64 use up through
   Ultimate turbo workflows
 - Media layout: profile-based release media under `Releases/<version>/<profile>/` with external `helpme.md`
   instructions for the selected build
-- Development artifacts use the plain **0.2.5** version stamp.
+- Development artifacts use the plain **0.5** version stamp.
   Local development builds may still include an internal trailing letter.
 - New since 0.1.5: **quicknotes**, **simple files**, **simple cells**,
   **sidetris**, **deminer**, **system info**, **ReadyBASIC**,
   **ReadyIRC**, **UCI Tester**, and **EasyFlash**
+- New in 0.5: the development line begins from the audited 0.2.5
+  production baseline; further release work will follow on this branch.
 - New in 0.2.5: ReadyBASIC graphics/sound, resilient asynchronous UCI,
   a fuller ReadyIRC client, and opt-in launcher DMA loading
 - Experimental C64U direct-to-REU disk loading exists as an opt-in
