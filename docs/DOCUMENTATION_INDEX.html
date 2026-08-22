@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>ReadyOS Documentation Index</title>
+  <title>DOCUMENTATION_INDEX</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -238,31 +238,12 @@
 </head>
 <body>
 <!-- READYOS-DOC-STATUS:START -->
-<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current documentation index, audited against the 0.2.5 development tree on 2026-08-10.</aside>
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current documentation index, audited against the production-stamped 0.2.5 tree on 2026-08-21.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<header id="title-block-header">
-<h1 class="title">ReadyOS Documentation Index</h1>
-</header>
-<nav id="TOC" role="doc-toc">
-<ul>
-<li><a href="#readyos-documentation-index"
-id="toc-readyos-documentation-index">ReadyOS Documentation Index</a>
-<ul>
-<li><a href="#start-here" id="toc-start-here">Start Here</a></li>
-<li><a href="#current-subsystem-documentation"
-id="toc-current-subsystem-documentation">Current Subsystem
-Documentation</a></li>
-<li><a href="#generated-reports" id="toc-generated-reports">Generated
-Reports</a></li>
-<li><a href="#historical-material-policy"
-id="toc-historical-material-policy">Historical Material Policy</a></li>
-</ul></li>
-</ul>
-</nav>
 <h1 id="readyos-documentation-index">ReadyOS Documentation Index</h1>
 <p>This index separates current contracts from historical records. It
-was audited against the <code>0.2.5</code> development tree on
-2026-08-10.</p>
+was audited against the production-stamped <code>0.2.5</code> tree on
+2026-08-21.</p>
 <p>An HTML counterpart is generated as
 <code>DOCUMENTATION_INDEX.html</code>. Every HTML file under
 <code>docs/</code> and <code>privatedocs/</code>, the root
@@ -347,7 +328,8 @@ counterparts and run:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/update_documentation_html_status.py</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/sync_shim_documentation.py</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_documentation_contract.py</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_shim_html_source.py</span></code></pre></div>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_documentation_links.py</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_shim_html_source.py</span></code></pre></div>
 <p>The documentation-contract verifier checks the current RAM/REU
 statements, the 1 MB SKU bank budget, retained-history supersession
 markers, and the HTML classification. Classification fails if any

@@ -1,10 +1,10 @@
-# ReadyShell Overlay Inventory Report (v0.2.5Y)
+# ReadyShell Overlay Inventory Report (v0.2.5)
 
-Artifact-backed report generated from the current local ReadyShell build, linker map, and D81 disk image.
+Artifact-backed report generated from the current local ReadyShell build, linker map, and D71 disk image.
 
 ## Executive Summary
 
-- Profile / disk source: `precog-d81` using `Releases/0.2.5/precog-d81/readyos-v0.2.5y-d81.d81` (disk label `readyosd81`, `227` blocks free).
+- Profile / disk source: `precog-dual-d71` using `Releases/0.2.5/precog-dual-d71/readyos-v0.2.5-dual-d71_1.d71` (disk label `readyos`, `24` blocks free).
 - Resident ReadyShell PRG: `readyshell.prg` on disk as `readyshell`, `28141` bytes and `111` D71 blocks.
 - Overlay execution window: `$8E00-$C5FF` for `14336` bytes, with PRG load-address bytes at `$8DFE-$8DFF`.
 - Resident BSS / heap below overlays: BSS `$7DEB-$7F94` (`426` bytes), heap `$7F96-$8DFD` (`3688` bytes).

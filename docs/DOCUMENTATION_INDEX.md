@@ -1,7 +1,7 @@
 # ReadyOS Documentation Index
 
 This index separates current contracts from historical records. It was audited
-against the `0.2.5` development tree on 2026-08-10.
+against the production-stamped `0.2.5` tree on 2026-08-21.
 
 An HTML counterpart is generated as `DOCUMENTATION_INDEX.html`. Every HTML file
 under `docs/` and `privatedocs/`, the root completed-phase HTML report, and the
@@ -67,6 +67,7 @@ counterparts and run:
 python3 build_support/update_documentation_html_status.py
 python3 build_support/sync_shim_documentation.py
 python3 build_support/verify_documentation_contract.py
+python3 build_support/verify_documentation_links.py
 python3 build_support/verify_shim_html_source.py
 ```
 

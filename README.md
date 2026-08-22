@@ -33,7 +33,7 @@ At a glance:
 - main product direction: new Commodore 64 Ultimate and Ultimate-family workflows
 - practical secondary path today: VICE with REU enabled
 - still intended to support other C64 setups with a decent-sized REU
-- tuned to stay usable from `1MHz` up through `48MHz`
+- tuned and hardware-tested from `1MHz` through `64MHz` Ultimate turbo operation
 - ships multiple release SKUs so the runtime can fit `D64`, `D71`, `D81`, and EasyFlash cartridge workflows
 - emphasizes "instant" app switching with apps suspended in the REU
 
@@ -100,26 +100,30 @@ Boot note:
 
 ## What's New In 0.2.5
 
-- Development version bump from the `0.2.4` development line.
-- New `precog-easyflash` cartridge SKU for VICE and Ultimate-family setups.
-  It boots from an EasyFlash `CRT`, keeps a companion `D64` on drive `8`, and
-  preloads the launcher, app snapshots, and ReadyShell overlays into the REU.
-- The cartridge path now has a supporting build and verification stack rather
-  than being a one-off artifact. The release flow generates the `CRT`, raw
-  EasyFlash image, layout metadata, companion disk, cartridge docs, and the
-  EasyFlash smoke verification path used by local release checks.
-- Cartridge boot visibility is better than it was in the `0.2` line. The
-  border colors now indicate loader setup, shim setup, cartridge-to-RAM copy,
-  RAM-to-REU transfer, final handoff, and the explicit REU-missing error path.
-- The EasyFlash loader now checks for REU early and returns to BASIC on a key
-  press if REU is missing instead of trying to continue in a broken state.
-- A small launcher progress-display bug was fixed in the normal load-all-to-REU
-  path so the on-screen X/Y preload counter stays correct while the standard
-  disk variants are filling app snapshots into the REU.
-- New `system info` app reports machine, ROM, video, REU, cartridge visibility,
-  Ultimate UCI status, and drive status for devices `8` through `11`; on the
-  C64 Ultimate it shows a variety of Ultimate machine details, including
-  networking information and IP addresses.
+- ReadyBASIC grew through five graphics phases and Sound Phase 1. Its built-in
+  modules now cover text/hires/multicolor modes, drawing primitives, REU-backed
+  surfaces, sprites and input, polygon buffers, retained display lists,
+  tiles/tilemaps, multicolor bitmap operations, and immediate SID voice/filter
+  commands. The tree includes 32 graphics demonstrations and 6 sound
+  demonstrations, with regular-disk and EasyFlash automation.
+- The regular launcher gained an opt-in C64 Ultimate DOS/UCI direct-to-REU
+  loader. It validates exact PRG sizes, handles packed ReadyShell resources,
+  reuses a suitable mounted image, reports `DMA:YES` / `DMA:ON` / `DMA:NO`, and
+  falls back to the portable KERNAL/disk path on any unavailable or failed DMA
+  operation. Production builds keep `LAUNCHER_DMA_LOAD=0` unless explicitly
+  overridden.
+- UCI callers in the launcher, ReadyIRC, UCITest, and SysInfo now share the
+  asynchronous state-machine discipline proven on physical Ultimate hardware:
+  quiet-idle synchronization, asynchronous PUSH/ABORT handling, complete data
+  and status draining, explicit DATA_ACC transitions, and bounded waits that do
+  not depend on CPU-speed timing delays.
+- ReadyIRC now provides a validated setup form, connect/disconnect and reconnect
+  flow, channel switching, `/join` and `/names`, NAMES/JOIN/PART handling,
+  editable input, help, and REU-backed scrollback. Fixture-backed C64 Ultimate
+  automation covers its UCI network path.
+- UCITest now has a larger structured/raw command catalog, decoded dword,
+  socket, HTTP, and IEC results, remembered handles, selectable examples, and a
+  dedicated user guide.
 - The launcher and cartridge loaders use the physical `Skip` ReadyOS bank as
   the source of truth for the launcher snapshot, explicit app-token mapping,
   loaded/resumable status, clipboard metadata, hotkeys, resource relationships,
@@ -136,6 +140,10 @@ Boot note:
   banks now publish compact ownership records in the ReadyOS bank, so REU
   Viewer can identify the owner and launcher unload can free those banks with
   the app.
+- The 0.2.4 EasyFlash, Kung Fu Flash 2, SysInfo, dynamic-resource, ReadyBASIC,
+  ReadyIRC, RR-Net, and UCITest foundations remain part of 0.2.5. Their build
+  products, boot diagnostics, REU-required behavior, and cartridge verification
+  are retained rather than being reintroduced as new 0.2.5 features.
 
 ## Release Variants
 
@@ -145,13 +153,13 @@ target drive types, disk capacities, and cartridge support are different.
 | Profile | Media | Why It Exists | Boot Flow | App Set |
 | --- | --- | --- | --- | --- |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | full cartridge cold-boot path for VICE and Ultimate-family setups that can keep a disk mounted | reset into cartridge boot | full current app catalog |
-| `precog-dual-d71` | two `D71` images on drives `8` and `9` | default full-content profile for `1571` setups and the main local verification target | `PREBOOT -> SETD71 -> BOOT` | current app catalog except `readme`, which is omitted to preserve D71 space |
-| `precog-d81` | one `D81` image on drive `8` | full-content single-disk profile for `1581`/`D81` setups | `PREBOOT -> BOOT` | full current app catalog |
-| `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | full-content Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | full current app catalog |
+| `precog-dual-d71` | two `D71` images on drives `8` and `9` | broad `1571` profile and the main local verification target | `PREBOOT -> SETD71 -> BOOT` | 16 apps; omits `sidetris`, `deminer`, `ucitest`, `rirc-rrnet`, and `readme` for D71 capacity |
+| `precog-d81` | one `D81` image on drive `8` | broad single-disk profile for `1581`/`D81` setups | `PREBOOT -> BOOT` | 20 apps; full EasyFlash catalog except `sidetris` |
+| `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | broad Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | same 20-app set as `precog-d81` |
 | `precog-dual-d64` | two `D64` images on drives `8` and `9` | reduced profile for `1541`-compatible capacity limits | `PREBOOT -> BOOT` | curated subset of the current app catalog |
 | `precog-solo-d64-a` | one `D64` image on drive `8` | standalone single-disk subset with editor, reference, and dizzy | `PREBOOT -> BOOT` | `editor`, `hexview`, `readme`, `dizzy` |
-| `precog-solo-d64-b` | one `D64` image on drive `8` | standalone single-disk productivity subset with quicknotes, calculator, clipboard, and files | `PREBOOT -> BOOT` | `quicknotes`, `calcplus`, `clipmgr`, `simplefiles` |
-| `precog-solo-d64-c` | one `D64` image on drive `8` | standalone single-disk planning subset with tasklist, calendar, and REU viewer | `PREBOOT -> BOOT` | `tasklist`, `cal26`, `reuviewer` |
+| `precog-solo-d64-b` | one `D64` image on drive `8` | standalone single-disk notes/files subset | `PREBOOT -> BOOT` | `simplefiles`, `clipmgr`, `quicknotes` |
+| `precog-solo-d64-c` | one `D64` image on drive `8` | standalone single-disk planning/system subset | `PREBOOT -> BOOT` | `cal26`, `tasklist`, `reuviewer`, `sysinfo` |
 | `precog-solo-d64-d` | one `D64` image on drive `8` | standalone single-disk experimental subset with simple cells, calculator, 2048, and deminer | `PREBOOT -> BOOT` | `simplecells`, `calcplus`, `game2048`, `deminer` |
 | `precog-solo-d64-e` | one `D64` image on drive `8` | standalone single-disk ReadyShell-focused subset for one-disk-only environments | `PREBOOT -> BOOT` | `readyshell` and its shell-focused subset |
 
@@ -176,10 +184,9 @@ normal test profiles. If the 1MB REU fills up, launching another app may simply
 do nothing instead of showing an error. Unload one or more apps to free REU
 banks, then launch the app again.
 
-The dual-D64 profile is intentionally smaller. Right now it keeps the core
-productivity path that fits on two `D64`s: `editor`, `quicknotes`,
-`calcplus`, `clipmgr`, `tasklist`, `simplefiles`, `game2048`, `sidetris`,
-`deminer`, and `cal26`.
+The dual-D64 profile is intentionally smaller. Right now it keeps the eight-app
+productivity path that fits on two `D64`s: `editor`, `readyshell`,
+`simplefiles`, `clipmgr`, `cal26`, `tasklist`, `quicknotes`, and `calcplus`.
 
 The solo-D64 variants exist for environments that can mount only one `D64`
 at a time, such as some web emulators and simplified media loaders. The split
@@ -288,29 +295,32 @@ Real C64 versus emulator key forms:
 - ReadyOS accepts both forms in apps that support runtime rebinding, so use
   whichever chord your emulator keymap produces.
 
-| Drive | Program | Display Name | Current Role |
-| --- | --- | --- | --- |
-| 9 | `editor` | editor | Text editor with selection abilities, clipboard, find, and disk save/open |
-| 8 | `quicknotes` | quicknotes | Split-pane REU-backed notes with save/open and search |
-| 9 | `calcplus` | calc plus | Expression calculator with history, modes, variables, and clipboard |
-| 9 | `hexview` | hex viewer | Memory browser with PETSCII and screen-code views |
-| 9 | `clipmgr` | clipboard | Multi-item clipboard manager with preview and file import/export |
-| 9 | `reuviewer` | reu viewer | Visual 256-bank REU map |
-| 9 | `sysinfo` | system info | Read-only machine, REU, Ultimate, cartridge, and drive status; on C64 Ultimate, also shows Ultimate machine details including networking information and IP addresses |
-| 9 | `tasklist` | task list | Hierarchical outliner with notes, search, and file persistence |
-| 9 | `simplefiles` | simple files | Dual-pane file manager with copy, rename, delete, and SEQ previewing |
-| 9 | `simplecells` | simple cells (alpha) | Single-sheet spreadsheet with formulas, formatting, and save/load |
-| 9 | `game2048` | 2048 game | 2048 puzzle game with resume/app switching |
-| 9 | `sidetris` | sidetris | Sideways block-drop game with suspend/resume |
-| 8 | `cal26` | calendar 26 | 2026 calendar with month, week, day, upcoming, and REL-backed appointments |
-| 8 | `dizzy` | dizzy kanban | Kanban board with REL-backed persistence, search, and reorder |
-| 9 | `readme` | read.me | In-system ReadyOS guide viewer |
-| 8 | `readyshell` | ready shell | A command line language for the c64, with many file commands, but also a robust object pipeline programing language shell with wildcard directory queries, and text/file commands including `cat`, `put`, `add`, `del`, `ren`, and `copy` |
-| 8 | `deminer` | deminer | Minesweeper-style puzzle with suspend/resume |
-| 9 | `readybasic` | ready basic (alpha) | BASIC V2 bridge with ReadyBASIC commands, native `PROC`/`FUNC`, REU-backed command modules, and suspend/resume |
-| 9 | `readyirc` | readyirc | Experimental Ultimate TCP IRC client; cataloged but not yet a complete working IRC app |
-| 9 | `ucitest` | uci tester | Ultimate command-interface lab with decoded responses, protocol guidance, and selectable examples ([guide](docs/uci_tester.md)) |
-| 9 | `rirc-rrnet` | readyirc rrnet | Experimental RR-Net TCP IRC client; cataloged but not yet a complete working IRC app |
+Drive placement is profile-specific; the selected `cfg/profiles/*.ini` and its
+generated `manifest.json` are authoritative.
+
+| Program | Display Name | Current Role |
+| --- | --- | --- |
+| `editor` | editor | Text editor with selection abilities, clipboard, find, and disk save/open |
+| `quicknotes` | quicknotes | Split-pane REU-backed notes with save/open and search |
+| `calcplus` | calc plus | Expression calculator with history, modes, variables, and clipboard |
+| `hexview` | hex viewer | Memory browser with PETSCII and screen-code views |
+| `clipmgr` | clipboard | Multi-item clipboard manager with preview and file import/export |
+| `reuviewer` | reu viewer | Visual 256-bank REU map |
+| `sysinfo` | system info | Read-only machine, REU, Ultimate, cartridge, and drive status; on C64 Ultimate, also shows Ultimate machine details including networking information and IP addresses |
+| `tasklist` | task list | Hierarchical outliner with notes, search, and file persistence |
+| `simplefiles` | simple files | Dual-pane file manager with copy, rename, delete, and SEQ previewing |
+| `simplecells` | simple cells (alpha) | Single-sheet spreadsheet with formulas, formatting, and save/load |
+| `game2048` | 2048 game | 2048 puzzle game with resume/app switching |
+| `sidetris` | sidetris | Sideways block-drop game with suspend/resume |
+| `cal26` | calendar 26 | 2026 calendar with month, week, day, upcoming, and REL-backed appointments |
+| `dizzy` | dizzy kanban | Kanban board with REL-backed persistence, search, and reorder |
+| `readme` | read.me | In-system ReadyOS guide viewer |
+| `readyshell` | ready shell | A C64 command language with file commands and an object-pipeline programming model, including wildcard directory queries and `cat`, `put`, `add`, `del`, `ren`, and `copy` |
+| `deminer` | deminer | Minesweeper-style puzzle with suspend/resume |
+| `readybasic` | ready basic (alpha) | BASIC V2 bridge with ReadyBASIC commands, native `PROC`/`FUNC`, REU-backed command modules, graphics/sound, and suspend/resume |
+| `readyirc` | readyirc | Ultimate TCP IRC client with setup, reconnect, channels, common IRC event parsing, help, editing, and REU-backed scrollback |
+| `ucitest` | uci tester | Ultimate command-interface lab with decoded responses, protocol guidance, and selectable examples ([guide](docs/uci_tester.md)) |
+| `rirc-rrnet` | readyirc rrnet | Experimental RR-Net TCP IRC client; cataloged but not yet a complete working IRC app |
 
 Notes:
 
@@ -448,6 +458,9 @@ Main entry points:
   print the known release profile ids
 - `bash ./run.sh --build-all`
   build every release profile and exit
+- `bash ./run.sh --build-all --for-release`
+  rebuild every disk and EasyFlash SKU with the plain production version and
+  no rolling letter suffix in artifact filenames
 - `bash ./run.sh --profile precog-d81 --build-only`
   build and package only the selected profile, then exit without starting VICE;
   this is useful for hardware-test artifacts and custom `--config` builds

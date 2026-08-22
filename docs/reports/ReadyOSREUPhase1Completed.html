@@ -1,18 +1,35 @@
-<!-- READYOS-CURRENT-CONTRACT-2026-08-02 -->
-<aside style="margin:1rem auto;padding:1rem;border:2px solid #d69e2e;background:#fffaf0;color:#3d2b00;max-width:72rem">
-  <strong>Current ReadyOS contract (2026-08-02):</strong>
-  Physical <code>Skip</code> is the ReadyOS bank and <code>Skip+1</code> is the first dynamic bank.
-  The launcher snapshot is ReadyOS <code>$0000-$B5FF</code>; schema v5 is <code>$B600-$FFFF</code>,
-  with token map <code>$B740</code> and status <code>$B840</code>. C64 app RAM is
-  <code>$1000-$C5FF</code> (<code>$B600</code>), and the resident 1 KB shim owns
-  <code>$C600-$C9FF</code> with its public ABI at <code>$C800</code>.
-  Dated layouts and measurements below are retained as historical evidence.
-</aside>
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="historical" style="margin:16px;padding:12px 14px;border:2px solid #9a6700;background:#fff4d6;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>PRESERVED SNAPSHOT / DESIGN</strong><br>Preserved completed-phase record. Its full commented shim appendix is byte-verified current; other values describe the phase at the time and are not a live 0.2.5 memory contract.</aside>
 <!-- READYOS-DOC-STATUS:END -->
 <h1 id="readyos-reu-enhancement-refactor---phase-1-completed">ReadyOS
 REU Enhancement Refactor - Phase 1 Completed</h1>
+<!-- READYOS-CURRENT-CONTRACT-2026-08-02 -->
+<blockquote>
+<p><strong>Current ReadyOS contract (2026-08-02):</strong> Physical
+<code>Skip</code> is the ReadyOS bank and <code>Skip+1</code> is the
+first dynamic bank. The launcher snapshot occupies ReadyOS
+<code>$0000-$B5FF</code>; schema v5 occupies <code>$B600-$FFFF</code>,
+including the token map at <code>$B740</code> and status at
+<code>$B840</code>. C64 app RAM is <code>$1000-$C5FF</code>
+(<code>$B600</code>), and the resident 1 KB shim owns
+<code>$C600-$C9FF</code> with its public ABI at <code>$C800</code>.
+Dated layouts and measurements below are retained as historical
+evidence.</p>
+</blockquote>
+<blockquote>
+<p><strong>Superseded intermediate checkpoint (2026-08-01):</strong>
+this remains the Phase 1 evidence record, but its logical-bank-0 control
+bank and <code>$C600-$C7FF</code> RAM mirror were first replaced by an
+intermediate schema-v5 design using physical <code>Skip+1</code>, a
+<code>$0000-$B7FF</code> launcher snapshot, metadata from
+<code>$B800</code>, and <code>$C600-$C7FF</code> app-private RAM. That
+intermediate placement was itself replaced by the current
+physical-<code>Skip</code> / <code>$B600</code> / 1 KB-shim contract
+summarized immediately above. See
+<code>docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.md</code> and
+<code>privatedocs/top_level_md/MEMORY_MAP.md</code> for the active
+contract.</p>
+</blockquote>
 <h2 id="phase-1-completion-note">Phase 1 Completion Note</h2>
 <p>This document is the completed Phase 1 implementation record for the
 REU control-bank and dynamic-resource refactor. Phase 1 is complete as
@@ -576,7 +593,14 @@ not in new resident tables.</li>
 </ul>
 <p>Measured app-window impact against
 <code>agentworking/reu_owned_alloc_headroom_before.json</code>:</p>
-<table>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 22%" />
+<col style="width: 22%" />
+<col style="width: 22%" />
+<col style="width: 16%" />
+</colgroup>
 <thead>
 <tr>
 <th>App</th>
@@ -669,7 +693,7 @@ were free, and REU Viewer displayed the former bank as
 </ul>
 <h2 id="reu-bank-0-lookup-checkpoint-2026-06-06">REU Bank-0 Lookup
 Checkpoint 2026-06-06</h2>
-<p>This checkpoint removes the remaining false "reserved app slot" pool
+<p>This checkpoint removes the remaining false “reserved app slot” pool
 from the runtime REU map and moves shim-facing app-token resolution into
 logical REU bank <code>0</code>.</p>
 <p>Implemented:</p>
@@ -795,8 +819,8 @@ snapshot in
 </table>
 <p>Interpretation: the launcher pays 112 bytes for the lookup-page
 writer/mirror path. Apps that link the split REU allocation helper
-recover 183-425 bytes because the old "free low app slot but preserve
-reserved placeholder" code path was removed. ReadyBASIC and ReadyShell
+recover 183-425 bytes because the old “free low app slot but preserve
+reserved placeholder” code path was removed. ReadyBASIC and ReadyShell
 app-window headroom did not materially move in this checkpoint.</p>
 <p>Verification completed:</p>
 <ul>
@@ -808,7 +832,7 @@ app-window headroom did not materially move in this checkpoint.</p>
 <h2
 id="readyshell-state-bank-diagnosticcat-checkpoint-2026-06-06">ReadyShell
 State-Bank Diagnostic/CAT Checkpoint 2026-06-06</h2>
-<p>This checkpoint retires ReadyShell's last fixed <code>$43</code> REU
+<p>This checkpoint retires ReadyShell’s last fixed <code>$43</code> REU
 dependency without adding a new bank, new shim ABI, or a launcher-side
 special case for CAT.</p>
 <p>Implemented:</p>
@@ -816,7 +840,7 @@ special case for CAT.</p>
 <li><code>REU_RS_DEBUG</code> and <code>REU_BANK_RS_DEBUG</code> were
 removed from the REU manager contract, allocator fixed-bank filters,
 bank-0 control-bank seed records, and memory-map verifier inputs;</li>
-<li>ReadyShell's one-byte REU availability probe now uses the
+<li>ReadyShell’s one-byte REU availability probe now uses the
 loader-assigned ReadyShell state bank, at relative offset
 <code>+$7FFF</code>, instead of fixed bank <code>$43</code>;</li>
 <li>the overlay debug/verification ring moved into the tail of the same
@@ -1097,10 +1121,9 @@ one-byte lookup fetch from <code>$2F00 + token</code>.</p>
 <h3 id="full-commented-resident-shim-source">Full Commented Resident
 Shim Source</h3>
 <p>The canonical resident shim image is still
-<code>src/boot/readyos_shim.inc</code>. The complete commented copy below
-is byte-verified during the documentation audit and includes the current
-control-bank lookup while keeping the final image at
-<code>512</code> bytes.</p>
+<code>src/boot/readyos_shim.inc</code>. The copy below is included
+because this branch changed the resident shim mapping contract while
+keeping the final image at <code>512</code> bytes.</p>
 <div class="sourceCode" id="cb4"><pre
 class="sourceCode asm">;-----------------------------------------------------------------------------
 ; Shared ReadyOS shim image ($C600-$C9FF, 1024 bytes)
@@ -1388,7 +1411,7 @@ jt_fetch_bank   = $C815     ; Helper: fetch from bank in A
 </pre></div>
 <h3 id="implemented-logical-bank-0-layout">Implemented Logical Bank 0
 Layout</h3>
-<p>The implemented v4 layout deliberately separates "hot, cheap to copy"
+<p>The implemented v4 layout deliberately separates “hot, cheap to copy”
 state from richer loader-owned relationship metadata.</p>
 <pre class="text"><code>$0000-$003F  RCB0 header
              magic/version, generation, writer id, skip, section offsets,
@@ -1530,8 +1553,8 @@ app/resource PRGs.</li>
 hotkey/default-slot behavior.</li>
 <li><code>resource_token</code> is optional. Current accepted resource
 tokens are <code>rsovl</code> and <code>rbcore</code>.</li>
-<li>A <code>+</code> suffix means "the next non-empty line is a
-dependency/source line for this app." Without <code>+</code>, no
+<li>A <code>+</code> suffix means “the next non-empty line is a
+dependency/source line for this app.” Without <code>+</code>, no
 dependency line is consumed.</li>
 <li>The dependency line is copied into REU bank <code>0</code> at
 <code>$0E00 + app_id*128</code>.</li>
@@ -1556,7 +1579,7 @@ launcher for that app instance;</li>
 64K bank;</li>
 <li>current valid overlay slot offsets are <code>$0000</code>,
 <code>$3800</code>, <code>$7000</code>, and <code>$A800</code>;</li>
-<li>the loaded PRG's C64 load address must still be the ReadyShell
+<li>the loaded PRG’s C64 load address must still be the ReadyShell
 overlay load address; the REU offset is where the overlay image is
 cached.</li>
 </ul>
@@ -2015,7 +2038,7 @@ record after load/unload.</li>
 <h2 id="principal-engineering-corrections">Principal Engineering
 Corrections</h2>
 <p>The broad goal is sound, but the implementation must be narrower than
-a full "dynamic OS registry" rewrite. The safest path is to make logical
+a full “dynamic OS registry” rewrite. The safest path is to make logical
 REU bank <code>0</code> useful as an auditable control record first,
 then promote pieces of it to runtime authority only after the old path
 and the new path can be compared.</p>
@@ -2110,7 +2133,7 @@ using existing direct-bank shim primitives only when a fetch/stash/run
 transfer is required.</p>
 <h3 id="shim-adjacent-1kb-clarification">Shim-Adjacent 1KB
 Clarification</h3>
-<p>For this plan, "shim-adjacent 1KB" means the full resident ReadyOS
+<p>For this plan, “shim-adjacent 1KB” means the full resident ReadyOS
 control area:</p>
 <ul>
 <li><code>$C600-$C7FF</code>: current REU allocation table and system
@@ -2158,9 +2181,9 @@ explicit and small.</p>
 Pre-Refactor Baseline Summary</h2>
 <p>This section preserves the baseline understanding from the start of
 the refactor. It is historical context, not the current v4 contract. The
-implemented v4 contract is described in "Implementation Status
-2026-06-04", "Physical REU Size Authority Checkpoint 2026-06-06", and
-"Current v4 Architecture Detail" above.</p>
+implemented v4 contract is described in “Implementation Status
+2026-06-04”, “Physical REU Size Authority Checkpoint 2026-06-06”, and
+“Current v4 Architecture Detail” above.</p>
 <p>Pre-refactor effective REU model:</p>
 <ul>
 <li>physical bank base is controlled by
@@ -2182,7 +2205,7 @@ current app-slot assumptions;</li>
 <code>$48</code>;</li>
 <li>ReadyBASIC uses fixed banks <code>$44</code> and
 <code>$45</code>;</li>
-<li>some comments and docs still carry older "launcher bank 0"
+<li>some comments and docs still carry older “launcher bank 0”
 wording.</li>
 </ul>
 <p>Long term, this plan changes bank <code>0</code> from a mostly
@@ -2307,8 +2330,8 @@ resolve app ids.</p>
 not an immediate loaded/suspended app target. Runtime REU can hold many
 snapshots, but the C64 resident UI and launcher state should not grow
 just because the catalog can describe more apps. The first target is
-"more than fixed slots can be described and loaded on demand," not "64
-apps are all preloaded and hot at once."</p>
+“more than fixed slots can be described and loaded on demand,” not “64
+apps are all preloaded and hot at once.”</p>
 <h2 id="dynamic-loading-and-preloading">Dynamic Loading And
 Preloading</h2>
 <h3 id="app-load-policies">App Load Policies</h3>
@@ -2542,15 +2565,15 @@ app-local buffers.</p>
 <ul>
 <li>copy visible menu page app entries;</li>
 <li>copy app id to snapshot bank table for current page;</li>
-<li>copy one app's resource descriptors before preloading;</li>
+<li>copy one app’s resource descriptors before preloading;</li>
 <li>copy invocation block before dispatch;</li>
 <li>copy ownership records for one app during unload.</li>
 </ul>
 <p>This accepts a small performance tax for keeping the shim fixed.</p>
 <p>The copy code must be bounded and explicit. Avoid generic
 copy-by-record-name interpreters on the C64. Prefer helper functions
-such as "copy one app record", "copy bank table page", or "copy resource
-records for app id".</p>
+such as “copy one app record”, “copy bank table page”, or “copy resource
+records for app id”.</p>
 <h3 id="consistency-and-recovery">Consistency And Recovery</h3>
 <p>Duplicated state creates a new failure class: <code>$C600</code>,
 shim fields, and bank <code>0</code> can disagree. The design must make
@@ -2612,7 +2635,7 @@ overlay snapshot;</li>
 <li>the ReadyShell state/scratch/value-arena bank is no longer fixed at
 <code>$48</code>. The launcher owns it as the fourth ReadyShell resource
 bank, records it in the bank <code>0</code> resource metadata as
-<code>REUCB_DEP_KIND_RS_STATE</code>, seeds ReadyShell's
+<code>REUCB_DEP_KIND_RS_STATE</code>, seeds ReadyShell’s
 <code>$CFF2</code> state-bank cache before entry, and frees it as part
 of launcher unload.</li>
 </ul>
@@ -2643,6 +2666,16 @@ state bank, and returns all four resource banks to
 <p>Measured cost of making the ReadyShell state/scratch/value arena
 dynamic:</p>
 <table>
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+</colgroup>
 <thead>
 <tr>
 <th>App</th>
@@ -2705,6 +2738,16 @@ BSS, DATA, or RODATA was added.</p>
 <p>Measured size impact of the launcher REU-backed cold catalog
 refactor:</p>
 <table>
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+</colgroup>
 <thead>
 <tr>
 <th>App</th>
@@ -2754,7 +2797,7 @@ assigned bank globals.</li>
 <code>$40/$41/$42</code>.</li>
 <li>Update host and VICE coverage so disk and EasyFlash paths both prove
 the assigned overlay-bank metadata.</li>
-<li>Move ReadyShell's scratch/registry/pause/value arena off fixed
+<li>Move ReadyShell’s scratch/registry/pause/value arena off fixed
 <code>$48</code> and into the fourth loader-owned ReadyShell resource
 bank, with launcher-owned unload/free semantics.</li>
 </ol>
@@ -2776,7 +2819,7 @@ manifest:
 <code>logs/vice_auto_20260605_164427/manifest.json</code>.</li>
 <li>EasyFlash large-vars had one cold-boot preload stall on first
 attempt (<code>logs/vice_auto_20260605_162211/manifest.json</code>),
-then the suite's cold-start retry passed the same plan completely:
+then the suite’s cold-start retry passed the same plan completely:
 <code>logs/vice_auto_20260605_163046/manifest.json</code>.</li>
 </ul>
 <p>Guardrails:</p>
@@ -2878,7 +2921,7 @@ ranges;</li>
 </ul>
 <p>The shim can stay unchanged because the launcher writes direct
 physical bank values before invoking shim operations.</p>
-<h2 id="file-dialog--os-service-app-plan">File Dialog / OS Service App
+<h2 id="file-dialog-os-service-app-plan">File Dialog / OS Service App
 Plan</h2>
 <p>The first modal UI service should probably be a shared file open/save
 service.</p>
@@ -3125,7 +3168,7 @@ banks;</li>
 <li>ReadyOS boots normally;</li>
 <li>reuviewer/debug output can show ownership records.</li>
 </ul>
-<h3 id="phase-25-resolver-indirection-with-fixed-banks">Phase 2.5:
+<h3 id="phase-2.5-resolver-indirection-with-fixed-banks">Phase 2.5:
 Resolver Indirection With Fixed Banks</h3>
 <p>Goals:</p>
 <ul>
@@ -3268,7 +3311,7 @@ their bank consumption;</li>
 placement;</li>
 <li>cartridge and disk paths populate equivalent dependency/registry
 records;</li>
-<li>ReadyShell's existing cartridge-preloaded overlays can be described
+<li>ReadyShell’s existing cartridge-preloaded overlays can be described
 by the new records;</li>
 <li>no fixed-bank behavior regresses.</li>
 </ul>
@@ -3571,7 +3614,7 @@ regeneration;</li>
 </ul>
 <p>Stale wording to remove or clarify:</p>
 <ul>
-<li>"launcher bank 0" where launcher now maps to
+<li>“launcher bank 0” where launcher now maps to
 <code>skip + 1</code>;</li>
 <li>fixed app slots <code>2-25</code> as the only app model;</li>
 <li>fixed ReadyShell banks as permanent architecture rather than initial
@@ -3715,7 +3758,7 @@ superseded the fixed <code>$43/$48</code> resource shape: ReadyShell
 overlay cache and state/scratch banks are now loader-assigned, the
 former fixed debug bank <code>$43</code> is removed, CAT stages in the
 front of the dynamically assigned ReadyShell state/scratch bank, and
-diagnostics/probe bytes live in that same bank's tail.</p>
+diagnostics/probe bytes live in that same bank’s tail.</p>
 <p>Verification passed after implementation:</p>
 <ul>
 <li><code>make bin/launcher.prg bin/launcher_easyflash.prg bin/reuviewer.prg</code>;</li>

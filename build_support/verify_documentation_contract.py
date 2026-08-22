@@ -19,10 +19,26 @@ ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED: dict[str, tuple[str, ...]] = {
     "README.md": (
+        "tuned and hardware-tested from `1MHz` through `64MHz` Ultimate turbo operation",
+        "ReadyOS now ships the same runtime in `10` public media variants",
+        "| `precog-dual-d71` | two `D71` images on drives `8` and `9` | broad `1571` profile",
+        "| `precog-dual-d64` | two `D64` images on drives `8` and `9` | reduced profile",
+        "`editor`, `readyshell`,\n`simplefiles`, `clipmgr`, `cal26`, `tasklist`, `quicknotes`, and `calcplus`",
+        "`bash ./run.sh --build-all --for-release`",
         "app runtime window: `$1000-$C5FF` (`$B600` bytes)",
         "resident shim: `$C600-$C9FF` (1 KB)",
         "physical `Skip`: the ReadyOS bank",
         "physical `Skip+1` and above: dynamic allocation pool",
+    ),
+    "src/apps/readme/readme_lite.md": (
+        "tuned and hardware-tested from 1MHz through 64MHz",
+        "New in 0.2.5: ReadyBASIC graphics/sound, resilient asynchronous UCI",
+        "`precog-dual-d71`: broad 16-app set",
+        "`precog-d81`: broad 20-app set",
+        "`precog-dual-d64`: reduced 8-app set",
+        "### ReadyBASIC",
+        "### ReadyIRC",
+        "### UCI Tester",
     ),
     "Releases/0.2.5/README.md": (
         "active app snapshot is `$1000-$C5FF` (`$B600` bytes)",
@@ -92,6 +108,22 @@ REQUIRED: dict[str, tuple[str, ...]] = {
 }
 
 FORBIDDEN: dict[str, tuple[str, ...]] = {
+    "README.md": (
+        "New `precog-easyflash` cartridge SKU",
+        "New `system info` app",
+        "`quicknotes`, `calcplus`, `clipmgr`, `simplefiles`",
+        "`tasklist`, `cal26`, `reuviewer`",
+        "`game2048`, `sidetris`,\n`deminer`, and `cal26`",
+        "Experimental Ultimate TCP IRC client; cataloged but not yet a complete working IRC app",
+    ),
+    "src/apps/readme/readme_lite.md": (
+        "both 1MHz and 48MHz",
+        "full app set on two `1571` disks",
+        "full app set on one `1581` disk",
+    ),
+    "ReadyOSREUPhase1Completed.md": (
+        "The current design uses one combined ReadyOS bank at\n> physical `Skip+1`",
+    ),
     "docs/ultimate_dos_dma_loading.md": ("`$B800` REU\nstash/fetch operations",),
     "docs/ultimate_dos_dma_loading.html": ("<code>$B800</code> REU stash/fetch",),
     "docs/reports/easyflash_boot_flow.md": ("full `47,104` byte app window",),

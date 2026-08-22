@@ -8,12 +8,13 @@
 > and the resident 1 KB shim owns `$C600-$C9FF` with its public ABI at `$C800`.
 > Dated layouts and measurements below are retained as historical evidence.
 
-> Superseded architecture note (2026-08-01): this remains the Phase 1 evidence
-> record, but its logical-bank-0 control bank and `$C600-$C7FF` RAM mirror were
-> replaced by schema v5. The current design uses one combined ReadyOS bank at
-> physical `Skip+1`, keeps its launcher snapshot at `$0000-$B7FF`, stores all
-> mapping/status/registry data from `$B800` onward, and treats `$C600-$C7FF` as
-> app-private snapshot RAM. See `docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.md` and
+> **Superseded intermediate checkpoint (2026-08-01):** this remains the Phase 1
+> evidence record, but its logical-bank-0 control bank and `$C600-$C7FF` RAM
+> mirror were first replaced by an intermediate schema-v5 design using physical
+> `Skip+1`, a `$0000-$B7FF` launcher snapshot, metadata from `$B800`, and
+> `$C600-$C7FF` app-private RAM. That intermediate placement was itself replaced
+> by the current physical-`Skip` / `$B600` / 1 KB-shim contract summarized
+> immediately above. See `docs/ReadyOS_SHIM_ARCHITECTURE_0.2.5.md` and
 > `privatedocs/top_level_md/MEMORY_MAP.md` for the active contract.
 
 ## Phase 1 Completion Note

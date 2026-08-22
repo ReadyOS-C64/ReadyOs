@@ -1190,6 +1190,7 @@ verify: profile
 	python3 $(BUILD_SUPPORT_DIR)/verify_reu_control_bank.py
 	python3 $(BUILD_SUPPORT_DIR)/verify_dynamic_launcher.py
 	python3 $(BUILD_SUPPORT_DIR)/verify_documentation_contract.py
+	python3 $(BUILD_SUPPORT_DIR)/verify_documentation_links.py
 	python3 $(BUILD_SUPPORT_DIR)/verify_shim_html_source.py
 
 # Full rebuild + deep verification

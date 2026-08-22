@@ -5,8 +5,8 @@ This document describes the **current ReadyShell app in ReadyOS**, with examples
 It is intentionally implementation-accurate for this build, not a forward-looking spec.
 
 For a broader recipe-style walkthrough, see [ReadyShelltutorial.md](./ReadyShelltutorial.md).
-For the implementation architecture, see [../../docs/ReadyShellArchitecture.md](../../docs/ReadyShellArchitecture.md).
-For the generated overlay/runtime inventory, see [../../docs/readyshell_overlay_inventory.md](../../docs/readyshell_overlay_inventory.md).
+For the implementation architecture, see [../../../docs/ReadyShellArchitecture.md](../../../docs/ReadyShellArchitecture.md).
+For the generated overlay/runtime inventory, see [../../../docs/readyshell_overlay_inventory.md](../../../docs/readyshell_overlay_inventory.md).
 
 ## Host-Side Checks
 
@@ -760,7 +760,7 @@ Notes:
 - A trailing drive argument is also accepted: `STV $DIR, "prgdir", 9`
 - Filenames without an embedded device prefix still save to device `8`
 - The serialized file format used by `STV` and `LDV` is documented in
-  [../../docs/readyshell_rsv1_format.md](../../docs/readyshell_rsv1_format.md)
+  [../../../docs/readyshell_rsv1_format.md](../../../docs/readyshell_rsv1_format.md)
 
 ### 8.11 `CAT`
 

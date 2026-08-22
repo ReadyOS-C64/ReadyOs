@@ -1,7 +1,7 @@
 ## ReadyOS PRECOG 0.2.5
 
 The goal is **fast app switching** for Commodore 64 Ultimate use,
-tuned to stay usable at both 1MHz and 48MHz while remaining
+tuned and hardware-tested from 1MHz through 64MHz while remaining
 C64-class practical.
 
 Current snapshot:
@@ -13,7 +13,10 @@ Current snapshot:
 - Development artifacts use the plain **0.2.5** version stamp.
   Local development builds may still include an internal trailing letter.
 - New since 0.1.5: **quicknotes**, **simple files**, **simple cells**,
-  **sidetris**, **deminer**, **system info**, and **EasyFlash**
+  **sidetris**, **deminer**, **system info**, **ReadyBASIC**,
+  **ReadyIRC**, **UCI Tester**, and **EasyFlash**
+- New in 0.2.5: ReadyBASIC graphics/sound, resilient asynchronous UCI,
+  a fuller ReadyIRC client, and opt-in launcher DMA loading
 - Experimental C64U direct-to-REU disk loading exists as an opt-in
   build; normal release builds retain the portable disk loader.
 
@@ -41,7 +44,7 @@ REU-first workflow with instant app switching, suspend/resume,
 shared clipboard + history, and deep links between apps.
 
 Designed for Commodore 64 Ultimate workflows first, ReadyOS is
-tuned to behave cleanly at both 1MHz and 48MHz operation, with the
+tuned to behave cleanly from 1MHz through 64MHz operation, with the
 same keyboard-first flow preserved across speed settings.
 
 It is also built for backward compatibility with classic C64 + REU
@@ -159,14 +162,19 @@ Recent additions:
 - Deminer for a fast puzzle/game app that still respects ReadyOS
   suspend/resume flow.
 - System Info for checking machine, REU, Ultimate, and drive status.
+- ReadyBASIC for BASIC V2 plus modular graphics, REU, and sound commands.
+- ReadyIRC for Ultimate TCP IRC with channels, help, editing, reconnect,
+  and REU-backed scrollback.
+- UCI Tester for raw and decoded Ultimate command workflows.
 
 Disk layout:
 - The exact disk image names depend on the selected build profile.
 - Drive assignments are documented in the external profile `helpme.md`.
 - The main release variants are:
-  - `precog-dual-d71`: full app set on two `1571` disks
-  - `precog-d81`: full app set on one `1581` disk
-  - `precog-dual-d64`: reduced app set on two `1541` disks
+  - `precog-dual-d71`: broad 16-app set on two `1571` disks
+  - `precog-d81`: broad 20-app set on one `1581` disk
+  - `precog-kung-fu-flash-2-d81`: same 20-app set for 1MB-REU KFF2
+  - `precog-dual-d64`: reduced 8-app set on two `1541` disks
   - `precog-easyflash`: EasyFlash `CRT` plus companion `D64` on drive `8`
 
 ### Cartridge Variant
@@ -306,6 +314,23 @@ Live map view for REU usage and allocation categories.
 
 Read-only hardware status for the current machine, REU, cartridge
 visibility, Ultimate UCI details, and drives `8` through `11`.
+
+### ReadyBASIC
+
+BASIC V2 bridge with native control-flow helpers, disk-loadable command
+modules, REU buffers and surfaces, graphics, sprites, input, polygons,
+display lists, tilemaps, multicolor drawing, and immediate SID sound.
+
+### ReadyIRC
+
+Ultimate TCP IRC client with validated setup, connect/reconnect, channel
+switching, common IRC event handling, help, editable input, and REU-backed
+scrollback.
+
+### UCI Tester
+
+Interactive Ultimate Command Interface lab with raw and structured calls,
+decoded results, selectable examples, and protocol-safe queue handling.
 
 ### Task List
 

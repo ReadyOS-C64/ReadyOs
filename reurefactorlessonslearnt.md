@@ -28,13 +28,14 @@
   basename is required so Make cannot regenerate it from the retained C
   reference adapter as an intermediate.
 
-## 2026-08-01 Schema-v5 completion
+## 2026-08-01 Intermediate schema-v5 checkpoint
 
-- Physical `Skip+1` is now the combined ReadyOS bank and single metadata
+- At this checkpoint, physical `Skip+1` was the combined ReadyOS bank and single metadata
   authority; it contains the launcher snapshot plus schema-v5 state.
 - The earlier `$C600-$C7FF` RAM mirror and separate control bank were useful
-  migration steps, but are superseded. Physical `Skip` is reclaimed as the
-  first dynamic bank and tokens use explicit mapping/status tables.
+  migration steps. At this checkpoint physical `Skip` became the first dynamic
+  bank and tokens used explicit mapping/status tables. The current contract in
+  the banner above subsequently moved the ReadyOS bank to physical `Skip`.
 - Focused micromodules prevented broad app BSS growth; the complete 24-map
   comparison is in `agentworking/readyos-bank-refactor/headroom_comparison.md`.
 - The shim stayed exactly 512 bytes, but changing one instruction length proved
