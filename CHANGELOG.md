@@ -15,6 +15,8 @@
 - Shelved the obsolete RR-Net/IP65 ReadyIRC implementation as reference source.
   The current build and every SKU now ship only the more complete C64 Ultimate
   ReadyIRC app.
+- ReadyIRC is now documented and packaged as a regular release app without a
+  maturity qualifier in its name, description, UI, or documentation.
 
 ## 0.2.5
 
@@ -107,10 +109,11 @@
 - Added `system info`, a read-only machine/status app that reports system,
   ROM/video, REU, cartridge visibility, Ultimate UCI status, network details
   where available, and drive status for devices `8` through `11`.
-- Added experimental networking apps and diagnostics surfaces: `readyirc`
+- Added networking apps and diagnostics surfaces: `readyirc`
   (Ultimate TCP path), `rirc-rrnet` (RR-Net/IP65 path), and `ucitest`
-  (Ultimate command-interface lab). The IRC apps are cataloged experiments and
-  are not yet complete working IRC clients.
+  (Ultimate command-interface lab). ReadyIRC subsequently matured into the
+  regular Ultimate TCP IRC release app; the older RR-Net implementation is now
+  retained only as shelved reference source.
 - Added or refreshed full VICE automation around ReadyBASIC, ReadyShell,
   cartridge/EasyFlash launcher flows, dynamic REU bank `0` registry validation,
   app/resource unload behavior, and cross-app suspend/resume after the REU
