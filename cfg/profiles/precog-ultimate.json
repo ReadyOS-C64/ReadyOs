@@ -16,6 +16,18 @@
           "name": "setup",
           "type": "prg",
           "directory_group": "program"
+        },
+        {
+          "artifact": "uzip.prg",
+          "name": "uzip",
+          "type": "prg",
+          "directory_group": "program"
+        },
+        {
+          "artifact": "uzpack.prg",
+          "name": "uzpack",
+          "type": "prg",
+          "directory_group": "overlay"
         }
       ]
     }

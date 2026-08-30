@@ -36,9 +36,10 @@ def main() -> int:
     if "dma_loading=1" not in config or "c64u_image_path=\n" not in config:
         fail("Ultimate apps.cfg source must enable DMA and begin unconfigured")
     additions = profile["disk_overrides"][0]["append_contents"]
-    if additions != [{"artifact": "setup.prg", "name": "setup", "type": "prg",
-                     "directory_group": "program"}]:
-        fail("Ultimate profile must add only standalone SETUP as an ordinary PRG")
+    expected_setup = {"artifact": "setup.prg", "name": "setup", "type": "prg",
+                      "directory_group": "program"}
+    if not additions or additions[0] != expected_setup:
+        fail("Ultimate profile must add standalone SETUP first as an ordinary PRG")
     if "TUI_SETUP = $(TUI_BASE_MENU_MISC)" not in makefile:
         fail("SETUP must link the ReadyOS TUI micromodule set")
     setup_rule = makefile.split("$(SETUP):", 1)[1].split("\n\n", 1)[0]
