@@ -21,6 +21,7 @@
 #define REU_RS_SCRATCH 13
 #define REU_RB_CORE    14
 #define REU_RB_CODE    15
+#define REU_UZIP_PACKAGE 16
 
 #define REU_TOTAL_BANKS  256
 
