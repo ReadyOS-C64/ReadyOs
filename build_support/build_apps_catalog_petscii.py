@@ -23,6 +23,9 @@ Rules:
 - Alphabetic source text must be lowercase.
 - `[system]` is emitted first, followed by `[launcher]`, then `[apps]`.
 - App catalog entries preserve the existing alternating entry/description format.
+- `rsovl+` dependencies use `name@logical-bank:hex-offset`; placements are
+  arbitrary within each of the three logical resource banks and payload sizes
+  come from the PRGs rather than a fixed slot size.
 - Build-time overrides can replace `load_all_to_reu` and `runappfirst`.
 """
 
@@ -86,13 +89,7 @@ def normalize_hotkey_slot(raw: str, path: str, line_no: int) -> str:
 RESOURCE_NONE = ""
 RESOURCE_READYSHELL_OVL = "rsovl"
 RESOURCE_READYBASIC_CORE = "rbcore"
-RESOURCE_UZIP_PACKAGE = "uzpk"
-VALID_RESOURCES = {
-    RESOURCE_NONE,
-    RESOURCE_READYSHELL_OVL,
-    RESOURCE_READYBASIC_CORE,
-    RESOURCE_UZIP_PACKAGE,
-}
+VALID_RESOURCES = {RESOURCE_NONE, RESOURCE_READYSHELL_OVL, RESOURCE_READYBASIC_CORE}
 RESOURCE_DEP_SUFFIX = "+"
 
 
@@ -109,6 +106,7 @@ def normalize_resource_token(raw: str, path: str, line_no: int) -> str:
 
 def validate_dependency_list(raw: str, path: str, line_no: int) -> None:
     saw_item = False
+    placements = set()
     for part in raw.split(","):
         item = part.strip()
         if not item:
@@ -125,8 +123,12 @@ def validate_dependency_list(raw: str, path: str, line_no: int) -> None:
                 off = int(off_raw, 16)
             except ValueError:
                 fail(path, line_no, f"dependency offset must be hex: {off_raw!r}")
-            if off < 0 or off > 0xC800 or off % 0x3800:
-                fail(path, line_no, f"dependency offset invalid for overlay slot: {off_raw!r}")
+            if off < 0 or off > 0xFFFF:
+                fail(path, line_no, f"dependency offset outside REU bank: {off_raw!r}")
+            placement = (bank_raw, off)
+            if placement in placements:
+                fail(path, line_no, f"duplicate dependency placement: {item!r}")
+            placements.add(placement)
         elif ":" in item:
             drive_raw, name_raw = [p.strip() for p in item.split(":", 1)]
             if not drive_raw.isdigit():

@@ -1123,10 +1123,9 @@ $(UZPACK): $(UZIP) $(BUILD_SUPPORT_DIR)/build_uzpack.py
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/build_uzpack.py --raw $(BIN_DIR)/uzpack.raw \
 		--map $(OBJ_DIR)/uzip.map $(UZPACK_PLAN_ARGS) $(UZPACK_UI_ARGS) --output $@
 else
-# A self-seeded diagnostic ignores the launcher's external package bank.  The
-# Ultimate profile still names uzpack as an app resource, so give the launcher
-# a one-byte payload with the required $0000 PRG load address instead of also
-# placing the 21K production package on an already-full diagnostic D81.
+# A self-seeded diagnostic does not need the external operation overlay. Keep
+# the disk entry minimal instead of placing the production package on an
+# already-full diagnostic D81.
 .PHONY: uzpack-diagnostic-stub
 uzpack-diagnostic-stub:
 

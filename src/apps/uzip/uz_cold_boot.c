@@ -12,8 +12,8 @@
 #define UZCB_HEADER ((unsigned char *)0x0800u)
 #define UZCB_RECORD ((unsigned char *)0x0840u)
 #define UZCB_UI_HEADER ((unsigned char *)0x0860u)
-#define UZCB_INPUT ((unsigned char *)0x0400u)
-#define UZCB_OUTPUT ((unsigned char *)0x0600u)
+#define UZCB_INPUT ((unsigned char *)0x0900u)
+#define UZCB_OUTPUT ((unsigned char *)0x0B00u)
 
 #define UZCB_INPUT_CAP 512u
 #define UZCB_OUTPUT_CAP 508u
@@ -57,7 +57,7 @@ static unsigned char find_package_bank(void) {
                       REU_READYOS_GLOBAL_PHYSICAL(), offset,
                       REUCB_RSRC_REC_SIZE);
         if (UZCB_RECORD[0] == app_id &&
-            UZCB_RECORD[2] == REUCB_DEP_KIND_UZIP_PACKAGE &&
+            UZCB_RECORD[2] == REUCB_DEP_KIND_RS_OVL &&
             UZCB_RECORD[3] != 0u && UZCB_RECORD[10] == 1u)
             return UZCB_RECORD[3];
     }

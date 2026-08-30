@@ -545,7 +545,7 @@ void xuzextract_diag_run(unsigned char package_bank) {
         package_bank == catalog_bank || work_bank == catalog_bank ||
         /* Launcher-owned resources deliberately retain their specific type;
          * only temporary work/catalog banks use generic app allocation. */
-        bank_type(package_bank) != REU_UZIP_PACKAGE ||
+        bank_type(package_bank) != REU_RS_CACHE ||
         bank_type(work_bank) != REU_APP_ALLOC ||
         bank_type(catalog_bank) != REU_APP_ALLOC) {
         failure = 0x21u;

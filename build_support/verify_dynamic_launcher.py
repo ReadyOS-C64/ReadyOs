@@ -21,6 +21,34 @@ def check(name: str, condition: bool) -> None:
     print(f"OK: {name}")
 
 
+def rsovl_profile_layout_fits(profile: Path) -> bool:
+    saw_layout = False
+    for raw in profile.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if "@" not in line:
+            continue
+        ranges: dict[int, list[tuple[int, int, str]]] = {}
+        saw_layout = True
+        for item in line.split(","):
+            name, placement = item.strip().split("@", 1)
+            bank_raw, offset_raw = placement.split(":", 1)
+            bank = int(bank_raw, 10)
+            offset = int(offset_raw, 16)
+            artifact = ROOT / "bin" / f"{name}.prg"
+            if not artifact.exists() or artifact.stat().st_size < 2:
+                return False
+            end = offset + artifact.stat().st_size - 2
+            if end > 0x10000:
+                return False
+            ranges.setdefault(bank, []).append((offset, end, name))
+        for bank_ranges in ranges.values():
+            bank_ranges.sort()
+            for previous, current in zip(bank_ranges, bank_ranges[1:]):
+                if current[0] < previous[1]:
+                    return False
+    return saw_layout
+
+
 def main() -> int:
     launcher = (ROOT / "src/apps/launcher/launcher.c").read_text(
         encoding="utf-8", errors="replace"
@@ -121,6 +149,11 @@ def main() -> int:
           "launcher_parse_rs_dep_entry" in launcher and
           "readyshell_overlay_names" not in launcher and
           "readyshell_overlay_offsets" not in launcher)
+    check("generic rsovl uses configured offsets and real PRG lengths",
+          "reu_off == 0u ? 0xFFFFu" in launcher and
+          "launcher_uci_dma_loaded_size" in launcher and
+          "launcher_control_write_resource_record" in launcher and
+          "loaded_len" in launcher)
     check("ReadyShell runtime reads overlay bank/offset metadata",
           "RS_REU_OVL_CACHE_META_VERSION  4u" in rs_state and
           "g_overlay_cache_offsets" in rs_overlay and
@@ -142,7 +175,12 @@ def main() -> int:
           ))
     check("host dependency parser validates placement syntax",
           "dependency resource bank must be 0..2" in catalog and
-          "dependency offset invalid for overlay slot" in catalog)
+          "dependency offset outside REU bank" in catalog and
+          "duplicate dependency placement" in catalog and
+          "off % 0x3800" not in catalog)
+    check("built rsovl PRGs fit their configured bank/offset ranges",
+          rsovl_profile_layout_fits(
+              ROOT / "cfg/profiles/precog-ultimate.ini"))
     check("host apps.cfg generator allows 64 apps",
           "len(apps) > 64" in catalog)
     check("global hotkeys allow dynamic logical banks",
@@ -192,6 +230,55 @@ def main() -> int:
             stdout=subprocess.DEVNULL,
         )
         check("host apps.cfg generator accepts 64 apps", out.exists())
+
+        flex = Path(td) / "apps-flex.ini"
+        flex_out = Path(td) / "apps-flex.cfg.seq"
+        flex.write_text(
+            "\n".join(lines[:8] + [
+                "8:flex:flex::rsovl+",
+                "variable overlay",
+                "large@2:1234",
+            ]) + "\n",
+            encoding="utf-8",
+        )
+        subprocess.run(
+            [
+                "python3",
+                str(ROOT / "build_support/build_apps_catalog_petscii.py"),
+                "--input",
+                str(flex),
+                "--output",
+                str(flex_out),
+            ],
+            check=True,
+            cwd=ROOT,
+            stdout=subprocess.DEVNULL,
+        )
+        check("rsovl accepts a non-14K-aligned bank offset", flex_out.exists())
+
+        duplicate = Path(td) / "apps-duplicate.ini"
+        duplicate.write_text(
+            "\n".join(lines[:8] + [
+                "8:flex:flex::rsovl+",
+                "invalid overlap",
+                "one@0:2345,two@0:2345",
+            ]) + "\n",
+            encoding="utf-8",
+        )
+        result = subprocess.run(
+            [
+                "python3",
+                str(ROOT / "build_support/build_apps_catalog_petscii.py"),
+                "--input",
+                str(duplicate),
+                "--output",
+                str(flex_out),
+            ],
+            cwd=ROOT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        check("rsovl rejects duplicate bank offsets", result.returncode != 0)
 
     print("dynamic launcher checks passed.")
     return 0

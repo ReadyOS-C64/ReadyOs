@@ -338,12 +338,17 @@ load_size_ok:
         lda data_len
         cmp #$02
         BCC_FAR load_header_fail
+        lda _launcher_uci_dma_expected_load_addr
+        and _launcher_uci_dma_expected_load_addr+1
+        cmp #$FF
+        beq load_header_ok
         lda data_buf
         cmp _launcher_uci_dma_expected_load_addr
         BNE_FAR load_header_fail
         lda data_buf+1
         cmp _launcher_uci_dma_expected_load_addr+1
         BNE_FAR load_header_fail
+load_header_ok:
 
         jsr dos_seek_payload
         BCC_FAR load_seek_fail

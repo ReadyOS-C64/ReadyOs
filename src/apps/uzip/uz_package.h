@@ -1,9 +1,10 @@
 #ifndef UZ_PACKAGE_H
 #define UZ_PACKAGE_H
 
-/* uZPK v7 is one launcher-preloaded REU payload. The header is followed by
- * six canonical, consecutive phase images; no phase alignment is required in
- * REU because every image is DMA-expanded into its fixed C64 run window. */
+/* uZPK v7 is one launcher-preloaded generic rsovl payload. The header is
+ * followed by six canonical, consecutive phase images; no phase alignment is
+ * required in REU because every image is DMA-expanded into its fixed C64 run
+ * window. */
 #define UZ_PACKAGE_VERSION       7u
 #define UZ_PACKAGE_PHASE_COUNT   6u
 #define UZ_PACKAGE_HEADER_SIZE   64u

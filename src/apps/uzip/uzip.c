@@ -290,21 +290,21 @@ static void set_result_status(const char *text, unsigned char error,
 }
 
 #ifndef UZIP_SELF_SEED_PACKAGE
-static unsigned char open_preloaded_package(void) {
+static unsigned char open_preloaded_overlay(void) {
     package_bank = find_current_resource_bank(
-        REUCB_DEP_KIND_UZIP_PACKAGE, UZIP_PACKAGE_SLOT);
+        REUCB_DEP_KIND_RS_OVL, UZIP_PACKAGE_SLOT);
     if (package_bank == UZIP_BANK_NONE) {
-        set_status("UZPACK PRELOAD RESOURCE MISSING");
+        set_status("ZIP OVERLAY PRELOAD MISSING");
         return 0u;
     }
     if (!validate_package()) {
         package_bank = UZIP_BANK_NONE;
-        set_status("UZPACK PRELOAD INVALID");
+        set_status("ZIP OVERLAY PRELOAD INVALID");
         return 0u;
     }
     if (!uz_create_package_open(package_bank)) {
         package_bank = UZIP_BANK_NONE;
-        set_status("UZPACK CREATE EXTENSION INVALID");
+        set_status("ZIP CREATE OVERLAY INVALID");
         return 0u;
     }
     return 1u;
@@ -1052,7 +1052,7 @@ int uzip_ui_warm_main(void) {
     /* Resident package descriptors are normal BSS and are cleared when the
      * cc65 entry at $1000 runs again. Reopen them, but preserve the visible
      * operation result and home selection from snapshotted UI_BSS. */
-    (void)open_preloaded_package();
+    (void)open_preloaded_overlay();
     run_home();
     return 0;
 }
@@ -1088,7 +1088,7 @@ int main(void) {
         set_status("ZIP CORE PACKED - PROBES PENDING");
     }
 #else
-    if (open_preloaded_package()) {
+    if (open_preloaded_overlay()) {
         set_status("ZIP CORE READY");
     }
 #endif

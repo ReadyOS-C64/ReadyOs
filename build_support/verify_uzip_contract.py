@@ -472,7 +472,7 @@ def main() -> int:
             package_ok = False
     package_is_selfseed_stub = self_seed_diagnostic and package == b"\x00\x00\x00"
     if package_is_selfseed_stub:
-        passed("self-seeded diagnostic uses a one-byte launcher resource placeholder")
+        passed("self-seeded diagnostic uses a one-byte rsovl placeholder")
     elif package_ok:
         passed(
             f"external uzpack.prg keeps the exact frozen uZPK v7 prefix "
@@ -865,7 +865,7 @@ def main() -> int:
         "unsigned char uzip_ui_resume_marker[4];",
         "static unsigned char home_selected;",
         "int uzip_ui_warm_main(void)",
-        "(void)open_preloaded_package();",
+        "(void)open_preloaded_overlay();",
         "run_home();",
         "uzip_ui_resume_marker[0] = 0x55u",
         "uzip_ui_resume_marker[3] = 0x31u",
@@ -1103,10 +1103,46 @@ def main() -> int:
         ok = False
 
     ultimate_ini = ULTIMATE_INI.read_text(encoding="utf-8", errors="replace")
-    if "8:uzip:ultimate zip::uzpk\ncreate and extract ultimate dos zips" in ultimate_ini:
-        passed("Ultimate launcher catalog labels uzip as Ultimate zip with uzpk preload")
+    if ("8:uzip:ultimate zip::rsovl+\n"
+            "create and extract ultimate dos zips\n"
+            "uzpack@0:0000" in ultimate_ini):
+        passed("Ultimate launcher catalog gives uZIP one generic rsovl dependency")
     else:
         fail("Ultimate launcher catalog entry is missing or changed")
+        ok = False
+    launcher_source = (ROOT / "src" / "apps" / "launcher" / "launcher.c").read_text(
+        encoding="utf-8", errors="replace"
+    )
+    launcher_dma_source = (
+        ROOT / "src" / "apps" / "launcher" / "launcher_uci_dma.s"
+    ).read_text(encoding="utf-8", errors="replace")
+    reu_headers = (
+        (ROOT / "src" / "lib" / "reu_control_bank.h").read_text(
+            encoding="utf-8", errors="replace"
+        ) +
+        (ROOT / "src" / "lib" / "reu_mgr.h").read_text(
+            encoding="utf-8", errors="replace"
+        )
+    )
+    generic_rsovl_needles = (
+        "static unsigned int launcher_stream_prg_to_reu",
+        "return launcher_uci_dma_loaded_size;",
+        "REUCB_DEP_KIND_RS_OVL",
+        "loaded_len",
+        "cmp #$FF\n        beq load_header_ok",
+    )
+    obsolete_uzip_tokens = (
+        "APP_RESOURCE_UZIP_PACKAGE",
+        "REUCB_DEP_KIND_UZIP_PACKAGE",
+        "REU_UZIP_PACKAGE",
+    )
+    if (all(needle in launcher_source + launcher_dma_source
+            for needle in generic_rsovl_needles) and
+            not any(token in launcher_source + reu_headers
+                    for token in obsolete_uzip_tokens)):
+        passed("uZIP uses variable-length generic rsovl records without a private REU ABI")
+    else:
+        fail("uZIP-specific launcher/REU ABI returned or generic rsovl sizing regressed")
         ok = False
     if "8:ucitest:" not in ultimate_ini:
         passed("Ultimate release reserves D81 capacity by excluding the UCI lab app")
