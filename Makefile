@@ -38,6 +38,127 @@ CFLAGS = -t c64 -I$(LIB_DIR)
 
 # Flags for apps (load at $1000 using custom config)
 APP_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app.cfg
+UZIP_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_uzip_cold.cfg -Os \
+	-DUZIP_READYOS_APP -DUZIP_CREATE_COORD -DUZIP_COLD_UI \
+	--asm-define UZIP_READYOS_APP --asm-define UZIP_CREATE_COORD \
+	--asm-define UZIP_COLD_UI
+UZIP_UI_CFLAGS = -t c64 -I$(LIB_DIR) -Os --code-name UI_CODE --rodata-name UI_RODATA --bss-name UI_BSS
+UZIP_DIAGNOSTIC ?= 0
+UZIP_DEFLATE_DIAGNOSTIC ?= 0
+UZIP_ZIP8_DIAGNOSTIC ?= 0
+UZIP_ZIPMULTI_DIAGNOSTIC ?= 0
+UZIP_ZIPREAD_DIAGNOSTIC ?= 0
+UZIP_EXTRACT_DIAGNOSTIC ?= 0
+UZIP_CREATEPLAN_DIAGNOSTIC ?= 0
+UZIP_DIAGNOSTIC_SELECTION = $(UZIP_DIAGNOSTIC) $(UZIP_DEFLATE_DIAGNOSTIC) \
+	$(UZIP_ZIP8_DIAGNOSTIC) $(UZIP_ZIPMULTI_DIAGNOSTIC) \
+	$(UZIP_ZIPREAD_DIAGNOSTIC) $(UZIP_EXTRACT_DIAGNOSTIC) \
+	$(UZIP_CREATEPLAN_DIAGNOSTIC)
+UZIP_SELF_SEED_SELECTION = $(UZIP_DIAGNOSTIC) $(UZIP_DEFLATE_DIAGNOSTIC) \
+	$(UZIP_ZIP8_DIAGNOSTIC) $(UZIP_ZIPMULTI_DIAGNOSTIC) \
+	$(UZIP_ZIPREAD_DIAGNOSTIC) $(UZIP_CREATEPLAN_DIAGNOSTIC)
+ifneq ($(filter 1,$(UZIP_DIAGNOSTIC_SELECTION)),)
+ifneq ($(words $(filter 1,$(UZIP_DIAGNOSTIC_SELECTION))),1)
+$(error select only one uZIP physical diagnostic)
+endif
+ifeq ($(UZIP_EXTRACT_DIAGNOSTIC),1)
+UZIP_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_uzip.cfg -Os \
+	-DUZIP_READYOS_APP --asm-define UZIP_READYOS_APP
+else
+UZIP_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_uzip_diag.cfg -Os \
+	-DUZIP_READYOS_APP --asm-define UZIP_READYOS_APP
+endif
+endif
+UZIP_DIAG_CFLAGS = \
+	$(if $(filter 1,$(UZIP_DIAGNOSTIC_SELECTION)),-DUZIP_PHYSICAL_DIAGNOSTIC,) \
+	$(if $(filter 1,$(UZIP_SELF_SEED_SELECTION)),-DUZIP_SELF_SEED_PACKAGE,) \
+	$(if $(filter 1,$(UZIP_DIAGNOSTIC)),-DUZIP_XUZREU_DIAGNOSTIC -I$(OBJ_DIR)/xuzreu,) \
+	$(if $(filter 1,$(UZIP_DEFLATE_DIAGNOSTIC)),-DUZIP_XUZDEFLATE_DIAGNOSTIC -I$(OBJ_DIR)/xuzdeflate,) \
+	$(if $(filter 1,$(UZIP_ZIP8_DIAGNOSTIC)),-DUZIP_XUZZIP8_DIAGNOSTIC -I$(OBJ_DIR)/xuzdeflate,) \
+	$(if $(filter 1,$(UZIP_ZIPMULTI_DIAGNOSTIC)),-DUZIP_XUZMULTI_DIAGNOSTIC -I$(OBJ_DIR)/xuzdeflate,) \
+	$(if $(filter 1,$(UZIP_ZIPREAD_DIAGNOSTIC)),-DUZIP_XUZREAD_DIAGNOSTIC -I$(OBJ_DIR)/xuzread,) \
+	$(if $(filter 1,$(UZIP_EXTRACT_DIAGNOSTIC)),-DUZIP_XUZEXTRACT_DIAGNOSTIC -I$(OBJ_DIR)/xuzextract,) \
+	$(if $(filter 1,$(UZIP_CREATEPLAN_DIAGNOSTIC)),-DUZIP_XUZCREATEPLAN_DIAGNOSTIC -I$(OBJ_DIR)/xuzcreateplan,)
+UZIP_DIAG_DEPS = \
+	$(if $(filter 1,$(UZIP_DIAGNOSTIC)),$(OBJ_DIR)/xuzreu/xuzreu_config.h,) \
+	$(if $(filter 1,$(UZIP_DEFLATE_DIAGNOSTIC)),$(OBJ_DIR)/xuzdeflate/xuzdeflate_config.h,) \
+	$(if $(filter 1,$(UZIP_ZIP8_DIAGNOSTIC)),$(OBJ_DIR)/xuzdeflate/xuzdeflate_config.h,) \
+	$(if $(filter 1,$(UZIP_ZIPMULTI_DIAGNOSTIC)),$(OBJ_DIR)/xuzdeflate/xuzdeflate_config.h,) \
+	$(if $(filter 1,$(UZIP_ZIPREAD_DIAGNOSTIC)),$(OBJ_DIR)/xuzread/xuzread_config.h,) \
+	$(if $(filter 1,$(UZIP_EXTRACT_DIAGNOSTIC)),$(OBJ_DIR)/xuzextract/xuzextract_config.h,) \
+	$(if $(filter 1,$(UZIP_CREATEPLAN_DIAGNOSTIC)),$(OBJ_DIR)/xuzcreateplan/xuzcreateplan_config.h,)
+UZIP_DIAG_OBJ = \
+	$(if $(filter 1,$(UZIP_DIAGNOSTIC)),$(UZIP_OBJ_DIR)/xuzreu_diag.o,) \
+	$(if $(filter 1,$(UZIP_DEFLATE_DIAGNOSTIC)),$(UZIP_OBJ_DIR)/xuzdeflate_diag_ui.o $(UZIP_OBJ_DIR)/xuzdeflate_diag_coord.o $(UZIP_OBJ_DIR)/xuzdeflate_stack.o,) \
+	$(if $(filter 1,$(UZIP_ZIP8_DIAGNOSTIC)),$(UZIP_OBJ_DIR)/xuzzip8_diag_ui.o $(UZIP_OBJ_DIR)/xuzzip8_diag_coord.o $(UZIP_OBJ_DIR)/xuzdeflate_stack.o,) \
+	$(if $(filter 1,$(UZIP_ZIPMULTI_DIAGNOSTIC)),$(UZIP_OBJ_DIR)/xuzmulti_diag_ui.o $(UZIP_OBJ_DIR)/xuzmulti_diag_coord.o $(UZIP_OBJ_DIR)/xuzdeflate_stack.o,) \
+	$(if $(filter 1,$(UZIP_ZIPREAD_DIAGNOSTIC)),$(UZIP_OBJ_DIR)/xuzread_diag.o,) \
+	$(if $(filter 1,$(UZIP_EXTRACT_DIAGNOSTIC)),$(UZIP_OBJ_DIR)/xuzextract_diag.o,) \
+	$(if $(filter 1,$(UZIP_CREATEPLAN_DIAGNOSTIC)),$(UZIP_OBJ_DIR)/xuzcreateplan_diag.o $(UZIP_OBJ_DIR)/uz_catalog_ui.o,)
+# Every self-seeded probe is deliberately focused.  None of them exercises
+# extraction: xuzreu checks the package/owned-bank lifecycle, xuzdeflate and
+# the archive-creation probes exercise MATCH/EMIT, and xuzread only parses.
+# Keep the real inflater in production and the external-package extraction
+# diagnostic, but do not spend cold diagnostic PRG space on an unused image.
+ifneq ($(filter 1,$(UZIP_SELF_SEED_SELECTION)),)
+UZIP_INFLATE_SRCS = $(APPS_DIR)/uzip/xuzzip8_dummy_inflate.s
+else
+UZIP_INFLATE_SRCS = $(APPS_DIR)/uzip/uz_inflate6502.c \
+	$(APPS_DIR)/uzip/uz_inflate6502_asm.s \
+	$(APPS_DIR)/uzip/uz_inflate6502_boundary.s \
+	$(APPS_DIR)/uzip/uz_inflate_job.c
+endif
+# xuzread and extraction need the real parser.  The remaining self-seeded
+# probes retain a one-byte phase so their uZPK v7 descriptor shape stays
+# identical without carrying the 5K reader in the cold package stream.
+ifneq ($(filter 1,$(UZIP_DIAGNOSTIC) $(UZIP_DEFLATE_DIAGNOSTIC) $(UZIP_ZIP8_DIAGNOSTIC) $(UZIP_ZIPMULTI_DIAGNOSTIC) $(UZIP_CREATEPLAN_DIAGNOSTIC)),)
+UZIP_ZIP_READ_OBJ = $(UZIP_OBJ_DIR)/xuzzip8_dummy_zip_read.o
+else
+UZIP_ZIP_READ_OBJ = $(UZIP_OBJ_DIR)/uz_zip_read_parser.o
+endif
+ifeq ($(UZIP_EXTRACT_DIAGNOSTIC),1)
+UZIP_DEFLATE_SRCS = $(APPS_DIR)/uzip/xuzextract_dummy_deflate.s
+else ifneq ($(filter 1,$(UZIP_DIAGNOSTIC) $(UZIP_ZIPREAD_DIAGNOSTIC) $(UZIP_CREATEPLAN_DIAGNOSTIC)),)
+UZIP_DEFLATE_SRCS = $(APPS_DIR)/uzip/xuzread_dummy_deflate.s
+else
+UZIP_DEFLATE_SRCS = $(APPS_DIR)/uzip/uz_deflate.c \
+	$(APPS_DIR)/uzip/uz_deflate_match.c \
+	$(APPS_DIR)/uzip/uz_deflate_emit.c
+endif
+ifeq ($(UZIP_EXTRACT_DIAGNOSTIC),1)
+UZIP_STORE_JOB_SRCS = $(APPS_DIR)/uzip/uz_store_job.c
+else ifneq ($(filter 1,$(UZIP_DIAGNOSTIC_SELECTION)),)
+UZIP_STORE_JOB_SRCS =
+else
+UZIP_STORE_JOB_SRCS = $(APPS_DIR)/uzip/uz_store_job.c
+endif
+# Production links these modules only once their call edges form the complete
+# Create/Extract workflow. Focused diagnostics retain their smaller shapes.
+ifeq ($(filter 1,$(UZIP_DIAGNOSTIC_SELECTION)),)
+UZIP_BROWSER_SRCS = $(APPS_DIR)/uzip/uz_browser.c
+UZIP_CREATE_PLAN_SRCS =
+UZIP_CATALOG_OBJ =
+UZIP_WORKFLOW_SRCS = $(APPS_DIR)/uzip/uz_create_package.c \
+	$(APPS_DIR)/uzip/uz_extract_plan.c \
+	$(APPS_DIR)/uzip/uz_workflow.c
+else
+UZIP_BROWSER_SRCS =
+UZIP_WORKFLOW_SRCS =
+UZIP_CATALOG_OBJ =
+endif
+ifeq ($(UZIP_EXTRACT_DIAGNOSTIC),1)
+UZIP_EXTRACT_FS_SRCS = $(APPS_DIR)/uzip/uz_extract_fs.c
+else ifeq ($(filter 1,$(UZIP_DIAGNOSTIC_SELECTION)),)
+UZIP_EXTRACT_FS_SRCS = $(APPS_DIR)/uzip/uz_extract_fs.c
+else
+UZIP_EXTRACT_FS_SRCS =
+endif
+ifeq ($(UZIP_CREATEPLAN_DIAGNOSTIC),1)
+UZIP_CREATE_PLAN_SRCS = $(APPS_DIR)/uzip/uz_browser.c \
+	$(APPS_DIR)/uzip/uz_create_plan.c
+else ifneq ($(filter 1,$(UZIP_DIAGNOSTIC_SELECTION)),)
+UZIP_CREATE_PLAN_SRCS =
+endif
 EDITOR_CFLAGS = $(APP_CFLAGS) -Os
 TASKLIST_CFLAGS = $(APP_CFLAGS) -Os
 SIMPLEFILES_CFLAGS = -t c64 -I$(LIB_DIR) -C $(CFG_DIR)/ready_app_simplefiles.cfg -Os
@@ -119,6 +240,8 @@ READYBASIC_VICE_SCRIPTS = \
 	$(BUILD_SUPPORT_DIR)/run_readybasic_state_probe.sh \
 	$(BUILD_SUPPORT_DIR)/vice_readybasic_repeat_label_probe.sh
 UCITEST = $(BIN_DIR)/ucitest.prg
+UZIP = $(BIN_DIR)/uzip.prg
+UZPACK = $(BIN_DIR)/uzpack.prg
 VERSION_HEADER = $(GEN_DIR)/build_version.h
 VERSION_ASM_INC = $(GEN_DIR)/msg_version.inc
 VARIANT_ASM_INC = $(GEN_DIR)/msg_variant.inc
@@ -274,6 +397,44 @@ READYSHELL_OVL9_CFLAGS = $(READYSHELL_CCFLAGS) --code-name OVERLAY9 --rodata-nam
 READYSHELL_OVERLAYSIZE ?= $(if $(filter 1,$(READYSHELL_PARSE_TRACE_DEBUG)),0x3B00,0x3800)
 READYSHELL_STACKSIZE ?= 0x0800
 READYSHELL_OBJ_DIR = $(OBJ_DIR)/readyshell
+UZIP_OBJ_DIR = $(OBJ_DIR)/uzip
+ifeq ($(filter 1,$(UZIP_DIAGNOSTIC_SELECTION)),)
+UZIP_MAIN = $(UZIP_OBJ_DIR)/uzip_main.o
+UZIP_CREATE_COORD_OBJS = $(UZIP_OBJ_DIR)/uz_create_job.o \
+	$(UZIP_OBJ_DIR)/uz_deflate_create_coord.o
+UZIP_COLD_BOOT_SRCS = $(APPS_DIR)/uzip/uz_cold_main.c \
+	$(APPS_DIR)/uzip/uz_cold_boot.c \
+	$(APPS_DIR)/uzip/uz_cold_start.s
+UZPACK_UI_ARGS = --ui-raw $(BIN_DIR)/uzui.raw
+UZPACK_PLAN_ARGS = --plan-raw $(BIN_DIR)/uzplan.raw
+UZIP_PLAN_LINK_FLAGS = -u __CREATE_PLAN_CODE_LOAD__ \
+	-u __CREATE_PLAN_CODE_RUN__ -u __CREATE_PLAN_CODE_SIZE__ \
+	-u _uz_create_plan_overlay_entry
+UZIP_CREATE_PLAN_OVERLAY_OBJS = \
+	$(UZIP_OBJ_DIR)/uz_create_plan_overlay.o \
+	$(UZIP_OBJ_DIR)/uz_create_plan_plan.o \
+	$(UZIP_OBJ_DIR)/uz_catalog_plan.o
+else
+UZIP_MAIN = $(APPS_DIR)/uzip/uzip.c
+UZIP_CREATE_COORD_OBJS =
+UZIP_COLD_BOOT_SRCS =
+UZPACK_UI_ARGS =
+UZPACK_PLAN_ARGS =
+UZIP_PLAN_LINK_FLAGS =
+UZIP_CREATE_PLAN_OVERLAY_OBJS =
+endif
+ifneq ($(filter 1,$(UZIP_EXTRACT_DIAGNOSTIC) $(UZIP_CREATEPLAN_DIAGNOSTIC)),)
+UZIP_UI_SRCS = $(TUI_CORE_SRC) $(TUI_NAV_SRC) $(REU_INIT_SRC) \
+	$(REU_ALLOC_SRC) $(REU_OWNED_ALLOC_SRC)
+else
+UZIP_UI_SRCS = $(TUI_CORE_SRC) $(TUI_WINDOW_SRC) $(TUI_MISC_SRC) \
+	$(TUI_INPUT_SRC) $(TUI_NAV_SRC) $(LIB_DIR)/tui_hotkeys.c $(REU_INIT_SRC) $(REU_ALLOC_SRC) \
+	$(REU_OWNED_ALLOC_SRC)
+endif
+ifeq ($(filter 1,$(UZIP_DIAGNOSTIC_SELECTION)),)
+UZIP_UI_SRCS += $(REU_STATS_SRC)
+endif
+UZIP_UI_OBJS = $(patsubst %.c,$(UZIP_OBJ_DIR)/ui/%.o,$(UZIP_UI_SRCS))
 READYSHELL_OVL1_PRG = $(BIN_DIR)/rsparser.prg
 READYSHELL_OVL2_PRG = $(BIN_DIR)/rsvm.prg
 READYSHELL_OVL3_PRG = $(BIN_DIR)/rsdrvilst.prg
@@ -410,10 +571,11 @@ LIB_README = $(TUI_BASE_NAV_MISC) $(TUI_HOTKEY_SRC) $(REU_DMA_SRC) $(RESUME_STAT
 LIB_READYSHELL = $(REU_DMA_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_READYIRC = $(TUI_BASE_INPUT_NAV_MISC) $(TUI_HOTKEY_SRC) $(LIB_REU_DMA) $(REU_OWNED_ALLOC_SRC) $(RESUME_STATE_SIMPLE_SRCS)
 LIB_UCITEST = $(TUI_UCITEST) $(TUI_HOTKEY_LITE_SRC)
+LIB_UZIP = $(TUI_READYOS_SRC) $(REU_DMA_SRC)
 EASYFLASH_PAYLOADS = $(LAUNCHER_EASYFLASH) $(READYSHELL_EASYFLASH) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(READYBASIC) $(UCITEST) $(READMEAPP) $(READYSHELL_OVL1_PRG) $(READYSHELL_OVL2_PRG) $(READYSHELL_OVL3_PRG) $(READYSHELL_OVL4_PRG) $(READYSHELL_OVL5_PRG) $(READYSHELL_OVL6_PRG) $(READYSHELL_OVL7_PRG) $(READYSHELL_OVL8_PRG) $(READYSHELL_OVL9_PRG)
 
 # Primary binaries shared across profiles
-PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(SETUP) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(READYBASIC) $(READYBASIC_RBTEST1) $(READYBASIC_RBPROC1) $(READYBASIC_RBPROCERR) $(READYBASIC_GFX_DEMOS) $(READYBASIC_SOUND_DEMOS) $(READYBASIC_MODULES) $(UCITEST) $(READMEAPP) $(READYSHELL)
+PROGRAMS = $(BOOT) $(PREBOOT) $(SETD71) $(SHOWCFG) $(SETUP) $(TEST_REU) $(LAUNCHER) $(EDITOR) $(QUICKNOTES) $(CALCPLUS) $(HEXVIEW) $(CLIPMGR) $(REUVIEWER) $(SYSINFO) $(TASKLIST) $(SIMPLEFILES) $(SIMPLECELLS) $(GAME2048) $(DEMINER) $(SIDETRIS) $(CAL26) $(DIZZY) $(READYIRC) $(READYBASIC) $(READYBASIC_RBTEST1) $(READYBASIC_RBPROC1) $(READYBASIC_RBPROCERR) $(READYBASIC_GFX_DEMOS) $(READYBASIC_SOUND_DEMOS) $(READYBASIC_MODULES) $(UCITEST) $(UZIP) $(UZPACK) $(READMEAPP) $(READYSHELL)
 
 $(BIN_DIR):
 	@mkdir -p "$@"
@@ -755,6 +917,121 @@ $(READYBASIC_MODULES): $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py
 # UCI tester app (loads at $1000)
 $(UCITEST): $(APPS_DIR)/ucitest/ucitest.c $(APPS_DIR)/ucitest/ucitest_catalog.c $(APPS_DIR)/ucitest/ucitest_format.c $(APPS_DIR)/ucitest/ucitest_uci.c $(APPS_DIR)/ucitest/ucitest_uci_asm.s $(LIB_UCITEST)
 	$(CC) $(APP_CFLAGS) -Os -m $(OBJ_DIR)/ucitest.map -o $@ $(APPS_DIR)/ucitest/ucitest.c $(APPS_DIR)/ucitest/ucitest_catalog.c $(APPS_DIR)/ucitest/ucitest_format.c $(APPS_DIR)/ucitest/ucitest_uci.c $(APPS_DIR)/ucitest/ucitest_uci_asm.s $(LIB_UCITEST)
+
+# Ultimate ZIP app (Ultimate profile only; loads at $1000)
+$(UZIP_OBJ_DIR)/ui/%.o: %.c
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzreu_diag.o: $(APPS_DIR)/uzip/xuzreu_diag.c $(APPS_DIR)/uzip/xuzreu_diag.h $(OBJ_DIR)/xuzreu/xuzreu_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -DUZIP_XUZREU_DIAGNOSTIC -I$(OBJ_DIR)/xuzreu -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzdeflate_diag_ui.o: $(APPS_DIR)/uzip/xuzdeflate_diag_ui.c $(APPS_DIR)/uzip/xuzdeflate_diag.h $(APPS_DIR)/uzip/xuzdeflate_diag_internal.h $(OBJ_DIR)/xuzdeflate/xuzdeflate_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -DUZIP_XUZDEFLATE_DIAGNOSTIC -I$(OBJ_DIR)/xuzdeflate -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzdeflate_diag_coord.o: $(APPS_DIR)/uzip/xuzdeflate_diag_coord.c $(APPS_DIR)/uzip/xuzdeflate_diag_internal.h $(OBJ_DIR)/xuzdeflate/xuzdeflate_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) -t c64 -I$(LIB_DIR) -Os -DUZIP_READYOS_APP -DUZIP_XUZDEFLATE_DIAGNOSTIC -I$(OBJ_DIR)/xuzdeflate -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzzip8_diag_ui.o: $(APPS_DIR)/uzip/xuzdeflate_diag_ui.c $(APPS_DIR)/uzip/xuzzip8_diag.h $(APPS_DIR)/uzip/xuzdeflate_diag_internal.h $(OBJ_DIR)/xuzdeflate/xuzdeflate_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -DUZIP_XUZZIP8_DIAGNOSTIC -I$(OBJ_DIR)/xuzdeflate -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzzip8_diag_coord.o: $(APPS_DIR)/uzip/xuzdeflate_diag_coord.c $(APPS_DIR)/uzip/xuzdeflate_diag_internal.h $(APPS_DIR)/uzip/uz_catalog.h $(OBJ_DIR)/xuzdeflate/xuzdeflate_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) -t c64 -I$(LIB_DIR) -Os -DUZIP_READYOS_APP -DUZIP_XUZZIP8_DIAGNOSTIC -I$(OBJ_DIR)/xuzdeflate -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzmulti_diag_ui.o: $(APPS_DIR)/uzip/xuzdeflate_diag_ui.c $(APPS_DIR)/uzip/xuzmulti_diag.h $(APPS_DIR)/uzip/xuzdeflate_diag_internal.h $(OBJ_DIR)/xuzdeflate/xuzdeflate_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -DUZIP_XUZMULTI_DIAGNOSTIC -I$(OBJ_DIR)/xuzdeflate -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzmulti_diag_coord.o: $(APPS_DIR)/uzip/xuzdeflate_diag_coord.c $(APPS_DIR)/uzip/xuzdeflate_diag_internal.h $(APPS_DIR)/uzip/uz_catalog.h $(OBJ_DIR)/xuzdeflate/xuzdeflate_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) -t c64 -I$(LIB_DIR) -Os -DUZIP_READYOS_APP -DUZIP_XUZMULTI_DIAGNOSTIC -I$(OBJ_DIR)/xuzdeflate -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzdeflate_stack.o: $(APPS_DIR)/uzip/xuzdeflate_stack.s
+	@mkdir -p "$(dir $@)"
+	$(AS) -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzread_diag.o: $(APPS_DIR)/uzip/xuzread_diag.c $(APPS_DIR)/uzip/xuzread_diag.h $(APPS_DIR)/uzip/uz_zip_read.h $(OBJ_DIR)/xuzread/xuzread_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -DUZIP_XUZREAD_DIAGNOSTIC -I$(OBJ_DIR)/xuzread -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzextract_diag.o: $(APPS_DIR)/uzip/xuzextract_diag.c $(APPS_DIR)/uzip/xuzextract_diag.h $(APPS_DIR)/uzip/uz_extract_fs.h $(APPS_DIR)/uzip/uz_zip_read.h $(OBJ_DIR)/xuzextract/xuzextract_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -DUZIP_XUZEXTRACT_DIAGNOSTIC -I$(OBJ_DIR)/xuzextract -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzcreateplan_diag.o: $(APPS_DIR)/uzip/xuzcreateplan_diag.c $(APPS_DIR)/uzip/xuzcreateplan_diag.h $(APPS_DIR)/uzip/uz_create_plan.h $(OBJ_DIR)/xuzcreateplan/xuzcreateplan_config.h
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -DUZIP_XUZCREATEPLAN_DIAGNOSTIC -I$(OBJ_DIR)/xuzcreateplan -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/uz_catalog_ui.o: $(APPS_DIR)/uzip/uz_catalog.c $(APPS_DIR)/uzip/uz_catalog.h
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -DUZIP_CATALOG_UI -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/uz_create_plan_overlay.o: $(APPS_DIR)/uzip/uz_create_plan_overlay.c $(APPS_DIR)/uzip/uz_create_plan_overlay.h $(APPS_DIR)/uzip/uz_create_plan.h $(APPS_DIR)/uzip/uz_catalog.h
+	@mkdir -p "$(dir $@)"
+	$(CC) -t c64 -I$(LIB_DIR) -Os -DUZIP_READYOS_APP \
+		-DUZIP_CREATE_PLAN_OVERLAY -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/uz_create_plan_plan.o: $(APPS_DIR)/uzip/uz_create_plan.c $(APPS_DIR)/uzip/uz_create_plan.h
+	@mkdir -p "$(dir $@)"
+	$(CC) -t c64 -I$(LIB_DIR) -Os -DUZIP_READYOS_APP \
+		-DUZIP_CREATE_PLAN_OVERLAY -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/uz_catalog_plan.o: $(APPS_DIR)/uzip/uz_catalog.c $(APPS_DIR)/uzip/uz_catalog.h
+	@mkdir -p "$(dir $@)"
+	$(CC) -t c64 -I$(LIB_DIR) -Os -DUZIP_READYOS_APP \
+		-DUZIP_CREATE_PLAN_OVERLAY -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/uz_zip_read_parser.o: $(APPS_DIR)/uzip/uz_zip_read.c $(APPS_DIR)/uzip/uz_zip_read.h $(APPS_DIR)/uzip/uz_zip_write.h $(APPS_DIR)/uzip/uz_u32.h
+	@mkdir -p "$(dir $@)"
+	$(CC) -t c64 -I$(LIB_DIR) -Os -DUZIP_READYOS_APP \
+		-DUZ_ZIP_READ_CALLBACK_ONLY -DUZ_ZIP_READ_PARSER_ONLY -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/xuzzip8_dummy_zip_read.o: $(APPS_DIR)/uzip/xuzzip8_dummy_zip_read.s
+	@mkdir -p "$(dir $@)"
+	$(AS) -o $@ $<
+
+$(UZIP_OBJ_DIR)/uzip_main.o: $(APPS_DIR)/uzip/uzip.c
+	@mkdir -p "$(dir $@)"
+	$(CC) $(UZIP_UI_CFLAGS) -DUZIP_READYOS_APP -DUZIP_CREATE_COORD \
+		-DUZIP_COLD_UI \
+		-c -o $@ $<
+
+$(UZIP_OBJ_DIR)/uz_create_job.o: $(APPS_DIR)/uzip/uz_create_job.c $(APPS_DIR)/uzip/uz_create_job.h
+	@mkdir -p "$(dir $@)"
+	$(CC) -t c64 -I$(LIB_DIR) -Os -DUZIP_READYOS_APP \
+		-Duz_deflate_init=uz_create_deflate_init \
+		-Duz_deflate_run=uz_create_deflate_run -c -o $@ $<
+
+$(UZIP_OBJ_DIR)/uz_deflate_create_coord.o: $(APPS_DIR)/uzip/uz_deflate.c $(APPS_DIR)/uzip/uz_deflate.h $(APPS_DIR)/uzip/uz_deflate_internal.h
+	@mkdir -p "$(dir $@)"
+	$(CC) -t c64 -I$(LIB_DIR) -Os -DUZIP_READYOS_APP \
+		-DUZ_CREATE_COORD_BUILD \
+		-Duz_deflate_init=uz_create_deflate_init \
+		-Duz_deflate_run=uz_create_deflate_run -c -o $@ $<
+
+$(UZIP): $(UZIP_MAIN) $(APPS_DIR)/uzip/uz_uci.c $(APPS_DIR)/uzip/uz_uci.h $(APPS_DIR)/uzip/uz_uci_asm.s $(APPS_DIR)/uzip/uz_u32.c $(APPS_DIR)/uzip/uz_u32.h $(APPS_DIR)/uzip/uz_dos.c $(APPS_DIR)/uzip/uz_dos.h $(APPS_DIR)/uzip/uz_crc32.c $(APPS_DIR)/uzip/uz_crc32.h $(APPS_DIR)/uzip/uz_zip_write.c $(APPS_DIR)/uzip/uz_zip_write.h $(APPS_DIR)/uzip/uz_catalog.h $(APPS_DIR)/uzip/uz_package.c $(APPS_DIR)/uzip/uz_package.h $(UZIP_INFLATE_SRCS) $(APPS_DIR)/uzip/uz_inflate_job.h $(UZIP_DEFLATE_SRCS) $(UZIP_STORE_JOB_SRCS) $(APPS_DIR)/uzip/uz_store_job.h $(APPS_DIR)/uzip/uz_deflate.h $(APPS_DIR)/uzip/uz_deflate_internal.h $(APPS_DIR)/uzip/uz_job.c $(APPS_DIR)/uzip/uz_job.h $(UZIP_EXTRACT_FS_SRCS) $(APPS_DIR)/uzip/uz_extract_fs.h $(UZIP_BROWSER_SRCS) $(UZIP_CREATE_PLAN_SRCS) $(UZIP_WORKFLOW_SRCS) $(APPS_DIR)/uzip/uz_browser.h $(APPS_DIR)/uzip/uz_create_plan.h $(APPS_DIR)/uzip/uz_create_plan_overlay.h $(APPS_DIR)/uzip/uz_pack.h $(APPS_DIR)/uzip/uz_pack_asm.s $(UZIP_ZIP_READ_OBJ) $(UZIP_CATALOG_OBJ) $(UZIP_CREATE_COORD_OBJS) $(UZIP_CREATE_PLAN_OVERLAY_OBJS) $(UZIP_COLD_BOOT_SRCS) $(UZIP_DIAG_OBJ) $(UZIP_DIAG_DEPS) $(CFG_DIR)/ready_app_uzip.cfg $(CFG_DIR)/ready_app_uzip_cold.cfg $(CFG_DIR)/ready_app_uzip_diag.cfg $(UZIP_UI_OBJS) $(LIB_UZIP)
+	$(CC) $(UZIP_CFLAGS) $(UZIP_DIAG_CFLAGS) $(UZIP_PLAN_LINK_FLAGS) -m $(OBJ_DIR)/uzip.map -o $@ $(UZIP_MAIN) $(APPS_DIR)/uzip/uz_uci.c $(APPS_DIR)/uzip/uz_uci_asm.s $(APPS_DIR)/uzip/uz_u32.c $(APPS_DIR)/uzip/uz_dos.c $(APPS_DIR)/uzip/uz_crc32.c $(APPS_DIR)/uzip/uz_zip_write.c $(APPS_DIR)/uzip/uz_package.c $(UZIP_INFLATE_SRCS) $(UZIP_DEFLATE_SRCS) $(UZIP_STORE_JOB_SRCS) $(APPS_DIR)/uzip/uz_job.c $(UZIP_EXTRACT_FS_SRCS) $(UZIP_BROWSER_SRCS) $(UZIP_CREATE_PLAN_SRCS) $(UZIP_WORKFLOW_SRCS) $(APPS_DIR)/uzip/uz_pack_asm.s $(UZIP_ZIP_READ_OBJ) $(UZIP_CATALOG_OBJ) $(UZIP_CREATE_COORD_OBJS) $(UZIP_CREATE_PLAN_OVERLAY_OBJS) $(UZIP_COLD_BOOT_SRCS) $(UZIP_DIAG_OBJ) $(UZIP_UI_OBJS) $(LIB_UZIP)
+
+ifeq ($(filter 1,$(UZIP_SELF_SEED_SELECTION)),)
+$(UZPACK): $(UZIP) $(BUILD_SUPPORT_DIR)/build_uzpack.py
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/build_uzpack.py --raw $(BIN_DIR)/uzpack.raw \
+		--map $(OBJ_DIR)/uzip.map $(UZPACK_PLAN_ARGS) $(UZPACK_UI_ARGS) --output $@
+else
+# A self-seeded diagnostic ignores the launcher's external package bank.  The
+# Ultimate profile still names uzpack as an app resource, so give the launcher
+# a one-byte payload with the required $0000 PRG load address instead of also
+# placing the 21K production package on an already-full diagnostic D81.
+.PHONY: uzpack-diagnostic-stub
+uzpack-diagnostic-stub:
+
+$(UZPACK): uzpack-diagnostic-stub
+	@$(PYTHON) -c 'from pathlib import Path; Path("$@").write_bytes(bytes((0, 0, 0)))'
+endif
 
 # Generate README app page assets from markdown-lite source
 $(README_DATA_C): $(BUILD_SUPPORT_DIR)/build_readme_app_assets.py $(APPS_DIR)/readme/readme_lite.md
