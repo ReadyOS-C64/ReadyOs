@@ -19,6 +19,7 @@
 - Drive 8: `editor` - editor
 - Drive 8: `readyshell` - readyshell (beta)
 - Drive 8: `simplefiles` - simple files
+- Drive 8: `uzip` - ultimate zip
 - Drive 8: `clipmgr` - clipboard
 - Drive 8: `readybasic` - ready basic (beta)
 - Drive 8: `cal26` - calendar 26
@@ -33,7 +34,6 @@
 - Drive 8: `deminer` - deminer
 - Drive 8: `dizzy` - dizzy kanban
 - Drive 8: `readyirc` - readyirc
-- Drive 8: `ucitest` - uci tester
 - Drive 8: `readme` - read.me
 - ReadyBASIC is accompanied by all three external `rbm.*` module packages and the complete 41-program procedure, graphics, and sound example/test set.
 - ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable rather than as separate disk files.

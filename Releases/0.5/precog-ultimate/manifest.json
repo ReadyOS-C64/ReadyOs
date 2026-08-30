@@ -57,6 +57,12 @@
     },
     {
       "drive": 8,
+      "prg": "uzip",
+      "label": "ultimate zip",
+      "desc": "create and extract ultimate dos zips"
+    },
+    {
+      "drive": 8,
       "prg": "clipmgr",
       "label": "clipboard",
       "desc": "manage clipboard items"
@@ -138,12 +144,6 @@
       "prg": "readyirc",
       "label": "readyirc",
       "desc": "ultimate tcp irc client"
-    },
-    {
-      "drive": 8,
-      "prg": "ucitest",
-      "label": "uci tester",
-      "desc": "ultimate command interface lab"
     },
     {
       "drive": 8,
