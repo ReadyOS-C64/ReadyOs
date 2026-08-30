@@ -1,0 +1,61 @@
+version: 1
+kind: ultimate_task_plan
+plan_id: xuzinflate_physical
+run_mode: ultimate64
+global_defaults:
+  retry_policy: { max_attempts: 1, backoff_ms: 500, jitter: false }
+  timeouts: { launch_s: 60, step_s: 7200, read_s: 60 }
+  artifact_policy: { capture_screen: true, capture_state: true, capture_dump: true }
+  ultimate:
+    host: 10.0.0.79
+    password: null
+    ftp_user: anonymous
+    ftp_password: anonymous@
+    remote_root: USB1/READYOS_UZIP_TEST/XUZINFLATE-RUN
+    disk8: null
+    disk9: null
+    autostart_prg: null
+    drive_a_bus_id: 8
+    drive_b_bus_id: 11
+    drive_a_type: '1581'
+    drive_b_type: '1581'
+    drive_a_enabled: false
+    drive_b_enabled: false
+    mount_mode: readwrite
+    boot_drive: 8
+    capture_video_stream: true
+    stream_port: 12100
+    stream_timeout_s: 4.0
+    default_speed_mhz: 1
+    warp_equivalent_mhz: 8
+steps:
+- id: launch_probe
+  type: ultimate.launch
+  params:
+    # The Terminal-owned runner launches the PRG with finite 404 retries before
+    # this plan starts; the harness only captures and automates that live run.
+    boot_mode: none
+    drives:
+    - { slot: a, bus_id: 8, drive_type: '1581', enabled: false, disk: "", remote_disk: "", mount_mode: readwrite }
+    - { slot: b, bus_id: 11, drive_type: '1581', enabled: false, disk: "", remote_disk: "", mount_mode: readwrite }
+    boot_drive: 8
+- id: wait_ready
+  type: screen.wait_contains
+  params: { text: "PRESS SPACE TO START", wait_timeout_s: 90, capture_label: xuzinflate_ready }
+- id: start_at_test_speed
+  type: input.key
+  # Screen/memory polling can leave a physical Ultimate core paused during a
+  # long UCI transaction. Give the codec an uninterrupted hardware window;
+  # the persistent result record, not a polling loop, is the completion oracle.
+  params: { key: 32, post_delay_s: 600.0 }
+- id: dump_results
+  type: dump.memory_ranges
+  criticality: observe
+  params:
+    ranges:
+    - { label: xuzinflate_results_033c, start: 0x033C, end: 0x03BB }
+    - { label: screen_0400, start: 0x0400, end: 0x07E7 }
+- id: capture_final
+  type: screen.capture
+  criticality: observe
+  params: { label: xuzinflate_final, note: "Physical xuzinflate final screen", capture_state: true }

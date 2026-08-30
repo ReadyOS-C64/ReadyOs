@@ -1,0 +1,67 @@
+version: 1
+kind: ultimate_task_plan
+plan_id: xuzdeflate_codec_physical
+run_mode: ultimate64
+global_defaults:
+  retry_policy: { max_attempts: 1, backoff_ms: 500, jitter: false }
+  timeouts: { launch_s: 60, step_s: 7200, read_s: 60 }
+  artifact_policy: { capture_screen: true, capture_state: true, capture_dump: true }
+  ultimate:
+    host: 10.0.0.79
+    password: null
+    ftp_user: anonymous
+    ftp_password: anonymous@
+    remote_root: USB1/READYOS_UZIP_TEST/XUZDEFLATE-RUN
+    disk8: null
+    disk9: null
+    autostart_prg: null
+    drive_a_bus_id: 8
+    drive_b_bus_id: 11
+    drive_a_type: '1581'
+    drive_b_type: '1581'
+    drive_a_enabled: true
+    drive_b_enabled: false
+    mount_mode: readwrite
+    boot_drive: 8
+    capture_video_stream: true
+    stream_port: 12300
+    stream_timeout_s: 4.0
+    default_speed_mhz: 1
+    warp_equivalent_mhz: 8
+steps:
+- id: attach_to_readyos_diagnostic
+  type: ultimate.launch
+  params:
+    # The first physical plan already booted ReadyOS to the prompt, and the
+    # Terminal-owned runner set/verified live CPU speed without resetting.
+    boot_mode: none
+    drives:
+    - { slot: a, bus_id: 8, drive_type: '1581', enabled: true, disk: "", remote_disk: "", image_type: d81, mount_mode: readwrite }
+    boot_drive: 8
+- id: verify_xuzdeflate_ready
+  type: screen.wait_contains
+  params: { text: "PRESS SPACE TO START", wait_timeout_s: 60, poll_s: 1.0, capture_label: xuzdeflate_ready_at_speed }
+- id: start_quiet_compressor
+  type: input.key
+  # No REST/screen polling is allowed while Ultimate DOS and codec overlays are
+  # active. The persistent cassette-buffer record is the completion authority.
+  params: { key: 32, post_delay_s: 600.0 }
+- id: dump_results
+  type: dump.memory_ranges
+  criticality: observe
+  params:
+    ranges:
+    - { label: xuzdeflate_zp_0002, start: 0x0002, end: 0x001B }
+    - { label: xuzdeflate_results_033c, start: 0x033C, end: 0x03BB }
+    - { label: xuzdeflate_state_0400, start: 0x0400, end: 0x06FF }
+    - { label: xuzdeflate_coord_a000, start: 0xA000, end: 0xAFFF }
+    - { label: xuzdeflate_phase_b000, start: 0xB000, end: 0xC3FF }
+    - { label: xuzdeflate_stack_c400, start: 0xC400, end: 0xC5FF }
+- id: capture_final
+  type: screen.capture
+  criticality: observe
+  params: { label: xuzdeflate_final, note: "Physical xuzdeflate final screen", capture_state: true }
+- id: assert_pass
+  type: assert.screen
+  criticality: observe
+  params: { contains: "XUZDEFLATE FINISHED PASS" }

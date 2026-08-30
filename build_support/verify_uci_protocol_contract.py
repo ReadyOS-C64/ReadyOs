@@ -63,6 +63,7 @@ c_transports = {
     "src/apps/readyirc/readyirc_uci.c": ("wait_idle", "wait_response_state"),
     "src/apps/sysinfo/sysinfo_uci.c": ("uci_wait_idle", "uci_wait_response_state"),
     "src/apps/ucitest/ucitest_uci.c": ("wait_idle", "wait_response_state"),
+    "src/apps/uzip/uz_uci.c": ("wait_idle", "wait_response_state"),
 }
 for rel, (idle_name, response_name) in c_transports.items():
     require(
@@ -239,6 +240,43 @@ require(
     ),
 )
 require(
+    "src/apps/uzip/uz_uci.h",
+    (
+        "sole UCI transaction gateway",
+        "asynchronous PUSH/ABORT handling",
+        "complete data/status queue draining",
+        "final quiet-IDLE wait",
+    ),
+)
+require(
+    "src/apps/uzip/uz_uci_asm.s",
+    (
+        "uz_uci.c owns synchronization",
+        "_uz_uci_asm_accept_more_transition",
+        "The bound detects failure; it is not pacing",
+        "more_write",
+        "more_read",
+    ),
+)
+require(
+    "src/apps/uzip/uz_dos.c",
+    (
+        "Every Ultimate DOS operation uses the shared uZIP state-machine",
+        "asynchronous PUSH/ABORT",
+        "complete queue drains",
+        "final quiet-IDLE wait",
+        "READ_DIR uses the same complete async gateway",
+    ),
+)
+require(
+    "build_support/run_xuzio_c64u.sh",
+    (
+        "run-ultimate-plan",
+        ".READYOS-UZIP-OWNER",
+        "refusing non-owned xuzio root",
+    ),
+)
+require(
     "probes/uci_timing/uci_timing_probe.c",
     ("Probe the production System Info transport itself",),
 )
@@ -281,4 +319,4 @@ if ERRORS:
         print(f"- {error}", file=sys.stderr)
     raise SystemExit(1)
 
-print("UCI PROTOCOL CONTRACT VERIFICATION PASSED: 4 C transports, 3 asm/accessor transports, 6 call-site groups")
+print("UCI PROTOCOL CONTRACT VERIFICATION PASSED: 5 C transports, 4 asm/accessor transports, 9 call-site groups")

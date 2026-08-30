@@ -1,0 +1,51 @@
+version: 1
+kind: ultimate_task_plan
+plan_id: xuzcreateplan_readyos_boot_physical
+run_mode: ultimate64
+global_defaults:
+  retry_policy: { max_attempts: 1, backoff_ms: 500, jitter: false }
+  timeouts: { launch_s: 180, step_s: 1200, read_s: 60 }
+  artifact_policy: { capture_screen: true, capture_state: true, capture_dump: true }
+  ultimate:
+    host: 10.0.0.79
+    password: null
+    ftp_user: anonymous
+    ftp_password: anonymous@
+    remote_root: USB1/READYOS_UZIP_TEST/XUZCREATEPLAN-RUN
+    disk8: null
+    disk9: null
+    autostart_prg: null
+    drive_a_bus_id: 8
+    drive_b_bus_id: 11
+    drive_a_type: '1581'
+    drive_b_type: '1581'
+    drive_a_enabled: true
+    drive_b_enabled: false
+    mount_mode: readwrite
+    boot_drive: 8
+    capture_video_stream: true
+    stream_port: 12246
+    stream_timeout_s: 4.0
+    default_speed_mhz: 1
+    warp_equivalent_mhz: 8
+steps:
+- id: launch_readyos_diagnostic
+  type: ultimate.launch
+  params:
+    boot_mode: disk
+    drives:
+    - { slot: a, bus_id: 8, drive_type: '1581', enabled: true, disk: "", remote_disk: "", image_type: d81, mount_mode: readwrite }
+    boot_drive: 8
+    boot_command: "LOAD\"BOOT\",8\r"
+    reset_before_boot: true
+    post_reset_delay_s: 3.0
+    boot_inter_chunk_delay_s: 0.25
+- id: wait_basic_loading_boot
+  type: screen.wait_contains
+  params: { text: "LOADING", wait_timeout_s: 60, poll_s: 0.5 }
+- id: run_readyos_booter
+  type: input.sequence
+  params: { pre_delay_s: 45, keys: [82,85,78,13], inter_key_delay_s: 0.1, post_delay_s: 0.5 }
+- id: wait_xuzcreateplan_ready
+  type: screen.wait_contains
+  params: { text: "PRESS SPACE TO START", wait_timeout_s: 360, poll_s: 1.0, pre_delay_s: 180, capture_label: xuzcreateplan_ready }

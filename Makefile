@@ -583,7 +583,7 @@ $(BIN_DIR):
 $(PROGRAMS): | $(BIN_DIR)
 
 # Default target
-.PHONY: uci-protocol-check setup-host-tests setup-contract-check
+.PHONY: uci-protocol-check setup-host-tests setup-contract-check uzip-host-tests uzip-contract-check
 uci-protocol-check:
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_uci_protocol_contract.py
 
@@ -600,6 +600,107 @@ setup-host-tests:
 
 setup-contract-check:
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_setup_contract.py
+
+uzip-host-tests:
+	@mkdir -p $(OBJ_DIR)/host_tests
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_crc32_test.c $(APPS_DIR)/uzip/uz_crc32.c \
+		-o $(OBJ_DIR)/host_tests/uz_crc32_test
+	$(OBJ_DIR)/host_tests/uz_crc32_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_u32_test.c $(APPS_DIR)/uzip/uz_u32.c \
+		-o $(OBJ_DIR)/host_tests/uz_u32_test
+	$(OBJ_DIR)/host_tests/uz_u32_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_catalog_test.c $(APPS_DIR)/uzip/uz_catalog.c \
+		-o $(OBJ_DIR)/host_tests/uz_catalog_test
+	$(OBJ_DIR)/host_tests/uz_catalog_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_zip_catalog_integration_test.c \
+		$(APPS_DIR)/uzip/uz_catalog.c $(APPS_DIR)/uzip/uz_zip_write.c \
+		$(APPS_DIR)/uzip/uz_crc32.c $(APPS_DIR)/uzip/uz_u32.c \
+		-o $(OBJ_DIR)/host_tests/uz_zip_catalog_integration_test
+	$(OBJ_DIR)/host_tests/uz_zip_catalog_integration_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_zip_write_test.c \
+		$(APPS_DIR)/uzip/uz_zip_write.c $(APPS_DIR)/uzip/uz_crc32.c \
+		$(APPS_DIR)/uzip/uz_u32.c -o $(OBJ_DIR)/host_tests/uz_zip_write_test
+	$(OBJ_DIR)/host_tests/uz_zip_write_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_zip_store_roundtrip_test.c \
+		$(APPS_DIR)/uzip/uz_zip_write.c $(APPS_DIR)/uzip/uz_zip_read.c \
+		$(APPS_DIR)/uzip/uz_crc32.c $(APPS_DIR)/uzip/uz_u32.c \
+		-o $(OBJ_DIR)/host_tests/uz_zip_store_roundtrip_test
+	$(OBJ_DIR)/host_tests/uz_zip_store_roundtrip_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_zip_read_reject_test.c \
+		$(APPS_DIR)/uzip/uz_zip_write.c $(APPS_DIR)/uzip/uz_zip_read.c \
+		$(APPS_DIR)/uzip/uz_crc32.c $(APPS_DIR)/uzip/uz_u32.c \
+		-o $(OBJ_DIR)/host_tests/uz_zip_read_reject_test
+	$(OBJ_DIR)/host_tests/uz_zip_read_reject_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_dos_reu_test.c $(APPS_DIR)/uzip/uz_dos.c \
+		$(APPS_DIR)/uzip/uz_u32.c -o $(OBJ_DIR)/host_tests/uz_dos_reu_test
+	$(OBJ_DIR)/host_tests/uz_dos_reu_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_dos_path_test.c $(APPS_DIR)/uzip/uz_dos.c \
+		$(APPS_DIR)/uzip/uz_u32.c -o $(OBJ_DIR)/host_tests/uz_dos_path_test
+	$(OBJ_DIR)/host_tests/uz_dos_path_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_inflate_test.c $(APPS_DIR)/uzip/uz_inflate.c \
+		$(APPS_DIR)/uzip/uz_crc32.c $(APPS_DIR)/uzip/uz_u32.c -lz \
+		-o $(OBJ_DIR)/host_tests/uz_inflate_test
+	$(OBJ_DIR)/host_tests/uz_inflate_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip -I$(LIB_DIR) \
+		$(BUILD_SUPPORT_DIR)/uz_inflate_job_test.c \
+		$(APPS_DIR)/uzip/uz_inflate_job.c \
+		-o $(OBJ_DIR)/host_tests/uz_inflate_job_test
+	$(OBJ_DIR)/host_tests/uz_inflate_job_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -DUZ_STORE_JOB_HOST_TEST \
+		-I$(APPS_DIR)/uzip -I$(LIB_DIR) \
+		$(BUILD_SUPPORT_DIR)/uz_store_job_test.c \
+		$(APPS_DIR)/uzip/uz_store_job.c $(APPS_DIR)/uzip/uz_crc32.c \
+		$(APPS_DIR)/uzip/uz_u32.c -o $(OBJ_DIR)/host_tests/uz_store_job_test
+	$(OBJ_DIR)/host_tests/uz_store_job_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_extract_fs_test.c \
+		$(APPS_DIR)/uzip/uz_extract_fs.c \
+		-o $(OBJ_DIR)/host_tests/uz_extract_fs_test
+	$(OBJ_DIR)/host_tests/uz_extract_fs_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_browser_test.c \
+		$(APPS_DIR)/uzip/uz_browser.c \
+		-o $(OBJ_DIR)/host_tests/uz_browser_test
+	$(OBJ_DIR)/host_tests/uz_browser_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_create_plan_test.c \
+		$(APPS_DIR)/uzip/uz_create_plan.c $(APPS_DIR)/uzip/uz_catalog.c \
+		$(APPS_DIR)/uzip/uz_u32.c \
+		-o $(OBJ_DIR)/host_tests/uz_create_plan_test
+	$(OBJ_DIR)/host_tests/uz_create_plan_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip -I$(LIB_DIR) \
+		$(BUILD_SUPPORT_DIR)/uz_package_test.c \
+		$(APPS_DIR)/uzip/uz_package.c \
+		-o $(OBJ_DIR)/host_tests/uz_package_test
+	$(OBJ_DIR)/host_tests/uz_package_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_deflate_test.c $(APPS_DIR)/uzip/uz_deflate.c \
+		$(APPS_DIR)/uzip/uz_deflate_match.c \
+		$(APPS_DIR)/uzip/uz_deflate_emit.c \
+		$(APPS_DIR)/uzip/uz_crc32.c $(APPS_DIR)/uzip/uz_u32.c -lz \
+		-o $(OBJ_DIR)/host_tests/uz_deflate_test
+	$(OBJ_DIR)/host_tests/uz_deflate_test
+	$(CLANG) -std=c89 -Wall -Wextra -Werror -I$(APPS_DIR)/uzip \
+		$(BUILD_SUPPORT_DIR)/uz_zip_deflate_test.c \
+		$(APPS_DIR)/uzip/uz_zip_write.c $(APPS_DIR)/uzip/uz_deflate.c \
+		$(APPS_DIR)/uzip/uz_deflate_match.c \
+		$(APPS_DIR)/uzip/uz_deflate_emit.c \
+		$(APPS_DIR)/uzip/uz_crc32.c $(APPS_DIR)/uzip/uz_u32.c -lz \
+		-o $(OBJ_DIR)/host_tests/uz_zip_deflate_test
+	$(OBJ_DIR)/host_tests/uz_zip_deflate_test
+
+uzip-contract-check: $(UZIP) $(UZPACK) uzip-host-tests
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_uzip_contract.py
 
 all: uci-protocol-check setup-contract-check setup-host-tests profile
 	@echo ""
@@ -1232,7 +1333,7 @@ programs: prepare-version $(PROGRAMS)
 profiles:
 	@$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py list-ids
 
-profile: uci-protocol-check setup-contract-check setup-host-tests programs
+profile: uci-protocol-check setup-contract-check setup-host-tests programs uzip-contract-check
 	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py build-release \
 		--profile "$(PROFILE)" \
