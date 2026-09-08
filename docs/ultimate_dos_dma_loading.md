@@ -32,7 +32,9 @@ condition and continues through the normal disk path.
 ## Runtime Flow
 
 1. The launcher parses `dma_loading` and `c64u_image_path` from `apps.cfg`.
-2. After drawing the launcher, it probes UCI and validates the image path.
+2. On cold startup, after drawing the launcher and before optional preload or
+   autorun, it probes UCI and validates the image path. The result and path are
+   published in the ReadyOS REU bank's `DM` v1 service record at `$FCC0-$FD3F`.
 3. For an app or resource load, Ultimate DOS mounts or reuses the configured
    image, obtains the exact PRG file size, skips the two-byte PRG load header,
    and issues an exact-size `LOAD_REU` into the loader-assigned bank and offset.
@@ -45,6 +47,13 @@ condition and continues through the normal disk path.
 DMA only changes how a cold PRG reaches REU. App switching still uses the same
 resident shim, logical-token lookup in the ReadyOS bank at `$B740`, and `$B600` REU
 stash/fetch operations.
+
+Ctrl-B restores DMA information from the system record, with no image
+revalidation or mount on the return path. The next actual file load establishes
+the DOS image path again because apps may have changed DOS's current directory.
+The menu is redrawn after the initial probe to remove its diagnostic stage digit.
+The [system architecture](ReadyOS_SHIM_ARCHITECTURE_0.5.md#dma-service-record)
+documents the record's fields, flags, ownership, and reset/update lifecycle.
 
 ## Launcher Indicator
 
@@ -73,7 +82,23 @@ accepting the transfer.
 
 ```sh
 python3 build_support/verify_launcher_dma_gate.py
+python3 build_support/verify_reu_control_bank.py
 ```
+
+The DMA record's production C lifecycle also has a host regression:
+
+```sh
+cc -std=c99 -Wall -Wextra build_support/reu_dma_record_test.c -o /tmp/readyos_reu_dma_record_test
+/tmp/readyos_reu_dma_record_test
+```
+
+`build_support/launcher_return_framework_plan.py` generates acceptance plans
+for the shared `vice_tasks_dotnet` UI automation framework. Its Ultimate plan
+boots a uniquely named test D81 and checks return/resume behavior at 1/16/64 MHz;
+the VICE plans cover regular D81 and EasyFlash. The framework owns input,
+screenshots, assertions, cleanup, and manifests. See the
+[return-path verification record](reports/launcher_dma_system_record_2026-09-07.md)
+for builds, evidence, and launch commands.
 
 Focused protocol work is documented in
 [`../probes/uci_dma/README.md`](../probes/uci_dma/README.md). Launcher acceptance

@@ -240,6 +240,9 @@
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current C64 Ultimate DOS DMA behavior. The Ultimate SKU enables it and disk fallback remains part of the contract.</aside>
 <!-- READYOS-DOC-STATUS:END -->
+<header id="title-block-header">
+<h1 class="title">ultimate_dos_dma_loading</h1>
+</header>
 <h1 id="c64-ultimate-dos-dma-loading">C64 Ultimate DOS DMA Loading</h1>
 <p>ReadyOS has a profile-gated launcher path that reads PRG payloads
 from a configured C64 Ultimate disk image directly into their allocated
@@ -275,8 +278,10 @@ detects that condition and continues through the normal disk path.</p>
 <ol type="1">
 <li>The launcher parses <code>dma_loading</code> and
 <code>c64u_image_path</code> from <code>apps.cfg</code>.</li>
-<li>After drawing the launcher, it probes UCI and validates the image
-path.</li>
+<li>On cold startup, after drawing the launcher and before optional
+preload or autorun, it probes UCI and validates the image path. The
+result and path are published in the ReadyOS REU bank's <code>DM</code>
+v1 service record at <code>$FCC0-$FD3F</code>.</li>
 <li>For an app or resource load, Ultimate DOS mounts or reuses the
 configured image, obtains the exact PRG file size, skips the two-byte
 PRG load header, and issues an exact-size <code>LOAD_REU</code> into the
@@ -292,6 +297,14 @@ loader.</li>
 the same resident shim, logical-token lookup in the ReadyOS bank at
 <code>$B740</code>, and <code>$B600</code> REU stash/fetch
 operations.</p>
+<p>Ctrl-B restores DMA information from the system record, with no image
+revalidation or mount on the return path. The next actual file load
+establishes the DOS image path again because apps may have changed DOS's
+current directory. The menu is redrawn after the initial probe to remove
+its diagnostic stage digit. The <a
+href="ReadyOS_SHIM_ARCHITECTURE_0.5.md#dma-service-record">system
+architecture</a> documents the record's fields, flags, ownership, and
+reset/update lifecycle.</p>
 <h2 id="launcher-indicator">Launcher Indicator</h2>
 <ul>
 <li><code>DMA:YES</code>: UCI and the configured path are available, but
@@ -304,12 +317,12 @@ remains active.</li>
 <p>When <code>dma_loading=1</code> but the configured path is empty or
 malformed, UCI or Ultimate DOS cannot be reached, or the configured
 directory/image cannot be opened, the launcher also shows
-<code>RUN SETUP APP FOR FAST APP LOADING</code> on its home screen. Normal
-drive loading remains available.</p>
+<code>RUN SETUP APP FOR FAST APP LOADING</code> on its home screen.
+Normal drive loading remains available.</p>
 <p>Transient <code>DMA LOADING n/n</code> progress text is used by
 hardware smoke tests.</p>
 <h2 id="exact-size-rule">Exact-Size Rule</h2>
-<p>Ultimate DOS <code>LOAD_REU</code> must receive the payload’s exact
+<p>Ultimate DOS <code>LOAD_REU</code> must receive the payload's exact
 byte length (file size minus the two-byte PRG header), not the capacity
 of the destination slot. This is especially important for ReadyShell
 overlays sharing a resource bank: a slot-sized transfer can consume
@@ -317,7 +330,20 @@ bytes belonging to the following packed payload. The loader also
 validates the expected PRG load address before accepting the
 transfer.</p>
 <h2 id="verification">Verification</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_launcher_dma_gate.py</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_launcher_dma_gate.py</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_reu_control_bank.py</span></code></pre></div>
+<p>The DMA record's production C lifecycle also has a host
+regression:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cc</span> <span class="at">-std</span><span class="op">=</span>c99 <span class="at">-Wall</span> <span class="at">-Wextra</span> build_support/reu_dma_record_test.c <span class="at">-o</span> /tmp/readyos_reu_dma_record_test</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">/tmp/readyos_reu_dma_record_test</span></span></code></pre></div>
+<p><code>build_support/launcher_return_framework_plan.py</code>
+generates acceptance plans for the shared <code>vice_tasks_dotnet</code>
+UI automation framework. Its Ultimate plan boots a uniquely named test
+D81 and checks return/resume behavior at 1/16/64 MHz; the VICE plans
+cover regular D81 and EasyFlash. The framework owns input, screenshots,
+assertions, cleanup, and manifests. See the <a
+href="reports/launcher_dma_system_record_2026-09-07.md">return-path
+verification record</a> for builds, evidence, and launch commands.</p>
 <p>Focused protocol work is documented in <a
 href="../probes/uci_dma/README.md"><code>../probes/uci_dma/README.md</code></a>.
 Launcher acceptance fixtures are in <a
