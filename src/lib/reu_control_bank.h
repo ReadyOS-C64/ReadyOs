@@ -73,8 +73,30 @@
 #define REUCB_AUDIT_SIZE        0x0100u
 #define REUCB_RUNTIME_OFF       0xFC40u
 #define REUCB_RUNTIME_SIZE      0x0080u
-#define REUCB_RESERVED_OFF      0xFCC0u
-#define REUCB_RESERVED_SIZE     0x0340u
+#define REUCB_DMA_OFF           0xFCC0u
+#define REUCB_DMA_SIZE          0x0080u
+#define REUCB_RESERVED_OFF      0xFD40u
+#define REUCB_RESERVED_SIZE     0x02C0u
+
+/* DMA service record v1: compatible extension of schema v5. Launcher owns
+ * writes; other apps may read it through readyos_bank_read[_byte]. Validation
+ * describes this boot's configured path, never a guarantee of current DOS cwd.
+ * See docs/ReadyOS_SHIM_ARCHITECTURE_0.5.md for lifecycle and byte layout. */
+#define REUCB_DMA_MAGIC0        0x44u /* ASCII D */
+#define REUCB_DMA_MAGIC1        0x4Du /* ASCII M */
+#define REUCB_DMA_VERSION       1u
+#define REUCB_DMA_OFF_MAGIC0    0u
+#define REUCB_DMA_OFF_MAGIC1    1u
+#define REUCB_DMA_OFF_VERSION   2u
+#define REUCB_DMA_OFF_FLAGS     3u
+#define REUCB_DMA_OFF_ERROR     4u
+#define REUCB_DMA_OFF_PATH      8u
+#define REUCB_DMA_PATH_SIZE     96u
+#define REUCB_DMA_COMPILED      0x01u
+#define REUCB_DMA_ENABLED       0x02u
+#define REUCB_DMA_CHECKED       0x04u
+#define REUCB_DMA_AVAILABLE     0x08u
+#define REUCB_DMA_USED          0x10u
 
 /* Compatibility names for code which treats the app-record resource fields
  * as dependency slots.  Schema v5 stores those bytes in each app record. */
@@ -95,6 +117,10 @@
 #define REUCB_HEADER_FIRST_UNAVAIL  45u
 #define REUCB_HEADER_FLAGS          46u
 #define REUCB_HEADER_FLAG_PHYS_SIZE 0x01u
+#define REUCB_HEADER_DMA_OFF_LO  47u
+#define REUCB_HEADER_DMA_OFF_HI  48u
+#define REUCB_HEADER_DMA_SIZE    49u
+#define REUCB_HEADER_DMA_VERSION 50u
 
 #define REUCB_TOKEN_VALID        0x01u
 #define REUCB_TOKEN_LOADED       0x02u
@@ -148,6 +174,8 @@
 void reu_control_bank_sync_and_mirror(unsigned char writer_id);
 void reu_control_bank_prepare(unsigned char physical_banks);
 unsigned char reu_control_bank_is_valid(void);
+void reu_control_bank_reset_dma(void);
+unsigned char reu_control_bank_dma_is_valid(void);
 
 void reu_control_bank_write_launcher_registry(
     unsigned char first_app_index,

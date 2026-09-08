@@ -80,7 +80,8 @@ All scalable state is authoritative in the ReadyOS bank.
 | launcher catalog-shape settings | ReadyOS `$B9D9-$B9FF` | `LS` v1 record used to reconstruct launcher arrays from the authoritative registry |
 | app/resource/dependency/catalog records | ReadyOS `$BA00-$FB3F` | normalized 64-app registry and cold metadata |
 | launcher executable snapshot | ReadyOS `$0000-$B5FF` | restored for token `0` |
-| launcher runtime/resume record | ReadyOS `$FC40-$FCBF` | `RSM1`-validated UI state (selection, scroll, one-shot flag, and DMA-use flag/path when enabled) |
+| launcher runtime/resume record | ReadyOS `$FC40-$FCBF` | `RSM1`-validated UI state: selection, scroll, one-shot flag |
+| Ultimate DMA service information | ReadyOS `$FCC0-$FD3F` | `DM` v1 record: compiled/enabled/checked/available/used flags, last error, configured host image path; launcher writes, apps/tools may read |
 
 The ReadyOS bank is the source of truth. Resident shim bytes carry only the
 minimum transition operands and one-byte DMA scratch needed while app RAM is
@@ -186,8 +187,9 @@ logical token without carrying a large resident table.
 | `$EE40` | `$09C0` | catalog descriptions (`64 x 39`) |
 | `$F800` | `$0340` | catalog file tokens (`64 x 13`) |
 | `$FB40` | `$0100` | audit page |
-| `$FC40` | `$0080` | launcher `RSM1` envelope: 16-byte header plus compact UI payload; DMA builds also persist the bounded image path |
-| `$FCC0` | `$0340` | reserved for compatible schema growth |
+| `$FC40` | `$0080` | launcher `RSM1` envelope: 16-byte header plus compact UI payload |
+| `$FCC0` | `$0080` | DMA service record (`DM` v1), independent of launcher UI resume |
+| `$FD40` | `$02C0` | reserved for compatible schema growth |
 
 `reu_control_bank_sync_and_mirror()` writes bank types directly to the ReadyOS
 bank; there is no resident mirror to reconcile. The launcher registry writer
@@ -208,6 +210,52 @@ Because that scratch buffer is also used for ReadyOS DMA publication, code may
 not retain a pointer returned by a catalog accessor across a metadata write.
 The preload path resolves/allocates its token first and only then fetches the
 filename; the DMA fallback reacquires the filename after republishing state.
+
+### DMA service record
+
+The `REUCB_DMA_*` constants in `src/lib/reu_control_bank.h` define this public,
+launcher-owned record. Apps and tools read it with `readyos_bank_read()` or
+`readyos_bank_read_byte()`. Its address is an offset in the physical ReadyOS
+REU bank identified by shim `$C83B`, not a C64 RAM address. Header bytes 47–48
+publish `$FCC0` little-endian, byte 49 publishes its 128-byte size, and byte 50
+publishes record version 1. This consumes formerly reserved bytes without
+moving any schema-v5 fields; the outer `RCB5` ABI remains compatible.
+
+| Relative offset | Size | Meaning |
+|---:|---:|---|
+| `$00` | 2 | numeric ASCII magic `$44,$4D` (`DM`) |
+| `$02` | 1 | version: `1` |
+| `$03` | 1 | flags listed below |
+| `$04` | 1 | last launcher DMA/probe error; zero for success, disabled or unconfigured |
+| `$05` | 3 | reserved, zero |
+| `$08` | 96 | NUL-terminated configured Ultimate host image path, max 95 bytes; host-case/path conversion follows `apps.cfg` parsing |
+| `$68` | 24 | reserved, zero |
+
+Flags: `$01` DMA support compiled in; `$02` enabled in configuration; `$04`
+startup availability decision completed; `$08` available after successful
+validation; `$10` at least one successful DMA load this boot. `USED` is a
+historical fact and can remain set after a later failure clears `AVAILABLE`.
+The error byte uses the launcher's existing error codes (`$01` no UCI,
+`$02-$07` PRG operations, `$08-$10` path/mount operations). UI progress digits
+are never published as errors.
+
+Every cold launcher startup resets this record, including portable and
+EasyFlash builds (valid record with zero flags/path means unsupported).
+The Ultimate launcher publishes the configured path and completed probe result
+before optional preload/autorun. Successful loads and failures update status
+immediately. Ordinary REU app switches and header/registry refreshes preserve
+the record. The compact `RSM1` UI payload no longer owns DMA flags or its path.
+
+On Ctrl-B the launcher reads this record and the app registry entirely from
+REU. It issues no UCI probe, mount, or config read on a valid warm return.
+An invalid DMA record fails closed for that return; cold startup initializes
+it again. `AVAILABLE` records successful validation of the configured image
+for this boot; it does **not** assert that drive 8 is still mounted or that
+Ultimate DOS's current directory is unchanged. The launcher clears that
+transient assumption on return and establishes the path on the next actual
+DMA file load. Within a load batch it can reuse the mounted image. This keeps
+menu returns independent of disk activity while permitting apps to use
+Ultimate DOS themselves.
 
 ## App Switching With the Split State
 

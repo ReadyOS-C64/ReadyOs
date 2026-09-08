@@ -153,7 +153,7 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 #define LAUNCHER_DMA_LOAD_RESOURCES 1
 #endif
 #define RESOURCE_IO_CHUNK 96
-#define LAUNCHER_C64U_IMAGE_PATH_LEN 95
+#define LAUNCHER_C64U_IMAGE_PATH_LEN (REUCB_DMA_PATH_SIZE - 1u)
 #define LAUNCHER_C64U_IMAGE_DIR_LEN 63
 #define LAUNCHER_C64U_IMAGE_NAME_LEN 47
 #define LAUNCHER_C64U_IMAGE_PATH_DEFAULT "/usb1/readyos.d81"
@@ -233,12 +233,8 @@ void reu_dma_stash(unsigned int c64_addr, unsigned char bank,
 
 /* REU bank assignments */
 #define REU_BANK_LAUNCHER  0   /* Token 0 is the launcher in the ReadyOS bank */
-#define LAUNCHER_RESUME_SCHEMA 11
-#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-#define LAUNCHER_RESUME_SEG_COUNT 2
-#else
+#define LAUNCHER_RESUME_SCHEMA 12
 #define LAUNCHER_RESUME_SEG_COUNT 1
-#endif
 
 /* App save size - must include code + data + BSS */
 #define APP_SAVE_SIZE 0xB600  /* $1000-$C5FF (45.5KB) */
@@ -1183,10 +1179,6 @@ static void catalog_init_defaults(void) {
     clear_cfg_diag();
 }
 
-static void catalog_rebind_views(void) {
-    catalog_invalidate_cache();
-}
-
 static void launcher_resume_save(unsigned char selected,
                                  unsigned char scroll_offset,
                                  unsigned char suppress_startup_once) {
@@ -1199,19 +1191,10 @@ static void launcher_resume_save(unsigned char selected,
     launcher_resume_blob.selected = selected;
     launcher_resume_blob.scroll_offset = scroll_offset;
     launcher_resume_blob.suppress_startup_once = suppress_startup_once;
-#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-    launcher_resume_blob.reserved = (unsigned char)(launcher_dma_used |
-        (launcher_cfg_dma_loading ? 0x02u : 0u));
-#else
     launcher_resume_blob.reserved = 0;
-#endif
 
     segs[0].ptr = &launcher_resume_blob;
     segs[0].len = sizeof(launcher_resume_blob);
-#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-    segs[1].ptr = &launcher_c64u_image_path[0];
-    segs[1].len = sizeof(launcher_c64u_image_path);
-#endif
     (void)resume_save_segments(segs, LAUNCHER_RESUME_SEG_COUNT);
 }
 
@@ -1225,22 +1208,12 @@ static unsigned char launcher_resume_restore(unsigned char *out_selected,
     }
     segs[0].ptr = &launcher_resume_blob;
     segs[0].len = sizeof(launcher_resume_blob);
-#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-    segs[1].ptr = &launcher_c64u_image_path[0];
-    segs[1].len = sizeof(launcher_c64u_image_path);
-#endif
     if (!resume_load_segments(segs, LAUNCHER_RESUME_SEG_COUNT, &payload_len)) {
         return 0;
     }
-    if (payload_len != (sizeof(launcher_resume_blob)
-#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-                        + sizeof(launcher_c64u_image_path)
-#endif
-                        )) {
+    if (payload_len != sizeof(launcher_resume_blob)) {
         return 0;
     }
-
-    catalog_rebind_views();
 
     /* app_count is still at its minimal pre-registry value here.  Preserve
      * the raw selection and validate it after the authoritative ReadyOS app
@@ -1931,7 +1904,7 @@ static unsigned char launcher_restore_registry_from_readyos(void) {
             (unsigned int)launcher_rsrc_rec_buf[REUCB_APP_REC_SIZE_LO] |
             ((unsigned int)launcher_rsrc_rec_buf[REUCB_APP_REC_SIZE_HI] << 8);
     }
-    catalog_rebind_views();
+    catalog_invalidate_cache();
     return 1u;
 }
 
@@ -2360,18 +2333,24 @@ static unsigned char launcher_dma_hex(unsigned char value) {
 
 #define launcher_dma_check_available() (launcher_dma_available && launcher_dma_probe_ok)
 
+static void launcher_dma_publish_status(void) {
+    unsigned char flags;
+
+    flags = REUCB_DMA_COMPILED | REUCB_DMA_CHECKED;
+    if (launcher_cfg_dma_loading) flags |= REUCB_DMA_ENABLED;
+    if (launcher_dma_check_available()) flags |= REUCB_DMA_AVAILABLE;
+    if (launcher_dma_used) flags |= REUCB_DMA_USED;
+    readyos_bank_write_byte(REUCB_DMA_OFF + REUCB_DMA_OFF_ERROR,
+                            launcher_dma_breadcrumb);
+    readyos_bank_write_byte(REUCB_DMA_OFF + REUCB_DMA_OFF_FLAGS, flags);
+}
+
 static void launcher_dma_reset_runtime_state(void) {
     launcher_dma_probe_ok = 0u;
     launcher_dma_used = 0u;
     launcher_dma_image_ready = 0u;
     launcher_uci_dma_assume_mounted = 0u;
     launcher_dma_breadcrumb = 0u;
-}
-
-static void launcher_dma_init_from_config(void) {
-    launcher_dma_reset_runtime_state();
-    launcher_dma_available = (unsigned char)(launcher_cfg_dma_loading &&
-                                              launcher_c64u_image_path[0] != 0u);
 }
 
 static void launcher_dma_advise_setup(void) {
@@ -2416,7 +2395,7 @@ static void launcher_dma_probe_after_draw(void) {
     char *slash;
     unsigned char restore_slash;
 
-    if (launcher_c64u_image_path[0] == 0u) {
+    if (!launcher_cfg_dma_loading || launcher_c64u_image_path[0] == 0u) {
         launcher_dma_available = 0u;
         launcher_dma_reset_runtime_state();
         launcher_dma_advise_setup();
@@ -2476,8 +2455,6 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
                                                  unsigned int max_len,
                                                  unsigned int load_addr) {
     char *slash;
-    char *cursor;
-    char *dir_start;
     unsigned char i;
     unsigned char restore_slash;
     unsigned char dma_ok;
@@ -2512,31 +2489,10 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
     launcher_dma_breadcrumb = 0x34u;
     (*(volatile unsigned char*)0x052D) = 0x34;
 
-    slash = 0;
-    cursor = launcher_c64u_image_path;
-    while (*cursor != 0) {
-        if (*cursor == '/') {
-            slash = cursor;
-        }
-        ++cursor;
-    }
-    if (slash == 0 || slash[1] == 0) {
+    slash = launcher_dma_prepare_image_path(&restore_slash);
+    if (slash == 0) {
         return 0u;
     }
-    restore_slash = 0u;
-    if (slash == launcher_c64u_image_path) {
-        dir_start = (char*)launcher_dma_root_dir;
-    } else {
-        dir_start = launcher_c64u_image_path;
-        if (slash == dir_start) {
-            return 0u;
-        }
-        *slash = 0;
-        restore_slash = 1u;
-    }
-    launcher_uci_dma_image_dir = dir_start;
-    launcher_uci_dma_image_name = slash + 1;
-    launcher_uci_dma_mount_name = slash + 1;
     launcher_uci_dma_name = launcher_dma_name_buf;
     launcher_uci_dma_reu_bank = bank;
     launcher_uci_dma_reu_offset = reu_off;
@@ -2558,6 +2514,8 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         launcher_uci_dma_assume_mounted = 1u;
         launcher_uci_dma_quiesce();
         launcher_uci_dma_clear_stage();
+        launcher_dma_breadcrumb = 0u;
+        launcher_dma_publish_status();
         return 1u;
     }
     launcher_dma_breadcrumb = launcher_uci_dma_last_error;
@@ -2585,6 +2543,7 @@ static unsigned char launcher_dma_try_prg_to_reu(unsigned char drive,
         launcher_uci_dma_assume_mounted = 1u;
     }
     launcher_uci_dma_quiesce();
+    launcher_dma_publish_status();
     return 0u;
 }
 
@@ -3736,7 +3695,7 @@ static unsigned char parse_manifest_from_disk(unsigned char manifest_drive,
                                         (const char *)launcher_dep_line_buf);
     }
 
-    catalog_rebind_views();
+    catalog_invalidate_cache();
     menu.count = launcher_menu_count();
     *out_index = (unsigned char)(app_count - 1u);
     return 0u;
@@ -3755,7 +3714,7 @@ static void rollback_manifest_app(unsigned char index) {
     app_default_slots[index] = 0u;
     catalog_clear_entry(index);
     --app_count;
-    catalog_rebind_views();
+    catalog_invalidate_cache();
     menu.count = launcher_menu_count();
 }
 
@@ -4346,6 +4305,9 @@ static void launcher_init(void) {
     unsigned char detail_a;
     unsigned char detail_b;
     unsigned char detail_c;
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    unsigned char dma_flags;
+#endif
 
     *KERNAL_BLNSW = 1u;
     tui_init();
@@ -4357,7 +4319,6 @@ static void launcher_init(void) {
         (unsigned char)(*SHIM_LAUNCHER_FLAGS &
                         (unsigned char)~SHIM_LAUNCHER_FLAG_SUPPRESS_STARTUP);
     catalog_init_defaults();
-    catalog_rebind_views();
     resume_ready = 0;
 
     resume_init_for_app(REU_BANK_LAUNCHER, REU_BANK_LAUNCHER,
@@ -4382,13 +4343,13 @@ static void launcher_init(void) {
     }
     if (!restored_resume) {
         catalog_init_defaults();
-        catalog_rebind_views();
         saved_selected = 0;
         saved_scroll_offset = 0;
         saved_suppress_startup_once = 0;
     }
 
     if (!used_cached_catalog) {
+        reu_control_bank_reset_dma();
         catalog_clear_all_entries();
         launcher_control_clear_dependency_lines();
         launcher_control_clear_resource_records();
@@ -4414,13 +4375,28 @@ static void launcher_init(void) {
         slot_contract_ok = 1;
     }
 #if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-    launcher_dma_init_from_config();
+    /* Validation belongs to cold startup. Resume restores its result from
+     * REU without touching Ultimate DOS. Apps may change the DOS directory,
+     * so reset image_ready and let the next actual load establish its path. */
+    launcher_dma_reset_runtime_state();
+    launcher_dma_available = 0u;
     if (used_cached_catalog) {
-        launcher_cfg_dma_loading =
-            (unsigned char)((launcher_resume_blob.reserved & 0x02u) != 0u);
-        launcher_dma_init_from_config();
-        if ((launcher_resume_blob.reserved & 0x01u) != 0u &&
-            launcher_dma_available) launcher_dma_used = 1u;
+        if (reu_control_bank_dma_is_valid()) {
+            dma_flags = readyos_bank_read_byte(REUCB_DMA_OFF + REUCB_DMA_OFF_FLAGS);
+            readyos_bank_read(REUCB_DMA_OFF + REUCB_DMA_OFF_PATH,
+                              launcher_c64u_image_path, REUCB_DMA_PATH_SIZE);
+            launcher_c64u_image_path[LAUNCHER_C64U_IMAGE_PATH_LEN] = 0;
+            launcher_cfg_dma_loading = (unsigned char)((dma_flags & REUCB_DMA_ENABLED) != 0u);
+            launcher_dma_available = (unsigned char)(launcher_cfg_dma_loading &&
+                launcher_c64u_image_path[0] != 0u &&
+                (dma_flags & REUCB_DMA_CHECKED) && (dma_flags & REUCB_DMA_AVAILABLE));
+            launcher_dma_probe_ok = launcher_dma_available;
+            launcher_dma_used = (unsigned char)((dma_flags & REUCB_DMA_USED) != 0u);
+            launcher_dma_breadcrumb = readyos_bank_read_byte(REUCB_DMA_OFF + REUCB_DMA_OFF_ERROR);
+        }
+        if (!launcher_dma_available) {
+            launcher_dma_advise_setup();
+        }
     }
 #endif
     if (shim_suppress_startup_once) {
@@ -4445,9 +4421,7 @@ static void launcher_init(void) {
         launcher_resume_save(menu.selected, menu.scroll_offset, 0);
     }
 
-    /* ALWAYS sync apps_loaded from shim's reu_bitmap - this is the
-     * authoritative source for what's actually in REU. Don't rely on
-     * stale values from before the REU restore. */
+    /* The ReadyOS-bank token table owns current snapshot status. */
     for (i = 0; i < app_count; ++i) {
         apps_loaded[i] = 0;
         app_sizes[i] = 0;
@@ -4460,6 +4434,17 @@ static void launcher_init(void) {
     launcher_mirror_reu_control();
     launcher_seed_default_hotkeys();
 
+#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
+    if (!used_cached_catalog) {
+        /* Validate before optional preload/autorun so their saved state also
+         * carries the result. The next menu draw removes transport digits. */
+        launcher_draw();
+        launcher_dma_probe_after_draw();
+        readyos_bank_write(REUCB_DMA_OFF + REUCB_DMA_OFF_PATH,
+                           launcher_c64u_image_path, REUCB_DMA_PATH_SIZE);
+        launcher_dma_publish_status();
+    }
+#endif
     running = 1;
     launcher_apply_startup_actions(saved_suppress_startup_once);
 }
@@ -4471,18 +4456,12 @@ static void launcher_loop(void) {
     unsigned char old_selected;
     unsigned char old_scroll_offset;
 
-    /* apps_loaded[] is already synced from reu_bitmap in launcher_init() */
+    /* Snapshot status is already synced in launcher_init(). */
     if (!running) {
         return;
     }
 
     launcher_draw();
-#if !READYOS_LAUNCHER_VARIANT_EASYFLASH && LAUNCHER_DMA_LOAD
-    launcher_dma_probe_after_draw();
-    draw_status();
-    draw_notice();
-    launcher_hide_kernal_cursor();
-#endif
 
     while (running) {
         launcher_hide_kernal_cursor();

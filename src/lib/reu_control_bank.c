@@ -76,7 +76,28 @@ static void reucb_write_header(unsigned char writer_id,
     reucb_header[REUCB_HEADER_PHYS_BANKS] = physical_banks;
     reucb_header[REUCB_HEADER_FIRST_UNAVAIL] = physical_banks;
     reucb_header[REUCB_HEADER_FLAGS] = REUCB_HEADER_FLAG_PHYS_SIZE;
+    reucb_header[REUCB_HEADER_DMA_OFF_LO] = (unsigned char)REUCB_DMA_OFF;
+    reucb_header[REUCB_HEADER_DMA_OFF_HI] = (unsigned char)(REUCB_DMA_OFF >> 8);
+    reucb_header[REUCB_HEADER_DMA_SIZE] = REUCB_DMA_SIZE;
+    reucb_header[REUCB_HEADER_DMA_VERSION] = REUCB_DMA_VERSION;
     readyos_bank_write(REUCB_HEADER_OFF, reucb_header, REUCB_HEADER_SIZE);
+}
+
+void reu_control_bank_reset_dma(void) {
+    reucb_fill(reucb_zero, 0u, REUCB_HEADER_SIZE);
+    readyos_bank_write(REUCB_DMA_OFF, reucb_zero, REUCB_HEADER_SIZE);
+    readyos_bank_write(REUCB_DMA_OFF + REUCB_HEADER_SIZE,
+                       reucb_zero, REUCB_HEADER_SIZE);
+    readyos_bank_write_byte(REUCB_DMA_OFF + REUCB_DMA_OFF_MAGIC0, REUCB_DMA_MAGIC0);
+    readyos_bank_write_byte(REUCB_DMA_OFF + REUCB_DMA_OFF_MAGIC1, REUCB_DMA_MAGIC1);
+    readyos_bank_write_byte(REUCB_DMA_OFF + REUCB_DMA_OFF_VERSION, REUCB_DMA_VERSION);
+}
+
+unsigned char reu_control_bank_dma_is_valid(void) {
+    readyos_bank_read(REUCB_DMA_OFF, reucb_header, 3u);
+    return (unsigned char)(reucb_header[0] == REUCB_DMA_MAGIC0 &&
+                           reucb_header[1] == REUCB_DMA_MAGIC1 &&
+                           reucb_header[2] == REUCB_DMA_VERSION);
 }
 
 void reu_control_bank_prepare(unsigned char physical_banks) {

@@ -146,6 +146,10 @@ additional release work will be recorded here as it lands.
   at `$B9D9` and app registry at `$BA00` reconstruct the app-bank, drive,
   hotkey, resource, loaded-state, and size arrays. Those arrays are not kept as
   a second authoritative copy in the launcher resume payload.
+- Ultimate DMA configuration and validation are first-class system state in
+  the ReadyOS `$FCC0` `DM` v1 service record. It owns the image path, enable/
+  availability/use flags, and last error. Ctrl-B restores this state without
+  repeating the startup probe or remounting the D81.
 - Apps can opt into owner-recorded runtime REU allocation without growing the
   primitive allocator or shim. QuickNotes note banks and the IRC scrollback
   banks now publish compact ownership records in the ReadyOS bank, so REU
@@ -488,9 +492,11 @@ architecture report.
 
 The ReadyOS bank also contains the active launcher catalog-shape settings at
 `$B9D9-$B9FF` and a 128-byte validated launcher runtime envelope at
-`$FC40-$FCBF`. The latter stores only compact UI state (and the bounded
-Ultimate DMA image path in DMA-enabled builds); the launcher restores its
-working registry arrays from the ReadyOS app records after every return.
+`$FC40-$FCBF`. The latter stores only compact UI state; the launcher restores
+its working registry arrays from the ReadyOS app records after every return.
+The separate DMA service record at `$FCC0-$FD3F` owns the bounded image path
+and validation status. Its byte layout and lifecycle are documented with the
+other system records in [the shim architecture](docs/ReadyOS_SHIM_ARCHITECTURE_0.5.md#dma-service-record).
 
 Disk layout:
 

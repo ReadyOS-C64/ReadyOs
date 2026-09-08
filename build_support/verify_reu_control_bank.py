@@ -70,6 +70,20 @@ def main() -> int:
             "launcher UI resume state starts at $FC40")
     require(define_int(hdr, "REUCB_RUNTIME_SIZE") == 0x0080,
             "launcher UI resume state has a 128-byte envelope")
+    require(define_int(hdr, "REUCB_DMA_OFF") ==
+            define_int(hdr, "REUCB_RUNTIME_OFF") + define_int(hdr, "REUCB_RUNTIME_SIZE"),
+            "DMA service record follows UI state without overlap")
+    require(define_int(hdr, "REUCB_DMA_SIZE") == 128 and
+            define_int(hdr, "REUCB_DMA_OFF_PATH") + define_int(hdr, "REUCB_DMA_PATH_SIZE") <= 128,
+            "DMA record contains its bounded host path")
+    require(define_int(hdr, "REUCB_RESERVED_OFF") ==
+            define_int(hdr, "REUCB_DMA_OFF") + define_int(hdr, "REUCB_DMA_SIZE") and
+            define_int(hdr, "REUCB_RESERVED_OFF") + define_int(hdr, "REUCB_RESERVED_SIZE") == 65536,
+            "DMA record and remaining reservation exactly fill the bank tail")
+    require(all(define_int(hdr, name) < define_int(hdr, "REUCB_HEADER_SIZE") for name in (
+        "REUCB_HEADER_DMA_OFF_LO", "REUCB_HEADER_DMA_OFF_HI",
+        "REUCB_HEADER_DMA_SIZE", "REUCB_HEADER_DMA_VERSION")),
+        "DMA descriptor fits in the ReadyOS header")
     require(define_int(hdr, "REUCB_APP_REG_OFF") == 0xBA00, "64-app registry starts at $BA00")
     require(define_int(hdr, "REUCB_APP_REG_SIZE") == 16, "app registry records are 16 bytes")
     require(define_int(hdr, "REUCB_APP_REG_COUNT") == 64, "app registry has 64 entries")
