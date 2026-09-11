@@ -166,7 +166,8 @@ project = Path(os.environ.get("VICE_TASKS_ROOT", str(ROOT.parent / "agenticdevha
 previous_runs = set((ROOT / "logs").glob("vice_auto_*/manifest.json"))
 subprocess.run(["dotnet","run","--project",str(project),"--","run","--plan",str(out),"--close-vice"],cwd=ROOT,check=True)
 new_runs = set((ROOT / "logs").glob("vice_auto_*/manifest.json")) - previous_runs
-matching = [p for p in new_runs if json.loads(p.read_text(encoding="utf-8-sig")).get("plan_id") == plan["plan_id"]]
+matching = [p for p in new_runs if p.parent.name != "vice_auto_latest"
+            and json.loads(p.read_text(encoding="utf-8-sig")).get("plan_id") == plan["plan_id"]]
 assert len(matching) == 1, "expected exactly one media probe run"
 run_dir = matching[0].parent
 colors, ticks = [], []

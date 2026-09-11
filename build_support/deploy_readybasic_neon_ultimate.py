@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upload the prepared RBSND08 image and start normal ReadyOS disk boot.
+"""Upload the prepared multimedia-demo image and start normal ReadyOS disk boot.
 
 Run from a Terminal-owned/background shell: Codex foreground networking can
 report false connection failures on this host. Only a fresh owned folder is
@@ -40,13 +40,17 @@ with FTP(host, timeout=90) as ftp:
     parent, filename = remote.rsplit("/", 1)
     grandparent, folder = parent.rsplit("/", 1)
     ftp.cwd(grandparent)
-    ftp.mkd(folder)  # Fail if it already exists; never replace another image.
-    ftp.cwd(folder)
-    ftp.storbinary("STOR " + filename, io.BytesIO(data))
+    if os.environ.get('READYBASIC_REUSE_VERIFIED_IMAGE') != '1':
+        ftp.mkd(folder)  # Fail if it exists; never replace another image.
+        ftp.cwd(folder)
+        ftp.storbinary("STOR " + filename, io.BytesIO(data))
+    else:
+        ftp.cwd(folder)  # Recovery boot: read back, never rewrite the image.
     readback = io.BytesIO()
     ftp.retrbinary("RETR " + filename, readback.write)
     assert readback.getvalue() == data, "uploaded D81 readback mismatch"
-print("Uploaded and verified:", remote, hashlib.sha256(data).hexdigest(), flush=True)
+action = 'Verified existing image:' if os.environ.get('READYBASIC_REUSE_VERIFIED_IMAGE') == '1' else 'Uploaded and verified:'
+print(action, remote, hashlib.sha256(data).hexdigest(), flush=True)
 api("drives/a:mount?" + urlencode(dict(image=remote, type="d81", mode="unlinked")), "PUT")
 api("machine:reset", "PUT")
 time.sleep(4)

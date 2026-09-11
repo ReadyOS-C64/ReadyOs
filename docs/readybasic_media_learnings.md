@@ -44,7 +44,8 @@ DOS write-mode selection. Load/close returns to default KERNAL channels.
 - Bridge-owned lifetime byte: `$c1ff` (0 empty, 1 loaded, 2 playing).
 - Tick counter: little-endian `$9006/$9007`; init/play pointers `$9008-$900b`.
 - Media module: disposable `$b000-$bfff` span, REU code offset `$8000`,
-  submodule 24; descriptors `$1be0-$1c7f` (moved for built-in BORDER).
+  submodule 24; eight descriptors `$1c00-$1cff` (moved past built-in BORDER
+  and USPEED; includes the later graphics commands).
   No ReadyOS shim calls in playback.
 - MEMCAP validation uses spare built-in overlay space; only its commit touches
   BASIC's pointers, in the visible core. Cold BASIC capacity isn't the space
@@ -398,3 +399,76 @@ ignored so backups and recordings cannot accidentally enter a source commit.
   playback at 16/64 MHz are different claims. Manual turbo disables software
   speed registers, so do not promise automatic safe I/O in that configuration.
   The manual handoff is restored to 1 MHz so repeating RUN stays supported.
+
+## Two demo variants and software turbo (2026-09-11)
+
+- `USPEED(mhz)` belongs in a built-in overlay for now: putting the only way to
+  downshift inside a disk-loaded module would require the unsafe load first.
+  It uses 75 additional INPUTEV bytes (251/2048 total), no new resident parser
+  or BASIC memory. Media registration moves to $1C00 after its descriptor.
+- Use the documented C64 Ultimate / Elite-II D031 table, not the older U64
+  table: 16 MHz is index 9 here. Preserve bit 7. Manual/Off expose $FF and are
+  rejected; invalid MHz values are rejected before hardware access.
+- New `RBGFXSNDDEMO` and `RBUGFXSNDDEMO` replace the old disk demo entry to
+  keep the Ultimate D81 within capacity. The old source is retained.
+  This SKU now has only one free disk block: future sample/resource additions
+  need deliberate disk-content budgeting, not silent truncated writes.
+- Precalculate sprite heights and line endpoints before showing graphics;
+  use five unrolled SPRMOVE calls and an integer-result PHASE function. A
+  roughly 2.13-second wave is clock-driven, not multiplied by CPU speed.
+  This is still BASIC animation, not a raster-synchronized sprite engine.
+- Q releases graphics and music, then CLR/MEMCAP. M releases graphics and
+  BASIC arrays but preserves the music arena at $9000. Both restore the saved
+  border/background/foreground. Ultimate also returns to 1 MHz on both exits.
+- The first prototype exposed two unsupported BASIC forms: scalar integer
+  assignment of -1 reached GETADR and failed, and a zero-argument FUNC call
+  produced syntax error. Use sentinel 256 and `FUNC PHASE(tk%)` with
+  `RET%`, matching the existing RBSND07 integer-result pattern. These are
+  scoped demo corrections, not interpreter fixes.
+- `EXEC WEAVE:LT=TI` failed on return at its caller line; giving the EXEC
+  and assignment their own lines made the animation run. Keep this as a
+  demonstrated narrow workaround, not a blanket claim about every inline EXEC.
+- Test the hidden text screen for errors as well as SID state: an IRQ tune
+  and intact bitmap can keep running after BASIC has already stopped.
+- Physical test discipline: REST memory reads (including decoded-screen and
+  memory-assert steps) can lock up C64U disk I/O. A 110-second startup wait
+  proved insufficient for this heavier precomputation/load sequence; that test
+  encountered I/O error 21 with the speed register still at 1 MHz. Do not treat
+  it as evidence that software-selected 1 MHz is unreliable. Subsequent tests
+  use video-stream-only observation and require moving cyan READY letters
+  before enabling memory inspection. Failed interrupted transfers get a fresh
+  ReadyOS boot, not an assumption that retrying RUN repairs the bus state.
+- Blanking is not staging: MCFILE currently writes final bitmap/palette RAM
+  with DEN clear. Its error cleanup restores the saved display settings and
+  can therefore reveal partial data. There is no full-image rollback guarantee.
+- Final physical proof used video-only startup observation: all three RUNs
+  reached visible animation in about 118 seconds, including the rerun after M.
+  Successful inspection blocks: `ultimate_auto_20260911_154905` (native
+  1/16/64 MHz), `155215` (scene, refresh, M), `155457` (rerun, Q), and `155722`
+  (final running handoff), under `logs/`. Both exits restored test colors
+  4/6/14 and speed index 0; M retained an advancing music IRQ at the prompt,
+  Q detached it and restored MEMSIZ=$A000. Final handoff saved normal 6/6/1
+  text colors and left the demo running at 16 MHz.
+- VICE two-exit proof: 41/41 steps plus byte/movement/refresh checks,
+  `logs/vice_auto_20260911_151833/manifest.json`. Existing media regression:
+  122/122 steps, `logs/vice_auto_20260911_155241/manifest.json`; separate audit
+  confirmed changing border colors, advancing IRQ ticks and 155.73 seconds
+  of nonconstant audio (peak 12745). The wrapper initially miscounted the
+  latest-run symlink as a second run; excluding that alias fixed selection,
+  and the actual successful run was audited without rerunning hardware.
+- Broader regression is partial, not a full-suite pass: 11 core targets passed
+  (resume_min passed on retry after a startup timeout). The aggregate's hotkey
+  fixture requires launcher-first boot, incompatible with the current
+  ReadyBASIC-first demo image under skip-build. That target was stopped.
+- Final packaged regular 0.5D and Ultimate 0.5E D81s passed exact-byte runtime,
+  module, demo/resource and directory-order checks. Ultimate upload/readback:
+  `/USB1/automation/readybasic-media/neon-5807f3ef/RB5807f3ef.D81`, SHA-256
+  `bd6a80b606762bf1d820620802ea29857fac7cf9bcb95567b011cb03cf3a0d94`.
+  Embedded apps.cfg matches that path, with DMA_LOADING=1 and
+  RUNAPPFIRST=READYBASIC. Retired the old generated fixed-wait demo test;
+  preparation now emits only the attach configuration for the gated runner.
+- Follow-up test-tool hardening, locally syntax-checked without disturbing the
+  final handoff: boot and the initial BASIC program LOAD now require explicit
+  operator confirmation of the physical idle prompt before REST inspection.
+  The successful hardware run above predated these two operator gates; its
+  three resource-loading RUNs already used the verified video-only gate.

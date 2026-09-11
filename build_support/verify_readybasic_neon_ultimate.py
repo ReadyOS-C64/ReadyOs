@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit a completed physical-Ultimate RBSND08 UI run, including real frames."""
+"""Audit the standard multimedia demo's physical speed sweep, including video."""
 import json
 from pathlib import Path
 import re

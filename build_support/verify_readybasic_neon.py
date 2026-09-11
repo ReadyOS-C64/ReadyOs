@@ -17,7 +17,12 @@ def main():
     spr=(assets/"rb.ready.rbr").read_bytes()
     assert len(spr)==328 and spr[:8]==b"RBR1\x00\xca\x40\x01"
     assert all(spr[8+i*64+63]==0 for i in range(5))
-    prg=(ROOT/"obj/rbsnd08_neon.prg").read_bytes()
+    for stem in ('rbgfxsnddemo', 'rbugfxsnddemo'):
+        check_demo(stem)
+    print("NEON STATIC OK: both demos, Koala 10003 bytes, five aligned sprites; native names stay ASCII")
+
+def check_demo(stem):
+    prg=(ROOT/f"obj/{stem}.prg").read_bytes()
     assert prg[:2]==b"\xc1\x2a"
     lines={}; pos=2
     while prg[pos:pos+2]!=b"\0\0":
@@ -25,7 +30,8 @@ def main():
         end=prg.index(0,pos+4)
         lines[number]=prg[pos+4:end]
         pos=end+1
-    for source in (ROOT/"src/apps/readybasic/rbsnd08_neon.bas").read_text().splitlines():
+    sources=(ROOT/f"src/apps/readybasic/{stem}.bas").read_text().splitlines()
+    for source in sources:
         if not source.strip():continue
         number,text=source.split(maxsplit=1)
         if text.lstrip().startswith("rem "):continue
@@ -38,13 +44,13 @@ def main():
     for i in range(module[6]):
         desc=module[16+i*32:48+i*32]
         known.add(desc[16:16+desc[15]].decode())
-    known.update(("INT","SIN","PEEK","FRE","ELAPSED"))
-    for source in (ROOT/"src/apps/readybasic/rbsnd08_neon.bas").read_text().splitlines():
+    known.update(("INT","SIN","PEEK","FRE","ELAPSED","PHASE"))
+    for source in sources:
         if not source.strip():continue
         number,text=source.split(maxsplit=1)
         if text.lstrip().startswith(("rem ","proc ","func ")):continue
         for name in re.findall(r'\b([a-z]+)\(',text):
             assert name.upper() in known,f"line {number}: unknown command/function {name}"
-    print(f"NEON STATIC OK: {len(prg)}-byte BASIC, Koala 10003 bytes, five aligned sprites; native names stay ASCII")
+    print(f"{stem}: {len(prg)}-byte BASIC")
 
 if __name__=="__main__": main()

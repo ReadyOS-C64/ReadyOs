@@ -84,7 +84,7 @@ REL_SEED_D71_CANDIDATES = [
     ROOT.parent.parent / "readyos0-1-5.d71",
 ]
 # Retired generated fixtures must not return as preserved user data on rebuild.
-RETIRED_BUILD_OWNED_DISK_NAMES = {"rb.colors"}
+RETIRED_BUILD_OWNED_DISK_NAMES = {"rb.colors", "rbsnd08"}
 BUILD_OWNED_SUPPORT_FILES = (
     {
         "app": "editor",

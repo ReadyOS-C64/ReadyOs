@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Visible VICE proof of the published RBSND08 demo; normal ReadyOS boot only."""
+"""Visible VICE proof of RBGFXSNDDEMO and its loaders; normal ReadyOS boot only."""
 import json
 import os
 from pathlib import Path
@@ -90,22 +90,22 @@ for name,command in (("missing_image",'MCFILE("RB.NOFILE")'),
     keys(name+"_display_query",'PRINT "DISPLAY RESTORED";(PEEK(53265) AND 16)\r')
     screen(name+"_display_restored","DISPLAY RESTORED 16")
 keys("loader_error_cleanup",'SPRSET(0,0,0,0):NEW\r')
-keys("load_demo",'LOAD "RBSND08",8\r',3)
+keys("load_demo",'LOAD "RBGFXSNDDEMO",8\r',3)
 add("monitor.command","realtime",command="warp off")
 keys("run_demo",'RUN\r',.2)
 screen("demo_loaded","ORBITAL SHOW RUNNING")
-steps[-1]["params"].update(pre_delay_s=90 if true_drive else 45,poll_s=1,wait_timeout_s=180)
+steps[-1]["params"].update(pre_delay_s=100,poll_s=1,wait_timeout_s=180)
 mem("music_playing",0xc1ff,b"\x02")
 mem("reserved",0x37,b"\x00\x90")
 capture("show_a")
 bitmap("show_a")
-screen("wait_motion","Q QUITS / IMAGE",2)
+screen("wait_motion","ORBITAL SHOW RUNNING",2)
 capture("show_b")
-screen("wait_refresh","Q QUITS / IMAGE",32)
+screen("wait_refresh","ORBITAL SHOW RUNNING",17)
 capture("show_c")
 keys("quit_demo",'Q',2)
 screen("demo_done","ORBITAL ECHOES COMPLETE")
-screen("memory_returned","BASIC MEMORY RETURNED:")
+screen("memory_returned","ALL STOPPED")
 mem("music_released",0xc1ff,b"\x00")
 mem("memory_released",0x37,b"\x00\xa0")
 add("assert.screen_not_contains","no_demo_error",not_contains="?")

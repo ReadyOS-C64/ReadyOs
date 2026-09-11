@@ -100,7 +100,8 @@
         { "artifact": "obj/rbsnd05_voice_batch.prg", "name": "rbsnd05", "type": "prg" },
         { "artifact": "obj/rbsnd06_three_voice.prg", "name": "rbsnd06", "type": "prg" },
         { "artifact": "obj/rbsnd07_psid.prg", "name": "rbsnd07", "type": "prg" },
-        { "artifact": "obj/rbsnd08_neon.prg", "name": "rbsnd08", "type": "prg" },
+        { "artifact": "obj/rbgfxsnddemo.prg", "name": "rbgfxsnddemo", "type": "prg", "directory_group": "readybasic_example" },
+        { "artifact": "obj/rbugfxsnddemo.prg", "name": "rbugfxsnddemo", "type": "prg", "directory_group": "readybasic_example" },
         { "artifact": "obj/apps_cfg_petscii.seq", "name": "apps.cfg", "type": "seq" },
         { "artifact": "obj/app_sidetris.seq", "name": "app.sidetris", "type": "seq" }
       ],

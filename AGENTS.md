@@ -4,6 +4,11 @@
   Terminal-owned/background bash, for example via `osascript` opening Terminal
   and writing logs/status files. Plain foreground `exec_command` curls can fail
   with false "no route"/connection errors even when the C64U is reachable.
+- C64U REST memory reads can lock up disk loading. This includes decoded-screen
+  reads, memory assertions, and state captures that read RAM. During loading,
+  observe only the video stream; confirm visible completion before inspecting
+  memory. A fixed delay alone is not proof that loading finished. After an
+  interrupted transfer, use a fresh boot rather than assuming RUN repairs it.
 - REL file access debugging: do **not** use `src/apps/dizzy/dizzy.c` as a reference implementation for REL open/position/read/write behavior.
 - For CAL26 REL work, use the `xrelchk` harness and proven CAL26-specific test results as the source of truth.
 

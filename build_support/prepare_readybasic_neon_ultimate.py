@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Build an exact-path Ultimate D81 and hardware UI plan, without contacting it.
 
-Deploy/boot with a Terminal-owned shell, let ReadyOS finish loading, then run
-the emitted plan from Terminal. The plan attaches to ReadyBASIC already booted
-through the normal ReadyOS boot chain; it does not launch a standalone app.
+Deploy/test with run_readybasic_gfxsnd_ultimate.py from a Terminal-owned shell.
+The emitted plan is attach-only configuration, not a standalone demo test.
+Demo loading must use the video gate: fixed waits followed by REST screen/RAM
+reads can interrupt IEC loading and lock up physical C64U firmware.
 """
 import json
 import os
@@ -31,37 +32,9 @@ steps=[]
 def add(kind,name,**params):steps.append(dict(type=kind,id=name,params=params))
 def screen(name,text,delay=0):
     add("screen.wait_contains",name,text=text,pre_delay_s=delay,poll_s=1,wait_timeout_s=180,capture_label=name)
-def keys(name,text,delay=1):
-    add("input.sequence",name,keys=list(text.encode()),inter_key_delay_s=.05,post_delay_s=delay)
-def capture(name):
-    add("assert.screen_not_contains",name+"_no_error",not_contains="?")
-    add("screen.capture",name,label=name,capture_state=True)
-    add("dump.memory_ranges",name+"_state",ranges=[
-        dict(label="screen",start=0xcc00,end=0xcfe7),
-        dict(label="color",start=0xd800,end=0xdbe7),
-        dict(label="sprites",start=0xca00,end=0xcb3f),
-        dict(label="ticks",start=0x9006,end=0x9007),
-        dict(label="sid",start=0xc1ff,end=0xc1ff)])
 add("ultimate.launch","attach_readyos",boot_mode="none",drives=[
     dict(slot="a",bus_id=8,drive_type="1581",enabled=True,disk="",remote_disk="",mount_mode="unlinked")])
 screen("readybasic","READYBASIC")
-add("ultimate.speed.set","normal_speed",mhz=1)
-keys("load_demo",'LOAD "RBSND08",8\r',20)
-keys("run_demo",'RUN\r',90)  # No REST polling while SEQ files load over IEC.
-screen("show_running","ORBITAL SHOW RUNNING")
-add("assert.memory","startup_music_installed",start=0xc1ff,end=0xc1ff,equals_hex="02")
-for speed in (1,16,64):
-    add("ultimate.speed.set",f"speed_{speed}",mhz=speed)
-    screen(f"settle_{speed}","ORBITAL SHOW RUNNING",3)
-    capture(f"show_{speed}_a")
-    screen(f"motion_{speed}","ORBITAL SHOW RUNNING",2)
-    capture(f"show_{speed}_b")
-add("ultimate.speed.set","return_1mhz",mhz=1)
-keys("quit",'Q',2)
-screen("clean_exit","BASIC MEMORY RETURNED:")
-add("assert.memory","released_sid",start=0xc1ff,end=0xc1ff,equals_hex="00")
-add("assert.memory","released_memory",start=0x37,end=0x38,equals_hex="00 A0")
-add("assert.screen_not_contains","no_error",not_contains="?")
 plan=dict(version=1,kind="ultimate_task_plan",plan_id="readybasic_neon_ultimate_"+tag,
     run_mode="ultimate64",steps=steps,global_defaults=dict(
     retry_policy=dict(max_attempts=1,backoff_ms=500,jitter=False),

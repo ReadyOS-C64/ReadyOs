@@ -1,14 +1,38 @@
-# RBSND08 — READY / Orbital Echoes
+# READY / Orbital Echoes — standard and Ultimate
 
-Load `RBSND08` in ReadyBASIC, then `RUN`. Press **Q** to return to text mode,
+Load `RBGFXSNDDEMO` (standard) or `RBUGFXSNDDEMO` (C64 Ultimate) in ReadyBASIC,
+then `RUN`. These replace the old `RBSND08` release-disk entry; its source remains
+as a historical example. Press **Q** to return to text mode,
 silence/detach the music, release the REU surface and restore the BASIC ceiling.
+Press **M** to return to text mode while keeping the music and its reserved
+memory. Both paths restore the original border, background and text colors.
+After M, `MUSDROP():CLR:MEMCAP(40960)` releases the music arena. Do not raise the
+ceiling while the music is live. RUN again stops the old player before disk I/O.
 This is a PAL demo using the same vetted $9200 Shiru tune as RBSND07.
 
 The readable BASIC source keeps setup, sine-wave lettering, additive ribbons,
-30-second restoration and cleanup in separate procedures. A 256-entry integer
-sine table avoids repeated trigonometry in the animation loop. Motion uses the
-jiffy clock, with a maximum 30 updates/second; a 1 MHz C64 may draw fewer frames
-than accelerated hardware. Refreshes use a cached REU surface, not disk reads.
+15-second restoration and cleanup in separate procedures. Sine, sprite heights
+and both sets of line endpoints are precomputed before graphics. The integer
+PHASE function (RET% integer result) follows the jiffy clock, with a roughly 2.13-second wave cycle
+and at most 60 updates/second; 1 MHz BASIC cannot guarantee that frame rate.
+The five sprite calls are unrolled; lines run at most 15 times/second and
+alternate mirrored endpoints. Refreshes use a cached REU surface, not disk reads.
+
+## Ultimate speed command
+
+`USPEED(mhz)` is built into the existing INPUTEV overlay, so it can run before
+loading any disk module. The Ultimate variant selects 1 MHz as its first command,
+16 MHz after all resources are loaded, and 1 MHz on either exit. Loading the
+BASIC program itself still requires a safe speed before RUN can execute.
+
+Select **C64U Turbo Registers** in this machine's Turbo Control configuration
+(called **U64 Turbo Registers** in the general Ultimate documentation).
+Manual/Off do not expose software speed control and produce ReadyBASIC error 24;
+unsupported speed arguments produce error 14. This command targets the **C64
+Ultimate / U64 Elite-II** speed table: 1, 2, 3, 4, 6, 8, 10, 12, 14, 16, 20, 24,
+32, 40, 48, 64 MHz. It is not the older 48 MHz U64 table. D031 bit 7 is preserved.
+See the [official turbo documentation](https://1541u-documentation.readthedocs.io/en/latest/config/turbo_mode.html).
+No interpreter changes or additional resident workspace were needed.
 
 ## New commands in rbm.media
 
@@ -40,7 +64,7 @@ there is no promise of transactional graphics loading.
   in the surface: this demo keeps it unchanged at zero.
 - Media remains logical module 6 / submodule 24, occupying slots 1+2. New
   commands are IDs 116–118, skipping built-in BORDER (115). Eight descriptors
-  occupy $1BE0-$1CDF. Built-in command IDs, interpreter/parser and BASIC start
+  occupy $1C00-$1CFF, after USPEED's built-in descriptor at $1BE0. Other built-in command IDs, interpreter/parser and BASIC start
   $2AC1 remain unchanged. Use the matching rebuilt module package.
 - Palette-preserving integer lines avoid floating-point math in the module.
   Each pixel read/modify/write hides KERNAL briefly with interrupts masked,
@@ -52,6 +76,46 @@ there is no promise of transactional graphics loading.
   The music player stays outside every overlay slot.
 
 ## Verification
+
+The dedicated two-exit test is `python3 build_support/run_readybasic_gfxsnd_probe.py`.
+Its real-time VICE run at `logs/vice_auto_20260911_151833/manifest.json` passed
+all 41 steps plus the byte/animation audit: both exits, saved colors, protected
+music at the prompt, re-running with music active, changing sprite positions,
+unchanged palettes and nonzero automatic refresh count.
+
+`python3 build_support/verify_readybasic_gfxsnd_disks.py` checks both current
+release D81s against the local runtime, module, two demos and three resources,
+and checks the Ultimate DMA path. To repeat the physical two-exit test, first
+prepare a fresh image with `prepare_readybasic_neon_ultimate.py`, then run
+`run_readybasic_gfxsnd_ultimate.py` from a Terminal-owned shell. It deliberately
+reboots, enables software turbo and leaves the Ultimate variant running.
+The runner now requires visual confirmation at the terminal after ReadyOS boot
+and after the BASIC program LOAD; do not acknowledge until the physical display
+has returned to an idle prompt. Resource-loading RUNs are gated automatically
+by streamed video. These two conservative operator gates were added after the
+successful hardware run below; that run used fixed waits for boot/program LOAD.
+
+Final physical proof passed in four inspection blocks:
+`logs/ultimate_auto_20260911_154905/manifest.json` (native 1/16/64 MHz),
+`155215` (scene, refresh and M), `155457` (music-active rerun and Q), and
+`155722` (running handoff). Both exits restored colors and 1 MHz; palette and
+sprite bytes matched their resources, music advanced at the M prompt, and Q
+released the music and BASIC ceiling. All three startups took about 118 seconds.
+The runner watches streamed video until the READY sprites move before reading
+RAM: REST memory/screen reads during disk loading can hang physical C64U.
+A fixed 110-second delay was too short and must not be treated as completion.
+
+Current images are regular **0.5D** and Ultimate **0.5E**. The physical image is
+`/USB1/automation/readybasic-media/neon-5807f3ef/RB5807f3ef.D81`; its embedded
+apps.cfg matches that path with DMA_LOADING=1. Full upload readback SHA-256:
+`bd6a80b606762bf1d820620802ea29857fac7cf9bcb95567b011cb03cf3a0d94`.
+Only one free block remains in this Ultimate image.
+
+Existing media regression also passed all 122 steps plus animation/audio audit
+(`logs/vice_auto_20260911_155241/manifest.json`). The broader aggregate is only
+partially verified: 11 core targets passed, but the hotkey fixture requires a
+launcher-first image instead of this ReadyBASIC-first demo build. See the
+[learnings](readybasic_media_learnings.md) for the retry and fixture limitations.
 
 For the subsequent physical startup reliability fix and newer verified images,
 see [resource-load investigation](readybasic_media_load_investigation.md).
@@ -69,7 +133,9 @@ checks line output against a host-side rasterizer and checks invalid-coordinate
 atomicity. During the real disk demo it checks unchanged palettes, exact sprite
 data/pointers, movement, SID ticks, timed refresh and final cleanup.
 
-First probe exposed a **test timing issue**, not a passing demo: the fixed
+### Historical first implementation checks (RBSND08)
+
+The first probe exposed a **test timing issue**, not a passing demo: the fixed
 25-second wait sampled a partially loaded picture with music not yet installed.
 The probe now gives loading an uninterrupted interval and checks the installed
 music state before examining the scene. Status text is printed before graphics
@@ -128,12 +194,10 @@ contains that case-insensitive path, DMA_LOADING=1 and RUNAPPFIRST=READYBASIC.
 No other image was overwritten. Deployment used a Terminal-owned shell and
 normal LOAD "*",8,1 / RUN boot, not a standalone app launch.
 
-For a future deployment, `prepare_readybasic_neon_ultimate.py` makes a fresh
-exact-path build and plan without contacting hardware;
-`deploy_readybasic_neon_ultimate.py` uploads/boots that prepared image from
-Terminal. Allow normal disk boot to finish before running the generated
-hardware plan. Audit its run directory with
-`verify_readybasic_neon_ultimate.py <run-directory>`.
+The old fixed-wait hardware demo plan has been retired. For current deployments,
+use the preparation and video-gated runner described above, not this historical
+speed-sweep procedure. `verify_readybasic_neon_ultimate.py` remains an auditor
+for historical speed-sweep artifacts.
 
 The final media package is 2163 bytes (1885-byte payload, with the unchanged
 241-byte reserved-RAM driver). No resident ReadyBASIC code, built-in command
