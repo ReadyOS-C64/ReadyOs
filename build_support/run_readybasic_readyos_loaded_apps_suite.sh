@@ -100,6 +100,7 @@ append_load_list_run_gfx_app() {
   local title="$3"
   local run_delay="${4:-3.0}"
   local self_complete="${5:-0}"
+  local key_to_complete="${6:-0}"
   cat >>"$PLAN" <<YAML
   - id: clear_before_${id_name}
     type: input.sequence
@@ -145,6 +146,15 @@ append_load_list_run_gfx_app() {
       pitch: "Graphics screenshot after RUN ${disk_name} from inside ReadyBASIC under ReadyOS"
 YAML
   if [ "$self_complete" = "1" ]; then
+    if [ "$key_to_complete" = "1" ]; then
+      cat >>"$PLAN" <<YAML
+  - id: finish_${id_name}
+    type: input.key
+    params:
+      key: SPACE
+      post_delay_s: 1.0
+YAML
+    fi
     cat >>"$PLAN" <<YAML
   - id: wait_complete_${id_name}
     type: screen.wait_contains
@@ -261,17 +271,17 @@ append_load_list_run_text_app "RBTEST1" "rbtest1" "10 ZECHO1" "EXPRSTRREADY" "2.
 append_load_list_run_text_app "RBPROC1" "rbproc1" "2220 ENDP" "NGS MIX" "4.0"
 
 append_load_list_run_gfx_app "RBGFX01" "rbgfx01" "RBGFX01 MODES" "2.0"
-append_load_list_run_gfx_app "RBGFX02" "rbgfx02" "RBGFX02 HIRES PLOT" "3.0"
-append_load_list_run_gfx_app "RBGFX03" "rbgfx03" "RBGFX03 HIRES LINES" "3.0"
-append_load_list_run_gfx_app "RBGFX04" "rbgfx04" "RBGFX04 RECTS" "3.0"
-append_load_list_run_gfx_app "RBGFX05" "rbgfx05" "RBGFX05 PNT READ" "2.0"
+append_load_list_run_gfx_app "RBGFX02" "rbgfx02" "RBGFX02 HIRES PLOT" "3.0" "1" "1"
+append_load_list_run_gfx_app "RBGFX03" "rbgfx03" "RBGFX03 HIRES LINES" "3.0" "1" "1"
+append_load_list_run_gfx_app "RBGFX04" "rbgfx04" "RBGFX04 RECTS" "3.0" "1" "1"
+append_load_list_run_gfx_app "RBGFX05" "rbgfx05" "RBGFX05 PNT READ" "2.0" "1" "1"
 append_load_list_run_gfx_app "RBGFX06" "rbgfx06" "RBGFX06 REU SURFACE" "2.0"
-append_load_list_run_gfx_app "RBGFX07" "rbgfx07" "RBGFX07 MBITMAP" "3.0"
-append_load_list_run_gfx_app "RBGFX08" "rbgfx08" "RBGFX08 TILE" "3.0"
+append_load_list_run_gfx_app "RBGFX07" "rbgfx07" "RBGFX07 MBITMAP" "3.0" "1" "1"
+append_load_list_run_gfx_app "RBGFX08" "rbgfx08" "RBGFX08 TILE" "3.0" "1" "1"
 append_load_list_run_gfx_app "RBGFX09" "rbgfx09" "RBGFX09 SPRITES" "1.0" "1"
 append_load_list_run_gfx_app "RBGFX10" "rbgfx10" "RBGFX10 COLLISION" "2.5"
 append_load_list_run_gfx_app "RBGFX11" "rbgfx11" "RBGFX11 INPUT" "4.0"
-append_load_list_run_gfx_app "RBGFX12" "rbgfx12" "RBGFX12 SHOWCASE" "3.0"
+append_load_list_run_gfx_app "RBGFX12" "rbgfx12" "RBGFX12 SHOWCASE" "3.0" "1" "1"
 append_load_list_run_gfx_app "RBGFX17" "rbgfx17" "DEMO 17" "3.0"
 append_load_list_run_gfx_app "RBGFX18" "rbgfx18" "DEMO 18" "3.0"
 append_load_list_run_gfx_app "RBGFX19" "rbgfx19" "DEMO 19" "3.0"
