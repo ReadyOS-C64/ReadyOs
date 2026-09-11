@@ -494,6 +494,8 @@ CMD_SND         = 108
 CMD_MEMCAP      = 109
 ; 110-114 belong to the disk-loaded media package.
 CMD_BORDER      = 115
+; 116-118 are media graphics commands. Bootstrap before any disk module load.
+CMD_USPEED      = 119
 
 ; REU registers.
 REU_CMD         = $DF01
@@ -4516,7 +4518,8 @@ rb_command_descriptors:
         CMD_SIDCORE CMD_SOUND, SIG_SPRSET, cmd_sound, "SOUND"
         CMD_INPUTEV CMD_MEMCAP, SIG_BUFFREE, cmd_memcap, "MEMCAP", RB_MODULE_SYSTEM
         CMD_GFXCORE CMD_BORDER, SIG_BUFFREE, cmd_border, "BORDER"
-        .res (RB_CMD_DESC_COUNT - 96) * RB_CMD_DESC_SIZE, 0
+        CMD_INPUTEV CMD_USPEED, SIG_BUFFREE, cmd_uspeed, "USPEED", RB_MODULE_SYSTEM
+        .res (RB_CMD_DESC_COUNT - 97) * RB_CMD_DESC_SIZE, 0
         CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"
 
 ; ---------------------------------------------------------------------------
@@ -6900,6 +6903,40 @@ cmd_memcap:
         sta RF_STATUS
         sta RF_ERROR
         rts
+; C64 Ultimate / U64 Elite-II MHz table (not the older 48-MHz U64 table).
+; D031 is available only with software-controlled turbo enabled. Unsupported
+; machines / Manual mode return an error without touching hardware. Kept in
+; built-in INPUTEV so USPEED(1) can precede ZMODLD and all disk traffic.
+cmd_uspeed:
+        lda CF_NUM0_HI
+        bne @bad
+        ldx #15
+@find:  lda uspeed_mhz,x
+        cmp CF_NUM0_LO
+        beq @found
+        dex
+        bpl @find
+@bad:   lda #14
+        bne @error
+@found: lda $d031
+        cmp #$ff
+        beq @unsupported
+        and #$80                ; Preserve the user's badline timing policy.
+        sta rb_saved_plot_x
+        txa
+        ora rb_saved_plot_x
+        sta $d031
+        lda #0
+        sta RF_STATUS
+        sta RF_TAG
+        rts
+@unsupported:
+        lda #24
+@error: sta RF_STATUS
+        sta RF_ERROR
+        rts
+uspeed_mhz:
+        .byte 1,2,3,4,6,8,10,12,14,16,20,24,32,40,48,64
         .segment "SLOTPACK1"
 
 cmd_gfxmode:

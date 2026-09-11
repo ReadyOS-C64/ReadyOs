@@ -405,8 +405,8 @@ def media_module(out_dir: Path) -> bytes:
                ("MUSHALT", "mushalt", 24), ("MUSDROP", "musdrop", 24),
                ("RSCFILE", "rscfile", 19), ("MCFILE", "koaload", 19),
                ("SPRFILE", "sprfile", 19), ("MCLINE", "mcline", 22)]
-    # $1BC0 is now the built-in BORDER descriptor; keep media in free slots.
-    return build_module(module_id=6, desc_reu_offset=0x1be0, commands=[
+    # BORDER=$1BC0, USPEED=$1BE0; keep media beyond both built-in descriptors.
+    return build_module(module_id=6, desc_reu_offset=0x1c00, commands=[
         dict(command_id=(110+i if i < 5 else 111+i), name=name, reu_offset=0x8000,
              submodule_id=24, overlay_id=0, slot_mask=RB_SLOT_PROOF_12,
              payload=payload, payload_size=len(payload),
