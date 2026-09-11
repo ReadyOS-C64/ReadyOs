@@ -85,7 +85,8 @@ steps:
   - id: wait_readybasic_prompt
     type: screen.wait_contains
     params:
-      text: "ready."
+      # Stock BASIC also says READY before PREBOOT autostart. Require the app.
+      text: "readybasic"
       wait_timeout_s: 180
       capture_label: readybasic_prompt
   - id: wait_readybasic_prompt_stable_before_program_entry

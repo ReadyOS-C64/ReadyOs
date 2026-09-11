@@ -44,7 +44,8 @@ def main():
     assert prg[media_registry:media_registry+5*32] == bytes(5*32), \
         "media registration must not replace built-in commands"
     demo = (ROOT / "src/apps/readybasic/rbsnd07_psid.bas").read_bytes()
-    assert b"border(shade(p%))" in demo
+    assert b"border(c%)" in demo and b"ret% (ix%+1) and 15" in demo
+    assert b"rscfile" not in demo and b"rb.colors" not in demo
 
     labels = {}
     for line in (ROOT / "obj/readybasic_modules/media.labels").read_text().splitlines():

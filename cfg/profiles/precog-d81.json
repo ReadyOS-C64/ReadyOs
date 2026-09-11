@@ -43,7 +43,6 @@
         { "artifact": "obj/readybasic_modules/rbm.sample3.seq", "name": "rbm.sample3", "type": "seq" },
         { "artifact": "obj/readybasic_modules/rbm.media.seq", "name": "rbm.media", "type": "seq" },
         { "artifact": "assets/readybasic/music/summer-9200.sid", "name": "rb.summer", "type": "seq" },
-        { "artifact": "obj/readybasic_modules/rb.colors.seq", "name": "rb.colors", "type": "seq" },
         { "artifact": "obj/readybasic_modules/rb.bad.seq", "name": "rb.bad", "type": "seq" },
         { "artifact": "ucitest.prg", "name": "ucitest", "type": "prg" },
         { "artifact": "readme.prg", "name": "readme", "type": "prg" },

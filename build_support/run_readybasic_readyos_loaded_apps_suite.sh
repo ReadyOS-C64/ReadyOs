@@ -101,6 +101,12 @@ append_load_list_run_gfx_app() {
   local run_delay="${4:-3.0}"
   local self_complete="${5:-0}"
   local key_to_complete="${6:-0}"
+  local completion_timeout=10
+  # RBGFX09 deliberately runs a 60000-iteration BASIC delay. GUI VICE may
+  # return to real-time speed after autostart; completion is not a speed test.
+  if [ "$disk_name" = "RBGFX09" ]; then
+    completion_timeout=120
+  fi
   cat >>"$PLAN" <<YAML
   - id: clear_before_${id_name}
     type: input.sequence
@@ -160,7 +166,7 @@ YAML
     type: screen.wait_contains
     params:
       text: "${disk_name} COMPLETE"
-      wait_timeout_s: 10
+      wait_timeout_s: $completion_timeout
   - id: capture_restored_${id_name}
     type: screen.capture
     params:
@@ -175,6 +181,17 @@ YAML
       not_contains: "?"
 YAML
   else
+    if [ "$disk_name" = "RBGFX10" ]; then
+      # Its collision result follows another long BASIC delay. Wait for the
+      # program, rather than filling a keyboard buffer it cannot yet drain.
+      cat >>"$PLAN" <<YAML
+  - id: wait_collision_result_${id_name}
+    type: screen.wait_contains
+    params:
+      text: "SPRITE COLLISION"
+      wait_timeout_s: 120
+YAML
+    fi
     cat >>"$PLAN" <<YAML
   - id: restore_text_${id_name}
     type: input.sequence

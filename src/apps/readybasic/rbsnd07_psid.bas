@@ -51,8 +51,6 @@
 1200 proc assets()
 1210   zmodld("rbm.media",m%)
 1220   print "module commands:";m%
-1230   rem palette: 16 bytes at $9e00
-1240   rscfile("rb.colors")
 1250   rem psid player and data at $9200
 1260   mustune("rb.summer")
 1270 endp
@@ -60,9 +58,14 @@
 1400 proc animate(span)
 1410   rem span is seconds; mk is start time
 1420   mk=ti
+1425   c%=0
 1430   repeat
-1440     p%=int(age(mk)*4) and 15
-1450     border(shade(p%))
+1440     c%=shade(c%)
+1450     border(c%)
+1452     rem leave each color visible a moment
+1454     wt=ti
+1456     repeat
+1458     until age(wt)>=0.25
 1460   until age(mk)>=span
 1470 endp
 
@@ -75,8 +78,8 @@
 
 2000 rem --- functions: return values ---
 2010 func shade(ix%)
-2020   rem look up a color in rb.colors
-2030   ret% peek(40448+(ix% and 15))
+2020   rem wrap the counter through colors 0-15
+2030   ret% (ix%+1) and 15
 2040 endp
 
 2200 func age(mark)

@@ -56,11 +56,24 @@ screen("playing", "PLAYING - BASIC")
 mem("playing_state", 0xc1ff, "02")
 mem("reserved_ceiling", 0x37, "00 90")
 step("dump.snapshot", "playing_snapshot", stage_tag="media_playing")
+# Completion alone does not prove animation: sample actual VIC colors while
+# the media IRQ remains active, without changing the program or its clock.
+for sample in range(8):
+    step("screen.wait_contains", f"color_wait_{sample}", text="PLAYING - BASIC",
+         pre_delay_s=0.33, wait_timeout_s=2)
+    step("dump.memory_ranges", f"color_sample_{sample}", ranges=[
+        dict(label="border", start=0xd020, end=0xd020),
+        dict(label="playing", start=0xc1ff, end=0xc1ff),
+        dict(label="ticks", start=0x9006, end=0x9007)])
+    if sample in (0, 4):
+        step("screen.capture", f"color_view_{sample}", label=f"color_view_{sample}")
 screen("complete_demo", "RBSND07 DONE")
 mem("released_state", 0xc1ff, "00")
 mem("restored_ceiling", 0x37, "00 A0")
 keys("border_demo_restored", 'PRINT "BORDER RESTORED";(PEEK(53280) AND 15)\r')
 screen("border_demo_restore_result", "BORDER RESTORED 6")
+keys("color_function", 'PRINT "COLOR FUNCTION";SHADE(0);SHADE(1);SHADE(15)\r')
+screen("color_function_result", "COLOR FUNCTION 1  2  0")
 step("assert.screen_not_contains", "demo_no_errors", not_contains="?")
 step("monitor.command", "audio_stop", command='raw: resourceset "SoundRecordDeviceName" ""')
 keys("cap_roundtrip", 'PRINT CHR$(147)\rCLR:A=0:B=0:A=FRE(0):MEMCAP(36864):B=FRE(0):PRINT "CAP DELTA";A-B\r')
@@ -97,9 +110,9 @@ screen("reject_rsid", "?RB ERROR")
 mem("invalid_not_loaded", 0xc1ff, "00")
 keys("missing_sid", 'PRINT CHR$(147)\rMUSTUNE("RB.ABSENT")\r')
 screen("reject_missing", "?RB ERROR")
-keys("resource_load", 'PRINT CHR$(147)\rRSCFILE("RB.COLORS"):PRINT "RESOURCE OK"\r')
-screen("resource_ok", "RESOURCE OK")
-mem("resource_bytes", 0x9e00, "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F")
+keys("resource_bad_header", 'PRINT CHR$(147)\rRSCFILE("RB.BAD")\r')
+screen("resource_rejected", "?RB ERROR")
+mem("resource_reject_ceiling", 0x37, "00 90")
 keys("resource_release", 'MEMCAP(40960):PRINT "ALL MEDIA CHECKS DONE"\r')
 screen("all_done", "ALL MEDIA CHECKS DONE")
 keys("prepare_suspend", 'MEMCAP(36864):MUSTUNE("RB.SUMMER"):MUSPLAY(1)\r')
@@ -121,7 +134,7 @@ mem("resumed_playing", 0xc1ff, "02")
 keys("final_cleanup", 'MUSDROP():CLR:MEMCAP(40960):PRINT "LIFECYCLE DONE"\r')
 screen("lifecycle_done", "LIFECYCLE DONE")
 mem("lifecycle_final_cap", 0x37, "00 A0")
-keys("occupied_file", 'OPEN 14,8,2,"RB.COLORS"\rMEMCAP(36864):MUSTUNE("RB.SUMMER")\r')
+keys("occupied_file", 'OPEN 14,8,2,"RB.SUMMER"\rMEMCAP(36864):MUSTUNE("RB.SUMMER")\r')
 screen("reject_occupied_file", "?RB ERROR")
 mem("file_not_closed", 0x98, "01")
 keys("close_owned_file", 'CLOSE 14:MEMCAP(40960)\r')
@@ -129,6 +142,11 @@ keys("cache_collision_setup", 'ZMODLD("RBM.SAMPLE2",M%):PRINT ZDOV2()\rMEMCAP(36
 mem("memcap_after_proof_overlay", 0x37, "00 90")
 keys("cache_collision_cleanup", 'MEMCAP(40960):PRINT "MEDIA REGRESSION DONE"\r')
 screen("regression_done", "MEDIA REGRESSION DONE")
+if os.environ.get("READYBASIC_DEMO_ONLY") == "1":
+    # Normal ReadyOS boot, then only the published music demo and its outcome.
+    first = next(i for i, s in enumerate(steps) if s["id"] == "border_restore")
+    last = next(i for i, s in enumerate(steps) if s["id"] == "audio_stop")
+    steps = steps[:6] + steps[first:last+1]
 plan = dict(version=1, kind="vice_task_plan", plan_id="readybasic_media_probe",
     run_mode="gui_vice", global_defaults=dict(monitor_host="127.0.0.1",
     monitor_port_start=6502, monitor_port_span=40,
@@ -145,7 +163,21 @@ if os.environ.get("READYBASIC_GENERATE_PLAN_ONLY") == "1":
     print(out)
     raise SystemExit(0)
 project = Path(os.environ.get("VICE_TASKS_ROOT", str(ROOT.parent / "agenticdevharness/tools/vice_tasks_dotnet"))) / "src/ViceTasks.Binary/ViceTasks.Binary.csproj"
+previous_runs = set((ROOT / "logs").glob("vice_auto_*/manifest.json"))
 subprocess.run(["dotnet","run","--project",str(project),"--","run","--plan",str(out),"--close-vice"],cwd=ROOT,check=True)
+new_runs = set((ROOT / "logs").glob("vice_auto_*/manifest.json")) - previous_runs
+matching = [p for p in new_runs if json.loads(p.read_text(encoding="utf-8-sig")).get("plan_id") == plan["plan_id"]]
+assert len(matching) == 1, "expected exactly one media probe run"
+run_dir = matching[0].parent
+colors, ticks = [], []
+for sample in range(8):
+    stage = run_dir / "stages" / f"color_sample_{sample}"
+    assert (stage / "playing.bin").read_bytes() == b"\x02", "music stopped during animation"
+    colors.append((stage / "border.bin").read_bytes()[0] & 15)
+    ticks.append(int.from_bytes((stage / "ticks.bin").read_bytes(), "little"))
+assert len(set(colors)) >= 3, f"border did not visibly cycle: {colors}"
+assert len(set(ticks)) >= 3, f"music IRQ did not advance: {ticks}"
+print(f"ANIMATION VERIFIED: border colors {colors}; music ticks {ticks}")
 with wave.open(str(audio_path)) as recording:
     assert recording.getsampwidth() == 2, "expected 16-bit VICE WAV"
     pcm = recording.readframes(recording.getnframes())

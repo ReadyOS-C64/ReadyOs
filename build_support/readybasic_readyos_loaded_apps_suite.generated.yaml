@@ -19,9 +19,9 @@ global_defaults:
     capture_state: true
     capture_dump: false
   vice:
-    disk8: "Releases/0.2.5/precog-d81/readyos-v0.2.5o-d81.d81"
-    disk9: "Releases/0.2.5/precog-d81/readyos-v0.2.5o-d81.d81"
-    autostart_prg: "Releases/0.2.5/precog-d81/readyos-v0.2.5o-d81-preboot.prg"
+    disk8: "Releases/0.5/precog-d81/readyos-v0.5w-d81.d81"
+    disk9: "Releases/0.5/precog-d81/readyos-v0.5w-d81.d81"
+    autostart_prg: "Releases/0.5/precog-d81/readyos-v0.5w-d81-preboot.prg"
     drive8_type: 1581
     drive9_type: 1581
     true_drive: false
@@ -246,12 +246,16 @@ steps:
     params:
       label: readybasic_graphics_rbgfx02
       pitch: "Graphics screenshot after RUN RBGFX02 from inside ReadyBASIC under ReadyOS"
-  - id: restore_text_rbgfx02
-    type: input.sequence
+  - id: finish_rbgfx02
+    type: input.key
     params:
-      keys: [58,58,71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,50,32,67,79,77,80,76,69,84,69,34,13]
-      inter_key_delay_s: 0.03
+      key: SPACE
       post_delay_s: 1.0
+  - id: wait_complete_rbgfx02
+    type: screen.wait_contains
+    params:
+      text: "RBGFX02 COMPLETE"
+      wait_timeout_s: 10
   - id: capture_restored_rbgfx02
     type: screen.capture
     params:
@@ -306,12 +310,16 @@ steps:
     params:
       label: readybasic_graphics_rbgfx03
       pitch: "Graphics screenshot after RUN RBGFX03 from inside ReadyBASIC under ReadyOS"
-  - id: restore_text_rbgfx03
-    type: input.sequence
+  - id: finish_rbgfx03
+    type: input.key
     params:
-      keys: [58,58,71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,51,32,67,79,77,80,76,69,84,69,34,13]
-      inter_key_delay_s: 0.03
+      key: SPACE
       post_delay_s: 1.0
+  - id: wait_complete_rbgfx03
+    type: screen.wait_contains
+    params:
+      text: "RBGFX03 COMPLETE"
+      wait_timeout_s: 10
   - id: capture_restored_rbgfx03
     type: screen.capture
     params:
@@ -366,12 +374,16 @@ steps:
     params:
       label: readybasic_graphics_rbgfx04
       pitch: "Graphics screenshot after RUN RBGFX04 from inside ReadyBASIC under ReadyOS"
-  - id: restore_text_rbgfx04
-    type: input.sequence
+  - id: finish_rbgfx04
+    type: input.key
     params:
-      keys: [58,58,71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,52,32,67,79,77,80,76,69,84,69,34,13]
-      inter_key_delay_s: 0.03
+      key: SPACE
       post_delay_s: 1.0
+  - id: wait_complete_rbgfx04
+    type: screen.wait_contains
+    params:
+      text: "RBGFX04 COMPLETE"
+      wait_timeout_s: 10
   - id: capture_restored_rbgfx04
     type: screen.capture
     params:
@@ -426,12 +438,16 @@ steps:
     params:
       label: readybasic_graphics_rbgfx05
       pitch: "Graphics screenshot after RUN RBGFX05 from inside ReadyBASIC under ReadyOS"
-  - id: restore_text_rbgfx05
-    type: input.sequence
+  - id: finish_rbgfx05
+    type: input.key
     params:
-      keys: [58,58,71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,53,32,67,79,77,80,76,69,84,69,34,13]
-      inter_key_delay_s: 0.03
+      key: SPACE
       post_delay_s: 1.0
+  - id: wait_complete_rbgfx05
+    type: screen.wait_contains
+    params:
+      text: "RBGFX05 COMPLETE"
+      wait_timeout_s: 10
   - id: capture_restored_rbgfx05
     type: screen.capture
     params:
@@ -546,12 +562,16 @@ steps:
     params:
       label: readybasic_graphics_rbgfx07
       pitch: "Graphics screenshot after RUN RBGFX07 from inside ReadyBASIC under ReadyOS"
-  - id: restore_text_rbgfx07
-    type: input.sequence
+  - id: finish_rbgfx07
+    type: input.key
     params:
-      keys: [58,58,71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,55,32,67,79,77,80,76,69,84,69,34,13]
-      inter_key_delay_s: 0.03
+      key: SPACE
       post_delay_s: 1.0
+  - id: wait_complete_rbgfx07
+    type: screen.wait_contains
+    params:
+      text: "RBGFX07 COMPLETE"
+      wait_timeout_s: 10
   - id: capture_restored_rbgfx07
     type: screen.capture
     params:
@@ -606,12 +626,16 @@ steps:
     params:
       label: readybasic_graphics_rbgfx08
       pitch: "Graphics screenshot after RUN RBGFX08 from inside ReadyBASIC under ReadyOS"
-  - id: restore_text_rbgfx08
-    type: input.sequence
+  - id: finish_rbgfx08
+    type: input.key
     params:
-      keys: [58,58,71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,48,56,32,67,79,77,80,76,69,84,69,34,13]
-      inter_key_delay_s: 0.03
+      key: SPACE
       post_delay_s: 1.0
+  - id: wait_complete_rbgfx08
+    type: screen.wait_contains
+    params:
+      text: "RBGFX08 COMPLETE"
+      wait_timeout_s: 10
   - id: capture_restored_rbgfx08
     type: screen.capture
     params:
@@ -670,7 +694,7 @@ steps:
     type: screen.wait_contains
     params:
       text: "RBGFX09 COMPLETE"
-      wait_timeout_s: 10
+      wait_timeout_s: 120
   - id: capture_restored_rbgfx09
     type: screen.capture
     params:
@@ -725,6 +749,11 @@ steps:
     params:
       label: readybasic_graphics_rbgfx10
       pitch: "Graphics screenshot after RUN RBGFX10 from inside ReadyBASIC under ReadyOS"
+  - id: wait_collision_result_rbgfx10
+    type: screen.wait_contains
+    params:
+      text: "SPRITE COLLISION"
+      wait_timeout_s: 120
   - id: restore_text_rbgfx10
     type: input.sequence
     params:
@@ -845,12 +874,16 @@ steps:
     params:
       label: readybasic_graphics_rbgfx12
       pitch: "Graphics screenshot after RUN RBGFX12 from inside ReadyBASIC under ReadyOS"
-  - id: restore_text_rbgfx12
-    type: input.sequence
+  - id: finish_rbgfx12
+    type: input.key
     params:
-      keys: [58,58,71,70,88,84,69,88,84,40,41,58,80,82,73,78,84,32,34,82,66,71,70,88,49,50,32,67,79,77,80,76,69,84,69,34,13]
-      inter_key_delay_s: 0.03
+      key: SPACE
       post_delay_s: 1.0
+  - id: wait_complete_rbgfx12
+    type: screen.wait_contains
+    params:
+      text: "RBGFX12 COMPLETE"
+      wait_timeout_s: 10
   - id: capture_restored_rbgfx12
     type: screen.capture
     params:

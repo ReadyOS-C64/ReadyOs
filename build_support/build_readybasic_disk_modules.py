@@ -420,7 +420,6 @@ def main() -> None:
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     modules = {
-        "rb.colors.seq": b"RBR1\x00\x9e\x10\x00" + bytes(range(16)),
         "rb.bad.seq": b"RSID" + bytes(120),
         "rbm.media.seq": media_module(args.out_dir),
         "rbm.sample1.seq": build_module(

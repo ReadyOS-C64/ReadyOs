@@ -83,6 +83,8 @@ REL_SEED_D71_CANDIDATES = [
     ROOT.parent / "readyos0-1-5.d71",
     ROOT.parent.parent / "readyos0-1-5.d71",
 ]
+# Retired generated fixtures must not return as preserved user data on rebuild.
+RETIRED_BUILD_OWNED_DISK_NAMES = {"rb.colors"}
 BUILD_OWNED_SUPPORT_FILES = (
     {
         "app": "editor",
@@ -459,7 +461,7 @@ def syncable_authoritative_entries(apps_set: set[str] | None = None) -> List[Dic
 
 
 def build_owned_excluded_disk_names() -> set[str]:
-    names = {"apps.cfg"}
+    names = {"apps.cfg"} | RETIRED_BUILD_OWNED_DISK_NAMES
     for entry in BUILD_OWNED_SUPPORT_FILES:
         names.add(str(entry["disk_name"]).lower())
     return names
@@ -1003,7 +1005,7 @@ def ensure_generated_assets(profile: Dict[str, object],
 
 
 def managed_build_names(profile: Dict[str, object], apps_set: set[str]) -> set[str]:
-    managed = {"apps.cfg"}
+    managed = {"apps.cfg"} | RETIRED_BUILD_OWNED_DISK_NAMES
     for disk in profile.get("disks", []):
         for entry in disk.get("contents", []):
             keep_on_demand = bool(entry.get("include_even_if_not_catalog", False))

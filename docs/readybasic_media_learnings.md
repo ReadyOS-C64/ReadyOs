@@ -60,9 +60,10 @@ It refuses to overwrite while a music lifetime lock exists. On I/O failure a
 partial resource can remain in the reserved arena, but no music is activated.
 Callers own other resource lifetimes and must not raise MEMCAP while using them.
 Raw resources are not registered in an allocation table: a later MUSTUNE can
-overwrite one placed in the driver's/tune's range. The demo puts its palette at
-`$9e00`, beyond this particular tune's `$9c40` end. A different tune needs a new
-layout check, even if its PSID header is accepted.
+overwrite one placed in the driver's/tune's range. A different resource/tune
+combination needs a layout check, even if its PSID header is accepted. The music
+demo now calculates colors directly; it no longer loads a palette resource.
+RSCFILE remains available for programs that actually need external resources.
 
 ## Findings and tensions
 
@@ -320,3 +321,36 @@ ignored so backups and recordings cannot accidentally enter a source commit.
   hardware demo/test sequence was run, per the user's request. A screen read
   79 seconds after RUN still showed the loader; after a quiet interval it
   reached the launcher. The user's original VICE process was left untouched.
+
+## Integer-only border demo (2026-09-10, supersedes palette demo above)
+
+- Removed the generated `rb.colors` palette, its profile payload and the demo's
+  RSCFILE call. The retired filename is still treated as build-owned so disk
+  preservation cannot silently bring it back. Generic RSCFILE remains in media.
+- SHADE takes the previous integer color and returns `(ix%+1) AND 15`.
+  ANIMATE assigns that result to C%, calls `BORDER(C%)`, and waits a quarter
+  second using the elapsed-time function. No palette PEEKs or nested color/time
+  expression are needed. Song attribution and the playback lifecycle remain.
+- Important correction to earlier verification: completion, audio, and border
+  restoration did not prove visible animation. A first no-palette version using
+  `shade(int(age(mk)*4))` finished but sampled color 0 eight times. This does not
+  establish the underlying expression-runtime cause; the simpler explicit
+  counter is proven below. No interpreter changes were made for this revision.
+- Added `READYBASIC_DEMO_ONLY=1` to the media probe. It boots ReadyOS normally,
+  runs the actual disk demo, records SID output, samples D020/C1FF/music ticks,
+  checks function wraparound, and verifies final memory/border restoration.
+  A constant border now fails the probe even if every harness step succeeds.
+- Focused VICE run: **45/45 passed**, no degraded steps, followed by animation
+  and audio assertions. `logs/vice_auto_20260910_214559/manifest.json`.
+  Border samples: **1, 2, 3, 3, 4, 5, 6, 6**; music ticks:
+  **34, 60, 81, 102, 123, 149, 170, 191**; playing state remained 2.
+  SHADE(0)/SHADE(1)/SHADE(15) returned 1/2/0. Final border 6, media state 0,
+  MEMSIZ $A000, and no BASIC error. Audio: 37.72 seconds, peak 13095,
+  `media-demo-1789101958885311000-final.wav` (includes load/harness time).
+- Regular release 0.5W passed directory ordering; RB.SUMMER, RBM.MEDIA and
+  RBSND07 are present, RB.COLORS is absent. The retired 24-byte generated host
+  fixture was moved into ignored build scratch storage, so it is recoverable.
+- Per the user's instruction, no further full regression run was started.
+  The previously running loaded-app suite had already ended successfully
+  (223 steps, `logs/vice_auto_20260910_213526/manifest.json`). Its two long-demo
+  timing waits and the cross-app app-banner wait are retained as harness fixes.
