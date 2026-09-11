@@ -299,3 +299,24 @@ ignored so backups and recordings cannot accidentally enter a source commit.
 - RBSND07 retains `BORDER(shade(p%))` and `BORDER(bc)` for animation and restore.
   Its PEEK of the original border and palette bytes is intentional; it no longer
   POKEs the border register. Shiru's attribution remains in the BASIC REM lines.
+- Focused visible VICE run passed **98/98**, no degraded steps:
+  `logs/vice_auto_20260910_205512/manifest.json`. Includes ordinary OR and integer
+  REPEAT/UNTIL, direct BORDER, low-nibble masking, the nested FUNC demo,
+  original-border restoration, media eviction and ReadyOS suspend/resume.
+  Finalized audio: `media-demo-1789098911958227000-final.wav`, 200.45 seconds,
+  peak 12727 (capture includes file loading and harness time).
+- Rebuilt regular D81 0.5T and Ultimate D81 0.5U through normal run.sh. Both
+  release-directory ordering checks passed. Extracted the Ultimate interpreter,
+  media package and demo and compared each byte-for-byte with its built artifact.
+- Uploaded 0.5U into a new owned folder without overwriting previous images:
+  `/USB1/automation/readybasic-media/border-fc94ff4f/RBfc94ff4f.D81`.
+  Verified the full FTP readback; SHA256
+  `faebf8dba90c55f1d87c2a46c5b2652728083c1920fb05fb59618b87f14fb856`.
+  Embedded apps.cfg has DMA enabled and the exact image path (lowercase PETSCII
+  source spelling), with runappfirst empty. Reset and issued the normal
+  `LOAD "*",8,1` / `RUN` disk boot, not a standalone app launch.
+- Left physical hardware at **READY OS V0.5U / DMA:YES**, captured once boot
+  completed (`build/readybasic-media-tools/border-launcher-final.txt`). No
+  hardware demo/test sequence was run, per the user's request. A screen read
+  79 seconds after RUN still showed the loader; after a quiet interval it
+  reached the launcher. The user's original VICE process was left untouched.
