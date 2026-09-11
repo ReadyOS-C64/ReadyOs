@@ -10,18 +10,18 @@ be16 = lambda data, offset: struct.unpack_from(">H", data, offset)[0]
 
 def main():
     module = (ROOT / "obj/readybasic_modules/rbm.media.seq").read_bytes()
-    assert module[:8] == b"RBM!\x01\x06\x05\x01"
+    assert module[:8] == b"RBM!\x01\x06\x08\x01"
     assert u16(module, 8) == 0x1be0
-    names = ["MUSTUNE", "MUSPLAY", "MUSHALT", "MUSDROP", "RSCFILE"]
-    signatures = [19, 10, 24, 24, 19]
-    record = 16 + 5 * 32
+    names = ["MUSTUNE", "MUSPLAY", "MUSHALT", "MUSDROP", "RSCFILE", "MCFILE", "SPRFILE", "MCLINE"]
+    signatures = [19, 10, 24, 24, 19, 19, 19, 22]
+    record = 16 + len(names) * 32
     assert u16(module, record) == 0x8000
     size = u16(module, record+2)
     assert record + 6 + size == len(module)
     assert size <= 0x1000
     for i, (name, signature) in enumerate(zip(names, signatures)):
         desc = module[16+i*32:48+i*32]
-        assert desc[:2] == bytes([110+i, 6])
+        assert desc[:2] == bytes([110+i if i<5 else 111+i, 6])
         assert u16(desc, 2) == 0x8000 and u16(desc, 4) == size
         assert desc[6:10] == bytes([24, 0, 6, 1])
         assert u16(desc, 10) == 0 and u16(desc, 12) < size
@@ -41,7 +41,7 @@ def main():
     assert border[14:22] == b"\x0a\x06BORDER"
     assert border[8] == 2  # GFXCORE in slot 1, not resident parser code.
     media_registry = 2 + 0x5000 - 0x1000 + 16 + u16(module, 8) - 0x1000
-    assert prg[media_registry:media_registry+5*32] == bytes(5*32), \
+    assert prg[media_registry:media_registry+len(names)*32] == bytes(len(names)*32), \
         "media registration must not replace built-in commands"
     demo = (ROOT / "src/apps/readybasic/rbsnd07_psid.bas").read_bytes()
     assert b"border(c%)" in demo and b"ret% (ix%+1) and 15" in demo

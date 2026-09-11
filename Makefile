@@ -205,7 +205,7 @@ READYBASIC_RBPROC1 = $(OBJ_DIR)/rbproc1.prg
 READYBASIC_RBPROCERR = $(OBJ_DIR)/rbprocerr.prg
 READYBASIC_GFX_DEMO_NAMES = rbgfx01_modes rbgfx02_hires_plot rbgfx03_hires_lines rbgfx04_rects rbgfx05_point_read rbgfx06_reu_surface rbgfx07_mbitmap rbgfx08_tile rbgfx09_sprites rbgfx10_collision rbgfx11_input rbgfx12_showcase rbgfx13_sprite_steps rbgfx14_phase2_prims rbgfx15_phase2_tiles rbgfx16_phase2_sprite_ctrl rbgfx17_poly_array rbgfx18_fpoly_array rbgfx19_poly_reu rbgfx20_fpoly_reu_showcase rbgfx21_mbitmap_prims rbgfx22_mbitmap_point rbgfx23_dlist rbgfx24_tilemap rbgfx25_mbcells rbgfx26_mode_matrix rbgfx27_target_blit rbgfx28_tile_visible rbgfx29_mtile_visible rbgfx30_mbitmap_dlist rbgfx31_sync_blit rbgfx32_convex_poly
 READYBASIC_GFX_DEMOS = $(addprefix $(OBJ_DIR)/,$(addsuffix .prg,$(READYBASIC_GFX_DEMO_NAMES)))
-READYBASIC_SOUND_DEMO_NAMES = rbsnd01_sid_basics rbsnd02_voice_state rbsnd03_notes rbsnd04_filter rbsnd05_voice_batch rbsnd06_three_voice rbsnd07_psid
+READYBASIC_SOUND_DEMO_NAMES = rbsnd01_sid_basics rbsnd02_voice_state rbsnd03_notes rbsnd04_filter rbsnd05_voice_batch rbsnd06_three_voice rbsnd07_psid rbsnd08_neon
 READYBASIC_SOUND_DEMOS = $(addprefix $(OBJ_DIR)/,$(addsuffix .prg,$(READYBASIC_SOUND_DEMO_NAMES)))
 READYBASIC_MODULE_DIR = $(OBJ_DIR)/readybasic_modules
 READYBASIC_RBM_SAMPLE1 = $(READYBASIC_MODULE_DIR)/rbm.sample1.seq
@@ -1015,7 +1015,7 @@ $(OBJ_DIR)/rbsnd%.prg: $(APPS_DIR)/readybasic/rbsnd%.bas
 	@mkdir -p "$(OBJ_DIR)"
 	$(PETCAT) -w2 -l 2ac1 -o $@ -- $<
 
-$(READYBASIC_MODULES): $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py $(APPS_DIR)/readybasic/media.s $(APPS_DIR)/readybasic/media_driver.s $(CFG_DIR)/readybasic_media.cfg
+$(READYBASIC_MODULES): $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py $(APPS_DIR)/readybasic/media.s $(APPS_DIR)/readybasic/media_graphics.s $(APPS_DIR)/readybasic/media_driver.s $(CFG_DIR)/readybasic_media.cfg
 	@mkdir -p "$(READYBASIC_MODULE_DIR)"
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py --out-dir "$(READYBASIC_MODULE_DIR)"
 	@test -f $@

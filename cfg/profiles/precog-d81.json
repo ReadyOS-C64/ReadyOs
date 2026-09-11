@@ -43,6 +43,8 @@
         { "artifact": "obj/readybasic_modules/rbm.sample3.seq", "name": "rbm.sample3", "type": "seq" },
         { "artifact": "obj/readybasic_modules/rbm.media.seq", "name": "rbm.media", "type": "seq" },
         { "artifact": "assets/readybasic/music/summer-9200.sid", "name": "rb.summer", "type": "seq" },
+        { "artifact": "assets/readybasic/neon/rb.neon.koa", "name": "rb.neon", "type": "seq" },
+        { "artifact": "assets/readybasic/neon/rb.ready.rbr", "name": "rb.ready", "type": "seq" },
         { "artifact": "obj/readybasic_modules/rb.bad.seq", "name": "rb.bad", "type": "seq" },
         { "artifact": "ucitest.prg", "name": "ucitest", "type": "prg" },
         { "artifact": "readme.prg", "name": "readme", "type": "prg" },
@@ -98,6 +100,7 @@
         { "artifact": "obj/rbsnd05_voice_batch.prg", "name": "rbsnd05", "type": "prg" },
         { "artifact": "obj/rbsnd06_three_voice.prg", "name": "rbsnd06", "type": "prg" },
         { "artifact": "obj/rbsnd07_psid.prg", "name": "rbsnd07", "type": "prg" },
+        { "artifact": "obj/rbsnd08_neon.prg", "name": "rbsnd08", "type": "prg" },
         { "artifact": "obj/apps_cfg_petscii.seq", "name": "apps.cfg", "type": "seq" },
         { "artifact": "obj/app_sidetris.seq", "name": "app.sidetris", "type": "seq" }
       ],
