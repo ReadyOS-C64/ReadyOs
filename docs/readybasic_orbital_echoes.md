@@ -53,6 +53,16 @@ there is no promise of transactional graphics loading.
 
 ## Verification
 
+For the subsequent physical startup reliability fix and newer verified images,
+see [resource-load investigation](readybasic_media_load_investigation.md).
+The loaders now suppress sprite DMA during disk transfers; MCFILE hides its
+unfinished bitmap until pixels and palettes have been read. Failed transfers
+restore sprite/display controls, but do not provide full image-memory rollback.
+Use `READYBASIC_TRUE_DRIVE=1` for the untrapped IEC version of the VICE probe.
+Load/run setup at **1 MHz**. Faster post-load playback is verified, but forced
+Manual turbo during disk loading is not supported; that Ultimate mode prevents
+software from temporarily selecting a safe disk-I/O speed.
+
 `python3 build_support/run_readybasic_neon_probe.py` uses the normal ReadyOS
 disk boot in visible VICE. It compares the complete bitmap load and REU restore,
 checks line output against a host-side rasterizer and checks invalid-coordinate

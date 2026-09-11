@@ -38,6 +38,7 @@ def capture(name):
     add("screen.capture",name,label=name,capture_state=True)
     add("dump.memory_ranges",name+"_state",ranges=[
         dict(label="screen",start=0xcc00,end=0xcfe7),
+        dict(label="color",start=0xd800,end=0xdbe7),
         dict(label="sprites",start=0xca00,end=0xcb3f),
         dict(label="ticks",start=0x9006,end=0x9007),
         dict(label="sid",start=0xc1ff,end=0xc1ff)])
@@ -48,6 +49,7 @@ add("ultimate.speed.set","normal_speed",mhz=1)
 keys("load_demo",'LOAD "RBSND08",8\r',20)
 keys("run_demo",'RUN\r',90)  # No REST polling while SEQ files load over IEC.
 screen("show_running","ORBITAL SHOW RUNNING")
+add("assert.memory","startup_music_installed",start=0xc1ff,end=0xc1ff,equals_hex="02")
 for speed in (1,16,64):
     add("ultimate.speed.set",f"speed_{speed}",mhz=speed)
     screen(f"settle_{speed}","ORBITAL SHOW RUNNING",3)

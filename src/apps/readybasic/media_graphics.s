@@ -39,6 +39,25 @@ open_resource:
         jeq state_error
         jmp @lfn
 @available:
+        ; Streamed KERNAL IEC reads cannot tolerate sprite DMA stealing cycles.
+        ; Keep the caller's mask hidden until CLOSE, including all error paths.
+        lda $d015
+        sta saved_sprites
+        lda #0
+        sta $d015
+        ; A Koala file puts palettes after pixels. Hide the display until all
+        ; parts and the exact EOF have been checked, rather than exposing an
+        ; unfinished bitmap with the previous palette. ReadyBASIC graphics
+        ; owns the VIC mode; raster IRQ effects are outside this loader ABI.
+        lda $d011
+        and #$7f
+        sta saved_display
+        lda kind
+        bne :+
+        lda saved_display
+        and #$ef
+        sta $d011
+:
         lda $c250
         ldx #<buf
         ldy #>buf
@@ -167,7 +186,15 @@ ok:     lda #0
         rts
 close:  jsr $ffcc
         lda #14
-        jmp $ffc3
+        jsr $ffc3
+        lda kind
+        bne :+
+        lda saved_display
+        sta $d011
+:
+        lda saved_sprites
+        sta $d015
+        rts
 read_range:
         lda eof
         bne @bad
@@ -207,6 +234,8 @@ byte: .byte 0
 part: .byte 0
 left: .word 0
 lastlo: .byte 0
+saved_sprites: .byte 0
+saved_display: .byte 0
 
 ; MCLINE(x1,y1,x2,y2,slot): bounded all-octant integer line. Slot is the
 ; two-bit pixel value 0..3, NOT a palette color. Never changes CC00/D800/D021.

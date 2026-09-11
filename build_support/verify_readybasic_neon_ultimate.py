@@ -20,6 +20,9 @@ for speed in (1, 16, 64):
         stage = f"show_{speed}_{sample}"
         state = stages / (stage + "_state")
         assert (state / "screen.bin").read_bytes() == koa[8002:9002], stage
+        color=state / "color.bin"
+        if color.exists():
+            assert bytes(v&15 for v in color.read_bytes()) == koa[9002:10002], stage
         assert (state / "sprites.bin").read_bytes() == sprites, stage
         assert (state / "sid.bin").read_bytes() == b"\x02", stage
         ticks.append((state / "ticks.bin").read_bytes())

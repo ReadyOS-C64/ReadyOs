@@ -368,3 +368,33 @@ ignored so backups and recordings cannot accidentally enter a source commit.
   launcher at **READY OS V0.5X / PRECOG ULTIMATE / DMA:YES**, with Browse and
   Load selected (`build/readybasic-media-tools/integer-step-launcher.txt`).
   ReadyOS is left there for manual testing; the earlier VICE session is intact.
+
+## 2026-09-11 — streamed graphics loading with visible sprites
+
+- The user reproduced the incomplete AD/partial-color startup on physical C64U
+  after an earlier passing run. One attractive capture was not repeatability
+  evidence; the early `ORBITAL SHOW RUNNING` marker is not load completion.
+- All media-file loaders now suppress sprite DMA throughout KERNAL I/O and
+  restore the saved mask after CLOSE, including error paths. IRQ masking alone
+  does not prevent VIC sprite cycle stealing. MCFILE also hides the bitmap
+  until its pixels, palettes and exact EOF have arrived. No extra BASIC or
+  unowned REU staging memory is used; failed reads are not full-image rollback.
+- Final untrapped true-drive VICE: 100/100 steps plus exact-byte/animation audit,
+  `logs/vice_auto_20260911_142659/manifest.json`. Missing files and wrong headers
+  restore sprite/display state and leave no logical file open.
+- Final cold hardware load and live 1/16/64 MHz checks passed at
+  `logs/ultimate_auto_20260911_142855/manifest.json`. The user also independently
+  confirmed the earlier sprite-guard build was visibly working on the C64U.
+- Parallel probes exposed ambiguous manifest selection in the test wrapper.
+  Plans now have unique IDs/paths; the separate exact-run auditor consumes the
+  saved compiled plan and its own bitmap paths. The correct final run was
+  audited successfully after fixing the selector.
+- Full research, limits, artifact hashes and final paths are recorded in
+  [the load investigation](readybasic_media_load_investigation.md). An idle or
+  disconnected IEC peer can still trap a stock KERNAL clock wait; this change
+  does not claim a universal bus watchdog or install an invasive NMI handler.
+- Stronger repeat test with Manual 16 MHz active before RUN failed at MCFILE
+  (`logs/ultimate_auto_20260911_143229/manifest.json`). Loading at 1 MHz and
+  playback at 16/64 MHz are different claims. Manual turbo disables software
+  speed registers, so do not promise automatic safe I/O in that configuration.
+  The manual handoff is restored to 1 MHz so repeating RUN stays supported.

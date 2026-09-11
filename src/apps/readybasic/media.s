@@ -46,6 +46,13 @@ loadfile:
         jeq badstate
         jmp @lfn
 @available:
+        ; CHRIN's IEC bit loop is timing-sensitive: suppress sprite DMA for
+        ; the entire streamed transfer, not just IRQs around individual calls.
+        ; Restore the caller's sprite mask on success and every opened-file error.
+        lda $d015
+        sta saved_sprites
+        lda #0
+        sta $d015
         lda str_len
         ldx #<str_buf
         ldy #>str_buf
@@ -334,7 +341,10 @@ readbad:sec
 closefile:
         jsr $ffcc
         lda #14
-        jmp $ffc3
+        jsr $ffc3
+        lda saved_sprites
+        sta $d015
+        rts
 sidmagic:.byte "PSID"
 rawmagic:.byte "RBR1"
 kind:   .byte 0
@@ -344,4 +354,5 @@ count:  .byte 0
 index:  .byte 0
 start:  .word 0
 endaddr:.word 0
+saved_sprites: .byte 0
 .assert __DRIVER_SIZE__ < 256, lderror, "media driver copy must fit one page"

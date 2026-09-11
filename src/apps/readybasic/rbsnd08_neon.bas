@@ -56,6 +56,7 @@
 1030   for i=0 to 4
 1040     sprset(i,1,3,0)
 1050     sprmul(i,1):sprsize(i,1,1):sprpri(i,0)
+1055     sprmove(i,56+i*52,78)
 1060   next i
 1070   sprmco(1,6)
 1080   rem sprset makes patterns: replace them now

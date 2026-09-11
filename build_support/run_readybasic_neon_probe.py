@@ -13,6 +13,8 @@ subprocess.run(["python3",str(ROOT/"build_support/verify_readybasic_neon.py")],c
 subprocess.run(["python3",str(ROOT/"build_support/run_readybasic_media_probe.py")],
                env={**os.environ,"READYBASIC_GENERATE_PLAN_ONLY":"1"},check=True)
 plan=json.loads((OUT/"probe.yaml").read_text())
+true_drive=os.environ.get("READYBASIC_TRUE_DRIVE")=="1"
+plan["global_defaults"]["vice"]["true_drive"]=true_drive
 steps=plan["steps"][:6]
 # Give the disk boot an uninterrupted interval; aggressive monitor polling can
 # interfere with IEC loading. This is a wait bound, not C64 protocol pacing.
@@ -74,11 +76,25 @@ keys("bad_line",'MCLINE(160,0,0,199,1)\r')
 screen("reject_bad_line","?RB ERROR")
 bitmap("rejected")
 keys("cleanup_prelude",'GFXTEXT():BORDER(6):NEW\r')
+keys("loader_error_sprite",'SPRSET(0,1,3,0)\r')
+for name,command in (("missing_image",'MCFILE("RB.NOFILE")'),
+                     ("missing_sprites",'SPRFILE("RB.NOFILE")'),
+                     ("missing_music",'MUSTUNE("RB.NOFILE")'),
+                     ("missing_resource",'RSCFILE("RB.NOFILE")'),
+                     ("bad_image_header",'MCFILE("RB.READY")'),
+                     ("bad_sprite_header",'SPRFILE("RB.NEON")')):
+    keys(name,command+'\r')
+    screen(name+"_error","?RB ERROR")
+    mem(name+"_sprites_restored",0xd015,b"\x01")
+    mem(name+"_file_closed",0x98,b"\x00")
+    keys(name+"_display_query",'PRINT "DISPLAY RESTORED";(PEEK(53265) AND 16)\r')
+    screen(name+"_display_restored","DISPLAY RESTORED 16")
+keys("loader_error_cleanup",'SPRSET(0,0,0,0):NEW\r')
 keys("load_demo",'LOAD "RBSND08",8\r',3)
 add("monitor.command","realtime",command="warp off")
 keys("run_demo",'RUN\r',.2)
 screen("demo_loaded","ORBITAL SHOW RUNNING")
-steps[-1]["params"].update(pre_delay_s=45,poll_s=1,wait_timeout_s=180)
+steps[-1]["params"].update(pre_delay_s=90 if true_drive else 45,poll_s=1,wait_timeout_s=180)
 mem("music_playing",0xc1ff,b"\x02")
 mem("reserved",0x37,b"\x00\x90")
 capture("show_a")
@@ -93,9 +109,10 @@ screen("memory_returned","BASIC MEMORY RETURNED:")
 mem("music_released",0xc1ff,b"\x00")
 mem("memory_released",0x37,b"\x00\xa0")
 add("assert.screen_not_contains","no_demo_error",not_contains="?")
-plan.update(plan_id="readybasic_neon_probe",steps=steps)
-path=OUT/"neon-probe.yaml"
+plan.update(plan_id="readybasic_neon_probe_"+tag,steps=steps)
+path=OUT/f"neon-probe-{tag}.yaml"
 path.write_text(json.dumps(plan,indent=2)+"\n")
+(OUT/"neon-probe.yaml").write_text(path.read_text())
 if os.environ.get("READYBASIC_GENERATE_PLAN_ONLY")=="1":
     print(path);raise SystemExit(0)
 old=set((ROOT/"logs").glob("vice_auto_*/manifest.json"))
@@ -104,38 +121,4 @@ subprocess.run(["dotnet","run","--project",str(project),"--","run","--plan",str(
 runs={p for p in (ROOT/"logs").glob("vice_auto_*/manifest.json")
       if p.parent.name!="vice_auto_latest"}-old
 manifest=next(p for p in runs if json.loads(p.read_text(encoding="utf-8-sig"))["plan_id"]==plan["plan_id"])
-stages=manifest.parent/"stages"
-koa=(ROOT/"assets/readybasic/neon/rb.neon.koa").read_bytes()
-assert bitmap_paths["original"].read_bytes()==koa[2:8002],"Koala bitmap load mismatch"
-assert bitmap_paths["restored"].read_bytes()==koa[2:8002],"REU restoration mismatch"
-assert bitmap_paths["rejected"].read_bytes()==koa[2:8002],"invalid line changed bitmap"
-assert bitmap_paths["drawn"].read_bytes()!=koa[2:8002],"lines did not draw"
-expected=bytearray(koa[2:8002])
-for x0,y0,x1,y1,ink in [(0,0,159,199,1),(159,0,0,199,2),(80,0,80,199,3)]:
-    dx,dy=abs(x1-x0),abs(y1-y0)
-    n=max(dx,dy)
-    for i in range(n+1):
-        x=x0+(1 if x1>=x0 else -1)*((n//2+i*dx)//n if n else 0)
-        y=y0+(1 if y1>=y0 else -1)*((n//2+i*dy)//n if n else 0)
-        address=(y//8)*320+(x//4)*8+(y&7)
-        shift=6-2*(x&3)
-        expected[address]=(expected[address]&~(3<<shift))|(ink<<shift)
-assert bitmap_paths["drawn"].read_bytes()==expected,"MCLINE rasterization mismatch"
-def data(stage,name): return (stages/(stage+"_state")/(name+".bin")).read_bytes()
-for stage in ("picture","lines","show_a","show_b","show_c"):
-    assert data(stage,"screen")==koa[8002:9002],f"{stage}: cell palette changed"
-    assert bytes(v&15 for v in data(stage,"color"))==koa[9002:10002],f"{stage}: color RAM changed"
-sprite=(ROOT/"assets/readybasic/neon/rb.ready.rbr").read_bytes()[8:]
-for stage in ("show_a","show_b","show_c"):
-    assert data(stage,"sprites")==sprite,"sprite data corrupted"
-    assert data(stage,"pointers")==bytes(range(0x28,0x2d)),"sprite pointers lost"
-    assert data(stage,"sid")==b"\x02","music stopped"
-    vic=data(stage,"vic")
-    assert vic[0x15]&31==31 and vic[0x1c]&31==31,"multicolor sprites not enabled"
-assert data("show_a","vic")[:10]!=data("show_b","vic")[:10],"letters did not move"
-assert data("show_a","ticks")!=data("show_b","ticks"),"music IRQ stalled"
-text=(stages/"memory_returned/decoded.txt").read_text(encoding="utf-8-sig")
-refresh=re.search(r"IMAGE REFRESHES:\s*(\d+)",text)
-assert refresh and int(refresh[1])>0,"automatic refresh never happened"
-print("NEON VERIFIED: exact Koala load/REU restore; palette-preserving lines; moving multicolor sprites; live SID; timed refresh; cleanup.")
-print(manifest)
+subprocess.run(["python3",str(ROOT/"build_support/verify_readybasic_neon_run.py"),str(manifest)],check=True)
