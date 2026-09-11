@@ -1,0 +1,99 @@
+version: 1
+kind: ultimate_task_plan
+plan_id: readyos_setup_ui_browse
+run_mode: ultimate64
+global_defaults:
+  retry_policy: { max_attempts: 1, backoff_ms: 500, jitter: false }
+  timeouts: { launch_s: 60, step_s: 180, read_s: 60 }
+  artifact_policy: { capture_screen: true, capture_state: true, capture_dump: true }
+  ultimate:
+    host: 10.0.0.79
+    password: null
+    ftp_user: anonymous
+    ftp_password: anonymous@
+    remote_root: USB1/READYOS_SETUP_TEST
+    disk8: null
+    disk9: null
+    autostart_prg: null
+    drive_a_bus_id: 8
+    drive_b_bus_id: 11
+    drive_a_type: '1581'
+    drive_b_type: '1581'
+    drive_a_enabled: true
+    drive_b_enabled: false
+    mount_mode: readwrite
+    boot_drive: 8
+    capture_video_stream: true
+    stream_port: 12000
+    stream_timeout_s: 4.0
+    default_speed_mhz: 1
+    warp_equivalent_mhz: 8
+steps:
+- id: launch_setup
+  type: ultimate.launch
+  params:
+    boot_mode: prg
+    prg: /Users/karlprosserpp/dev/c64projects/readyosprecog/bin/setup.prg
+    drives:
+    - { slot: a, bus_id: 8, drive_type: '1581', enabled: true, disk: "", remote_disk: "", mount_mode: readwrite }
+    - { slot: b, bus_id: 11, drive_type: '1581', enabled: false, disk: "", remote_disk: "", mount_mode: readwrite }
+- id: wait_browser
+  type: screen.wait_contains
+  params: { text: "F7 PATH", wait_timeout_s: 120, pre_delay_s: 3.0 }
+- id: select_usb1
+  type: input.sequence
+  params: { keys: [17,17,17], inter_key_delay_s: 0.08, post_delay_s: 2.0 }
+- id: capture_usb1_volume
+  type: screen.capture
+  params: { label: selector_usb1_volume, note: "USB1 volume selected", capture_state: true }
+- id: enter_usb1
+  type: input.key
+  params: { key: 13, post_delay_s: 3.0 }
+- id: wait_usb1
+  type: screen.wait_contains
+  params: { text: "PATH: /USB1", wait_timeout_s: 60, pre_delay_s: 2.0 }
+- id: select_owned_test_folder
+  type: input.sequence
+  params: { keys: [17,17,17,17,17,17,17,17], inter_key_delay_s: 0.08, post_delay_s: 2.0 }
+- id: capture_owned_test_folder
+  type: screen.capture
+  params: { label: selector_readyos_setup_test, note: "Owned READYOS_SETUP_TEST folder selected", capture_state: true }
+- id: enter_owned_test_folder
+  type: input.key
+  params: { key: 13, post_delay_s: 3.0 }
+- id: wait_owned_test_folder
+  type: screen.wait_contains
+  params: { text: "PATH: /USB1/READYOS_SETUP_TEST", wait_timeout_s: 90, pre_delay_s: 2.0, capture_label: selector_test_runs_page }
+- id: go_to_last_runs_page
+  type: input.sequence
+  params: { keys: [134,134,134,134,134,134,134,134,134,134,134,134,134,134,134,134], inter_key_delay_s: 0.15, post_delay_s: 3.0 }
+- id: select_latest_run
+  type: input.sequence
+  params: { keys: [17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17], inter_key_delay_s: 0.08, post_delay_s: 2.0 }
+- id: capture_latest_run
+  type: screen.capture
+  params: { label: selector_latest_test_run, note: "Latest owned SETUP run selected", capture_state: true }
+- id: enter_latest_run
+  type: input.key
+  params: { key: 13, post_delay_s: 3.0 }
+- id: capture_speed_folder
+  type: screen.capture
+  params: { label: selector_speed_folder, note: "Owned speed folder selected", capture_state: true }
+- id: enter_speed_folder
+  type: input.key
+  params: { key: 13, post_delay_s: 3.0 }
+- id: capture_d81_selected
+  type: screen.capture
+  params: { label: selector_d81_selected, note: "Owned ReadyOS D81 selected", capture_state: true }
+- id: open_confirmation
+  type: input.key
+  params: { key: 13, post_delay_s: 3.0 }
+- id: wait_confirmation
+  type: screen.wait_contains
+  params: { text: "WRITE THIS D81 APPS.CFG? Y/N", wait_timeout_s: 60, capture_label: selector_d81_confirmation }
+- id: cancel_confirmation
+  type: input.key
+  params: { key: 78, post_delay_s: 1.0 }
+- id: final_capture
+  type: screen.capture
+  params: { label: selector_cancelled_safely, note: "Selection cancelled without modifying the image", capture_state: true }

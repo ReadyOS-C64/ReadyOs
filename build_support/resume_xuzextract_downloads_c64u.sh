@@ -67,4 +67,3 @@ python3 build_support/analyze_xuzextract_run.py \
   --json-output "$out_dir/result.json" >> "$resume_log" 2>&1
 printf 'XUZEXTRACT PHYSICAL PASS recovered /%s\n' "$remote_root" \
   > "$out_dir/PASS.txt"
-

@@ -1,0 +1,50 @@
+version: 1
+kind: ultimate_task_plan
+plan_id: launcher_setup_notice_continue
+run_mode: ultimate64
+global_defaults:
+  retry_policy: { max_attempts: 1, backoff_ms: 500, jitter: false }
+  timeouts: { launch_s: 60, step_s: 180, read_s: 60 }
+  artifact_policy: { capture_screen: true, capture_state: true, capture_dump: true }
+  ultimate:
+    host: 10.0.0.79
+    password: null
+    ftp_user: anonymous
+    ftp_password: anonymous@
+    remote_root: USB1/READYOS_SETUP_TEST/LAUNCHER-NOTICE-20260822
+    disk8: null
+    disk9: null
+    autostart_prg: null
+    drive_a_bus_id: 8
+    drive_b_bus_id: 11
+    drive_a_type: '1581'
+    drive_b_type: '1581'
+    drive_a_enabled: true
+    drive_b_enabled: false
+    mount_mode: readwrite
+    boot_drive: 8
+    capture_video_stream: true
+    stream_port: 12000
+    stream_timeout_s: 4.0
+    default_speed_mhz: 1
+    warp_equivalent_mhz: 8
+steps:
+- id: attach_without_reset
+  type: ultimate.launch
+  params:
+    boot_mode: none
+    drives:
+    - { slot: a, bus_id: 8, drive_type: '1581', enabled: true, disk: "", remote_disk: "", mount_mode: readwrite }
+    - { slot: b, bus_id: 11, drive_type: '1581', enabled: false, disk: "", remote_disk: "", mount_mode: readwrite }
+- id: set_16mhz
+  type: ultimate.speed.set
+  params: { mhz: 16 }
+- id: wait_setup_notice
+  type: screen.wait_contains
+  params: { text: "RUN SETUP APP FOR FAST APP LOADING", wait_timeout_s: 180, pre_delay_s: 2.0, capture_label: launcher_setup_notice_16mhz }
+- id: capture_final
+  type: screen.capture
+  params: { label: launcher_setup_notice_16mhz_final, note: "Launcher SETUP guidance on physical Ultimate", capture_state: true }
+- id: restore_1mhz
+  type: ultimate.speed.set
+  params: { mhz: 1 }

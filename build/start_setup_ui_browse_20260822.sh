@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+command_text="cd /Users/karlprosserpp/dev/c64projects/agenticdevharness/tools/vice_tasks_dotnet && ULTIMATE_ASSUME_MOUNTED=1 /usr/local/share/dotnet/dotnet run --project src/ViceTasks.Binary/ViceTasks.Binary.csproj -- run-ultimate-plan --plan /Users/karlprosserpp/dev/c64projects/readyosprecog/build/setup_ui_browse_20260822.yaml --no-tui >/tmp/setup_ui_browse_20260822b.log 2>&1; rc=\$?; echo \$rc >/tmp/setup_ui_browse_20260822b.status"
+osascript -e 'tell application "Terminal" to do script "'"${command_text//\"/\\\"}"'"' >/dev/null
+echo started

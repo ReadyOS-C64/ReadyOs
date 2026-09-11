@@ -17,4 +17,3 @@ osascript -e 'tell application "Terminal" to do script "'"${command_text//"/\\"}
 echo "Started Terminal-owned read-only xuzextract recovery"
 echo "status=$status"
 echo "runner=$frozen"
-
