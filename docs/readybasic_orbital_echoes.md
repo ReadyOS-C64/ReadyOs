@@ -10,6 +10,10 @@ After M, `MUSDROP():CLR:MEMCAP(40960)` releases the music arena. Do not raise th
 ceiling while the music is live. RUN again stops the old player before disk I/O.
 This is a PAL demo using the same vetted $9200 Shiru tune as RBSND07.
 
+Press **Space** to restore the cached background immediately, clearing the
+accumulated lines without disk I/O or stopping the music and sprites. This
+also restarts the 15-second automatic-refresh countdown.
+
 The readable BASIC source keeps setup, sine-wave lettering, additive ribbons,
 15-second restoration and cleanup in separate procedures. Sine, sprite heights
 and both sets of line endpoints are precomputed before graphics. The integer

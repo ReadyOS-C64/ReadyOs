@@ -472,3 +472,21 @@ ignored so backups and recordings cannot accidentally enter a source commit.
   operator confirmation of the physical idle prompt before REST inspection.
   The successful hardware run above predated these two operator gates; its
   three resource-loading RUNs already used the verified video-only gate.
+
+## Space-triggered background restore (2026-09-11)
+
+- Both current demo sources now dispatch Space to the existing CLEAN procedure:
+  restore the owned REU surface, reset the automatic-refresh clock, and count
+  the refresh. No disk I/O, new module code, or change to Q/M cleanup.
+- Regular 0.5F and Ultimate 0.5G images rebuilt through run.sh. Both packaged
+  demos match their compiled sources; directory ordering and Ultimate DMA path
+  checks passed. These builds have not replaced the image on the physical C64U.
+- Focused VICE artifacts: `logs/vice_auto_20260911_160624/`. Around Space,
+  RC changed from 0 to 2: manual restore plus an automatic expiry in the same
+  short observation window. Music remained active; palette/movement, M music
+  retention and colors, rerun, Q music release and MEMSIZ restoration passed.
+  The final text-color query did not complete; the exit screenshot shows stray
+  Q input in the editor. This is not recorded as a completely green suite.
+- The probe now allows the legitimate automatic/manual coincidence and clears
+  stray exit-key input before its final diagnostic. That final input-cleanup
+  adjustment is syntax-checked, not claimed as a fresh full VICE run.

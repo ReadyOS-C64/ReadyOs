@@ -42,6 +42,14 @@ add('assert.screen_not_contains','no_startup_error',not_contains='?')
 capture('show_a')
 screen('motion_wait','ORBITAL SHOW RUNNING',1)
 capture('show_b')
+def refresh_sample(name):
+    add('dump.memory_ranges',name,ranges=[
+        dict(label='pointers',start=0x2d,end=0x30),
+        dict(label='workspace',start=0x2ac1,end=0x8fff)])
+refresh_sample('before_space')
+keys('space_refresh',' ',.3)
+refresh_sample('after_space')
+mem('space_keeps_music',0xc1ff,b'\x02')
 screen('refresh_wait','ORBITAL SHOW RUNNING',17)
 keys('music_exit','M',2)
 screen('music_continues','MUSIC CONTINUES')
@@ -60,6 +68,9 @@ keys('full_exit','Q',2)
 screen('all_stopped','ALL STOPPED')
 mem('music_released',0xc1ff,b'\x00')
 mem('memory_released',0x37,b'\x00\xa0')
+# A held/repeated exit key can spill into the newly idle BASIC editor.
+# Clear that input line before submitting the diagnostic expression.
+keys('clear_exit_line','\x14'*8)
 keys('full_colors','PRINT "COLORS";(PEEK(53280)AND15);(PEEK(53281)AND15);PEEK(646)\r')
 screen('full_colors_ok','COLORS 4  6  14')
 p.update(plan_id='readybasic_gfxsnd_'+tag,steps=steps)
@@ -72,6 +83,25 @@ subprocess.run(['dotnet','run','--project',str(project),'--','run','--plan',str(
 manifest=next(m for m in (ROOT/'logs').glob('vice_auto_*/manifest.json')
     if m.parent.name!='vice_auto_latest' and json.loads(m.read_text(encoding='utf-8-sig'))['plan_id']==p['plan_id'])
 st=manifest.parent/'stages'
+def refresh_count(name):
+    stage=st/name
+    pointers=(stage/'pointers.bin').read_bytes()
+    start=int.from_bytes(pointers[:2],'little')
+    end=int.from_bytes(pointers[2:],'little')
+    workspace=(stage/'workspace.bin').read_bytes()
+    for address in range(start,end,7):
+        value=workspace[address-0x2ac1:address-0x2ac1+7]
+        if value[:2]==b'RC':
+            exponent=value[2]
+            if not exponent:return 0
+            mantissa=int.from_bytes(value[3:],'big')
+            assert not mantissa & 0x80000000
+            return (1+(mantissa&0x7fffffff)/2**31)*2**(exponent-129)
+    raise AssertionError('refresh counter RC missing')
+# The automatic timer may expire between the samples as well as the keypress.
+# Both resets are valid; two automatic resets cannot occur in this short window.
+delta=refresh_count('after_space')-refresh_count('before_space')
+assert delta in (1,2), f'Space refresh count changed unexpectedly: {delta}'
 assert (st/'show_a_state/vic.bin').read_bytes()[:10]!=(st/'show_b_state/vic.bin').read_bytes()[:10]
 assert (st/'music_prompt_a/ticks.bin').read_bytes()!=(st/'music_prompt_b/ticks.bin').read_bytes()
 exit_text=(manifest.parent/'screen_decoded/music_continues.txt').read_text(encoding='utf-8-sig')

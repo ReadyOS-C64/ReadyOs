@@ -15,7 +15,7 @@
 140 fc=peek(646)
 150 print chr$(147);"ready / orbital echoes"
 160 print "q: stop all   m: leave music playing"
-170 print "image renews every 15 seconds"
+170 print "space: renew image / auto: 15 seconds"
 180 print "precalculating motion - please wait"
 190 dim s%(255),sy%(335)
 200 dim lx%(511),ly%(511),rx%(511),ry%(511)
@@ -39,6 +39,8 @@
 370   exec weave
 375   lt=ti
 390   get a$
+395   if a$<>" " then 400
+397   exec clean
 400 until a$="q" or a$="m"
 410 exec finish
 420 if a$="m" then 500
