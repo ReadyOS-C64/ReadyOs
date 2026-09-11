@@ -354,3 +354,17 @@ ignored so backups and recordings cannot accidentally enter a source commit.
   The previously running loaded-app suite had already ended successfully
   (223 steps, `logs/vice_auto_20260910_213526/manifest.json`). Its two long-demo
   timing waits and the cross-app app-banner wait are retained as harness fixes.
+- Ultimate release **0.5X** passed directory ordering and has no RB.COLORS.
+  Extracted RBSND07 (2009 bytes), RBM.MEDIA (1145), RB.SUMMER (2751), and
+  READYBASIC (28674) all matched their built/source artifacts byte-for-byte.
+  Uploaded into a new owned folder, preserving the earlier hardware image:
+  `/USB1/automation/readybasic-media/border-d5ac0d39/RBd5ac0d39.D81`.
+  Full FTP readback matched SHA256
+  `2ca2f8e0b1cef42ced3f8f0ef2328471e2bbd45e847a86bc19129f9bda7f8aaa`.
+  Embedded apps.cfg: DMA_LOADING=1, empty RUNAPPFIRST, C64U_IMAGE_PATH exactly
+  matching that image (PETSCII source spelling). Issued the normal disk boot;
+  no physical music-demo or regression automation was sent.
+- After a quiet boot interval, a one-off screen read confirmed the physical
+  launcher at **READY OS V0.5X / PRECOG ULTIMATE / DMA:YES**, with Browse and
+  Load selected (`build/readybasic-media-tools/integer-step-launcher.txt`).
+  ReadyOS is left there for manual testing; the earlier VICE session is intact.

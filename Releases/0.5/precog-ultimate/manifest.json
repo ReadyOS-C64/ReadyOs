@@ -3,10 +3,10 @@
   "display_name": "precog ultimate (d81)",
   "kind": "ultimate",
   "variant_boot_name": "precog ultimate",
-  "version_text": "0.5U",
+  "version_text": "0.5X",
   "reu_size_kb": 16384,
-  "catalog_source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/build/readybasic-media-tools/border-ultimate-fc94ff4f.ini",
-  "autostart_prg": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5u-ultimate-preboot.prg",
+  "catalog_source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/build/readybasic-media-tools/border-ultimate-d5ac0d39.ini",
+  "autostart_prg": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5x-ultimate-preboot.prg",
   "autostart_disk_prg": "preboot.prg",
   "preboot_mode": "boot",
   "disks": [
@@ -19,7 +19,7 @@
       "mount_on_boot": true,
       "role": "boot",
       "description": "",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5u-ultimate.d81"
+      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5x-ultimate.d81"
     }
   ],
   "boot_prgs": [
@@ -27,13 +27,13 @@
       "stem": "preboot",
       "disk_name": "preboot",
       "source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/bin/preboot.prg",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5u-ultimate-preboot.prg"
+      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5x-ultimate-preboot.prg"
     },
     {
       "stem": "boot",
       "disk_name": "boot",
       "source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/bin/boot.prg",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5u-ultimate-boot.prg"
+      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5x-ultimate-boot.prg"
     }
   ],
   "apps": [

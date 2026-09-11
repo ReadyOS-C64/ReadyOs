@@ -1,7 +1,7 @@
 # precog ultimate (d81)
 
 - Release Line: `0.5`
-- Artifact Build: `0.5U`
+- Artifact Build: `0.5X`
 - Kind: `ultimate`
 
 ## Why This Variant Exists
@@ -10,9 +10,9 @@
 
 ## Artifacts
 
-- Boot-time drive 8: `readyos-v0.5u-ultimate.d81`
-- Host-Side Boot PRG: `readyos-v0.5u-ultimate-preboot.prg`
-- Host-Side Boot PRG: `readyos-v0.5u-ultimate-boot.prg`
+- Boot-time drive 8: `readyos-v0.5x-ultimate.d81`
+- Host-Side Boot PRG: `readyos-v0.5x-ultimate-preboot.prg`
+- Host-Side Boot PRG: `readyos-v0.5x-ultimate-boot.prg`
 
 ## Included Apps
 
@@ -54,7 +54,7 @@
 
 - This profile uses the direct boot chain `PREBOOT -> BOOT`.
 - There is no `SETD71` stage for this variant.
-- Attach the single disk on drive `8`, then autostart `readyos-v0.5u-ultimate-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
+- Attach the single disk on drive `8`, then autostart `readyos-v0.5x-ultimate-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
 
 ## C64 Ultimate
 
