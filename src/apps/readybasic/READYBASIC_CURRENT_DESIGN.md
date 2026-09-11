@@ -1,5 +1,10 @@
 # ReadyBASIC Current Design
 
+Experimental MEMCAP and `rbm.media` commands are documented in
+[the media learnings](../../../docs/readybasic_media_learnings.md), with
+the credited `rbsnd07` demo. MEMCAP is opt-in; default BASIC free bytes and
+the BASIC program start remain unchanged. The media flag uses `$c1ff`.
+
 This is the current ReadyBASIC design as implemented by
 `src/apps/readybasic/readybasic.s`, linked by `cfg/ready_app_readybasic.cfg`,
 and verified against the current `obj/readybasic.map`.
@@ -266,6 +271,7 @@ overlay:
 | `GFXMODE` | `GFXMODE("HIRES")`, `M%=GFXMODE()` | Supports `TEXT`, `HIRES`, `MBITMAP`, `TILE`, and `MTILE`. |
 | `GFXTEXT` | `GFXTEXT()` | Restores ordinary text mode. |
 | `GFXCLEAR` | `GFXCLEAR(C)` | Clears Bank D screen/color RAM and bitmap RAM for bitmap modes. |
+| `BORDER` | `BORDER(C)` | Sets the VIC border in any display mode. Uses the low four bits, like `MCBG`; colors 0..15. Built-in GFXCORE, no new parser syntax. |
 | `GFXSURF` | `H%=GFXSURF("HIRES")` | Allocates typed graphics-surface handle `3` in the REU heap. |
 | `GFXTGT` | `GFXTGT(0)`, `GFXTGT(H%)` | Selects visible target `0` or records a typed graphics-surface handle. Immediate primitives still draw visible Bank D. |
 | `GFXBLIT` | `GFXBLIT(H%)` | Copies a typed graphics-surface handle's bitmap/screen/color layout from REU to Bank D. |

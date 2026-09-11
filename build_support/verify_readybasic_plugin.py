@@ -28,7 +28,7 @@ READYBASIC_VICE_TARGETS = {
     "readybasic-gfx-phase1-vice", "readybasic-sprite-steps-vice",
     "readybasic-gfx-phase2-vice", "readybasic-gfx-phase3-vice",
     "readybasic-gfx-mbitmap-vice", "readybasic-gfx-phase4-vice",
-    "readybasic-gfx-phase5-vice", "readybasic-sound-phase1-vice",
+    "readybasic-gfx-phase5-vice", "readybasic-sound-phase1-vice", "readybasic-media-vice",
     "readybasic-readyos-loaded-apps-vice", "readybasic-full-vice",
 }
 
@@ -227,7 +227,7 @@ def main() -> None:
     if set(aggregate_targets) != READYBASIC_VICE_TARGETS:
         missing = sorted(READYBASIC_VICE_TARGETS - set(aggregate_targets))
         extra = sorted(set(aggregate_targets) - READYBASIC_VICE_TARGETS)
-        fail(f"26-target VICE aggregate drifted; missing={missing}, extra={extra}")
+        fail(f"27-target VICE aggregate drifted; missing={missing}, extra={extra}")
     for script_name in READYBASIC_VICE_PLAN_SCRIPTS:
         if f"$(BUILD_SUPPORT_DIR)/{script_name}" not in makefile:
             fail(f"READYBASIC_VICE_SCRIPTS is missing {script_name}")
@@ -363,6 +363,10 @@ def main() -> None:
     unsafe_names = []
     for name in command_names:
         reason = token_unsafe_reason(name)
+        if name == "BORDER" and reason == "OR":
+            require(r"cmp #\$B0\s+bne @not_or_token\s+ldy #'R'\s+lda #'O'",
+                    asm, "BORDER requires command-name OR token expansion")
+            continue
         if reason:
             unsafe_names.append(f"{name} ({reason})")
     if unsafe_names:
@@ -437,8 +441,10 @@ def main() -> None:
         fail(f"HIDDEN helper/common area grew past under-ROM budget $0800, got ${hidden[2]:04X}")
     if bridge[0] != 0xC000 or bridge[1] >= 0xC200:
         fail(f"BRIDGE must stay below relocated shared frames at $C200, got ${bridge[0]:04X}-${bridge[1]:04X}")
-    if bridge[2] > 0x01FF:
-        fail(f"BRIDGE grew past command-module budget $01FF, got ${bridge[2]:04X}")
+    if bridge[2] > 0x0200:
+        fail(f"BRIDGE grew past command-module budget $0200, got ${bridge[2]:04X}")
+    require(r"^RB_MEDIA_STATE\s*=\s*\$C1FF\b", asm,
+            "media lifetime must use final bridge byte, not saved-ZP scratch")
     require(r"^RB_CF\s*=\s*\$C200\b", asm, "RB_CF must be relocated to $C200")
     require(r"^RB_RF\s*=\s*\$C300\b", asm, "RB_RF must be relocated to $C300")
     require(r"^RB_DESC_BUF\s*=\s*\$C480\b", asm, "RB_DESC_BUF must be relocated to $C480")

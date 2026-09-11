@@ -98,8 +98,12 @@ LSTSHF          = $028E
 KEYLOG_VEC      = $028F
 KEYD_BUFFER     = $0277
 COLOR_CODE      = $0286
-KERNAL_MEMTOP   = $0281
-KERNAL_MEMBOT   = $0283
+KERNAL_MEMTOP   = $0283
+KERNAL_MEMBOT   = $0281
+; Final bridge byte, NOT C4xx (which doubles as the saved zero-page frame).
+; 0=empty, 1=loaded, 2=playing. Coupled to the disk media driver ABI.
+RB_MEDIA_STATE = $C1FF
+RB_VAL_MEMCAP = 5
 IMAIN_VEC       = $0302
 KERNAL_CHRIN_VEC = $0324
 KERNAL_GETIN_VEC = $032A
@@ -487,6 +491,9 @@ CMD_FILTER      = 105
 CMD_FILT        = 106
 CMD_SOUND       = 107
 CMD_SND         = 108
+CMD_MEMCAP      = 109
+; 110-114 belong to the disk-loaded media package.
+CMD_BORDER      = 115
 
 ; REU registers.
 REU_CMD         = $DF01
@@ -874,7 +881,7 @@ rb_boot:
 rb_cold_start:
         jsr K_RESTOR
         jsr BASIC_RESTORE_VECTORS
-        jsr install_basic_chrget
+        jsr BASIC_INIT_ZP
         jsr init_basic_workspace
         jsr install_vectors
         jsr rb_clear_hotkey_input_state
@@ -895,29 +902,20 @@ rb_cold_start:
         jmp BASIC_READY
 
 rb_resume_ready:
-        jsr install_vectors
-        jsr rb_clear_hotkey_input_state
-        lda #0
-        sta rb_seed_cold
-        jsr call_hidden_seed_plugin_reu
         lda #RB_MAGIC_READY
-        sta rb_entry_magic
-        lda #RB_MAGIC2
-        sta rb_entry_magic2
-        cli
-        jmp restore_basic_runtime_state
+        bne rb_resume_common
 
 rb_resume_running:
+        lda #RB_MAGIC_RUN
+rb_resume_common:
+        sta rb_entry_magic
         jsr install_vectors
         jsr rb_clear_hotkey_input_state
         lda #0
         sta rb_seed_cold
         jsr call_hidden_seed_plugin_reu
-        lda #RB_MAGIC_RUN
-        sta rb_entry_magic
         lda #RB_MAGIC2
         sta rb_entry_magic2
-        cli
         jmp restore_basic_runtime_state
 
 rb_execute:
@@ -1355,13 +1353,13 @@ restore_basic_finish_run:
 init_basic_workspace:
         jsr force_basic_workspace_pointers
         lda #0
+        sta RB_MEDIA_STATE
         sta BASIC_SENTINEL
         sta BASIC_START
         sta BASIC_START+1
         rts
 
 force_basic_workspace_pointers:
-        jsr set_basic_memory_bounds
         lda #<BASIC_START
         sta TXTTAB
         lda #>BASIC_START
@@ -1380,15 +1378,13 @@ force_basic_workspace_pointers:
         lda #>BASIC_LIMIT
         sta FRETOP+1
         sta MEMSIZ+1
+        jsr set_basic_memory_bounds
         jmp BASIC_RESET_TXTPTR
 
-install_basic_chrget:
-        jmp BASIC_INIT_ZP
-
 set_basic_memory_bounds:
-        lda #<BASIC_LIMIT
+        lda MEMSIZ
         sta KERNAL_MEMTOP
-        lda #>BASIC_LIMIT
+        lda MEMSIZ+1
         sta KERNAL_MEMTOP+1
         lda #<BASIC_SENTINEL
         sta KERNAL_MEMBOT
@@ -2119,17 +2115,9 @@ rb_parse_command_name:
         jsr rb_raw_chrgot
         cmp #$A5
         bne @not_fn_token
-        cpx #RB_MAX_NAME - 1
-        bcc :+
-        jmp @too_long
-:       lda #'F'
-        sta RB_CMDBUF,x
-        inx
-        lda #'N'
-        sta RB_CMDBUF,x
-        inx
-        jsr rb_raw_chrget
-        jmp @loop
+        ldy #'N'
+        lda #'F'
+        bne @two_letter_token
 @not_fn_token:
         cmp #$B8
         bne @not_fre_token
@@ -2151,19 +2139,30 @@ rb_parse_command_name:
 @not_fre_token:
         cmp #$FF
         bne @not_pi_token
+        ldy #'I'
+        lda #'P'
+        bne @two_letter_token
+@not_pi_token:
+        ; BASIC V2 crunches the OR in BORDER. Expand only in the existing
+        ; command-name reader; stored BASIC and ROM expression parsing stay
+        ; untouched. Share FN/PI expansion to preserve the resident budget.
+        cmp #$B0
+        bne @not_or_token
+        ldy #'R'
+        lda #'O'
+@two_letter_token:
         cpx #RB_MAX_NAME - 1
         bcc :+
         jmp @too_long
 :
-        lda #'P'
         sta RB_CMDBUF,x
         inx
-        lda #'I'
+        tya
         sta RB_CMDBUF,x
         inx
         jsr rb_raw_chrget
         jmp @loop
-@not_pi_token:
+@not_or_token:
         cmp #$C1
         bcc @not_shifted_upper
         cmp #$DB
@@ -3891,6 +3890,19 @@ rb_commit_result:
         lda RF_STATUS
 :       jmp rb_runtime_error
 @ok:
+        lda RF_TAG
+        cmp #RB_VAL_MEMCAP
+        bne :+
+        ; Validated by the worker; BASIC-facing mutation stays visible.
+        ldx #1
+@cap:   lda CF_NUM0_LO,x
+        sta MEMSIZ,x
+        sta FRETOP,x
+        sta KERNAL_MEMTOP,x
+        dex
+        bpl @cap
+        rts
+:
         lda rb_out_count
         beq @done
         lda rb_out_type
@@ -4329,8 +4341,12 @@ rb_reu_header_end:
         .res 16 - .strlen(name), 0
 .endmacro
 
-.macro CMD_INPUTEV id, sig, label, name
+.macro CMD_INPUTEV id, sig, label, name, module
+        .ifblank module
         .byte id, RB_MODULE_GFX
+        .else
+        .byte id, module
+        .endif
         .word RB_CODE_INPUTEV_OFF
         .word __OVL2PACK_SIZE__
         .byte RB_SUBMOD_INPUTEV
@@ -4498,7 +4514,9 @@ rb_command_descriptors:
         CMD_SIDCORE CMD_VOICE, SIG_LINE, cmd_voice, "VOICE"
         CMD_SIDCORE CMD_FILTER, SIG_SPRSET, cmd_filter, "FILTER"
         CMD_SIDCORE CMD_SOUND, SIG_SPRSET, cmd_sound, "SOUND"
-        .res (RB_CMD_DESC_COUNT - 94) * RB_CMD_DESC_SIZE, 0
+        CMD_INPUTEV CMD_MEMCAP, SIG_BUFFREE, cmd_memcap, "MEMCAP", RB_MODULE_SYSTEM
+        CMD_GFXCORE CMD_BORDER, SIG_BUFFREE, cmd_border, "BORDER"
+        .res (RB_CMD_DESC_COUNT - 96) * RB_CMD_DESC_SIZE, 0
         CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"
 
 ; ---------------------------------------------------------------------------
@@ -4785,6 +4803,10 @@ hidden_logical_bank_is_registered_app:
 .endif
 
 hidden_restore_vectors:
+        lda RB_MEDIA_STATE
+        beq :+
+        jsr $9003               ; Resident media halt ABI; never slot code.
+:
         lda rb_vectors_saved
         beq @done
         lda rb_orig_imain_lo
@@ -4888,7 +4910,16 @@ hidden_restore_basic_runtime_state:
         cmp #>BASIC_START
         bcc @fallback
 @runtime_ok:
-
+        ; Re-establish the saved ceiling, not the launcher's temporary ZP.
+        ldx #1
+@bounds:lda RUNTIME_ZP_BUF + MEMSIZ,x
+        sta MEMSIZ,x
+        lda RUNTIME_ZP_BUF + FRETOP,x
+        sta FRETOP,x
+        lda RUNTIME_ZP_BUF + STREND,x
+        sta STREND,x
+        dex
+        bpl @bounds
         jsr set_basic_memory_bounds
         lda #0
         sta KEYD_COUNT
@@ -6832,6 +6863,44 @@ cmd_zslot1:
         sta RF_VAL_HI
         rts
 cmd_zslot1_end:
+        .segment "OVL2PACK"
+; Page-aligned ceiling; empty heap required, numeric variables/arrays survive.
+; Same cap is harmless even with strings. No CLR, no relocation, no ROM calls.
+cmd_memcap:
+        lda CF_NUM0_LO
+        bne @bad
+        lda CF_NUM0_HI
+        cmp MEMSIZ+1
+        bne @change
+        lda MEMSIZ
+        beq @same
+@change:
+        cmp #$A1
+        bcs @bad
+        cmp STREND+1
+        bcc @bad
+        beq @bad               ; At least the remainder of one page free.
+        lda FRETOP
+        cmp MEMSIZ
+        bne @bad
+        lda FRETOP+1
+        cmp MEMSIZ+1
+        bne @bad               ; Existing heap strings cannot be moved safely.
+        lda RB_MEDIA_STATE
+        beq @commit
+        lda CF_NUM0_HI
+        cmp MEMSIZ+1
+        bcc @commit
+        bne @bad               ; Drop media before giving its RAM to BASIC.
+@commit:
+        lda #RB_VAL_MEMCAP
+        sta RF_TAG
+@same:  rts
+@bad:   lda #14
+        sta RF_STATUS
+        sta RF_ERROR
+        rts
+        .segment "SLOTPACK1"
 
 cmd_gfxmode:
         lda CF_STR_LEN
@@ -6862,6 +6931,14 @@ cmd_gfxtext:
         lda #RB_VAL_NONE
         sta RF_TAG
         rts
+
+; Same low-nibble color convention as MCBG; independent of graphics mode.
+; Existing numeric signature and result helper keep BASIC parsing resident.
+cmd_border:
+        lda CF_NUM0_LO
+        and #$0F
+        sta VIC_BORDER
+        jmp gfx_ok_none
 
 cmd_gfxclear:
         jsr gfx_get_mode
@@ -11584,3 +11661,7 @@ sid_note_c0_lo:
         .byte $16,$2B,$41,$58,$70,$8A,$A4,$C0,$DD,$FC,$1D,$3F
 sid_note_c0_hi:
         .byte $01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$02,$02
+
+        .segment "BRIDGE"
+rb_media_lifetime: .byte 0
+        .assert rb_media_lifetime = RB_MEDIA_STATE, lderror, "media lifetime must occupy bridge final byte"

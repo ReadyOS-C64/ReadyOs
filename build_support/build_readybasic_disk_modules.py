@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
 from pathlib import Path
 
 
@@ -388,6 +389,30 @@ def rbm3_commands() -> list[dict[str, int | str]]:
     return rbm3_payload_commands()  # type: ignore[return-value]
 
 
+def media_module(out_dir: Path) -> bytes:
+    root = Path(__file__).resolve().parents[1]
+    objects = []
+    for name in ("media", "media_driver"):
+        obj = out_dir / (name + ".o")
+        subprocess.run(["ca65", "-o", str(obj), str(root / "src/apps/readybasic" / (name + ".s"))], check=True)
+        objects.append(str(obj))
+    binary, labels = out_dir / "media.bin", out_dir / "media.labels"
+    subprocess.run(["ld65", "-C", str(root / "cfg/readybasic_media.cfg"), "-o", str(binary), "-Ln", str(labels), *objects], check=True)
+    symbols = {line.split()[2].lstrip("."): int(line.split()[1], 16)
+               for line in labels.read_text().splitlines() if line.startswith("al ")}
+    payload = binary.read_bytes()
+    entries = [("MUSTUNE", "mustune", 19), ("MUSPLAY", "musplay", 10),
+               ("MUSHALT", "mushalt", 24), ("MUSDROP", "musdrop", 24),
+               ("RSCFILE", "rscfile", 19)]
+    # $1BC0 is now the built-in BORDER descriptor; keep media in free slots.
+    return build_module(module_id=6, desc_reu_offset=0x1be0, commands=[
+        dict(command_id=110+i, name=name, reu_offset=0x8000,
+             submodule_id=24, overlay_id=0, slot_mask=RB_SLOT_PROOF_12,
+             payload=payload, payload_size=len(payload),
+             entry_offset=symbols[symbol]-0xb000, signature_id=sig)
+        for i, (name, symbol, sig) in enumerate(entries)])
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", required=True, type=Path)
@@ -395,6 +420,9 @@ def main() -> None:
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     modules = {
+        "rb.colors.seq": b"RBR1\x00\x9e\x10\x00" + bytes(range(16)),
+        "rb.bad.seq": b"RSID" + bytes(120),
+        "rbm.media.seq": media_module(args.out_dir),
         "rbm.sample1.seq": build_module(
             module_id=3,
             desc_reu_offset=0x1500,

@@ -590,6 +590,9 @@ def render(ctx: dict[str, object]) -> str:
   <div class="page">
     <h1>ReadyBASIC Memory Diagrams</h1>
     <p class="lead">A proportional special report for the current ReadyOS + ReadyBASIC RAM and REU picture: before BASIC is initialized, after seed bytes are reclaimed, and while command modules/submodules rotate through the 6K under-ROM window.</p>
+    <p>These maps show the default BASIC ceiling. Opt-in <code>MEMCAP(36864)</code>
+    reserves <code>$9000-$9FFF</code> for the <code>rbm.media</code> demo without
+    changing cold free bytes. See <a href="readybasic_media_learnings.md">media commands and constraints</a>.</p>
     <div class="metrics">
       <div class="metric"><b>{fmt_hex(basic_start)}</b><span>BASIC start; {basic_free} formula free bytes.</span></div>
       <div class="metric"><b>3 x 2K</b><span>Command submodule slots at $A800, $B000, and $B800.</span></div>

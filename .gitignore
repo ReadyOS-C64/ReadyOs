@@ -14,6 +14,8 @@ privatedocs/
 
 # Build intermediates
 obj/
+# ReadyBASIC media experiment: local tools, recordings and pre-build backup.
+build/readybasic-media-tools/
 *.o
 *.map
 src/apps/readyshell/*.i

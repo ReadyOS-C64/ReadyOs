@@ -9,7 +9,9 @@ same ReadyOS and REU discipline.
 - `BASIC_START = $2AC1`; BASIC owns `$2AC1-$9FFF`, with `30013` formula empty
   free bytes.
 - `RESIDENT` is `$1200-$2ABF` (`$18C0`, 6336B).
-- `BRIDGE` is `$C000-$C1FE` (`$01FF`, 511B), still below `$C200`.
+- `BRIDGE` is `$C000-$C1FF` (512B), still below `$C200`; its final byte is
+  the media lifetime flag. `$C4xx` is not persistent command state because it
+  doubles as the runtime zero-page snapshot.
 - Under BASIC ROM, `$A000-$A7FF` is the common helper area, currently using
   `$A000-$A78A`; `$A800-$AFFF`,
   `$B000-$B7FF`, and `$B800-$BFFF` are three 2KB submodule slots.
@@ -74,7 +76,7 @@ same ReadyOS and REU discipline.
 - `$0A00`: ReadyOS suspend/resume zero-page snapshot.
 - `$0B00`: ReadyOS suspend/resume stack-page snapshot.
 - `$0C00-$0CFF`: 192-page heap bitmap plus reserved bytes.
-- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The current build has 94 real descriptors, 34 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128.
+- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The current build has 96 real descriptors (including MEMCAP and BORDER), 32 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128 as part of those 96 real descriptors.
 - `$2000-$3FFF`: reserved common/system expansion space.
 - `$4000-$FFFF`: typed 48KB heap for buffer, screen, and Phase 1 graphics
   surface handles.

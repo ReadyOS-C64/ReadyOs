@@ -188,6 +188,14 @@ colon, such as:
 IF 1 THEN :ZECHO1(P%)
 ```
 
+The command-name reader expands BASIC's FN, FRE, PI and OR tokens; the OR case
+permits `BORDER` without altering stored BASIC tokens or the ROM expression
+evaluator. Do not broadly exempt token-containing command names from the static
+checker without adding the corresponding reader support and regression tests.
+Built-in descriptor growth must also be checked against disk-module registration
+ranges: BORDER occupies $1BC0, so the media package now starts at $1BE0. Use the
+matching rebuilt package; the earlier experimental package can overwrite BORDER.
+
 ## Parameter And Result Contracts
 
 BASIC-facing parse and commit work belongs in visible resident code. Under-ROM
@@ -253,7 +261,7 @@ make bin/readybasic.prg readybasic-plugin-static-check
 READYBASIC_SKIP_BUILD=1 READYBASIC_VISIBLE=0 make readybasic-vice-suites
 ```
 
-The aggregate contains all 26 official regular ReadyBASIC targets, including
+The aggregate contains all 27 official regular ReadyBASIC targets, including
 graphics/sprite/sound examples and the minimum-resume, screen/REU temporary,
 loaded-app, lifecycle, hotkey, cross-app, and full visual probes. Keep
 `READYBASIC_VICE_SCRIPTS` and the aggregate dependency list synchronized when
