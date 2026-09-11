@@ -11,3 +11,6 @@
 110 plot(i,i,1)
 120 next i
 130 print "grid and diagonal"
+140 zpause(30)
+150 get a$:if a$="" then 140
+160 gfxtext():print "rbgfx02 complete"
