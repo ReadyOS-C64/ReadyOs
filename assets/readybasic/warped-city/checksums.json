@@ -1,0 +1,40 @@
+{
+  "bytes": 10003,
+  "logical_pixels": [
+    160,
+    200
+  ],
+  "cells": [
+    40,
+    25
+  ],
+  "global_background": 0,
+  "visible_palette_indices": [
+    0,
+    3,
+    4,
+    6,
+    7,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "all_cells_have_four_distinct_palette_slots": true,
+  "original_archive": {
+    "url": "https://opengameart.org/sites/default/files/warped_city_files.zip",
+    "sha256": "cf0e69a203206f529adbaf1f82d4c5f165ca9cdb49d3995ec88d135b37e40e3e",
+    "local_provenance_copy": "build/readybasic-media-tools/warped-city-source.zip",
+    "required_to_regenerate": false
+  },
+  "sha256": {
+    "rb.warp.koa": "8dc98b8267d6587a54a4a14c15d8ff8691329e8c8f26e2655f27d7c424c89562",
+    "background-preview.png": "1f190d8ee234554a1dfbc99bb66722dde51d3e208ea6b9fada64552cb6b6013a",
+    "source/near-buildings-bg.png": "70eca49ce42f7c57135ade657d669ee9c7850f1bd02ba3eeece5f3f33c731205",
+    "source/public-license.txt": "b0492b7b7a16a63bab85a0f088a9871ac58bce0764af651488b5c9118d6becdc",
+    "source/skyline-a.png": "396a8ed4cc3027f38737319ebf78dd55452e0f6d56a28179dd6bd268e9870344",
+    "source/skyline-b.png": "96deb29230a929a7464791195ea81c637736353e99f48ba309552ee06536a695"
+  }
+}
