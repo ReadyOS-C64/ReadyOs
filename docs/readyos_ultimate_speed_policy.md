@@ -9,6 +9,11 @@ per completed pass, draw a line every LD% sprite batches, and use TI only for
 the 15-second image restore. Defaults are SP%=2 and LD%=3. The historical
 clock-paced observations below explain the regression; they are not a
 description of the final motion loop. The 64/1/16 MHz setup stages remain.
+Physical raw-motion testing subsequently passed: about 29.4/1.7/29.7 completed
+sprite batches/s at 16/1/16 MHz, with two phase samples per batch and a line
+every three batches. The earlier roughly 13-batch/s result was the intermediate
+clock-paced version. Faster CPU control was working; removing the motion-clock
+coupling and a hot-path FUNC lookup improved the actual demo substantially.
 
 ## What the two mechanisms actually do
 

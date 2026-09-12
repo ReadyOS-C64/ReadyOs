@@ -1,5 +1,15 @@
 # READY / Orbital Echoes — standard and Ultimate
 
+Latest Ultimate deployment: **0.5K**, raw-motion version, at
+`/USB1/automation/readybasic-media/neon-dd2847ed/RBdd2847ed.D81` with matching
+DMA apps.cfg. Physical raw-step tests passed at 1/16 MHz, including 64 MHz
+precalculation, 1 MHz resource loading, Space and Q. Instrumented 16 MHz runs
+completed about 29 sprite batches/s (three batches per line), versus roughly
+13 for the previous clock-paced version. The historical build/test sections
+below retain earlier evidence; see the [learnings](readybasic_media_learnings.md#raw-motion-follow-up-2026-09-11)
+for current results. The standard source is updated, but its image has not
+been rebuilt in this Ultimate-only round.
+
 Load `RBGFXSNDDEMO` (standard) or `RBUGFXSNDDEMO` (C64 Ultimate) in ReadyBASIC,
 then `RUN`. These replace the old `RBSND08` release-disk entry; its source remains
 as a historical example. Press **Q** to return to text mode,

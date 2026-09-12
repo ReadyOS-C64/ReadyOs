@@ -606,12 +606,29 @@ ignored so backups and recordings cannot accidentally enter a source commit.
   `f0fa8b6fc2229e72c7c8a0f52a699a925c7f79374428ff41f720a57c89e170ed`.
   Embedded apps.cfg matches the path. The upload succeeded, but the subsequent
   REST configuration request timed out before mount/reset. This raw-motion
-  image is not yet claimed as physically tested; the 0.5J tests above cover
+  image was not yet physically tested at that point; the 0.5J tests above cover
   the intermediate clock-paced sprite version only.
 - User confirmed the menu was closed and the intermediate demo was playing.
   Subsequent Terminal-owned HTTP and FTP-port probes both timed out, as did
   ping, while the Mac retained 10.0.0.15/en0 and the target remained configured
   as 10.0.0.79. Therefore do not attribute this interruption to the menu or
-  claim a demo crash. Network reachability must be restored/confirmed before
+  claim a demo crash. Restoring network reachability was required before
   mounting and testing 0.5K. No REST RAM reads occurred during the failed
   deployment, and no new-image boot was started.
+- After the user's restart, the API returned and 0.5K was mounted and booted
+  through normal ReadyOS. Raw-motion physical proof passed under
+  `build/readybasic-media-tools/graphics-speed-1789175697249434000/` using
+  `benchmark_readybasic_demo_ultimate.py --loaded-idle-confirmed --verify-setup`.
+  Video-only readiness took 37.7 s. PS%=64 and LS%=1 verified setup stages;
+  the playback comparison verified 16/1/16 MHz. Sprite batches/s were
+  29.37/1.74/29.73; lines/s were 9.83/0.62/9.83. Counts confirmed two raw sprite
+  samples per pass, one line per three passes, and one LP% sample per mirrored
+  pair (with allowance for snapshots between the operation and its counter).
+  No motion phase depended on TI. These are instrumented throughput samples,
+  not a claim of frame-synchronized display updates.
+- Automatic refresh, Space restore with advancing music ticks, and Q's music
+  release/MEMSIZ=$A000 passed. Test lines were deleted without saving to disk;
+  streamed video showed an idle prompt and UMHZ=1. The normal uninstrumented
+  RUN then reached video-confirmed animation at 37.9 s and was left playing
+  for the manual handoff (`raw-final-run.log`, `video-only/181824.png`).
+  No VICE was used in this round.
