@@ -11,7 +11,7 @@ be16 = lambda data, offset: struct.unpack_from(">H", data, offset)[0]
 def main():
     module = (ROOT / "obj/readybasic_modules/rbm.media.seq").read_bytes()
     assert module[:8] == b"RBM!\x01\x06\x08\x01"
-    assert u16(module, 8) == 0x1c00
+    assert u16(module, 8) == 0x1c20
     names = ["MUSTUNE", "MUSPLAY", "MUSHALT", "MUSDROP", "RSCFILE", "MCFILE", "SPRFILE", "MCLINE"]
     signatures = [19, 10, 24, 24, 19, 19, 19, 22]
     record = 16 + len(names) * 32
@@ -43,6 +43,10 @@ def main():
     speed=prg[offset+64:offset+96]
     assert speed[:2]==bytes([119,1])
     assert speed[14:22]==b"\x0a\x06USPEED"
+    query=prg[offset+96:offset+128]
+    assert query[:2]==bytes([120,1])
+    assert query[14:20]==b"\x0e\x04UMHZ"
+    assert query[6:9]==bytes([19,2,4])
     media_registry = 2 + 0x5000 - 0x1000 + 16 + u16(module, 8) - 0x1000
     assert prg[media_registry:media_registry+len(names)*32] == bytes(len(names)*32), \
         "media registration must not replace built-in commands"

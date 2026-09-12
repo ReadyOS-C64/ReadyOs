@@ -193,8 +193,8 @@ permits `BORDER` without altering stored BASIC tokens or the ROM expression
 evaluator. Do not broadly exempt token-containing command names from the static
 checker without adding the corresponding reader support and regression tests.
 Built-in descriptor growth must also be checked against disk-module registration
-ranges: BORDER occupies $1BC0 and USPEED occupies $1BE0, so the media package
-now starts at $1C00. Use the matching rebuilt package; older experimental
+ranges: BORDER occupies $1BC0, USPEED $1BE0, and UMHZ $1C00, so the media package
+now starts at $1C20. Use the matching rebuilt package; older experimental
 packages can overwrite these built-in descriptors.
 
 ## Parameter And Result Contracts

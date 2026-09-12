@@ -496,6 +496,7 @@ CMD_MEMCAP      = 109
 CMD_BORDER      = 115
 ; 116-118 are media graphics commands. Bootstrap before any disk module load.
 CMD_USPEED      = 119
+CMD_UMHZ        = 120
 
 ; REU registers.
 REU_CMD         = $DF01
@@ -4519,7 +4520,8 @@ rb_command_descriptors:
         CMD_INPUTEV CMD_MEMCAP, SIG_BUFFREE, cmd_memcap, "MEMCAP", RB_MODULE_SYSTEM
         CMD_GFXCORE CMD_BORDER, SIG_BUFFREE, cmd_border, "BORDER"
         CMD_INPUTEV CMD_USPEED, SIG_BUFFREE, cmd_uspeed, "USPEED", RB_MODULE_SYSTEM
-        .res (RB_CMD_DESC_COUNT - 97) * RB_CMD_DESC_SIZE, 0
+        CMD_INPUTEV CMD_UMHZ, SIG_SCRCAP, cmd_umhz, "UMHZ", RB_MODULE_SYSTEM
+        .res (RB_CMD_DESC_COUNT - 98) * RB_CMD_DESC_SIZE, 0
         CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"
 
 ; ---------------------------------------------------------------------------
@@ -6926,6 +6928,12 @@ cmd_uspeed:
         txa
         ora rb_saved_plot_x
         sta $d031
+        ; Confirm the CPU-visible register accepted the requested index.
+        lda $d031
+        and #$0f
+        sta rb_saved_plot_x
+        cpx rb_saved_plot_x
+        bne @unsupported
         lda #0
         sta RF_STATUS
         sta RF_TAG
@@ -6933,6 +6941,35 @@ cmd_uspeed:
 @unsupported:
         lda #24
 @error: sta RF_STATUS
+        sta RF_ERROR
+        rts
+; Query the live register, not the firmware's configured startup preference.
+; This is a nominal MHz setting, not a measurement of VIC-stolen CPU cycles.
+cmd_umhz:
+        lda $d031
+        cmp #$ff
+        beq @unsupported
+        and #$0f
+        tax
+        ; Turbo Enable Bit mode can inhibit an otherwise nonzero D031 index.
+        lda $d030
+        cmp #$ff
+        beq @enabled
+        and #1
+        bne @enabled
+        ldx #0
+@enabled:
+        lda uspeed_mhz,x
+        sta RF_VAL_LO
+        lda #0
+        sta RF_VAL_HI
+        sta RF_STATUS
+        lda #RB_VAL_INT
+        sta RF_TAG
+        rts
+@unsupported:
+        lda #24
+        sta RF_STATUS
         sta RF_ERROR
         rts
 uspeed_mhz:

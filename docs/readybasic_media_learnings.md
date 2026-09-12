@@ -490,3 +490,47 @@ ignored so backups and recordings cannot accidentally enter a source commit.
 - The probe now allows the legitimate automatic/manual coincidence and clears
   stray exit-key input before its final diagnostic. That final input-cleanup
   adjustment is syntax-checked, not claimed as a fresh full VICE run.
+
+## Live Ultimate speed query (2026-09-11)
+
+- The reported 1 MHz observation did not reproduce as a failed USPEED write:
+  the original deployed setter ran a 1,000-iteration BASIC loop in 89 jiffies
+  at 1 MHz, 5 at 16 MHz, and 2 at 64 MHz. CPU PEEK read D031 indexes 0/9/15.
+  Do not confuse the Ultimate settings preference with the CPU's live register.
+  The demo's sine period intentionally follows the clock, not CPU throughput.
+- Added `UMHZ()` using the existing no-argument integer-result signature:
+  `PRINT UMHZ()` and `S%=UMHZ()` read the nominal live MHz. Unavailable software
+  registers (Off/Manual) return error 24. It also honors the D030 enable gate
+  when that gate is exposed, rather than reporting an inhibited D031 speed.
+  This is a setting readout, not an effective-cycle measurement.
+- USPEED now verifies its written D031 index. Getter plus verification costs
+  65 additional INPUTEV bytes: 316/2048, no resident/BASIC workspace growth,
+  and the cold PRG remains 28674 bytes. UMHZ is command 120 / descriptor $1C00;
+  the matching media descriptors move to $1C20-$1D1F. Never mix older packages.
+- Physical-only regression, per user request (no VICE):
+  `build_support/run_readybasic_uspeed_ultimate.py --idle-confirmed`, executed
+  in a Terminal-owned shell. All 32 checks passed at
+  `build/readybasic-media-tools/uspeed-1789172938346762000/results.json`:
+  all 16 supported MHz values, integer assignment/expression, invalid argument
+  nonmutation, badline-bit preservation, normal integer REPEAT, timed loops,
+  Off/Manual query/setter errors, and final 1 MHz. New-build loop samples were
+  89/6/2 jiffies at 1/16/64 MHz. The saved `config-at-live-64.json` still says
+  CPU Speed 1 while the following UMHZ assignment returns 64.
+- Ultimate 0.5I exact-path build/upload/readback:
+  `/USB1/automation/readybasic-media/neon-308f649a/RB308f649a.D81`, SHA-256
+  `89393ea56d35b360473751eaaa4e7cfe568016ff2803cb44c891a01cf19a52f4`.
+  Embedded apps.cfg matches that path with DMA_LOADING=1. Runtime, media and
+  demo bytes were extracted and compared; static ABI and directory order passed.
+- The loaded Ultimate demo also passed a live integration probe: a temporary
+  RAM-only `385 MS%=UMHZ()` line sampled the getter after graphics/music module
+  activity. Video-only readiness passed at 116.1 seconds, then three samples
+  returned 16 MHz while music ticks advanced 119/173/227. Space advanced RC
+  from 0 to 1 without stopping playback. Evidence:
+  `build/readybasic-media-tools/umhz-demo-proof.json`, `umhz-demo-run.log`, and
+  `umhz-demo-video/motion-ready.png`. Q released music/MEMSIZ and UMHZ returned
+  1 at the prompt. The temporary line was removed, then `USPEED(16)` / UMHZ
+  showed 16 at the idle handoff (`video-only/173416.png`). The demo is loaded;
+  RUN downshifts for resource loading. Use USPEED(1) before other disk loads.
+- A second CC0 image, Ansimuz's Warped City, is prepared separately under
+  `assets/readybasic/warped-city/`. Not in the demo or disk. Another image needs
+  40 disk blocks, so later integration must resolve disk capacity first.

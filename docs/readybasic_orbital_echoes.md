@@ -38,6 +38,24 @@ Ultimate / U64 Elite-II** speed table: 1, 2, 3, 4, 6, 8, 10, 12, 14, 16, 20, 24,
 See the [official turbo documentation](https://1541u-documentation.readthedocs.io/en/latest/config/turbo_mode.html).
 No interpreter changes or additional resident workspace were needed.
 
+Use `PRINT UMHZ()` to read the live nominal MHz setting, or `S%=UMHZ()` to
+store it. The Ultimate settings menu/API's CPU Speed value is a configuration
+preference, not this live register readout. The animation is deliberately
+clock-paced, so raising CPU speed does not multiply its sine-wave frequency.
+The setter checks register readback. UMHZ reports error 24 when software speed
+registers are unavailable; it is not a throughput benchmark and does not count
+cycles stolen by the VIC or external devices. In Turbo Enable Bit mode it also
+honors the D030 enable gate. Use C64U Turbo Registers mode for this demo.
+
+Physical proof for the query/setter is
+`build_support/run_readybasic_uspeed_ultimate.py --idle-confirmed`, run from a
+Terminal-owned shell only after visually confirming an idle ReadyBASIC prompt.
+It performs no disk operations. The 2026-09-11 run passed 32 checks including
+all supported speeds; its 1,000-iteration BASIC loop took 89/6/2 clock ticks
+at 1/16/64 MHz. Live 64 MHz was verified while the settings API still reported
+the configured preference of 1. Evidence and deployment details are in the
+[learnings](readybasic_media_learnings.md#live-ultimate-speed-query-2026-09-11).
+
 ## New commands in rbm.media
 
 | Command | Contract |
@@ -68,7 +86,7 @@ there is no promise of transactional graphics loading.
   in the surface: this demo keeps it unchanged at zero.
 - Media remains logical module 6 / submodule 24, occupying slots 1+2. New
   commands are IDs 116–118, skipping built-in BORDER (115). Eight descriptors
-  occupy $1C00-$1CFF, after USPEED's built-in descriptor at $1BE0. Other built-in command IDs, interpreter/parser and BASIC start
+  occupy $1C20-$1D1F, after UMHZ's built-in descriptor at $1C00. Other built-in command IDs, interpreter/parser and BASIC start
   $2AC1 remain unchanged. Use the matching rebuilt module package.
 - Palette-preserving integer lines avoid floating-point math in the module.
   Each pixel read/modify/write hides KERNAL briefly with interrupts masked,
