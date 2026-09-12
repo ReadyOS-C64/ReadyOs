@@ -1,9 +1,10 @@
 # Warped City — prepared second background
 
-Status: **prepared and format-verified, not integrated** into the demos, build,
-disk images, or hardware. Intended as a blue/purple city contrast to the red
-space background in Orbital Echoes. No new runtime command is required for this
-file: it uses the existing `MCFILE` Koala layout.
+Status: **integrated into both demo sources and the D81 build profile** as a
+blue/purple city contrast to the red space background in Orbital Echoes.
+The canonical asset remains Koala; the build losslessly packs it as RKC1 for
+the existing `MCFILE` command. See the demo's current verification notes for
+which disk profiles have been rebuilt and physically tested.
 
 ## Source and permission
 
@@ -30,7 +31,7 @@ is preserved locally in the ignored
 `build/readybasic-media-tools/warped-city-source.zip` for provenance, not committed
 or shipped. It is not needed to regenerate the resource.
 
-Suggested credit when integration happens:
+Artist and source attribution are included in both demo sources. Expanded credit:
 
 ```basic
 REM WARPED CITY ART: LUIS ZUNO/ANSIMUZ
@@ -42,8 +43,8 @@ REM C64 ADAPTATION: TILED/CROPPED/QUANTIZED
 
 - `rb.warp.koa`: **10,003 bytes**, uncompressed Koala with `$6000` load prefix,
   8,000 bitmap bytes, 1,000 screen bytes, 1,000 color-RAM bytes, and background
-  index **0**. When eventually packaged, use a **SEQ** disk entry, consistent
-  with `rb.neon.koa` / the existing `MCFILE` loader.
+  index **0**. The build packages its lossless RKC1 counterpart as **SEQ**
+  `rb.warp`, alongside `rb.neon`.
 - `background-preview.png`: a **640×400 nearest-neighbor decode of the actual
   resource bytes**, showing its 160×200 logical multicolor pixels at 2:1 width.
 - `composition-preview.png`: the pre-quantization 320×200 source composition.
@@ -73,11 +74,11 @@ nibbles, shared black background, and four distinct palette slots in all 1,000
 cells. The preview contains 11 of the 16 C64 colors. This is an offline format
 check and visual review, **not a hardware test**.
 
-## Later integration cautions
+## Integration constraints
 
 - A second uncompressed Koala needs **40 disk blocks**. The recent Ultimate
   build had only one free block, so an additive image cannot simply be appended;
-  confirm the current directory and reclaim capacity deliberately first.
+  both pictures are now losslessly packed to 9,141 bytes combined instead.
 - Cache a second typed multicolor surface using the established REU API, then
   alternate cached surfaces without disk I/O during music. Each surface uses
   40 REU pages (10,240 bytes). Do not reuse the same cache handle for both.
@@ -86,4 +87,4 @@ check and visual review, **not a hardware test**.
 - Load/cache both pictures before starting music, while disk access is safe;
   the current loaders reject an active music lifetime.
 - Preserve the Space reset semantics (restore the current picture) and Q/M
-  cleanup semantics when that future integration is requested.
+  cleanup semantics: both exits release both image handles.

@@ -13,7 +13,8 @@ files = {
     'rbugfxsnddemo': 'obj/rbugfxsnddemo.prg',
     'rbm.media,s': 'obj/readybasic_modules/rbm.media.seq',
     'rb.summer,s': 'assets/readybasic/music/summer-9200.sid',
-    'rb.neon,s': 'assets/readybasic/neon/rb.neon.koa',
+    'rb.neon,s': 'obj/readybasic_images/rb.neon.rkc',
+    'rb.warp,s': 'obj/readybasic_images/rb.warp.rkc',
     'rb.ready,s': 'assets/readybasic/neon/rb.ready.rbr',
 }
 parser = argparse.ArgumentParser(description=__doc__)

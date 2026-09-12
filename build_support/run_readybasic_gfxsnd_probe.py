@@ -107,8 +107,10 @@ assert (st/'music_prompt_a/ticks.bin').read_bytes()!=(st/'music_prompt_b/ticks.b
 exit_text=(manifest.parent/'screen_decoded/music_continues.txt').read_text(encoding='utf-8-sig')
 refresh=re.search(r'IMAGE REFRESHES:\s+(\d+)',exit_text)
 assert refresh and int(refresh[1])>0, 'no timed image refresh observed'
-koa=(ROOT/'assets/readybasic/neon/rb.neon.koa').read_bytes()
+pictures=[(ROOT/'assets/readybasic'/name).read_bytes() for name in
+    ('neon/rb.neon.koa','warped-city/rb.warp.koa')]
 for sample in ('show_a','show_b'):
-    assert (st/(sample+'_state')/'screen.bin').read_bytes()==koa[8002:9002]
-    assert bytes(x&15 for x in (st/(sample+'_state')/'color.bin').read_bytes())==koa[9002:10002]
+    screen=(st/(sample+'_state')/'screen.bin').read_bytes()
+    color=bytes(x&15 for x in (st/(sample+'_state')/'color.bin').read_bytes())
+    assert any(screen==koa[8002:9002] and color==koa[9002:10002] for koa in pictures)
 print('GFXSND VERIFIED: both exits, text colors, live prompt music, safe rerun, palette and movement.',manifest)

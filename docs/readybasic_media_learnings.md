@@ -632,3 +632,67 @@ ignored so backups and recordings cannot accidentally enter a source commit.
   RUN then reached video-confirmed animation at 37.9 s and was left playing
   for the manual handoff (`raw-final-run.log`, `video-only/181824.png`).
   No VICE was used in this round.
+
+## Two cached pictures, 64 MHz playback, explicit M regression (2026-09-11)
+
+- Both sources now preload the CC0 Ansimuz Warped City image as well as space,
+  using distinct GFXSURF handles. Loading stays at 1 MHz before MUSTUNE/MUSPLAY;
+  precalculation and Ultimate playback use 64 MHz. The automatic 900-jiffy
+  refresh toggles the image; Space restores the current one and restarts the
+  timer. Both pictures use D021=0. There are no disk reads in the live effect.
+- Line tables now have 512 phases, halving the angular increment per mirrored
+  pair. Sprite motion remains raw SP%=2 / LD%=3; no clock-driven phase or
+  catch-up was reintroduced. The larger arrays still fit beneath MEMCAP($9000).
+- SND08 was already absent from the release directory. Appending another
+  40-block Koala would not fit. Added backward-compatible RKC1 decoding to
+  MCFILE in rbm.media and a lossless offline packer; canonical Koala files are
+  unchanged. Packed pictures total 9,141 bytes versus the former single 10,003
+  bytes. After module/demo growth, Ultimate 0.5L still has one free disk block.
+  No other examples/apps were removed. Payload is 2,106/4,096 bytes in the same
+  two module slots; package 2,384 bytes, driver still 241 bytes. No interpreter,
+  resident workspace, descriptors or music relocation changes.
+- The built 6502 decoder passed 20 py65 cases through a simulated KERNAL:
+  both canonical Koalas and packed images, repeats/literals, bad magic, short
+  packets, extra data, oversized expansion, and RBR1 sprite compatibility.
+  Guard regions and display/sprite restoration were checked. This proves the
+  decoder's data/bounds behavior, not physical IEC timing. The physical demo
+  below subsequently exercised both packed reads twice at 1 MHz.
+- M investigation: the initial existing machine was already at a BASIC prompt
+  hidden behind the bitmap; its hidden text contained a LIST. Injecting M then
+  merely typed M at that prompt. That observation is not evidence of a fresh
+  M exit and does not establish the original cause. Cleanup now restores text
+  and colors before releasing image handles; both exits use the same FINISH.
+  The new fresh-run regression explicitly verifies M rather than inferring
+  it from Q or from the fact that music continues.
+- Physical proof: Terminal-owned
+  `benchmark_readybasic_demo_ultimate.py --loaded-idle-confirmed --verify-setup`,
+  evidence `build/readybasic-media-tools/graphics-speed-1789177193927298000/`.
+  First video-only readiness 39.2 seconds; music-active rerun 40.5 seconds.
+  PS%=64 / LS%=1 confirmed setup speeds. Playback 64/1/64 measured sprite
+  batches/s 90.91/1.74/91.15 and lines/s 30.34/0.62/30.34. Raw sprite and line
+  phase/cadence assertions passed throughout. These are instrumented throughput
+  measurements, not a claim of frame-synchronized or tear-free sprite output.
+- Full screen/color palettes matched each canonical source on city→space→city
+  restores, with observed polling intervals 14.6 and 16.1 seconds around the
+  15-second timer. Space restored the image while SID ticks advanced. M left
+  music state 2 with advancing ticks and MEMSIZ=$9000, but cleared bitmap and
+  multicolor bits, disabled all sprites, and restored border/background/text
+  colors 6/6/1. Rerunning with music still active passed the video-only loading
+  gate. Q then detached music, restored MEMSIZ=$A000, and passed the same text,
+  sprite and color assertions. All temporary probe lines were deleted without
+  saving to disk. Audio quality was not measured in this run.
+- Built through normal run.sh, exact disk payload comparison and release
+  directory-order checks passed for Ultimate 0.5L. Uploaded and read back:
+  `/USB1/automation/readybasic-media/neon-d91a3778/RBd91a3778.D81`, SHA-256
+  `e627b059cf57e32c1a5e7dd815a17390262527ad837677c3965517cf43566f6a`.
+  Embedded apps.cfg matches that path with DMA_LOADING=1. Boot used normal
+  PREBOOT/BOOT/launcher; only video was observed until loading completed.
+  Standard source/profile updated for future builds; no standard rebuild or
+  VICE run was performed in this Ultimate-only round.
+- The final in-RAM program was compared byte-for-byte with the shipped PRG
+  after removing instrumentation. A normal uninstrumented RUN reached
+  video-confirmed animation in 40.3 seconds and was left playing at 64 MHz.
+  Evidence: `two-final-run.log`, `video-only/184419.png`. The older two-exit
+  runner audits now accept either complete matching scene palette; those
+  older runners were syntax-checked, not rerun here. The expanded physical
+  benchmark above is the current proof of actual alternation and both exits.

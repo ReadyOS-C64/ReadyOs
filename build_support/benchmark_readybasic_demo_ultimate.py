@@ -3,7 +3,7 @@
 LOAD of RBUGFXSNDDEMO at an idle ReadyBASIC prompt. RAM-only instrumentation
 counts completed sprite batches and lines. Never saves changes to the disk.
 The video-only readiness gate must succeed before any REST memory inspection.
-Ends with Q cleanup and removes all temporary lines, leaving the demo loaded.
+Ends with M and Q cleanup checks, then removes all temporary lines.
 """
 import argparse
 import json
@@ -57,9 +57,9 @@ def main():
         for offset in range(0, len(raw), 7):
             value = raw[offset:offset+7]
             name = bytes(b & 127 for b in value[:2]).decode('ascii').rstrip('\0')
-            if name not in ('AF', 'AL', 'MS', 'PS', 'LS', 'LP', 'RC', 'P', 'SP', 'LD'):
+            if name not in ('AF', 'AL', 'MS', 'PS', 'LS', 'LP', 'RC', 'P', 'SP', 'LD', 'IM', 'BC', 'BG', 'FC'):
                 continue
-            if name in ('MS', 'PS', 'LS', 'LP', 'P', 'SP', 'LD'):
+            if name in ('MS', 'PS', 'LS', 'LP', 'P', 'SP', 'LD', 'IM'):
                 result[name] = int.from_bytes(value[2:4], 'big', signed=True)
             elif value[2] == 0:
                 result[name] = 0
@@ -72,7 +72,7 @@ def main():
             # LP updates inside WEAVE, AL just after its return. Sampling can
             # catch that one-call boundary, but no larger phase gap is valid.
             count = int(result['AL'])
-            assert result['LP'] in {count//2 & 255, (count+1)//2 & 255}, result
+            assert result['LP'] in {count//2 & 511, (count+1)//2 & 511}, result
             frames = int(result['AF'])
             assert result['P'] in {frames*result['SP'] & 255,
                                    (frames+1)*result['SP'] & 255}, result
@@ -85,7 +85,7 @@ def main():
         335: 'AF=AF+1',
         365: 'AL=AL+1',
         392: 'IF A$="1" THEN :USPEED(1):MS%=UMHZ()',
-        393: 'IF A$="6" THEN :USPEED(16):MS%=UMHZ()',
+        393: 'IF A$="6" THEN :USPEED(64):MS%=UMHZ()',
     }
     if args.verify_setup:
         lines.update({186: 'PS%=UMHZ()', 216: 'LS%=UMHZ()'})
@@ -97,8 +97,8 @@ def main():
             str(ROOT/'build_support/readybasic_video_gate/Video.csproj'), '--', str(folder/'video')], check=True)
     # Complete backdrop plus moving letters confirms that disk loading ended.
     results = []
-    for mhz in (16, 1, 16):
-        keys('6' if mhz == 16 else '1')
+    for mhz in (64, 1, 64):
+        keys('6' if mhz == 64 else '1')
         # At 1 MHz a graphics iteration can exceed two seconds (especially
         # during background restore). Wait for consumption, not a fixed delay.
         deadline = time.monotonic()+20
@@ -138,11 +138,61 @@ def main():
         assert memory(0x9006, 2) != tick, 'music ticks did not advance'
         (folder/'space-music.json').write_text(json.dumps(dict(before=before, after=after), indent=2)+'\n')
         print('SPACE RESTORE AND MUSIC LIVENESS PASSED', flush=True)
+    # Palettes are unchanged by MCLINE, so live palette comparison proves
+    # complete cached restores without pausing animation or racing bitmap writes.
+    scenes = []
+    deadline = time.monotonic()+40
+    while time.monotonic() < deadline:
+        before = counters()
+        which = before['IM']
+        name = 'warped-city/rb.warp.koa' if which else 'neon/rb.neon.koa'
+        expected = (ROOT/'assets/readybasic'/name).read_bytes()
+        screen = b''.join(memory(0xcc00+i,min(128,1000-i)) for i in range(0,1000,128))
+        color = b''.join(memory(0xd800+i,min(128,1000-i)) for i in range(0,1000,128))
+        after = counters()
+        if before['RC'] == after['RC']:
+            assert screen == expected[8002:9002], 'cached screen palette mismatch'
+            assert bytes(b&15 for b in color) == expected[9002:10002], 'cached color RAM mismatch'
+            if not scenes or scenes[-1]['image'] != which:
+                scenes.append(dict(image=which, seconds=time.monotonic(), refreshes=after['RC']))
+                print('CACHED IMAGE VERIFIED', scenes[-1], flush=True)
+        if len(scenes) >= 3:
+            break
+        time.sleep(1)
+    assert len(scenes) >= 3, scenes
+    (folder/'two-scenes.json').write_text(json.dumps(scenes,indent=2)+'\n')
+    colors = counters()
+    keys('M')
+    time.sleep(4)
+    state = dict(music=memory(0xc1ff,1).hex(), vic=memory(0xd011,8).hex(),
+        text_color=memory(646,1).hex(), palette=memory(0xd020,2).hex(), cap=memory(0x37,2).hex())
+    print('M EXIT STATE',state,flush=True)
+    (folder/'m-exit.json').write_text(json.dumps(state,indent=2)+'\n')
+    assert memory(0xc1ff,1) == b'\x02', 'M must keep music running'
+    assert memory(0x37,2) == b'\x00\x90', 'M must retain the music memory cap'
+    assert not memory(0xd011,1)[0]&32, 'M left bitmap enabled'
+    assert not memory(0xd016,1)[0]&16, 'M left multicolor enabled'
+    assert memory(0xd015,1) == b'\0', 'M left sprites enabled'
+    assert memory(646,1)[0] == colors['FC'], 'M foreground not restored'
+    assert bytes(b&15 for b in memory(0xd020,2)) == bytes([int(colors['BC']),int(colors['BG'])])
+    tick = memory(0x9006,2)
+    time.sleep(1)
+    assert memory(0x9006,2) != tick, 'M music tick frozen'
+    print('M TEXT/COLORS AND CONTINUING MUSIC PASSED',flush=True)
+    # RUN starts by stopping the previous SID, before any resource loading.
+    keys('RUN\r')
+    subprocess.run(['/usr/local/share/dotnet/dotnet','run','--project',
+        str(ROOT/'build_support/readybasic_video_gate/Video.csproj'),'--',str(folder/'rerun-video')],check=True)
     # No program/disk writes: remove instrumentation after the normal exit.
     keys('Q')
     time.sleep(3)
     assert memory(0xc1ff, 1) == b'\x00', 'music cleanup incomplete'
     assert memory(0x37, 2) == b'\x00\xa0', 'memory cap cleanup incomplete'
+    assert not memory(0xd011,1)[0]&32, 'Q left bitmap enabled'
+    assert not memory(0xd016,1)[0]&16, 'Q left multicolor enabled'
+    assert memory(0xd015,1) == b'\0', 'Q left sprites enabled'
+    assert memory(646,1)[0] == colors['FC'], 'Q foreground not restored'
+    assert bytes(b&15 for b in memory(0xd020,2)) == bytes([int(colors['BC']),int(colors['BG'])])
     for line in lines:
         keys(f'{line}\r')
     keys('PRINT CHR$(147):PRINT"GRAPHICS TEST DONE":PRINT UMHZ()\r')

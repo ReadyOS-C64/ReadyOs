@@ -68,6 +68,8 @@ open_resource:
         jsr $ffba
         lda #0
         sta eof
+        sta packed
+        sta packleft
         jsr $ffc0
         jcs io_fail
         ldx #14
@@ -87,12 +89,30 @@ open_resource:
         jsr read_range
         jcs io_fail
         lda kind
-        bne sprites
+        jne sprites
         lda hdr
+        beq @koala
+        cmp #'R'
         jne format_fail
+        lda hdr+1
+        cmp #'K'
+        jne format_fail
+        jsr rawbyte
+        jcs io_fail
+        cmp #'C'
+        jne format_fail
+        jsr rawbyte
+        jcs io_fail
+        cmp #'1'
+        jne format_fail
+        lda #1
+        sta packed
+        bne @image
+@koala:
         lda hdr+1
         cmp #$60
         jne format_fail
+@image:
         lda #0
         sta part
 @part: ldx part
@@ -158,6 +178,8 @@ sprites:
         jsr read_range
         jcs io_fail
 finished:
+        lda packleft
+        jne format_fail           ; Reject packets beyond the fixed image size.
         lda eof
         jeq format_fail            ; No trailing or truncated data accepted.
         jsr close
@@ -196,17 +218,8 @@ close:  jsr $ffcc
         sta $d015
         rts
 read_range:
-        lda eof
-        bne @bad
-        jsr $ffcf
-        sta byte
-        jsr $ffb7
-        beq @store
-        cmp #$40
-        bne @bad
-        lda #1
-        sta eof
-@store: lda byte
+        jsr imagebyte
+        bcs @bad
         ldy #0
         sta (ptr),y              ; Writes under KERNAL land in bitmap RAM.
         inc ptr
@@ -219,6 +232,57 @@ read_range:
         lda left
         ora left+1
         bne read_range
+        clc
+        rts
+@bad:   sec
+        rts
+
+; RKC1 packets may span bitmap/palette boundaries. Only the bounded caller
+; chooses destinations. Physical EOF is checked independently of expansion.
+imagebyte:
+        lda packed
+        beq rawbyte
+        lda packleft
+        bne @emit
+        jsr rawbyte
+        bcs @bad
+        pha
+        and #$80
+        sta packrepeat
+        pla
+        and #$7f
+        clc
+        adc #1
+        sta packleft
+        lda packrepeat
+        beq @emit
+        jsr rawbyte
+        bcs @bad
+        sta packvalue
+@emit: lda packrepeat
+        beq @literal
+        lda packvalue
+        jmp @value               ; Zero is also a valid repeated byte.
+@literal:
+        jsr rawbyte
+        bcs @bad
+@value: dec packleft
+        clc
+        rts
+@bad:   sec
+        rts
+rawbyte:
+        lda eof
+        bne @bad
+        jsr $ffcf
+        sta byte
+        jsr $ffb7
+        beq @store
+        cmp #$40
+        bne @bad
+        lda #1
+        sta eof
+@store: lda byte
         clc
         rts
 @bad:   sec
@@ -236,6 +300,10 @@ left: .word 0
 lastlo: .byte 0
 saved_sprites: .byte 0
 saved_display: .byte 0
+packed: .byte 0
+packleft: .byte 0
+packrepeat: .byte 0
+packvalue: .byte 0
 
 ; MCLINE(x1,y1,x2,y2,slot): bounded all-octant integer line. Slot is the
 ; two-bit pixel value 0..3, NOT a palette color. Never changes CC00/D800/D021.

@@ -1019,7 +1019,11 @@ $(OBJ_DIR)/rbu%.prg: $(APPS_DIR)/readybasic/rbu%.bas
 	@mkdir -p "$(OBJ_DIR)"
 	$(PETCAT) -w2 -l 2ac1 -o $@ -- $<
 
-$(READYBASIC_MODULES): $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py $(APPS_DIR)/readybasic/media.s $(APPS_DIR)/readybasic/media_graphics.s $(APPS_DIR)/readybasic/media_driver.s $(CFG_DIR)/readybasic_media.cfg
+READYBASIC_PACKED_IMAGES = $(OBJ_DIR)/readybasic_images/rb.neon.rkc $(OBJ_DIR)/readybasic_images/rb.warp.rkc
+$(READYBASIC_PACKED_IMAGES): $(BUILD_SUPPORT_DIR)/pack_readybasic_images.py assets/readybasic/neon/rb.neon.koa assets/readybasic/warped-city/rb.warp.koa
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/pack_readybasic_images.py
+
+$(READYBASIC_MODULES): $(READYBASIC_PACKED_IMAGES) $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py $(APPS_DIR)/readybasic/media.s $(APPS_DIR)/readybasic/media_graphics.s $(APPS_DIR)/readybasic/media_driver.s $(CFG_DIR)/readybasic_media.cfg
 	@mkdir -p "$(READYBASIC_MODULE_DIR)"
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py --out-dir "$(READYBASIC_MODULE_DIR)"
 	@test -f $@

@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib
 import json
 import re
+from pack_readybasic_images import unpack
 
 ROOT=Path(__file__).resolve().parents[1]
 def main():
@@ -14,6 +15,10 @@ def main():
     koa=(assets/"rb.neon.koa").read_bytes()
     assert len(koa)==10003 and koa[:2]==b"\0\x60"
     assert all(c<16 for c in koa[9002:])
+    for name, source in [('neon','neon'), ('warp','warped-city')]:
+        original=(ROOT/f'assets/readybasic/{source}/rb.{name}.koa').read_bytes()
+        encoded=(ROOT/f'obj/readybasic_images/rb.{name}.rkc').read_bytes()
+        assert unpack(encoded)==original[2:]
     spr=(assets/"rb.ready.rbr").read_bytes()
     assert len(spr)==328 and spr[:8]==b"RBR1\x00\xca\x40\x01"
     assert all(spr[8+i*64+63]==0 for i in range(5))
@@ -39,12 +44,22 @@ def check_demo(stem):
     assert statements[350]=='if lc%<ld% then 390'
     assert statements[360]=='lc%=0:exec weave'
     assert not any('phase(' in line or 'peek(162)' in line for line in sources)
-    assert statements[1920]=='wi%=lp%+mi%*256'
+    assert statements[1920]=='wi%=lp%+mi%*512'
     assert statements[1940]=='mi%=1-mi%:if mi%<>0 then 1970'
-    assert statements[1950]=='lp%=(lp%+1) and 255'
+    assert statements[1950]=='lp%=(lp%+1) and 511'
     assert statements[1970]=='endp'
+    assert statements[190]=='dim s%(511),sy%(335)'
+    assert statements[200]=='dim lx%(1023),ly%(1023),rx%(1023),ry%(1023)'
+    assert statements[222]=='g%=gfxsurf("mbitmap")'
+    assert statements[1390]=='mcfile("rb.warp")'
+    assert statements[1395]=='gfxtgt(g%):gfxsync():gfxtgt(0)'
+    assert statements[1397]=='mcfile("rb.neon")'
+    assert statements[380]=='im%=1-im%:exec clean'
+    assert statements[397]=='exec clean'
+    assert statements[2540]=='gfxtext():mcbg(bg):border(bc)'
+    assert statements[2555]=='bufdrop(h%):bufdrop(g%)'
     if stem=='rbugfxsnddemo':
-        for line,mhz in ((105,1),(185,64),(215,1),(260,16),(2520,1)):
+        for line,mhz in ((105,1),(185,64),(215,1),(260,64),(2520,1)):
             assert statements[line]==f'uspeed({mhz})',(line,statements[line])
         assert 185 < 190 < 210 < 215 < 220 < 240 < 260
     for source in sources:

@@ -1,19 +1,18 @@
 # READY / Orbital Echoes — standard and Ultimate
 
-Latest Ultimate deployment: **0.5K**, raw-motion version, at
-`/USB1/automation/readybasic-media/neon-dd2847ed/RBdd2847ed.D81` with matching
-DMA apps.cfg. Physical raw-step tests passed at 1/16 MHz, including 64 MHz
-precalculation, 1 MHz resource loading, Space and Q. Instrumented 16 MHz runs
-completed about 29 sprite batches/s (three batches per line), versus roughly
-13 for the previous clock-paced version. The historical build/test sections
-below retain earlier evidence; see the [learnings](readybasic_media_learnings.md#raw-motion-follow-up-2026-09-11)
-for current results. The standard source is updated, but its image has not
-been rebuilt in this Ultimate-only round.
+Latest Ultimate deployment: **0.5L**, two-scene 64 MHz raw-motion version, at
+`/USB1/automation/readybasic-media/neon-d91a3778/RBd91a3778.D81` with matching
+DMA apps.cfg. Both CC0 backgrounds are packed losslessly and cached separately
+in REU. Instrumented physical runs measured about 91 sprite batches/s at 64 MHz,
+versus 1.7 at 1 MHz, with three batches per line. The historical build/test
+sections below retain earlier evidence; see the latest section of the
+[learnings](readybasic_media_learnings.md) for current results. The standard
+source is updated, but its image has not been rebuilt in this Ultimate-only round.
 
 Load `RBGFXSNDDEMO` (standard) or `RBUGFXSNDDEMO` (C64 Ultimate) in ReadyBASIC,
 then `RUN`. These replace the old `RBSND08` release-disk entry; its source remains
 as a historical example. Press **Q** to return to text mode,
-silence/detach the music, release the REU surface and restore the BASIC ceiling.
+silence/detach the music, release both REU surfaces and restore the BASIC ceiling.
 Press **M** to return to text mode while keeping the music and its reserved
 memory. Both paths restore the original border, background and text colors.
 After M, `MUSDROP():CLR:MEMCAP(40960)` releases the music arena. Do not raise the
@@ -44,7 +43,7 @@ example without putting another routine lookup in the motion hot path.
 `USPEED(mhz)` is built into the existing INPUTEV overlay, so it can run before
 loading any disk module. The Ultimate variant selects 1 MHz as its first command,
 64 MHz for array allocation and sine/coordinate precalculation, then explicitly
-returns to 1 MHz before loading the module or any resource. It selects 16 MHz
+returns to 1 MHz before loading the module or any resource. It selects 64 MHz
 after all resources are loaded, and 1 MHz on either exit. Loading the
 BASIC program itself still requires a safe speed before RUN can execute.
 
@@ -80,7 +79,7 @@ the configured preference of 1. Evidence and deployment details are in the
 
 | Command | Contract |
 | --- | --- |
-| `MCFILE(name$)` | Read a standard uncompressed Koala SEQ file: $6000 prefix, 8000 bitmap bytes, 1000 screen bytes, 1000 color bytes, one background byte. |
+| `MCFILE(name$)` | Read standard Koala ($6000 prefix) or losslessly packed RKC1 from a SEQ file. Both produce 8000 bitmap bytes, 1000 screen bytes, 1000 color bytes and one background byte. |
 | `SPRFILE(name$)` | Read RBR1 sprite data, restricted to aligned 64-byte blocks within $CA00-$CBFF. Set sprite controls/pointers with existing commands first; SPRSET generates a pattern and would overwrite loaded art if called afterward. |
 | `MCLINE(x1,y1,x2,y2,slot)` | In MBITMAP mode, draw an inclusive all-octant line with pixel slot 0–3. Coordinates must be in 0–159 / 0–199. Invalid arguments fail before writing. |
 
@@ -94,6 +93,40 @@ DOS mode delimiters, occupied logical file 14, truncated input and trailing
 bytes. They own/close only their own logical file. Load resources before
 MUSTUNE. Like RSCFILE, an I/O failure may leave a partially overwritten resource;
 there is no promise of transactional graphics loading.
+
+### Packed images and the two-scene demo
+
+The current sources preload two independent 40-page REU surfaces, before
+starting the SID. The show starts with space and alternates with Warped City
+every 900 PAL jiffies (15 seconds). Space restores the current scene and restarts
+that countdown. Neither operation reads the disk. Both global backgrounds are
+black, since the surface API does not cache D021. Both exits release both handles.
+
+Line coordinates use 512 precomputed phases rather than 256; the mirrored pair
+still advances exactly one sample after both lines. This halves the angular
+increment without clock-based skipping. Sprite phase remains the original
+256-sample raw loop, two samples per batch and three batches per line.
+
+`build_support/pack_readybasic_images.py` preserves the canonical Koala assets
+and emits RKC1 build outputs. Four magic bytes `RKC1` precede packets: the low
+seven control bits plus one give a 1–128 byte count; bit 7 selects repetition
+of the next byte, otherwise that many literal bytes follow. Expansion must
+end at exactly 10,001 bytes and physical EOF. Packets can cross image-section
+boundaries; only the bounded loader chooses destinations. Short packets,
+oversized expansion and trailing input are rejected. Ordinary Koala and RBR1
+sprite input remain supported. This is not a general-purpose resource format.
+
+The two packed pictures total 9,141 bytes (4,230 + 4,911), versus 10,003 for
+the previous single picture. SND08 was already absent from the release disk;
+no other apps or demos were removed to make room. The module payload is now
+2,106/4,096 bytes, still within the same two module slots; package size is 2,384
+bytes. No resident interpreter, command descriptors or BASIC memory map changed.
+
+Local decoder regression, after a normal build, using a test environment with
+`py65` installed: `python build_support/verify_readybasic_image_decoder.py`.
+It executes the actual assembled loader against a simulated KERNAL byte stream,
+checking valid formats, rejection cases, memory guards and display restoration.
+It does not replace physical IEC/loading tests.
 
 ## Memory and compatibility
 

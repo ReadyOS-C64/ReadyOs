@@ -134,12 +134,14 @@ assert (st/'prompt_a/ticks.bin').read_bytes() != (st/'prompt_b/ticks.bin').read_
 exit_text=(manifest.parent/'screen_decoded/music_continues.txt').read_text(encoding='utf-8-sig')
 refresh=re.search(r'IMAGE REFRESHES:\s+(\d+)',exit_text)
 assert refresh and int(refresh[1])>0, 'no timed image refresh observed'
-koa = (ROOT/'assets/readybasic/neon/rb.neon.koa').read_bytes()
+pictures = [(ROOT/'assets/readybasic'/name).read_bytes() for name in
+    ('neon/rb.neon.koa', 'warped-city/rb.warp.koa')]
 spr = (ROOT/'assets/readybasic/neon/rb.ready.rbr').read_bytes()[8:]
 for sample in ('show_a', 'show_b', 'handoff'):
     base=final.parent/'stages' if sample=='handoff' else st
-    assert (base/(sample+'_state')/'screen.bin').read_bytes()==koa[8002:9002]
-    assert bytes(x&15 for x in (base/(sample+'_state')/'color.bin').read_bytes())==koa[9002:10002]
+    screen = (base/(sample+'_state')/'screen.bin').read_bytes()
+    color = bytes(x&15 for x in (base/(sample+'_state')/'color.bin').read_bytes())
+    assert any(screen==koa[8002:9002] and color==koa[9002:10002] for koa in pictures)
     assert (base/(sample+'_state')/'sprites.bin').read_bytes()==spr
 reports=[str(m) for m in (prelude,loaded,manifest,second,final)]
 (OUT/'gfxsnd-ultimate-verified.json').write_text(json.dumps(reports,indent=2)+'\n')

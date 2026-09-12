@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -420,6 +421,7 @@ def main() -> None:
     args = parser.parse_args()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
+    subprocess.run([sys.executable, str(Path(__file__).with_name('pack_readybasic_images.py'))], check=True)
     modules = {
         "rb.bad.seq": b"RSID" + bytes(120),
         "rbm.media.seq": media_module(args.out_dir),
