@@ -31,6 +31,22 @@ def check_demo(stem):
         lines[number]=prg[pos+4:end]
         pos=end+1
     sources=(ROOT/f"src/apps/readybasic/{stem}.bas").read_text().splitlines()
+    statements={int(line.split(maxsplit=1)[0]):line.split(maxsplit=1)[1].strip()
+                for line in sources if line.strip()}
+    assert 'lp%=0' in statements[280]
+    assert statements[270]=='sp%=2:ld%=3'
+    assert statements[320]=='p%=(p%+sp%) and 255'
+    assert statements[350]=='if lc%<ld% then 390'
+    assert statements[360]=='lc%=0:exec weave'
+    assert not any('phase(' in line or 'peek(162)' in line for line in sources)
+    assert statements[1920]=='wi%=lp%+mi%*256'
+    assert statements[1940]=='mi%=1-mi%:if mi%<>0 then 1970'
+    assert statements[1950]=='lp%=(lp%+1) and 255'
+    assert statements[1970]=='endp'
+    if stem=='rbugfxsnddemo':
+        for line,mhz in ((105,1),(185,64),(215,1),(260,16),(2520,1)):
+            assert statements[line]==f'uspeed({mhz})',(line,statements[line])
+        assert 185 < 190 < 210 < 215 < 220 < 240 < 260
     for source in sources:
         if not source.strip():continue
         number,text=source.split(maxsplit=1)

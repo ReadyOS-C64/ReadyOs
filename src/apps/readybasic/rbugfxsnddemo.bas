@@ -19,28 +19,30 @@
 160 print "q: stop all   m: leave music playing"
 170 print "space: renew image / auto: 15 seconds"
 180 print "precalculating motion - please wait"
+185 uspeed(64)
 190 dim s%(255),sy%(335)
 200 dim lx%(511),ly%(511),rx%(511),ry%(511)
 210 exec prep
+215 uspeed(1)
 220 zmodld("rbm.media",m%):h%=gfxsurf("mbitmap")
 225 print "orbital show running"
 230 exec scene
 240 mustune("rb.summer"):musplay(1)
 260 uspeed(16)
-270 pp%=256:rt=ti:lt=rt:c%=1:mi%=0:rc=0
+265 rem sp%: sprite step / ld%: sprite passes per line
+270 sp%=2:ld%=3
+280 p%=0:lc%=0:lp%=0:mi%=0:c%=1:rt=ti:rc=0
 
-300 rem --- sprites follow time, lines run less often ---
+300 rem --- raw steps: no clock-driven motion or catchup ---
 310 repeat
-315   repeat
-320     p%=phase(peek(162))
-325   until p%<>pp%
-330   pp%=p%:exec glyphs
-340   tt=ti:if tt<rt then rt=tt:lt=tt
-350   if tt-rt<900 then 360
-355   exec clean
-360   if tt-lt<4 then 390
-370   exec weave
-375   lt=ti
+320   p%=(p%+sp%) and 255
+330   exec glyphs
+340   lc%=lc%+1
+350   if lc%<ld% then 390
+360   lc%=0:exec weave
+370   tt=ti:if tt<rt then rt=tt
+375   if tt-rt<900 then 390
+380   exec clean
 390   get a$
 395   if a$<>" " then 400
 397   exec clean
@@ -98,12 +100,14 @@
 1660   sprmove(4,264,sy%(p%+80))
 1670 endp
 
-1900 rem --- one alternating line; preserve cell palettes ---
+1900 rem --- mirrored pairs share one sequential sample ---
 1910 proc weave()
-1920   wi%=p%+mi%*256
+1920   wi%=lp%+mi%*256
 1930   mcline(lx%(wi%),ly%(wi%),rx%(wi%),ry%(wi%),c%)
-1940   mi%=1-mi%:c%=c%+1:if c%=4 then c%=1
-1950 endp
+1940   mi%=1-mi%:if mi%<>0 then 1970
+1950   lp%=(lp%+1) and 255
+1960   c%=c%+1:if c%=4 then c%=1
+1970 endp
 
 2200 rem --- instant refresh from the owned reu surface ---
 2210 proc clean()
@@ -118,8 +122,3 @@
 2550   poke 646,fc:print chr$(147);"orbital echoes complete"
 2560   print "image refreshes:";rc
 2570 endp
-
-2800 rem jiffy low byte: 2.13-second wave, safe at midnight
-2810 func phase(tk%)
-2820   ret% (tk%*2) and 255
-2830 endp

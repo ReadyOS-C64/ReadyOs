@@ -16,17 +16,26 @@ also restarts the 15-second automatic-refresh countdown.
 
 The readable BASIC source keeps setup, sine-wave lettering, additive ribbons,
 15-second restoration and cleanup in separate procedures. Sine, sprite heights
-and both sets of line endpoints are precomputed before graphics. The integer
-PHASE function (RET% integer result) follows the jiffy clock, with a roughly 2.13-second wave cycle
-and at most 60 updates/second; 1 MHz BASIC cannot guarantee that frame rate.
-The five sprite calls are unrolled; lines run at most 15 times/second and
-alternate mirrored endpoints. Refreshes use a cached REU surface, not disk reads.
+and both sets of line endpoints are precomputed before graphics. Motion is
+deliberately raw and iteration-driven, not clock-driven. Line 270 exposes two
+knobs: `SP%=2` advances sprite phase by two samples per completed pass, and
+`LD%=3` draws one line every three sprite batches. Adjust these for the chosen
+playback MHz. There is no catch-up, skipped clock sample or frame wait. The
+five sprite calls are unrolled; lines alternate mirrored endpoints.
+Both halves use the same independent LP% sample;
+only after the pair is drawn do the sample and color advance. Slow drawing
+therefore does not skip through the line pattern. Refreshes use a cached REU
+surface, not disk reads. Only the 15-second background timer uses TI. The old
+PHASE function was removed; PROC/EXEC and REPEAT/UNTIL still structure the
+example without putting another routine lookup in the motion hot path.
 
 ## Ultimate speed command
 
 `USPEED(mhz)` is built into the existing INPUTEV overlay, so it can run before
 loading any disk module. The Ultimate variant selects 1 MHz as its first command,
-16 MHz after all resources are loaded, and 1 MHz on either exit. Loading the
+64 MHz for array allocation and sine/coordinate precalculation, then explicitly
+returns to 1 MHz before loading the module or any resource. It selects 16 MHz
+after all resources are loaded, and 1 MHz on either exit. Loading the
 BASIC program itself still requires a safe speed before RUN can execute.
 
 Select **C64U Turbo Registers** in this machine's Turbo Control configuration
@@ -40,8 +49,9 @@ No interpreter changes or additional resident workspace were needed.
 
 Use `PRINT UMHZ()` to read the live nominal MHz setting, or `S%=UMHZ()` to
 store it. The Ultimate settings menu/API's CPU Speed value is a configuration
-preference, not this live register readout. The animation is deliberately
-clock-paced, so raising CPU speed does not multiply its sine-wave frequency.
+preference, not this live register readout. The current raw-motion demo does
+speed up with CPU throughput; SP% and LD% control its visual rates. Earlier
+clock-paced versions kept the wave period independent of CPU speed.
 The setter checks register readback. UMHZ reports error 24 when software speed
 registers are unavailable; it is not a throughput benchmark and does not count
 cycles stolen by the VIC or external devices. In Turbo Enable Bit mode it also

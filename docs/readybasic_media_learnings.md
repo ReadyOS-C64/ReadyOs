@@ -534,3 +534,84 @@ ignored so backups and recordings cannot accidentally enter a source commit.
 - A second CC0 image, Ansimuz's Warped City, is prepared separately under
   `assets/readybasic/warped-city/`. Not in the demo or disk. Another image needs
   40 disk blocks, so later integration must resolve disk capacity first.
+
+## Turbo mechanism versus line-pattern regression (2026-09-11)
+
+- Independent host-clock comparison of the same 10,000-iteration stock BASIC
+  loop: D031 1 MHz 11.3827 s; D031 16 MHz with menu preference 1, 0.8422 s;
+  Manual 16 MHz 0.7338 s; Gouraud-style D030 enabled/menu 16, 0.7209 s;
+  D030 disabled, 11.2422 s. REST overhead precludes ranking the fast modes from
+  these small differences. Both paths accelerate real work.
+- Actual pre-fix demo counters: 16/1/16 MHz gave 12.32/0.75/12.44 completed
+  five-sprite batches/s and 11.33/0.62/11.08 lines/s. The wave's period stayed
+  clock-driven. A CPU benchmark therefore did not establish good animation.
+  `graphics-speed-1789174360205122000/results.json` is the complete repeat;
+  the first attempt stopped because its fixed two-second speed-key wait was
+  too short at 1 MHz, not because a speed write had failed. The probe now
+  waits for the BASIC-side acknowledgement before measuring.
+- The original RBSND08 line phase had an eight-second cycle and both mirrored
+  lines shared the same sample. The later sprite speed-up reused a 2.13-second
+  phase for lines and alternated mirror sides on separate samples. This is a
+  concrete geometry regression: much larger gaps, even with working turbo.
+  Both current demos now use an independent LP% and increment one sample only
+  after the mirrored pair completes; sprite phase remains time-driven.
+- Ultimate preparation now selects 64 MHz for DIM and precalculation, then
+  1 MHz before ZMODLD/scene/MUSTUNE, then 16 MHz for playback. Both exits still
+  restore 1 MHz. This does not add a general ReadyOS speed/IRQ guard.
+- Gouraud's source explicitly justifies D030 for 1 MHz KERNAL keyboard scans
+  and return to a configured 64 MHz. No evidence was found that it was chosen
+  as a universally superior speed mechanism. The recommendation and sources
+  are in [the speed-policy note](readyos_ultimate_speed_policy.md).
+- Follow-up to the earlier handoff entry: an optional full-program REST RAM
+  comparison timed out after the successful Q/query test. It is not a passed
+  byte-identity test. Later video showed stock BASIC; the cause of that reset
+  was not established. A fresh mounted-image ReadyOS boot was used for the
+  graphics comparison; no memory reads were made during boot or disk loading.
+- Corrected physical run:
+  `build_support/benchmark_readybasic_demo_ultimate.py --loaded-idle-confirmed
+  --verify-setup`, Terminal-owned, evidence under
+  `build/readybasic-media-tools/graphics-speed-1789174818141818000/`.
+  Video readiness: 37.6 s versus the earlier 116.5 s. CPU-side setup samples
+  confirmed PS%=64 before precalculation and LS%=1 before disk/module loading;
+  playback samples confirmed 16/1/16. Completed sprite batches/s were
+  13.31/0.62/13.07, with 6.84/0.75/7.59 lines/s. LP% matched the paired-line
+  counter throughout (allowing a sample between return and counter increment).
+  The sparse phase jumps became closely spaced mirrored fans in real video.
+  Automatic refresh advanced; Space restored the image while music ticks
+  continued. Q detached music and returned MEMSIZ=$A000. Temporary test lines
+  were removed without saving them to disk. These timings include test overhead;
+  this is not a claim of 50/60-fps sprite animation or a new audio-quality test.
+- Ultimate 0.5J was built through run.sh, exact-byte checked for the runtime,
+  module, both demos and resources, and passed release directory ordering.
+  Uploaded/read-back SHA-256:
+  `09fa313ce5cbd9c29f703c041d13118d85fb589a9cd4859669d1fca4a84cc933`.
+  Path: `/USB1/automation/readybasic-media/neon-0f53bc00/RB0f53bc00.D81`;
+  embedded apps.cfg names this exact path with DMA_LOADING=1. The standard
+  demo source is updated for future builds; no regular-SKU rebuild or VICE run
+  was performed for this correction.
+
+## Raw-motion follow-up (2026-09-11)
+
+- User still found the clock-driven sprite movement jerky and explicitly
+  requested simple raw iteration rates. Both demo sources now use SP%=2
+  samples per sprite batch and LD%=3 batches per line, with consecutive paired
+  LP% line samples. Removed the PHASE function, phase wait and clock-derived
+  motion. TI is used only for background renewal. This also removes a hot-path
+  FUNC lookup, without changing any interpreter code.
+- The counter probe now checks sprite phase against completed batches, lines
+  against the three-batch cadence, and LP% against completed line pairs.
+- Ultimate 0.5K: local build, exact packaged bytes, static checks and directory
+  order passed. Uploaded/read back to
+  `/USB1/automation/readybasic-media/neon-dd2847ed/RBdd2847ed.D81`, SHA-256
+  `f0fa8b6fc2229e72c7c8a0f52a699a925c7f79374428ff41f720a57c89e170ed`.
+  Embedded apps.cfg matches the path. The upload succeeded, but the subsequent
+  REST configuration request timed out before mount/reset. This raw-motion
+  image is not yet claimed as physically tested; the 0.5J tests above cover
+  the intermediate clock-paced sprite version only.
+- User confirmed the menu was closed and the intermediate demo was playing.
+  Subsequent Terminal-owned HTTP and FTP-port probes both timed out, as did
+  ping, while the Mac retained 10.0.0.15/en0 and the target remained configured
+  as 10.0.0.79. Therefore do not attribute this interruption to the menu or
+  claim a demo crash. Network reachability must be restored/confirmed before
+  mounting and testing 0.5K. No REST RAM reads occurred during the failed
+  deployment, and no new-image boot was started.

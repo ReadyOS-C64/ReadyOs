@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Read back both release D81s and compare demo/runtime/resource bytes."""
+import argparse
 import json
 from pathlib import Path
 import subprocess
@@ -15,7 +16,11 @@ files = {
     'rb.neon,s': 'assets/readybasic/neon/rb.neon.koa',
     'rb.ready,s': 'assets/readybasic/neon/rb.ready.rbr',
 }
-for profile in ('precog-d81', 'precog-ultimate'):
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--profile', action='append', choices=('precog-d81', 'precog-ultimate'),
+                    help='Limit verification to rebuilt profiles (default: both)')
+args = parser.parse_args()
+for profile in (args.profile or ('precog-d81', 'precog-ultimate')):
     manifest=json.loads((ROOT/f'Releases/0.5/{profile}/manifest.json').read_text())
     disk=manifest['disks'][0]['path']
     with tempfile.TemporaryDirectory(prefix='readybasic-disk-check-') as temporary:
