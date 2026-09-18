@@ -1,19 +1,25 @@
 # ReadyShell RSV1 Value Format
 
-`STV` writes ReadyShell values in a compact binary container with the ASCII
-magic `RSV1`. `LDV` reads the same format back and rebuilds scalar values,
+`STV` writes ReadyShell values in a compact binary container with the C64
+PETSCII magic `RSV1`. `LDV` reads the same format back and rebuilds scalar values,
 strings, arrays, and objects in the ReadyShell REU value arena.
 
 This is the on-disk format for ReadyShell value snapshots, not a text format.
 
 ## Container Header
 
-- Bytes `0..3`: ASCII magic `RSV1`
+- Bytes `0..3`: C64 PETSCII magic `RSV1`, hex `D2 D3 D6 31`
 - Bytes `4..5`: payload length, little-endian `u16`
 - Bytes `6..`: serialized root value payload
 
 `LDV` validates both the magic and the exact payload length before decoding.
 There is no checksum or footer; the file length must be exactly `6 + payload`.
+
+The serializer uses C character literals. A host-native build therefore emits
+ASCII `52 53 56 31`, while cc65's C64 target emits `D2 D3 D6 31`. This is a
+current cross-target format difference, not automatic transcoding: a host-made
+fixture is not necessarily a C64-loadable file. Text values and property names
+are raw byte strings; C64 text is PETSCII, not UTF-8.
 
 ## Root Value Behavior
 
@@ -72,18 +78,23 @@ the shell provides.
 - Byte `1`: string length `0..255`
 - Bytes `2..`: raw string bytes
 
-Strings are stored as byte strings with no trailing NUL in the file.
+Strings are stored as byte strings with no trailing NUL in the file and no
+character-set conversion.
 
 ## Byte Layout Pictures
 
 The diagrams below show the exact byte sequence shape in a markdown-safe ASCII
-form. Hex byte values are shown in brackets.
+form. Hex byte values are shown in brackets. The container diagram shows the
+C64 header. String examples below retain illustrative ASCII-range byte payloads
+from host fixtures: those raw bytes can be stored, but their glyph/case meaning
+on a C64 depends on PETSCII and its active character set. Do not transcode them
+merely because a host hex viewer labels them with ASCII letters.
 
 ### Container
 
 ```text
 +--------+--------+--------+--------+--------+--------+-------------------+
-| [52] R | [53] S | [56] V | [31] 1 | len lo | len hi | serialized value  |
+| [D2] R | [D3] S | [D6] V | [31] 1 | len lo | len hi | serialized value  |
 +--------+--------+--------+--------+--------+--------+-------------------+
   byte 0   byte 1   byte 2   byte 3   byte 4   byte 5   byte 6...
 ```

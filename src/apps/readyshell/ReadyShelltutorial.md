@@ -378,7 +378,7 @@ PRT $MISSING
 
 ### `CAT`
 
-`CAT` reads a PETASCII text file and emits one string per line:
+`CAT` reads a PETSCII text file and emits one string per line:
 
 ```ruby
 CAT "notes"
@@ -388,7 +388,7 @@ CAT "notes" | MORE | PRT @
 
 ### `PUT`
 
-`PUT` creates or replaces a PETASCII `SEQ` file. Strings write one line;
+`PUT` creates or replaces a PETSCII `SEQ` file. Strings write one line;
 arrays write one line per element:
 
 ```ruby
@@ -404,7 +404,7 @@ Notes:
 
 ### `ADD`
 
-`ADD` appends to an existing PETASCII `SEQ` file. Strings append one line;
+`ADD` appends to an existing PETSCII `SEQ` file. Strings append one line;
 arrays append one line per element. If the file is missing, `ADD` creates it:
 
 ```ruby

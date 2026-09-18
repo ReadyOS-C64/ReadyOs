@@ -11,8 +11,8 @@ Bytes are little-endian where multi-byte values appear.
 
 ### Header
 
-- `0..4`: ASCII magic `SCLS1`
-- `5`: format version, currently `1`
+- `0..4`: PETSCII magic `SCLS1`, hex `D3 C3 CC D3 31` in the C64 build
+- `5`: binary format version, currently `2` (the `1` in the magic is not this version byte)
 - `6`: row count
 - `7`: column count
 - `8`: active row (0-based)
@@ -48,7 +48,7 @@ Each record contains:
   - `0`: default cell color
   - otherwise C64 color value used for the cell text
 - `raw_len` (`1` byte)
-- `raw bytes` (`raw_len` bytes)
+- `raw bytes` (`raw_len` bytes): C64 PETSCII cell text/formula, without ASCII/UTF-8 conversion
 
 Record stream terminates with a single byte `0xFF` in place of the next `row`.
 

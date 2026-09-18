@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Build a plain-text SEQ payload using lowercase PETASCII semantics.
+Build a plain-text SEQ payload using lowercase PETSCII semantics.
 
 Input source is human-editable UTF-8 text. Alphabetic characters must be
 lowercase in source. Output bytes encode a-z as ASCII A-Z byte values, which
-is the standard lowercase PETASCII convention for C64 text flows.
+is the standard lowercase PETSCII convention for C64 text flows.
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ def encode_lines(path: str) -> bytes:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Build lowercase PETASCII SEQ payload")
+    ap = argparse.ArgumentParser(description="Build lowercase PETSCII SEQ payload")
     ap.add_argument("--input", required=True, help="UTF-8 source text")
     ap.add_argument("--output", required=True, help="Output SEQ payload")
     args = ap.parse_args()

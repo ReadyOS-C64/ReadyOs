@@ -766,7 +766,7 @@ Notes:
 
 Purpose:
 
-- Read a PETASCII text file and emit one string per line
+- Read a PETSCII text file and emit one string per line
 
 Syntax:
 
@@ -791,7 +791,7 @@ Notes:
 
 Purpose:
 
-- Create or replace a PETASCII text file from a string or array of strings
+- Create or replace a PETSCII text file from a string or array of strings
 
 Syntax:
 
@@ -821,7 +821,7 @@ Notes:
 
 Purpose:
 
-- Append a string or array of strings to a PETASCII text file
+- Append a string or array of strings to a PETSCII text file
 
 Syntax:
 
@@ -840,7 +840,7 @@ ADD $MORELINES, "9:dirnames"
 
 Notes:
 
-- `ADD` appends CR-terminated PETASCII text
+- `ADD` appends CR-terminated PETSCII text
 - String values append one line
 - Array values append one line per element
 - If the file does not exist, `ADD` creates a new `SEQ` file

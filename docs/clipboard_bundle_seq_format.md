@@ -6,7 +6,7 @@ boundaries come only from explicit header metadata.
 
 ## Layout
 
-- Bytes `0..4`: ASCII magic `RCLP1`
+- Bytes `0..4`: PETSCII magic `RCLP1`, hex `D2 C3 CC D0 31` in the C64 build
 - Byte `5`: version, currently `1`
 - Byte `6`: entry count (`1..16`)
 - Byte `7`: flags, currently `0`
@@ -23,3 +23,5 @@ Each entry then stores:
 - Import replays entries so that the visible clipboard history order matches the
   file order after re-adding them to history.
 - Plain SEQ files without the `RCLP1` header still load as one clipboard item.
+- C64 text payloads use PETSCII. The container preserves raw bytes and does not
+  convert ASCII/UTF-8 input or reinterpret binary payload bytes.

@@ -436,7 +436,7 @@ def parse_apps_catalog_bytes(raw):
         if 0x61 <= byte <= 0x7A:
             raise ValueError(
                 f"disk catalog is ASCII-lowercase at offset {idx} (0x{byte:02X}); "
-                f"expected lowercase PETASCII text bytes"
+                f"expected lowercase PETSCII text bytes"
             )
 
     def petscii_lower_to_ascii(byte):

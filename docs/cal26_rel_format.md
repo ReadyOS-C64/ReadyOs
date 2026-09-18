@@ -1,8 +1,9 @@
 # Calendar 26 REL Format
 
 `cal26` stores event data in `cal26.rel` and UI/config state in
-`cal26cfg.rel`. Both files use REL records with fixed-width ASCII decimal
-fields and space-filled unused bytes.
+`cal26cfg.rel`. Both files use PETSCII text in REL records, with fixed-width
+decimal fields and space-filled unused bytes. Digits `$30-$39` and space `$20`
+have the same byte values as ASCII; alphabetic markers must follow C64 PETSCII.
 
 - `cal26.rel`: 64-byte records
 - `cal26cfg.rel`: 32-byte records
@@ -24,7 +25,7 @@ year `1..365`.
 
 Record `1` stores:
 
-- Bytes `0..3`: ASCII magic `c26e`
+- Bytes `0..3`: PETSCII magic `c26e`, hex `43 32 36 45`
 - Byte `4`: version, currently ASCII `1`
 - Bytes `5..9`: free-list head record number, 5 decimal digits
 - Bytes `10..14`: next never-used event record number, 5 decimal digits
@@ -47,7 +48,7 @@ For day `N`, the index record is at record `1 + N`.
 
 Layout:
 
-- Byte `0`: record type, ASCII `i`
+- Byte `0`: PETSCII record type `i`, hex `49`
 - Bytes `1..3`: day-of-year, 3 decimal digits
 - Bytes `6..10`: head event record number, 5 decimal digits
 - Bytes `11..15`: tail event record number, 5 decimal digits
@@ -66,14 +67,14 @@ Event records start at record `367`.
 
 Layout:
 
-- Byte `0`: record type, ASCII `e`
+- Byte `0`: PETSCII record type `e`, hex `45`
 - Byte `1`: done flag, ASCII `0` or `1`
 - Byte `2`: deleted flag, ASCII `0` or `1`
 - Bytes `3..5`: owning day-of-year, 3 decimal digits
 - Bytes `6..10`: previous event record number, 5 decimal digits
 - Bytes `11..15`: next event record number, 5 decimal digits
 - Bytes `16..17`: text length, 2 decimal digits
-- Bytes `18..63`: raw event text, up to 46 bytes
+- Bytes `18..63`: raw PETSCII event text, up to 46 bytes
 
 Current flag bits in the in-memory model:
 
@@ -103,7 +104,7 @@ file can grow over time even if later deletions free slots for reuse.
 
 The config file uses one 32-byte record at record `1`.
 
-- Bytes `0..3`: ASCII magic `c26c`
+- Bytes `0..3`: PETSCII magic `c26c`, hex `43 32 36 43`
 - Byte `4`: version, currently ASCII `1`
 - Bytes `5..7`: `today` day-of-year, 3 decimal digits
 - Byte `8`: week-start flag, ASCII `0` or `1`

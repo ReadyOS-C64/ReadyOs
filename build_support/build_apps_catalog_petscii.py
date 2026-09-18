@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build ReadyOS apps.cfg as a strict lowercase-PETASCII SEQ payload.
+Build ReadyOS apps.cfg as a strict lowercase-PETSCII SEQ payload.
 
 Source format is sectioned:
 
@@ -391,7 +391,7 @@ def encode_petscii_lower(lines: List[str], path: str) -> bytes:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Build ReadyOS apps.cfg PETASCII payload")
+    ap = argparse.ArgumentParser(description="Build ReadyOS apps.cfg PETSCII payload")
     ap.add_argument("--input", required=True, help="Sectioned config text source")
     ap.add_argument("--output", required=True, help="Output binary payload")
     ap.add_argument("--variant-asm-output",

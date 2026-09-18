@@ -6,8 +6,9 @@ Both files are Commodore REL files with fixed-size records:
 - `dizzy.rel`: 64-byte records
 - `dizzycfg.rel`: 32-byte records
 
-Within each record, numeric fields are stored as fixed-width ASCII decimal.
-Unused bytes are space-filled. Record numbers are 1-based.
+Text and alphabetic markers use PETSCII. Numeric fields use fixed-width decimal
+digits `$30-$39`, whose byte values match ASCII. Unused bytes are space `$20`.
+Record numbers are 1-based.
 
 ## `dizzy.rel`
 
@@ -22,10 +23,10 @@ Card ID `N` always lives in record `1 + N`.
 
 Record `1` stores:
 
-- Byte `0`: ASCII `d`
-- Byte `1`: ASCII `z`
-- Byte `2`: ASCII `r`
-- Byte `3`: ASCII `b`
+- Byte `0`: PETSCII `d`, hex `44`
+- Byte `1`: PETSCII `z`, hex `5A`
+- Byte `2`: PETSCII `r`, hex `52`
+- Byte `3`: PETSCII `b`, hex `42`
 - Byte `4`: version, currently ASCII `1`
 - Bytes `5..6`: used-card count, 2 decimal digits
 - Bytes `7..11`: payload checksum, 5 decimal digits
@@ -46,7 +47,7 @@ all card records.
 
 Each card slot record stores one stable card ID.
 
-- Byte `0`: record type, ASCII `C`
+- Byte `0`: PETSCII record type `C`, hex `C3`
 - Byte `1`: used flag, ASCII `0` or `1`
 - Bytes `2..3`: card ID, 2 decimal digits
 
@@ -64,7 +65,7 @@ Used card fields:
 - Bytes `12..14`: due day-of-year, 3 decimal digits
 - Bytes `15..17`: snooze-until day-of-year, 3 decimal digits
 - Bytes `18..19`: title length, 2 decimal digits
-- Bytes `20..63`: raw title bytes, up to 44 bytes
+- Bytes `20..63`: raw PETSCII title bytes, up to 44 bytes
 
 Current flag bits:
 
@@ -84,7 +85,7 @@ Notes:
 
 The config file uses one 32-byte record at record `1`.
 
-- Bytes `0..3`: ASCII magic `dzcf`
+- Bytes `0..3`: PETSCII magic `dzcf`, hex `44 5A 43 46`
 - Byte `4`: version, currently ASCII `1`
 - Byte `5`: selected column, 1 decimal digit
 - Bytes `6..7`: selected visible index for column `0`, 2 decimal digits
