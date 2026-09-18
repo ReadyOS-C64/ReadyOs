@@ -180,7 +180,7 @@ The runner watches streamed video until the READY sprites move before reading
 RAM: REST memory/screen reads during disk loading can hang physical C64U.
 A fixed 110-second delay was too short and must not be treated as completion.
 
-Current images are regular **0.5D** and Ultimate **0.5E**. The physical image is
+At this earlier test stage, images were regular **0.5D** and Ultimate **0.5E**. The physical image was
 `/USB1/automation/readybasic-media/neon-5807f3ef/RB5807f3ef.D81`; its embedded
 apps.cfg matches that path with DMA_LOADING=1. Full upload readback SHA-256:
 `bd6a80b606762bf1d820620802ea29857fac7cf9bcb95567b011cb03cf3a0d94`.

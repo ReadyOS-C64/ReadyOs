@@ -6,6 +6,14 @@ the Ultimate Command Interface (UCI). This accelerates preload and cold app or
 resource loading without changing the resident shim or the `$1000-$C5FF`
 snapshot contract.
 
+ReadyOS cannot discover the Ultimate host pathname of the D81 from which it
+booted. The C64's mounted drive/directory does not supply that enclosing image
+path. Set `[launcher]` keys `c64u_image_path=/usb1/your-folder/readyos.d81` and
+`dma_loading=1` in `apps.cfg`, using your actual path. Standalone SETUP browses
+to the image, validates it and saves the configuration safely. Repeat setup
+after moving or renaming the D81. A missing/invalid path leaves normal disk
+loading as the fallback; it does not make fast loading automatic.
+
 ## Availability
 
 - Compile gate: `LAUNCHER_DMA_LOAD`. The Makefile derives it from the selected
@@ -23,11 +31,12 @@ snapshot contract.
 Build and run ReadyOS itself through the normal workflow:
 
 ```sh
-/bin/bash ./run.sh --profile precog-ultimate --vice-fast
+/bin/bash ./run.sh --profile precog-ultimate --build-only
 ```
 
-VICE does not provide the hardware UCI service. An enabled build detects that
-condition and continues through the normal disk path.
+Then deploy the built D81 to physical Ultimate hardware and run SETUP. VICE does
+not provide the hardware UCI service and is not evidence for this fast path.
+An enabled build without UCI continues through the normal disk path.
 
 ## Runtime Flow
 

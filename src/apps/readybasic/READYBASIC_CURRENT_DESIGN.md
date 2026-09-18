@@ -1,13 +1,37 @@
 # ReadyBASIC Current Design
 
-Experimental MEMCAP and `rbm.media` commands are documented in
-[the media learnings](../../../docs/readybasic_media_learnings.md), with
-the credited `rbsnd07` demo. MEMCAP is opt-in; default BASIC free bytes and
-the BASIC program start remain unchanged. The media flag uses `$c1ff`.
+## September 2026 current additions
+
+The [complete command/example reference](../../../docs/readybasic_reference.md)
+documents all 98 built-in descriptors, eight `rbm.media` commands, three sample
+packages and all 45 retained BASIC source examples. Regular and Ultimate D81
+package 44 examples; the historical RBSND08 source remains outside the release
+directory. Other profiles retain the original set as detailed in the reference.
+
+MEMCAP, BORDER, USPEED and UMHZ are built in. MEMCAP is opt-in: the BASIC start
+remains $2AC1 and the default empty workspace remains 30013 free bytes. Media
+adds bounded resource/image/sprite loaders and a vetted PAL PSID player through
+`ZMODLD("RBM.MEDIA",M%)`. The media lifetime flag is $C1FF; its driver lives at
+$9000 in MEMCAP-reserved RAM, outside every disposable command slot. The code
+package uses slots 1+2, logical module 6/submodule 24, assigned code-bank offset
+$8000 and eight descriptors at core-bank $1C20–$1D1F. Built-in UMHZ occupies
+$1C00; packages must match the runtime to avoid overwriting its descriptor.
+
+END/STOP alone does not detach music. ReadyOS prompt navigation halts it before
+yield; warm resume preserves cap/tune but requires MUSPLAY to restart. Q in the
+combined demo drops music and both REU surfaces, while M keeps music at the
+prompt. See [media lifecycle and evidence](../../../docs/readybasic_media_learnings.md)
+and [Orbital Echoes](../../../docs/readybasic_orbital_echoes.md).
+
+The detailed segment tables below retain earlier measured layouts. Fixed ABI
+boundaries remain contracts; packed lengths/endpoints are measurements of their
+original build, not current capacity promises. Regenerate the memory report
+against the current map for current byte counts.
 
 This is the current ReadyBASIC design as implemented by
 `src/apps/readybasic/readybasic.s`, linked by `cfg/ready_app_readybasic.cfg`,
-and verified against the current `obj/readybasic.map`.
+with current byte counts available from `obj/readybasic.map`. Earlier measured
+tables are retained below for design provenance, not asserted as fresh measurements.
 
 ReadyBASIC is a ReadyOS app that hosts a relocated C64 BASIC V2 workspace and
 adds a lean command spine for bare `COMMAND(...)` statements and selected
@@ -31,8 +55,9 @@ workspace, under-ROM slot, and assigned ReadyBASIC core/code bank pictures.
 The current example inventory is build-owned rather than handwritten into disk
 images. `READYBASIC_GFX_DEMO_NAMES` in the Makefile contains 32 programs from
 `rbgfx01_modes` through `rbgfx32_convex_poly`; `READYBASIC_SOUND_DEMO_NAMES`
-contains 6 programs from `rbsnd01_sid_basics` through
-`rbsnd06_three_voice`. Regular and EasyFlash demo/probe wrappers are generated
+contains the eight numbered sound sources (including historical RBSND08) and
+the two combined graphics/music demos. Packaging selects a subset as described
+in the reference above. Regular and EasyFlash demo/probe wrappers are generated
 from the same sources, so documentation should refer to those lists instead of
 copying an older partial set.
 
@@ -43,7 +68,8 @@ layout. Older implementation names such as `LOWPACK` remain in a few labels and
 tables because they are still used by the linker and source, but the current
 runtime model is the module-aware layout described here.
 
-Measured from the current `obj/readybasic.map`:
+Retained pre-media measurements from `obj/readybasic.map` (regenerate the memory
+report for current lengths; the bridge now also owns media state at `$C1FF`):
 
 | Item | Current value |
 |---|---:|
@@ -294,7 +320,7 @@ overlay:
 | `WAVE` / `GATE` | control register helpers | `WAVE(V,M)` writes the SID control byte; `GATE(V,ON)` sets or clears bit 0 without disturbing the other waveform/control bits. |
 | `VOICE` | `VOICE(V,F,W,AD,SR)` | Fast packed voice setup: frequency, control/wave byte, packed attack/decay byte, and packed sustain/release byte. This intentionally reuses an existing five-number parser signature to avoid resident growth. |
 | `FILTER` | `FILTER(CUTOFF,RES,ROUTE,MODE)` | Writes SID cutoff, resonance, route, and filter mode. Mode uses logical bits `1` low-pass, `2` band-pass, `4` high-pass, `8` voice-3-off. |
-| `SOUND` | `SOUND(V,F,D,W)` | Blocking tone helper: gates wave `W` on for `D` spin-delay units and gates it off. No IRQ music engine yet. |
+| `SOUND` | `SOUND(V,F,D,W)` | Blocking tone helper: gates wave `W` on for `D` spin-delay units and gates it off. Background IRQ music is separate, in `rbm.media`. |
 | `SPRSET` / `SPRMOVE` / `SPRCOL` / `SPRROW` | sprite config/move/color/pixels | Uses eight 64-byte Bank D sprite definitions at `$CA00`; `SPRROW` writes explicit 24-bit sprite rows. |
 | `SPRSIZE` | `SPRSIZE(N,XON,YON)` | Phase 2 VIC sprite X/Y expansion. |
 | `SPRPRI` | `SPRPRI(N,BEHIND)` | Phase 2 VIC sprite priority bit control. |
@@ -551,10 +577,10 @@ store a BASIC program.
 command-code capacity of the architecture. The current descriptor format points
 into the assigned code bank with 16-bit offsets and sizes, so the current single code
 bank can hold up to `$10000` bytes (64.0K) of packed command bodies. The base
-built-in payloads currently use `$1455` (5.1K, 5205 exact bytes) and the fixed
-built-in overlay reservations occupy through `$77FF`, leaving the contiguous
-tail `$7800-$FFFF` (`$8800`, 34816 exact bytes) available in the assigned code
-bank. To actually seed beyond the current 5.25K
+built-in payload length is map-dependent; fixed built-in overlay reservations
+occupy through `$7FFF`, with on-demand media reserving `$8000-$8FFF`. The
+remaining tail is `$9000-$FFFF` (28KB) in the assigned code bank. To seed
+beyond the current 5.25K
 `CMDPACK` linker window, the cold-load layout would need a larger or additional
 load-only seed range, copied to REU before BASIC owns `$2AC1-$9FFF`. Going
 beyond one 64K code bank would require a descriptor/loader extension for
@@ -730,7 +756,7 @@ table at `$C600-$C6FF`. ReadyBASIC scans that table at startup and does not use
 | `$0A00` | Saved zero page for ReadyOS suspend/resume. |
 | `$0B00` | Saved stack page for ReadyOS suspend/resume. |
 | `$0C00-$0CFF` | 192-byte heap page bitmap plus reserved bytes. |
-| `$1000-$1FFF` | 128 command descriptor slots, 32 bytes each. Current build has 94 real descriptors, 34 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128. |
+| `$1000-$1FFF` | 128 command descriptor slots, 32 bytes each. Cold build has 98 real descriptors, 30 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128. |
 | `$2000-$3FFF` | Reserved common/system space for future ReadyBASIC metadata. |
 | `$4000-$FFFF` | Typed handle heap: 192 pages / 48KB. |
 
@@ -741,8 +767,8 @@ count:
 
 | Descriptor range | REU offset | Role | Slots | Size |
 |---|---:|---|---:|---:|
-| Slots 1-93 | `$1000-$1B9F` | Current built-in descriptors from `ZECHO1` through `SOUND`. | 93 | `$0BA0` / 2976B |
-| Slots 94-127 | `$1BA0-$1FDF` | Zero-filled filler descriptors available for future commands. | 34 | `$0440` / 1088B |
+| Slots 1-97 | `$1000-$1C1F` | Current built-in descriptors from `ZECHO1` through `UMHZ`. | 97 | `$0C20` / 3104B |
+| Slots 98-127 | `$1C20-$1FDF` | Cold zero-filled descriptors; media uses the first eight when loaded. | 30 | `$03C0` / 960B |
 | Slot 128 | `$1FE0-$1FFF` | `SCRPUT`, deliberately placed at the end to prove full-table lookup. | 1 | `$0020` / 32B |
 
 The persistent handle model supports 128 live handles. Each handle is
@@ -756,6 +782,13 @@ banks and keep the same small handle model.
 
 ### Assigned Code Bank: Packed Command Code
 
+Descriptor-placement correction: package descriptors are streamed to the
+**core** bank, not the code bank. The sample descriptor rows below are retained
+as cross-bank references and explicitly labelled. Their fixed offsets overwrite
+built-ins in today's registry; run these developer proofs in isolated sessions.
+Only payload records occupy the assigned code bank. Media uses empty descriptor
+slots at core `$1C20-$1D1F` and code at `$8000`.
+
 | Offset | Region |
 |---:|---|
 | `$0000-$07DB` | Built-in module 1 slot-0 payload copied into `$A800-$AFDB` (`$07DC`, 2012B). |
@@ -763,9 +796,9 @@ banks and keep the same small handle model.
 | `$0D1D-$1454` | Built-in slot-2 proof plus `GFXPRIM` copied into `$B800-$BF37` (`$0738`, 1848B). |
 | `$13AA-$13BE` | Built-in two-slot span proof payload (`$0015`, 21B). |
 | `$1455-$14FF` | Free gap before current disk-module descriptor proof offsets (`$00AB`, 171B). |
-| `$1500-$151F` | `rbm.sample1` descriptor for `ZDM1`. |
-| `$1600-$165F` | `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`. |
-| `$1700-$1ABF` | `rbm.sample3` descriptors for `ZSAA`-`ZUEB`. |
+| Core bank `$1500-$151F` | `rbm.sample1` descriptor for `ZDM1`; not code-bank storage. |
+| Core bank `$1600-$165F` | `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`; not code-bank storage. |
+| Core bank `$1700-$1ABF` | `rbm.sample3` descriptors for `ZSAA`-`ZUEB`; not code-bank storage. |
 | `$3000-$3014`, `$3200-$3214`, `$3300-$3314`, `$3400-$3414` | Small sample disk-loaded payload proofs. |
 | `$3800-$463C` | `rbm.sample3` payload records for `ZSAA`-`ZUEB`, stored on `$100`-byte strides. |
 | `$463D-$4FFF` | Free gap before fixed built-in replacement overlay offsets (`$09C3`, 2499B). |
@@ -781,7 +814,8 @@ banks and keep the same small handle model.
 | `$74DA-$77FF` | Reserved `GFXTILE` overlay growth headroom (`$0326`, 806B). |
 | `$7800-$7A0D` | Built-in `SIDCORE` replacement overlay (`$020E`, 526B). |
 | `$7A0E-$7FFF` | Reserved `SIDCORE` overlay growth headroom (`$05F2`, 1522B). |
-| `$8000-$FFFF` | Free tail after fixed built-in replacement overlay reservations (`$8000`, 32768B). |
+| `$8000-$8FFF` | Reserved on-demand media span, fetched into slots 1+2; actual package length is build-dependent. |
+| `$9000-$FFFF` | Tail beyond the media span reservation (REU offsets, not the C64 music arena). |
 
 Descriptors point into these packed bytes with payload offset, payload size,
 slot mask, runtime destination, and entry offset. Heap and screen-handle
@@ -903,7 +937,7 @@ regions, under-ROM run slots, bridge/shared frames, and the exact `$1000-$7FFF`
 compact PRG span must move together. `verify_readybasic_plugin.py` enforces both
 sides of that dependency.
 
-## Current Verification Evidence
+## Verification Gates And Retained Measurement Evidence
 
 Static guardrails:
 
@@ -911,7 +945,9 @@ Static guardrails:
 make readybasic-plugin-static-check
 ```
 
-Current static layout:
+The following static layout is the retained pre-media measurement. Current
+build-specific endpoints are in `docs/readybasic_memory_diagrams.html`; in
+particular the bridge now ends at `$C1FF` and INPUTEV includes memory/speed helpers.
 
 | Segment | Range | Size |
 |---|---:|---:|

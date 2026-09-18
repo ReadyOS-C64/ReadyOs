@@ -3,8 +3,22 @@
 This guide explains how current ReadyBASIC commands are made in
 `src/apps/readybasic/readybasic.s`. It uses the current names and layout:
 128 descriptor slots in the assigned ReadyBASIC core bank, packed command code in the assigned code bank,
-94 real command descriptors, 34 zero-filled filler descriptors, and `SCRPUT`
+98 real command descriptors, 30 zero-filled filler descriptors, and `SCRPUT`
 kept in slot 128 to prove full-table lookup.
+
+The [current reference](../../../docs/readybasic_reference.md) lists every
+implemented command and all examples. New built-ins are MEMCAP (SYSTEM in the
+INPUTEV overlay), BORDER (GFXCORE), and Ultimate-only USPEED/UMHZ (SYSTEM in
+INPUTEV). Keeping speed control built in lets USPEED(1) run before disk loads.
+
+`rbm.media` demonstrates a real on-demand package: eight descriptors at assigned
+core-bank $1C20–$1D1F, code at assigned code-bank $8000, logical module 6 /
+submodule 24, using slots 1+2. Its asynchronous SID driver must be copied to
+MEMCAP-reserved $9000 RAM; it cannot execute from a disposable overlay slot.
+The built-in descriptor at $1C00 belongs to UMHZ, so use matching package builds.
+See `media.s`, `media_graphics.s`, `media_driver.s` and the package generator.
+Older packed-size examples below are retained as baseline authoring examples;
+consult the current map for available space before adding a command.
 
 Native `PROC`/`FUNC` routines are new ReadyBASIC language features, not BASIC V2
 functions and not plugin commands. Users can write them directly in their own
@@ -76,9 +90,10 @@ language statement is a resident parser and lifecycle task.
 ReadyBASIC's built-in command set is intended to include the core commands and
 the 100+ additional file, graphics, sound, REU, and utility commands that are
 similar in spirit to other BASIC extensions. The current built-in code-bank
-reservations leave the contiguous tail `$8000-$FFFF` free for future built-in
-payloads; today's first C64 `CMDPACK` cold-load window has about `$00AB` / 171
-bytes of unused seed room, while replacement overlays are seeded from
+reservations end at `$7FFF`; media uses the next two-slot reservation at
+`$8000-$8FFF`, leaving `$9000-$FFFF` for future payloads. The first C64
+`CMDPACK` cold-load window's remaining bytes must be measured from the current
+map (the earlier measurement was `$00AB` / 171 bytes). Replacement overlays are seeded from
 `CMDPACK2`. Beyond that built-in set, ReadyBASIC will also support
 dynamically loaded command modules that can use additional REU banks, so other
 authors can add hundreds more commands without forcing everything into the core

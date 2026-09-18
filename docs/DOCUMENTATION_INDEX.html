@@ -4,156 +4,11 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>DOCUMENTATION_INDEX</title>
+  <title>ReadyOS Documentation Index</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
     */
-    html {
-      color: #1a1a1a;
-      background-color: #fdfdfd;
-    }
-    body {
-      margin: 0 auto;
-      max-width: 36em;
-      padding-left: 50px;
-      padding-right: 50px;
-      padding-top: 50px;
-      padding-bottom: 50px;
-      hyphens: auto;
-      overflow-wrap: break-word;
-      text-rendering: optimizeLegibility;
-      font-kerning: normal;
-    }
-    @media (max-width: 600px) {
-      body {
-        font-size: 0.9em;
-        padding: 12px;
-      }
-      h1 {
-        font-size: 1.8em;
-      }
-    }
-    @media print {
-      html {
-        background-color: white;
-      }
-      body {
-        background-color: transparent;
-        color: black;
-        font-size: 12pt;
-      }
-      p, h2, h3 {
-        orphans: 3;
-        widows: 3;
-      }
-      h2, h3, h4 {
-        page-break-after: avoid;
-      }
-    }
-    p {
-      margin: 1em 0;
-    }
-    a {
-      color: #1a1a1a;
-    }
-    a:visited {
-      color: #1a1a1a;
-    }
-    img {
-      max-width: 100%;
-    }
-    svg {
-      height: auto;
-      max-width: 100%;
-    }
-    h1, h2, h3, h4, h5, h6 {
-      margin-top: 1.4em;
-    }
-    h5, h6 {
-      font-size: 1em;
-      font-style: italic;
-    }
-    h6 {
-      font-weight: normal;
-    }
-    ol, ul {
-      padding-left: 1.7em;
-      margin-top: 1em;
-    }
-    li > ol, li > ul {
-      margin-top: 0;
-    }
-    blockquote {
-      margin: 1em 0 1em 1.7em;
-      padding-left: 1em;
-      border-left: 2px solid #e6e6e6;
-      color: #606060;
-    }
-    code {
-      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
-      font-size: 85%;
-      margin: 0;
-      hyphens: manual;
-    }
-    pre {
-      margin: 1em 0;
-      overflow: auto;
-    }
-    pre code {
-      padding: 0;
-      overflow: visible;
-      overflow-wrap: normal;
-    }
-    .sourceCode {
-     background-color: transparent;
-     overflow: visible;
-    }
-    hr {
-      border: none;
-      border-top: 1px solid #1a1a1a;
-      height: 1px;
-      margin: 1em 0;
-    }
-    table {
-      margin: 1em 0;
-      border-collapse: collapse;
-      width: 100%;
-      overflow-x: auto;
-      display: block;
-      font-variant-numeric: lining-nums tabular-nums;
-    }
-    table caption {
-      margin-bottom: 0.75em;
-    }
-    tbody {
-      margin-top: 0.5em;
-      border-top: 1px solid #1a1a1a;
-      border-bottom: 1px solid #1a1a1a;
-    }
-    th {
-      border-top: 1px solid #1a1a1a;
-      padding: 0.25em 0.5em 0.25em 0.5em;
-    }
-    td {
-      padding: 0.125em 0.5em 0.25em 0.5em;
-    }
-    header {
-      margin-bottom: 4em;
-      text-align: center;
-    }
-    #TOC li {
-      list-style: none;
-    }
-    #TOC ul {
-      padding-left: 1.3em;
-    }
-    #TOC > ul {
-      padding-left: 0;
-    }
-    #TOC a:not(:hover) {
-      text-decoration: none;
-    }
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
     div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -235,126 +90,87 @@
     code span.vs { color: #4070a0; } /* VerbatimString */
     code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
+  <link rel="stylesheet" href="readyos_docs.css" />
 </head>
 <body>
 <!-- READYOS-DOC-STATUS:START -->
-<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current documentation index, audited against the initial 0.5 development tree on 2026-08-21; its production baseline is 0.2.5.</aside>
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current documentation index, audited against the September 2026 PRECOG 0.5 development tree; its production baseline is 0.2.5.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<h1 id="readyos-documentation-index">ReadyOS Documentation Index</h1>
-<p>This index separates current contracts from historical records. It
-was audited against the initial <code>0.5</code> development tree on
-2026-08-21. That tree is based on the audited, production-stamped
-<code>0.2.5</code> release state.</p>
-<p>An HTML counterpart is generated as
-<code>DOCUMENTATION_INDEX.html</code>. Every HTML file under
-<code>docs/</code> and <code>privatedocs/</code>, the root
-completed-phase HTML report, and the three ReadyBASIC HTML guides are
-classified by
-<code>build_support/update_documentation_html_status.py</code> and carry
-a visible <code>CURRENT DOCUMENT</code> or
-<code>PRESERVED SNAPSHOT / DESIGN</code> banner. The classification
-changes presentation only: historical report bodies and measurements are
-not deleted or rewritten into claims about a version they did not
-describe.</p>
-<h2 id="start-here">Start Here</h2>
+<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
 <ul>
-<li><a href="../README.md"><code>../README.md</code></a>: project
-overview, current SKUs, app catalog, runtime summary, and supported
-build/run entry points.</li>
-<li><a href="ultimate_setup.md"><code>ultimate_setup.md</code></a>:
-first-run flow, controls, safe config commit, prerequisites, and
-automation contract for the Ultimate D81.</li>
-<li><a
-href="ultimate_dos_dma_loading.md"><code>ultimate_dos_dma_loading.md</code></a>:
-C64 Ultimate DOS DMA loading, profile/runtime gates, fallback behavior,
-and verification.</li>
-<li><a href="uci_tester.md"><code>uci_tester.md</code></a>: UCI Tester
-controls, protocol rules, selectable prefills, safety notes, and
-real-world DOS/network/HTTP workflows.</li>
-<li><a
-href="ReadyOS_SHIM_ARCHITECTURE_0.5.md"><code>ReadyOS_SHIM_ARCHITECTURE_0.5.md</code></a>:
-current resident-shim and schema-v5 ReadyOS-bank architecture, including
-which state remains resident, which state lives in physical
-<code>Skip</code>, and which copy is authoritative for each
-operation.</li>
-<li><a
-href="../privatedocs/top_level_md/MEMORY_MAP.md"><code>../privatedocs/top_level_md/MEMORY_MAP.md</code></a>:
-canonical detailed RAM, REU, shim, and per-app memory contract.</li>
-<li><a
-href="../privatedocs/top_level_md/SHIM_PLAN.md"><code>../privatedocs/top_level_md/SHIM_PLAN.md</code></a>:
-current resident-shim ABI and switching flow (the historical filename is
-retained).</li>
-</ul>
-<h2 id="current-subsystem-documentation">Current Subsystem
-Documentation</h2>
+<li><a href="#readyos-documentation-index" id="toc-readyos-documentation-index">ReadyOS Documentation Index</a>
 <ul>
-<li>ReadyShell: <a
-href="ReadyShellArchitecture.md"><code>ReadyShellArchitecture.md</code></a>,
-<a
-href="ReadyShellHostTesting.md"><code>ReadyShellHostTesting.md</code></a>,
-and the generated <a
-href="readyshell_overlay_inventory.md"><code>readyshell_overlay_inventory.md</code></a>.</li>
-<li>ReadyBASIC: <a
-href="../src/apps/readybasic/READYBASIC_CURRENT_DESIGN.md"><code>../src/apps/readybasic/READYBASIC_CURRENT_DESIGN.md</code></a>,
-graphics and sound command designs, lifecycle/REU architecture,
-module-making guide, and the examples listed in the root README.</li>
-<li>EasyFlash: <a
-href="reports/easyflash_boot_flow.md"><code>reports/easyflash_boot_flow.md</code></a>.</li>
-<li>File formats: the <code>*_format.md</code> and
-<code>*_seq_format.md</code> documents in this directory.</li>
-<li>C64 Ultimate DMA research evidence: <a
-href="../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md"><code>../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md</code></a>
-and <a
-href="../probes/uci_dma/README.md"><code>../probes/uci_dma/README.md</code></a>.</li>
-<li>C64 Ultimate interactive diagnostics: <a
-href="uci_tester.md"><code>uci_tester.md</code></a> and its rendered <a
-href="uci_tester.html"><code>uci_tester.html</code></a>
-counterpart.</li>
+<li><a href="#start-here" id="toc-start-here">Start Here</a></li>
+<li><a href="#current-subsystem-documentation" id="toc-current-subsystem-documentation">Current Subsystem Documentation</a></li>
+<li><a href="#generated-reports" id="toc-generated-reports">Generated Reports</a></li>
+<li><a href="#historical-material-policy" id="toc-historical-material-policy">Historical Material Policy</a></li>
+</ul></li>
 </ul>
-<h2 id="generated-reports">Generated Reports</h2>
+</nav></details>
+<section id="readyos-documentation-index" class="level1">
+<h1>ReadyOS Documentation Index</h1>
+<p>This index separates current contracts from historical records. It was audited against the <code>0.5</code> development sources on 2026-09-18. That tree is based on the audited, production-stamped <code>0.2.5</code> release state.</p>
+<p>An HTML counterpart is generated as <code>DOCUMENTATION_INDEX.html</code>. Every HTML file under <code>docs/</code> and <code>privatedocs/</code>, the root completed-phase HTML report, and the three ReadyBASIC HTML guides are classified by <code>build_support/update_documentation_html_status.py</code> and carry a visible <code>CURRENT DOCUMENT</code> or <code>PRESERVED SNAPSHOT / DESIGN</code> banner. The classification changes presentation only: historical report bodies and measurements are not deleted or rewritten into claims about a version they did not describe.</p>
+<section id="start-here" class="level2">
+<h2>Start Here</h2>
 <ul>
-<li><code>make readyshell-overlay-report</code> refreshes the
-public/private ReadyShell overlay Markdown and HTML reports from maps
-and profile metadata.</li>
-<li><code>make readybasic-memory-report</code> refreshes the ReadyBASIC
-proportional memory report and diagrams.</li>
-<li><code>make easyflash-report</code> reports the generated cartridge
-layout.</li>
-<li><code>python3 build_support/report_app_headroom.py</code> emits
-current per-app segment endpoints and free bytes from
-<code>obj/*.map</code>.</li>
+<li><p><a href="readybasic_reference.html">ReadyBASIC examples and commands</a> (<a href="readybasic_reference.html">styled HTML</a>): all 45 source examples, the current built-in inventory, eight on-demand media commands and per-SKU availability.</p></li>
+<li><p><a href="app_requirements.html">App hardware and REU requirements</a>: Ultimate-only functions, app-owned versus shared REU, and the standalone release plans.</p></li>
+<li><p><a href="documentation_audit_2026-09.html">September audit</a>: corrections and issues that need packaging, code or validation beyond documentation.</p></li>
+<li><p><a href="../privatedocs/reports/readybasic_current_state.html">Private current-state guide</a>: new media/module lifecycle, product direction and retained-evidence policy.</p></li>
+<li><p><a href="../README.md"><code>../README.md</code></a>: project overview, current SKUs, app catalog, runtime summary, and supported build/run entry points.</p></li>
+<li><p><a href="ultimate_setup.html"><code>ultimate_setup.md</code></a>: first-run flow, controls, safe config commit, prerequisites, and automation contract for the Ultimate D81.</p></li>
+<li><p><a href="ultimate_dos_dma_loading.html"><code>ultimate_dos_dma_loading.md</code></a>: C64 Ultimate DOS DMA loading, profile/runtime gates, fallback behavior, and verification.</p></li>
+<li><p><a href="uci_tester.md"><code>uci_tester.md</code></a>: UCI Tester controls, protocol rules, selectable prefills, safety notes, and real-world DOS/network/HTTP workflows.</p></li>
+<li><p><a href="ReadyOS_SHIM_ARCHITECTURE_0.5.md"><code>ReadyOS_SHIM_ARCHITECTURE_0.5.md</code></a>: current resident-shim and schema-v5 ReadyOS-bank architecture, including which state remains resident, which state lives in physical <code>Skip</code>, and which copy is authoritative for each operation.</p></li>
+<li><p><a href="../privatedocs/top_level_md/MEMORY_MAP.md"><code>../privatedocs/top_level_md/MEMORY_MAP.md</code></a>: canonical detailed RAM, REU, shim, and per-app memory contract.</p></li>
+<li><p><a href="../privatedocs/top_level_md/SHIM_PLAN.md"><code>../privatedocs/top_level_md/SHIM_PLAN.md</code></a>: current resident-shim ABI and switching flow (the historical filename is retained).</p></li>
 </ul>
-<p>Generated reports are current only for the artifacts in the working
-tree. A dated stability report or an <code>agentworking/</code> log is
-evidence from that run, not a live architecture contract.</p>
-<p>After changing Markdown/HTML documentation, regenerate current HTML
-counterparts and run:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/update_documentation_html_status.py</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/sync_shim_documentation.py</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_documentation_contract.py</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_documentation_links.py</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_shim_html_source.py</span></code></pre></div>
-<p>The documentation-contract verifier checks the current RAM/REU
-statements, the 1 MB SKU bank budget, retained-history supersession
-markers, and the HTML classification. Classification fails if any
-covered HTML document is not explicitly categorized, preventing a new
-report from silently appearing without freshness status. The shim-source
-verifier discovers every HTML <code>&lt;pre&gt;</code> block containing
-the complete resident shim, compares all <code>.byte</code> directives
-with <code>src/boot/readyos_shim.inc</code>, and rejects retired lookup
-annotations.</p>
-<h2 id="historical-material-policy">Historical Material Policy</h2>
+</section>
+<section id="current-subsystem-documentation" class="level2">
+<h2>Current Subsystem Documentation</h2>
 <ul>
-<li><code>Releases/&lt;version&gt;/</code> documents describe the
-artifacts shipped in that version and are intentionally not rewritten to
-match later source.</li>
-<li><code>agentworking/</code>, dated stability reports, files
-explicitly named <code>OLD_*</code>, and completed/refactor lessons
-retain their original observations. New notes may mark a claim as
-superseded, but the evidence itself is preserved.</li>
-<li>Current decisions belong in the root README, <code>docs/</code>, the
-canonical private memory/shim documents, or the relevant app’s
-current-design document.</li>
+<li>ReadyShell: <a href="ReadyShellArchitecture.md"><code>ReadyShellArchitecture.md</code></a>, <a href="ReadyShellHostTesting.md"><code>ReadyShellHostTesting.md</code></a>, and the generated <a href="readyshell_overlay_inventory.md"><code>readyshell_overlay_inventory.md</code></a>.</li>
+<li>ReadyBASIC: <a href="../src/apps/readybasic/readybasic_current_design.html"><code>../src/apps/readybasic/READYBASIC_CURRENT_DESIGN.md</code></a>, graphics and sound command designs, lifecycle/REU architecture, module-making guide, and the complete reference linked above. The <a href="readybasic_orbital_echoes.html">Orbital Echoes walkthrough</a>, <a href="readybasic_media_learnings.html">media learnings</a>, and <a href="readyos_ultimate_speed_policy.html">Ultimate speed-policy research</a> separate current contracts from dated test results and unimplemented OS-wide policy.</li>
+<li>EasyFlash: <a href="reports/easyflash_boot_flow.md"><code>reports/easyflash_boot_flow.md</code></a>.</li>
+<li>File formats: the <code>*_format.md</code> and <code>*_seq_format.md</code> documents in this directory.</li>
+<li>C64 Ultimate DMA research evidence: <a href="../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md"><code>../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md</code></a> and <a href="../probes/uci_dma/README.md"><code>../probes/uci_dma/README.md</code></a>.</li>
+<li>C64 Ultimate interactive diagnostics: <a href="uci_tester.md"><code>uci_tester.md</code></a> and its rendered <a href="uci_tester.html"><code>uci_tester.html</code></a> counterpart.</li>
 </ul>
+</section>
+<section id="generated-reports" class="level2">
+<h2>Generated Reports</h2>
+<ul>
+<li><code>make readyshell-overlay-report</code> refreshes the public/private ReadyShell overlay Markdown and HTML reports from maps and profile metadata.</li>
+<li><code>make readybasic-memory-report</code> refreshes the ReadyBASIC proportional memory report and diagrams.</li>
+<li><code>make easyflash-report</code> reports the generated cartridge layout.</li>
+<li><code>python3 build_support/report_app_headroom.py</code> emits current per-app segment endpoints and free bytes from <code>obj/*.map</code>.</li>
+</ul>
+<p>Generated reports are current only for the artifacts in the working tree. A dated stability report or an <code>agentworking/</code> log is evidence from that run, not a live architecture contract.</p>
+<p>After changing Markdown/HTML documentation, regenerate current HTML counterparts and run:</p>
+<p>For a documentation-only release commit that excludes local media rebuilds, use <code>refresh_release_docs.py --manifest-ref HEAD</code> (also with <code>--check</code>) to keep artifact names aligned with committed manifests. Private HTML is refreshed only when its local, untracked Markdown source is available.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/build_readybasic_reference.py</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/refresh_release_docs.py</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/render_current_docs.py</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/update_documentation_html_status.py</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/sync_shim_documentation.py</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_documentation_contract.py</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_documentation_links.py</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_readybasic_documentation.py</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_shim_html_source.py</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/render_current_docs.py <span class="at">--check</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/refresh_release_docs.py <span class="at">--check</span></span></code></pre></div>
+<p>The reference generator preserves every <code>.bas</code> listing verbatim and refuses unknown built-in commands without an explanation. The release-document refresh uses each existing manifest's artifact names without rebuilding/renaming media. The renderer updates only named current counterparts, never historical reports.</p>
+<p>The documentation-contract verifier checks the current RAM/REU statements, the 1 MB SKU bank budget, retained-history supersession markers, and the HTML classification. Classification fails if any covered HTML document is not explicitly categorized, preventing a new report from silently appearing without freshness status. The shim-source verifier discovers every HTML <code>&lt;pre&gt;</code> block containing the complete resident shim, compares all <code>.byte</code> directives with <code>src/boot/readyos_shim.inc</code>, and rejects retired lookup annotations.</p>
+</section>
+<section id="historical-material-policy" class="level2">
+<h2>Historical Material Policy</h2>
+<ul>
+<li><code>Releases/&lt;version&gt;/</code> documents describe the artifacts shipped in that version and are intentionally not rewritten to match later source.</li>
+<li><code>agentworking/</code>, dated stability reports, files explicitly named <code>OLD_*</code>, and completed/refactor lessons retain their original observations. New notes may mark a claim as superseded, but the evidence itself is preserved.</li>
+<li>Current decisions belong in the root README, <code>docs/</code>, the canonical private memory/shim documents, or the relevant app's current-design document.</li>
+</ul>
+</section>
+</section>
 </body>
 </html>

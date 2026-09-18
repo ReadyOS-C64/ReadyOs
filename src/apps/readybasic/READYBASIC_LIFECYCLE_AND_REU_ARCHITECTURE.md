@@ -1,5 +1,28 @@
 # ReadyBASIC Lifecycle And REU Architecture Deep Dive
 
+## September 2026 lifecycle extension
+
+MEMCAP can lower the BASIC ceiling before strings are allocated, without
+changing the default $2AC1 start or 30013 empty free bytes. `rbm.media` is an
+on-demand SEQ package with eight commands, stored in assigned REU code space
+and fetched into disposable slots 1+2. Its asynchronous music driver instead
+lives at $9000 in reserved BASIC RAM, with lifetime state at $C1FF. No IRQ may
+point into replaceable overlay code. Built-ins now include BORDER, MEMCAP,
+USPEED and UMHZ; the full registry has 98 real descriptors and 30 empty slots.
+
+MUSHALT detaches/silences but retains the tune lock; MUSDROP clears that lock
+without raising the cap. END/STOP do not unload music. Prompt-level ReadyOS
+navigation halts playback before snapshot/yield, then warm resume restores the
+cap/tune with music stopped until MUSPLAY. Do not return its RAM to BASIC while
+music is owned; `MUSDROP():CLR:MEMCAP(40960)` is the demonstrated release path.
+Graphics surfaces use independent REU handles and must also be dropped.
+
+The [command/example guide](../../../docs/readybasic_reference.md) and
+[media evidence](../../../docs/readybasic_media_learnings.md) extend this retained
+lifecycle walkthrough. Older packed offsets and segment-size tables below are
+baseline measurements; regenerate `docs/readybasic_memory_diagrams.html` for
+the current map rather than treating them as current build sizes.
+
 This document describes the current ReadyBASIC REU plugin spine as implemented
 in `src/apps/readybasic/readybasic.s` and linked by
 `cfg/ready_app_readybasic.cfg`. It focuses on lifespan management: initial
@@ -289,16 +312,19 @@ Exact assigned core-bank suballocation sizes:
 | `$2000-$3FFF` | Reserved common/system expansion space. | `$2000` | 8.0K | 8192 |
 | `$4000-$FFFF` | Typed handle heap, 192 pages. | `$C000` | 48.0K | 49152 |
 
-The command descriptor table at `$1000-$1FFF` is intentionally sparse:
+The command descriptor table at `$1000-$1FFF` is intentionally sparse. The
+following table preserves the original 17-command snapshot; **today** slots
+1–97 contain built-ins through UMHZ, 98–127 are initially empty, and SCRPUT
+remains in slot 128 (98 real / 30 filler). Media fills slots 98–105 on demand.
 
 | Descriptor range | REU offset | Role | Slots | Size |
 |---|---:|---|---:|---:|
-| Slots 1-16 | `$1000-$11FF` | Current front commands from `ZECHO1` through `FADD`. | 16 | `$0200` / 512B |
+| Slots 1-16 | `$1000-$11FF` | Original front commands from `ZECHO1` through `FADD`. | 16 | `$0200` / 512B |
 | Slots 17-127 | `$1200-$1FDF` | Zero-filled filler descriptors reserved for future commands. | 111 | `$0DE0` / 3.5K / 3552 exact bytes |
 | Slot 128 | `$1FE0-$1FFF` | `SCRPUT`, placed at the end to prove full-table lookup. | 1 | `$0020` / 32B |
 
-`SCRCAP` is adjacent to the current front command set in slot 14, with `FADD`
-in slot 16. `SCRPUT` is separated from it by 111 empty filler slots, so the
+In that original snapshot, `SCRCAP` is adjacent to the front command set in slot 14, with `FADD`
+in slot 16. `SCRPUT` was separated from it by 111 empty filler slots, so the
 visual/test coverage proves
 that ReadyBASIC fetches descriptor pages and scans the whole 128-slot registry.
 
@@ -310,12 +336,18 @@ byte buffer, and type `2` is a screen text+color buffer.
 
 ### Assigned Code Bank: Packed Command-Code Bank
 
+The flow/table below retain early payload lengths. Placement correction: disk
+**descriptors** go to the assigned core bank; only disk **payloads** go to the
+code bank. Old sample descriptors at core `$1500/$1600/$1700` now overwrite
+built-ins; they are isolated developer tests. Media uses free core descriptors
+at `$1C20` and code-bank `$8000`, with a `$1000` two-slot reservation.
+
 ```mermaid
 flowchart LR
   S0["$0000-$06CD Slot 0 payload<br/>copied into $A800-$AECD"]
   S1["$06CE-$0908 Slot 1 payload<br/>copied into $B000-$B23A"]
   S2["$0909-$095C Slot 2/span/overlay proofs<br/>copied into $B800/$B000 as needed"]
-  D1["$1500/$1600 Disk module descriptors"]
+  D1["Separate core bank: $1500/$1600 descriptors"]
   DP["$3000+ Disk module proof payloads"]
   S0 --> S1 --> S2 --> D1 --> DP
 ```

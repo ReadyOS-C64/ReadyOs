@@ -1,5 +1,23 @@
 # ReadyBASIC Graphics And Event Command Design
 
+## Current implementation versus retained proposals
+
+The [complete command/example reference](../../../docs/readybasic_reference.md)
+is the user-facing inventory of implemented names. This document preserves both
+implemented phase reports and design proposals. The later "Command Families"
+and proposed strategies are not all implemented: GFXINFO, FILL, TEXTAT, SCROLL,
+KEYDOWN and the proposed DLADD forms must not be read as available commands.
+Current GFXTGT/GFXSYNC capture visible graphics into REU; primitives do not draw
+directly into a selected offscreen surface. GFXBLIT restores that capture.
+FCIRCLE still fills a bounding rectangle and FPOLY is a convex fan.
+
+Recent additions are built-in BORDER and on-demand `rbm.media` MCFILE, SPRFILE
+and MCLINE. MCFILE reads Koala or packed RKC1 pictures; SPRFILE reads aligned
+RBR1 sprite data; MCLINE alters multicolor pair bits without changing cell
+palettes. Orbital Echoes demonstrates two cached REU backgrounds, moving sprites
+and music, with portable/Ultimate speed-control variants. All 32 older graphics
+examples remain. See [the demo walkthrough](../../../docs/readybasic_orbital_echoes.md).
+
 This note reframes the old BASIC-extender command audit for the current
 ReadyBASIC architecture: bare parenthesized commands, expression-capable
 commands where useful, descriptor-backed assembler payloads, module/submodule

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>App hardware and REU requirements</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="readyos_docs.css" />
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current source-audited Ultimate and app-specific REU requirements, distinct from system snapshot needs and future standalone plans.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#app-hardware-and-reu-requirements" id="toc-app-hardware-and-reu-requirements">App hardware and REU requirements</a>
+<ul>
+<li><a href="#planned-standalone-releases" id="toc-planned-standalone-releases">Planned standalone releases</a></li>
+</ul></li>
+</ul>
+</nav></details>
+<section id="app-hardware-and-reu-requirements" class="level1">
+<h1>App hardware and REU requirements</h1>
+<p>Every current ReadyOS app runs within an REU-backed system: launcher snapshots, switching and shared services already need REU. The table separates that common requirement from an app's own code or data resources. Inclusion in a portable disk image does not make an Ultimate-dependent application portable.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>App</th>
+<th>Ultimate required for its main function?</th>
+<th>REU beyond the app snapshot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Editor</td>
+<td>No</td>
+<td>Shared clipboard when used; no separate editor workspace</td>
+</tr>
+<tr>
+<td>QuickNotes</td>
+<td>No</td>
+<td>Own REU-backed note banks</td>
+</tr>
+<tr>
+<td>Calc Plus</td>
+<td>No</td>
+<td>Shared clipboard when used; no separate calculator workspace</td>
+</tr>
+<tr>
+<td>Hex Viewer</td>
+<td>No</td>
+<td>No separate app workspace</td>
+</tr>
+<tr>
+<td>Clipboard Manager</td>
+<td>No</td>
+<td>Shared clipboard payload/history is the data being managed</td>
+</tr>
+<tr>
+<td>REU Viewer</td>
+<td>No</td>
+<td>Reads ReadyOS bank ownership/allocation records; no separate data workspace</td>
+</tr>
+<tr>
+<td>System Info</td>
+<td>No</td>
+<td>Probes/reports REU; Ultimate-specific fields are conditional</td>
+</tr>
+<tr>
+<td>Task List</td>
+<td>No</td>
+<td>No separate app workspace; shared services still apply</td>
+</tr>
+<tr>
+<td>Simple Files</td>
+<td>No</td>
+<td>No separate app workspace</td>
+</tr>
+<tr>
+<td>Simple Cells</td>
+<td>No</td>
+<td>No separate app workspace</td>
+</tr>
+<tr>
+<td>2048</td>
+<td>No</td>
+<td>No separate app workspace</td>
+</tr>
+<tr>
+<td>Sidetris</td>
+<td>No</td>
+<td>No separate app workspace</td>
+</tr>
+<tr>
+<td>Calendar 26</td>
+<td>No</td>
+<td>No separate app workspace; REL-backed disk data</td>
+</tr>
+<tr>
+<td>Dizzy</td>
+<td>No</td>
+<td>No separate app workspace; REL-backed disk data</td>
+</tr>
+<tr>
+<td>Deminer</td>
+<td>No</td>
+<td>No separate app workspace</td>
+</tr>
+<tr>
+<td>Read.Me</td>
+<td>No</td>
+<td>No separate app workspace; content is compiled from local Markdown</td>
+</tr>
+<tr>
+<td>ReadyShell</td>
+<td>No</td>
+<td>Loader-assigned overlay and state/scratch resource banks</td>
+</tr>
+<tr>
+<td>ReadyBASIC</td>
+<td>No for core and standard examples</td>
+<td>Loader-assigned core/code banks and optional handle-based buffers, surfaces, lists and tile resources</td>
+</tr>
+<tr>
+<td>ReadyIRC</td>
+<td>Yes, UCI TCP</td>
+<td>App-owned REU scrollback</td>
+</tr>
+<tr>
+<td>UCI Tester</td>
+<td>Yes, for UCI experiments</td>
+<td>No separate app-owned workspace</td>
+</tr>
+<tr>
+<td>Ultimate Zip</td>
+<td>Yes, Ultimate DOS</td>
+<td>Launcher package resource plus REU work/data resources</td>
+</tr>
+<tr>
+<td>SETUP</td>
+<td>Yes, Ultimate DOS</td>
+<td>Standalone utility that checks REU; no ReadyOS snapshot/shim dependency</td>
+</tr>
+</tbody>
+</table>
+<p>ReadyBASIC's <code>USPEED</code>, <code>UMHZ</code> and <code>RBUGFXSNDDEMO</code> need C64 Ultimate / U64 Elite-II software speed registers. That does not make the interpreter or the standard <code>RBGFXSNDDEMO</code> Ultimate-only. The vetted media music player is PAL-only.</p>
+<p>This is a source audit, not a standalone release certification. It follows the app C/assembly, <code>cfg/profiles/*.ini</code> dependency declarations, ReadyShell's C64 platform implementation and shared REU/clipboard libraries. Merely including <code>reu_mgr.h</code> or calling its initializer does not prove an app owns working banks; allocation, DMA and shared-service usage determine the classifications above. System Info's optional hardware probes are not an allocation requirement.</p>
+<section id="planned-standalone-releases" class="level2">
+<h2>Planned standalone releases</h2>
+<p>Many apps are intended for future standalone release: both those whose own work needs REU and those whose own work does not. Existing ReadyOS PRGs are not therefore standalone already; packaging, startup and shared-service integration still need work. Standalone ReadyBASIC independent of Ultimate and ReadyOS is a specific commitment, while a no-REU interpreter is not promised.</p>
+<p>PRECOG 0.5 is planned as the final exploratory release. ReadyOS Ultimate will focus on installation/configuration in real Ultimate files/folders and hardware features. ReadyOS Universal will continue disk-image/REU workflows for VICE, THEC64 and original hardware, with investment following user demand. These are future directions, not changes to today's app ABI.</p>
+</section>
+</section>
+</body>
+</html>

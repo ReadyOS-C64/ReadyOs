@@ -4,156 +4,11 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>ultimate_dos_dma_loading</title>
+  <title>C64 Ultimate DOS DMA Loading</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
     */
-    html {
-      color: #1a1a1a;
-      background-color: #fdfdfd;
-    }
-    body {
-      margin: 0 auto;
-      max-width: 36em;
-      padding-left: 50px;
-      padding-right: 50px;
-      padding-top: 50px;
-      padding-bottom: 50px;
-      hyphens: auto;
-      overflow-wrap: break-word;
-      text-rendering: optimizeLegibility;
-      font-kerning: normal;
-    }
-    @media (max-width: 600px) {
-      body {
-        font-size: 0.9em;
-        padding: 12px;
-      }
-      h1 {
-        font-size: 1.8em;
-      }
-    }
-    @media print {
-      html {
-        background-color: white;
-      }
-      body {
-        background-color: transparent;
-        color: black;
-        font-size: 12pt;
-      }
-      p, h2, h3 {
-        orphans: 3;
-        widows: 3;
-      }
-      h2, h3, h4 {
-        page-break-after: avoid;
-      }
-    }
-    p {
-      margin: 1em 0;
-    }
-    a {
-      color: #1a1a1a;
-    }
-    a:visited {
-      color: #1a1a1a;
-    }
-    img {
-      max-width: 100%;
-    }
-    svg {
-      height: auto;
-      max-width: 100%;
-    }
-    h1, h2, h3, h4, h5, h6 {
-      margin-top: 1.4em;
-    }
-    h5, h6 {
-      font-size: 1em;
-      font-style: italic;
-    }
-    h6 {
-      font-weight: normal;
-    }
-    ol, ul {
-      padding-left: 1.7em;
-      margin-top: 1em;
-    }
-    li > ol, li > ul {
-      margin-top: 0;
-    }
-    blockquote {
-      margin: 1em 0 1em 1.7em;
-      padding-left: 1em;
-      border-left: 2px solid #e6e6e6;
-      color: #606060;
-    }
-    code {
-      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
-      font-size: 85%;
-      margin: 0;
-      hyphens: manual;
-    }
-    pre {
-      margin: 1em 0;
-      overflow: auto;
-    }
-    pre code {
-      padding: 0;
-      overflow: visible;
-      overflow-wrap: normal;
-    }
-    .sourceCode {
-     background-color: transparent;
-     overflow: visible;
-    }
-    hr {
-      border: none;
-      border-top: 1px solid #1a1a1a;
-      height: 1px;
-      margin: 1em 0;
-    }
-    table {
-      margin: 1em 0;
-      border-collapse: collapse;
-      width: 100%;
-      overflow-x: auto;
-      display: block;
-      font-variant-numeric: lining-nums tabular-nums;
-    }
-    table caption {
-      margin-bottom: 0.75em;
-    }
-    tbody {
-      margin-top: 0.5em;
-      border-top: 1px solid #1a1a1a;
-      border-bottom: 1px solid #1a1a1a;
-    }
-    th {
-      border-top: 1px solid #1a1a1a;
-      padding: 0.25em 0.5em 0.25em 0.5em;
-    }
-    td {
-      padding: 0.125em 0.5em 0.25em 0.5em;
-    }
-    header {
-      margin-bottom: 4em;
-      text-align: center;
-    }
-    #TOC li {
-      list-style: none;
-    }
-    #TOC ul {
-      padding-left: 1.3em;
-    }
-    #TOC > ul {
-      padding-left: 0;
-    }
-    #TOC a:not(:hover) {
-      text-decoration: none;
-    }
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
     div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -235,124 +90,80 @@
     code span.vs { color: #4070a0; } /* VerbatimString */
     code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
+  <link rel="stylesheet" href="readyos_docs.css" />
 </head>
 <body>
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current C64 Ultimate DOS DMA behavior. The Ultimate SKU enables it and disk fallback remains part of the contract.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<header id="title-block-header">
-<h1 class="title">ultimate_dos_dma_loading</h1>
-</header>
-<h1 id="c64-ultimate-dos-dma-loading">C64 Ultimate DOS DMA Loading</h1>
-<p>ReadyOS has a profile-gated launcher path that reads PRG payloads
-from a configured C64 Ultimate disk image directly into their allocated
-REU locations through the Ultimate Command Interface (UCI). This
-accelerates preload and cold app or resource loading without changing
-the resident shim or the <code>$1000-$C5FF</code> snapshot contract.</p>
-<h2 id="availability">Availability</h2>
+<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
 <ul>
-<li>Compile gate: <code>LAUNCHER_DMA_LOAD</code>. The Makefile derives
-it from the selected profile: <code>precog-ultimate</code> sets it to
-<code>1</code>; portable profiles set it to <code>0</code>.</li>
-<li>Runtime gate: <code>dma_loading=1</code> in <code>apps.cfg</code>,
-plus a non-empty <code>c64u_image_path</code>. Both must be present
-before the launcher attempts DMA.</li>
-<li>The Ultimate SKU ships with DMA enabled but its image path empty, so
-the standalone SETUP utility can record the actual installed location
-safely.</li>
-<li>Launcher variant: regular disk launcher only; EasyFlash does not
-link this path because cartridge preload already supplies its REU
-payloads.</li>
-<li>Hardware target: C64 Ultimate/Ultimate-family UCI with Ultimate DOS
-support.</li>
-<li>Catalog keys: <code>dma_loading</code> and
-<code>c64u_image_path</code>.</li>
-<li>First-run guide: <a
-href="ultimate_setup.md"><code>ultimate_setup.md</code></a>.</li>
+<li><a href="#c64-ultimate-dos-dma-loading" id="toc-c64-ultimate-dos-dma-loading">C64 Ultimate DOS DMA Loading</a>
+<ul>
+<li><a href="#availability" id="toc-availability">Availability</a></li>
+<li><a href="#runtime-flow" id="toc-runtime-flow">Runtime Flow</a></li>
+<li><a href="#launcher-indicator" id="toc-launcher-indicator">Launcher Indicator</a></li>
+<li><a href="#exact-size-rule" id="toc-exact-size-rule">Exact-Size Rule</a></li>
+<li><a href="#verification" id="toc-verification">Verification</a></li>
+</ul></li>
+</ul>
+</nav></details>
+<section id="c64-ultimate-dos-dma-loading" class="level1">
+<h1>C64 Ultimate DOS DMA Loading</h1>
+<p>ReadyOS has a profile-gated launcher path that reads PRG payloads from a configured C64 Ultimate disk image directly into their allocated REU locations through the Ultimate Command Interface (UCI). This accelerates preload and cold app or resource loading without changing the resident shim or the <code>$1000-$C5FF</code> snapshot contract.</p>
+<p>ReadyOS cannot discover the Ultimate host pathname of the D81 from which it booted. The C64's mounted drive/directory does not supply that enclosing image path. Set <code>[launcher]</code> keys <code>c64u_image_path=/usb1/your-folder/readyos.d81</code> and <code>dma_loading=1</code> in <code>apps.cfg</code>, using your actual path. Standalone SETUP browses to the image, validates it and saves the configuration safely. Repeat setup after moving or renaming the D81. A missing/invalid path leaves normal disk loading as the fallback; it does not make fast loading automatic.</p>
+<section id="availability" class="level2">
+<h2>Availability</h2>
+<ul>
+<li>Compile gate: <code>LAUNCHER_DMA_LOAD</code>. The Makefile derives it from the selected profile: <code>precog-ultimate</code> sets it to <code>1</code>; portable profiles set it to <code>0</code>.</li>
+<li>Runtime gate: <code>dma_loading=1</code> in <code>apps.cfg</code>, plus a non-empty <code>c64u_image_path</code>. Both must be present before the launcher attempts DMA.</li>
+<li>The Ultimate SKU ships with DMA enabled but its image path empty, so the standalone SETUP utility can record the actual installed location safely.</li>
+<li>Launcher variant: regular disk launcher only; EasyFlash does not link this path because cartridge preload already supplies its REU payloads.</li>
+<li>Hardware target: C64 Ultimate/Ultimate-family UCI with Ultimate DOS support.</li>
+<li>Catalog keys: <code>dma_loading</code> and <code>c64u_image_path</code>.</li>
+<li>First-run guide: <a href="ultimate_setup.html"><code>ultimate_setup.md</code></a>.</li>
 </ul>
 <p>Build and run ReadyOS itself through the normal workflow:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> ./run.sh <span class="at">--profile</span> precog-ultimate <span class="at">--vice-fast</span></span></code></pre></div>
-<p>VICE does not provide the hardware UCI service. An enabled build
-detects that condition and continues through the normal disk path.</p>
-<h2 id="runtime-flow">Runtime Flow</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> ./run.sh <span class="at">--profile</span> precog-ultimate <span class="at">--build-only</span></span></code></pre></div>
+<p>Then deploy the built D81 to physical Ultimate hardware and run SETUP. VICE does not provide the hardware UCI service and is not evidence for this fast path. An enabled build without UCI continues through the normal disk path.</p>
+</section>
+<section id="runtime-flow" class="level2">
+<h2>Runtime Flow</h2>
 <ol type="1">
-<li>The launcher parses <code>dma_loading</code> and
-<code>c64u_image_path</code> from <code>apps.cfg</code>.</li>
-<li>On cold startup, after drawing the launcher and before optional
-preload or autorun, it probes UCI and validates the image path. The
-result and path are published in the ReadyOS REU bank's <code>DM</code>
-v1 service record at <code>$FCC0-$FD3F</code>.</li>
-<li>For an app or resource load, Ultimate DOS mounts or reuses the
-configured image, obtains the exact PRG file size, skips the two-byte
-PRG load header, and issues an exact-size <code>LOAD_REU</code> into the
-loader-assigned bank and offset.</li>
-<li>On success the launcher marks the allocation/resource loaded and the
-normal shim later restores app snapshots from REU.</li>
-<li>If UCI is absent, the path is invalid, the image cannot be mounted,
-the file cannot be opened, or transfer verification fails, the launcher
-quiesces UCI state and falls back to its established KERNAL/disk
-loader.</li>
+<li>The launcher parses <code>dma_loading</code> and <code>c64u_image_path</code> from <code>apps.cfg</code>.</li>
+<li>On cold startup, after drawing the launcher and before optional preload or autorun, it probes UCI and validates the image path. The result and path are published in the ReadyOS REU bank's <code>DM</code> v1 service record at <code>$FCC0-$FD3F</code>.</li>
+<li>For an app or resource load, Ultimate DOS mounts or reuses the configured image, obtains the exact PRG file size, skips the two-byte PRG load header, and issues an exact-size <code>LOAD_REU</code> into the loader-assigned bank and offset.</li>
+<li>On success the launcher marks the allocation/resource loaded and the normal shim later restores app snapshots from REU.</li>
+<li>If UCI is absent, the path is invalid, the image cannot be mounted, the file cannot be opened, or transfer verification fails, the launcher quiesces UCI state and falls back to its established KERNAL/disk loader.</li>
 </ol>
-<p>DMA only changes how a cold PRG reaches REU. App switching still uses
-the same resident shim, logical-token lookup in the ReadyOS bank at
-<code>$B740</code>, and <code>$B600</code> REU stash/fetch
-operations.</p>
-<p>Ctrl-B restores DMA information from the system record, with no image
-revalidation or mount on the return path. The next actual file load
-establishes the DOS image path again because apps may have changed DOS's
-current directory. The menu is redrawn after the initial probe to remove
-its diagnostic stage digit. The <a
-href="ReadyOS_SHIM_ARCHITECTURE_0.5.md#dma-service-record">system
-architecture</a> documents the record's fields, flags, ownership, and
-reset/update lifecycle.</p>
-<h2 id="launcher-indicator">Launcher Indicator</h2>
+<p>DMA only changes how a cold PRG reaches REU. App switching still uses the same resident shim, logical-token lookup in the ReadyOS bank at <code>$B740</code>, and <code>$B600</code> REU stash/fetch operations.</p>
+<p>Ctrl-B restores DMA information from the system record, with no image revalidation or mount on the return path. The next actual file load establishes the DOS image path again because apps may have changed DOS's current directory. The menu is redrawn after the initial probe to remove its diagnostic stage digit. The <a href="ReadyOS_SHIM_ARCHITECTURE_0.5.md#dma-service-record">system architecture</a> documents the record's fields, flags, ownership, and reset/update lifecycle.</p>
+</section>
+<section id="launcher-indicator" class="level2">
+<h2>Launcher Indicator</h2>
 <ul>
-<li><code>DMA:YES</code>: UCI and the configured path are available, but
-no successful DMA load has yet been recorded.</li>
-<li><code>DMA:ON</code>: at least one current or cached load used the
-DMA path.</li>
-<li><code>DMA:NO</code>: DMA is disabled or unavailable; disk fallback
-remains active.</li>
+<li><code>DMA:YES</code>: UCI and the configured path are available, but no successful DMA load has yet been recorded.</li>
+<li><code>DMA:ON</code>: at least one current or cached load used the DMA path.</li>
+<li><code>DMA:NO</code>: DMA is disabled or unavailable; disk fallback remains active.</li>
 </ul>
-<p>When <code>dma_loading=1</code> but the configured path is empty or
-malformed, UCI or Ultimate DOS cannot be reached, or the configured
-directory/image cannot be opened, the launcher also shows
-<code>RUN SETUP APP FOR FAST APP LOADING</code> on its home screen.
-Normal drive loading remains available.</p>
-<p>Transient <code>DMA LOADING n/n</code> progress text is used by
-hardware smoke tests.</p>
-<h2 id="exact-size-rule">Exact-Size Rule</h2>
-<p>Ultimate DOS <code>LOAD_REU</code> must receive the payload's exact
-byte length (file size minus the two-byte PRG header), not the capacity
-of the destination slot. This is especially important for ReadyShell
-overlays sharing a resource bank: a slot-sized transfer can consume
-bytes belonging to the following packed payload. The loader also
-validates the expected PRG load address before accepting the
-transfer.</p>
-<h2 id="verification">Verification</h2>
+<p>When <code>dma_loading=1</code> but the configured path is empty or malformed, UCI or Ultimate DOS cannot be reached, or the configured directory/image cannot be opened, the launcher also shows <code>RUN SETUP APP FOR FAST APP LOADING</code> on its home screen. Normal drive loading remains available.</p>
+<p>Transient <code>DMA LOADING n/n</code> progress text is used by hardware smoke tests.</p>
+</section>
+<section id="exact-size-rule" class="level2">
+<h2>Exact-Size Rule</h2>
+<p>Ultimate DOS <code>LOAD_REU</code> must receive the payload's exact byte length (file size minus the two-byte PRG header), not the capacity of the destination slot. This is especially important for ReadyShell overlays sharing a resource bank: a slot-sized transfer can consume bytes belonging to the following packed payload. The loader also validates the expected PRG load address before accepting the transfer.</p>
+</section>
+<section id="verification" class="level2">
+<h2>Verification</h2>
 <div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_launcher_dma_gate.py</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/verify_reu_control_bank.py</span></code></pre></div>
-<p>The DMA record's production C lifecycle also has a host
-regression:</p>
+<p>The DMA record's production C lifecycle also has a host regression:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cc</span> <span class="at">-std</span><span class="op">=</span>c99 <span class="at">-Wall</span> <span class="at">-Wextra</span> build_support/reu_dma_record_test.c <span class="at">-o</span> /tmp/readyos_reu_dma_record_test</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">/tmp/readyos_reu_dma_record_test</span></span></code></pre></div>
-<p><code>build_support/launcher_return_framework_plan.py</code>
-generates acceptance plans for the shared <code>vice_tasks_dotnet</code>
-UI automation framework. Its Ultimate plan boots a uniquely named test
-D81 and checks return/resume behavior at 1/16/64 MHz; the VICE plans
-cover regular D81 and EasyFlash. The framework owns input, screenshots,
-assertions, cleanup, and manifests. See the <a
-href="reports/launcher_dma_system_record_2026-09-07.md">return-path
-verification record</a> for builds, evidence, and launch commands.</p>
-<p>Focused protocol work is documented in <a
-href="../probes/uci_dma/README.md"><code>../probes/uci_dma/README.md</code></a>.
-Launcher acceptance fixtures are in <a
-href="../build_support/c64u_dma_acceptance/README.md"><code>../build_support/c64u_dma_acceptance/README.md</code></a>.
-The chronological hardware investigation remains in <a
-href="../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md"><code>../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md</code></a>.</p>
-<p>C64 Ultimate REST/FTP automation must be launched from a separate,
-long-running Terminal-owned/background shell as described in
-<code>AGENTS.md</code>; foreground one-shot probes can report false
-connectivity failures.</p>
+<p><code>build_support/launcher_return_framework_plan.py</code> generates acceptance plans for the shared <code>vice_tasks_dotnet</code> UI automation framework. Its Ultimate plan boots a uniquely named test D81 and checks return/resume behavior at 1/16/64 MHz; the VICE plans cover regular D81 and EasyFlash. The framework owns input, screenshots, assertions, cleanup, and manifests. See the <a href="reports/launcher_dma_system_record_2026-09-07.md">return-path verification record</a> for builds, evidence, and launch commands.</p>
+<p>Focused protocol work is documented in <a href="../probes/uci_dma/README.md"><code>../probes/uci_dma/README.md</code></a>. Launcher acceptance fixtures are in <a href="../build_support/c64u_dma_acceptance/README.md"><code>../build_support/c64u_dma_acceptance/README.md</code></a>. The chronological hardware investigation remains in <a href="../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md"><code>../ULTIMATEDOS_DMA_LOADING_LESSONS_LEARNT.md</code></a>.</p>
+<p>C64 Ultimate REST/FTP automation must be launched from a separate, long-running Terminal-owned/background shell as described in <code>AGENTS.md</code>; foreground one-shot probes can report false connectivity failures.</p>
+</section>
+</section>
 </body>
 </html>

@@ -2,7 +2,22 @@
 
 ReadyBASIC now duplicates a small amount of ReadyOS REU and shim knowledge in assembler. Keep this file updated whenever either side changes.
 
-## Current Module/Submodule Constants
+## September 2026 synchronization additions
+
+The fixed slot boundaries remain unchanged. The bridge now extends through
+`$C1FF`, whose final byte holds media lifetime state; do not put persistent state
+in disposable command slots or `$C4xx` warm-resume staging. Media executes across
+slots 1+2, code-bank `$8000`, logical module 6/submodule 24. Its eight descriptors
+start at core-bank `$1C20`, after built-in UMHZ at `$1C00`. Cold registration has
+98 real descriptors and 30 filler slots. The IRQ driver runs separately at
+`$9000` in MEMCAP-reserved RAM. These are synchronization requirements, not just
+documentation addresses: rebuild disk modules with the matching runtime.
+
+See [current commands and examples](../../../docs/readybasic_reference.md).
+The packed endpoints below are retained earlier measurements; use the current
+generated memory report for build-specific sizes.
+
+## Retained Module/Submodule Measurement Snapshot
 
 The module/submodule design keeps the fixed ReadyOS contract and updates the
 under-ROM command layout:

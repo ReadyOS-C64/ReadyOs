@@ -1,0 +1,28 @@
+/* Shared readable, offline styling for the current ReadyOS documentation. */
+:root { color-scheme: light; --ink:#173047; --accent:#176b83; --line:#d4e2e8; }
+html { background:#eaf0f3; scroll-behavior:smooth; }
+body { box-sizing:border-box; max-width:1120px; margin:32px auto; padding:48px 64px;
+  background:#fff; color:var(--ink); font:17px/1.65 system-ui,sans-serif;
+  border-radius:12px; box-shadow:0 8px 35px #17304715; overflow-wrap:break-word; }
+header { border-bottom:4px solid var(--accent); margin-bottom:30px; }
+h1,h2,h3,h4 { line-height:1.2; color:#102c43; scroll-margin-top:24px; }
+h1 { font-size:2.3rem; letter-spacing:-.035em; }
+h2 { margin-top:2.8rem; padding-bottom:10px; border-bottom:1px solid var(--line); }
+h3 { margin-top:2rem; }
+a { color:var(--accent); text-underline-offset:3px; }
+a:hover { color:#983f20; }
+#TOC { padding:20px 26px; background:#f0f7fa; border:1px solid var(--line); border-radius:8px; }
+.contents { margin:1.3em 0; } summary { cursor:pointer; color:var(--accent); font-weight:600; }
+#TOC ul { margin:.25em 0; } #TOC > ul { padding-left:22px; }
+table { display:block; overflow-x:auto; border-collapse:collapse; width:100%; margin:1.5em 0; font-size:.9rem; }
+th { background:#173c52; color:white; text-align:left; }
+td,th { padding:10px 13px; border:1px solid var(--line); vertical-align:top; }
+tr:nth-child(even) td { background:#f4f8fa; }
+code { font: .87em/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:#edf3f6; padding:2px 4px; border-radius:3px; }
+pre { padding:18px 22px; background:#f1f5f8; border:1px solid var(--line); border-radius:7px;
+  overflow:auto; max-height:680px; font-size:14px; }
+pre code { padding:0; background:none; white-space:pre; }
+blockquote { margin:1.5em 0; padding:8px 22px; border-left:4px solid #dcaa48; background:#fff9e9; }
+img,svg { max-width:100%; height:auto; }
+@media(max-width:760px) { body { margin:0; padding:24px 18px; border-radius:0; } h1 {font-size:1.85rem;} table{font-size:.82rem;} #TOC{padding:12px;} }
+@media print { html,body{background:white;} body{max-width:none;box-shadow:none;padding:0;font-size:10pt;} pre{max-height:none;white-space:pre-wrap;} h2{break-after:avoid;} a{color:inherit;} }

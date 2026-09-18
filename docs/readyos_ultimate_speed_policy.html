@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Ultimate speed control: mechanism versus animation pacing</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="readyos_docs.css" />
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current demo speed explanation and retained physical comparisons; the proposed OS-wide speed service is not implemented.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#ultimate-speed-control-mechanism-versus-animation-pacing" id="toc-ultimate-speed-control-mechanism-versus-animation-pacing">Ultimate speed control: mechanism versus animation pacing</a>
+<ul>
+<li><a href="#what-the-two-mechanisms-actually-do" id="toc-what-the-two-mechanisms-actually-do">What the two mechanisms actually do</a></li>
+<li><a href="#what-the-gouraud-example-establishes" id="toc-what-the-gouraud-example-establishes">What the Gouraud example establishes</a></li>
+<li><a href="#independent-wall-clock-comparison" id="toc-independent-wall-clock-comparison">Independent wall-clock comparison</a></li>
+<li><a href="#why-the-graphics-can-look-equally-fast" id="toc-why-the-graphics-can-look-equally-fast">Why the graphics can look equally fast</a></li>
+<li><a href="#readyos-recommendation" id="toc-readyos-recommendation">ReadyOS recommendation</a></li>
+</ul></li>
+</ul>
+</nav></details>
+<section id="ultimate-speed-control-mechanism-versus-animation-pacing" class="level1">
+<h1>Ultimate speed control: mechanism versus animation pacing</h1>
+<p>Research and physical comparison, 2026-09-11. This is a recommendation, not an implemented ReadyOS-wide speed policy.</p>
+<p>Current demo update: after the initial line-spacing correction below, the user explicitly requested raw motion. Both demos now advance sprite phase by SP% per completed pass, draw a line every LD% sprite batches, and use TI only for the 15-second image restore. Defaults are SP%=2 and LD%=3. The historical clock-paced observations below explain the regression; they are not a description of the final motion loop. Current source uses 64 MHz precalculation, 1 MHz disk I/O, then 64 MHz animation, restoring 1 MHz on exit. The 16/1/16 MHz measurements below are retained test comparisons, not today's default stages. Physical raw-motion testing subsequently passed: about 29.4/1.7/29.7 completed sprite batches/s at 16/1/16 MHz, with two phase samples per batch and a line every three batches. The earlier roughly 13-batch/s result was the intermediate clock-paced version. Faster CPU control was working; removing the motion-clock coupling and a hot-path FUNC lookup improved the actual demo substantially.</p>
+<section id="what-the-two-mechanisms-actually-do" class="level2">
+<h2>What the two mechanisms actually do</h2>
+<p>The <a href="https://1541u-documentation.readthedocs.io/en/latest/config/turbo_mode.html">official Ultimate register documentation</a> describes two software-control modes:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Normal operation</th>
+<th>Good fit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C64U Turbo Registers, <code>$D031</code></td>
+<td>Select a hardware-specific speed index; bit 7 controls badline handling.</td>
+<td>Explicit MHz requests and per-app speed choices.</td>
+</tr>
+<tr>
+<td>TurboEnable Bit, <code>$D030</code></td>
+<td>0 selects 1 MHz with badlines; 1 selects the menu's speed and badline settings.</td>
+<td>One user-selected fast speed plus a compatibility switch.</td>
+</tr>
+</tbody>
+</table>
+<p>Manual mode does not permit register speed changes. The external bus remains 1 MHz and VIC activity still constrains CPU throughput; a nominal MHz setting is not a promise that every graphics operation scales by that factor.</p>
+<p>The firmware configuration handler reads the CPU Speed preference and writes the hardware preference/update registers. That configuration is not a live CPU throughput meter. See official <a href="https://github.com/GideonZ/1541ultimate/blob/master/software/u64/u64_config.cc">u64_config.cc</a>, <code>setCpuSpeed()</code>. Physically, D031 acceleration was measured while the menu/API preference remained 1 MHz.</p>
+</section>
+<section id="what-the-gouraud-example-establishes" class="level2">
+<h2>What the Gouraud example establishes</h2>
+<p>Sibling project <code>UltimateTester/firecube/firecube_gouraud.s</code>, <code>read_fuel_keys</code>, explicitly documents lowering speed for KERNAL SCNKEY's keyboard-matrix timing and returning to 64 MHz. Its deployment script selects TurboEnable Bit and a menu preference of 64 MHz. <code>UltimateTester/fire/README.md</code> documents the same rationale. The rendering loop is assembly and not the ReadyBASIC demo's clock-paced loop.</p>
+<p>This is evidence of a deliberate, sensible compatibility choice for that application. No comparative research was found establishing that D030 is universally faster or more reliable than D031. Do not attribute such a conclusion to the original experiment.</p>
+</section>
+<section id="independent-wall-clock-comparison" class="level2">
+<h2>Independent wall-clock comparison</h2>
+<p>Physical C64 Ultimate, firmware 3.14 / FPGA 121 / core 1.47. Identical stock BASIC <code>FOR I=1 TO 10000:NEXT</code>, timed with host <code>time.monotonic()</code>, not TI or UMHZ. Badline timing enabled in every case:</p>
+<table>
+<thead>
+<tr>
+<th>Control path</th>
+<th style="text-align: right;">Menu preference</th>
+<th style="text-align: right;">Host seconds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D031 index 0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">11.3827</td>
+</tr>
+<tr>
+<td>D031 index 9</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.8422</td>
+</tr>
+<tr>
+<td>Manual 16</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">0.7338</td>
+</tr>
+<tr>
+<td>D030 enabled</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">0.7209</td>
+</tr>
+<tr>
+<td>D030 disabled</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">11.2422</td>
+</tr>
+</tbody>
+</table>
+<p>Both software mechanisms accelerate the processor. These samples include REST polling and network overhead; the small differences among fast cases do not establish a performance advantage for one mode. REST memory reads briefly stop the CPU, and must never be used during disk loading on this machine.</p>
+<p>Reproducible probe: <code>build_support/benchmark_ultimate_turbo_modes.py --idle-confirmed</code>, from a Terminal-owned shell. Add <code>--readybasic</code> only at an idle ReadyBASIC prompt to exercise USPEED rather than raw POKE. Recorded run: <code>build/readybasic-media-tools/turbo-wall-1789173589448975000/results.json</code>.</p>
+</section>
+<section id="why-the-graphics-can-look-equally-fast" class="level2">
+<h2>Why the graphics can look equally fast</h2>
+<p>The pre-fix <code>rbugfxsnddemo.bas</code> sampled time, not completed loop count:</p>
+<ul>
+<li>Line 320 derives the phase from the jiffy clock; the PHASE function doubles the low byte and wraps to 256 samples. The intended period is about 2.13 s.</li>
+<li>Lines 315–325 wait until the phase changes. A faster CPU cannot make the clock advance sooner, but can avoid missing samples.</li>
+<li>Line 360 permits a new line only after four jiffies. The nominal ceiling is 15 lines/s, lower when command overhead and drawing time are included.</li>
+<li>Background renewal is also clock-based: 900 jiffies, approximately 15 s.</li>
+</ul>
+<p>Consequently the right tests are completed five-sprite batches/s, completed lines/s, visible smoothness and sustained correct rendering—not just whether the letters complete a wave sooner. A CPU benchmark alone does not establish that the application's hot path benefits as intended.</p>
+<p>The earlier RBSND08 used an eight-second phase period and drew both mirrored lines from one sample. The later demo reused the faster 2.13-second sprite phase for its lines too, and alternated one mirrored side per pass. This increased the line phase rate by 3.75x and made paired sides use different time samples. It explains a real spacing regression independently of whether turbo was enabled. The correction gives lines a separate LP% sample, advances it by one only after both mirrored sides, and leaves sprite time independent.</p>
+<p>The graphics comparison before this correction measured 12.32 / 0.75 / 12.44 completed sprite-position batches/s at 16 / 1 / 16 MHz, and 11.33 / 0.62 / 11.08 completed lines/s. Evidence: <code>build/readybasic-media-tools/graphics-speed-1789174360205122000/results.json</code>. These are instrumented throughput samples, not display refresh measurements. An earlier sample was about 9.08 batches/s at 16 MHz; line lengths and refresh work vary, so do not treat any one short sample as a fixed FPS guarantee.</p>
+<p>Thus turbo did accelerate the live graphics loop, but did not guarantee smooth animation or correct line spacing. The source also shows a cost worth profiling: <code>rb_find_routine</code> scans program statements from BASIC_START on every PROC/FUNC lookup. Its share of total time has not been measured; no interpreter/cache refactor is justified solely by these throughput samples.</p>
+<p><code>build_support/benchmark_readybasic_demo_ultimate.py</code> adds RAM-only completion counters and temporary speed keys to the actual loaded demo, waits for video proof that loading is over, then samples at 16/1/16 MHz. The instrumentation adds overhead; its absolute rates are not uninstrumented production FPS. It removes its lines after Q and never saves them to the disk. Use <code>--verify-setup</code> with the corrected demo to additionally check 64 MHz precalculation, the return to 1 MHz before disk I/O, and LP% progression against the completed-line counter. The current probe also verifies raw sprite phase against its completed-batch counter and the three-batches-per-line cadence. No memory inspections occur during those setup stages: their CPU-side query results are inspected only after video readiness. The corrected physical run passed those checks, Space/music continuity and Q cleanup. Video readiness fell from 116.5 s to 37.6 s, and 16 MHz delivered about 13 completed sprite batches/s while preserving consecutive line samples. This fixes spacing and startup time, not the remaining limit on sprite update rate.</p>
+<p>Smoothness also needs its own review: the five SPRMOVE calls are sequential, not an atomic frame-aligned sprite batch, and jiffy-paced work is not the same as synchronizing to the PAL display's refresh. If the measured turbo throughput is healthy but motion still looks uneven, investigate frame-aligned batching and the BASIC/overlay dispatch cost before replacing the turbo mechanism. These are candidate improvements, not proven causes of the user's earlier run.</p>
+</section>
+<section id="readyos-recommendation" class="level2">
+<h2>ReadyOS recommendation</h2>
+<p>Prefer <strong>C64U Turbo Registers behind one shared speed-control contract</strong> if ReadyOS is to support explicit MHz requests and different app speeds. Use normal-mode guards around timing-sensitive operations, as the Gouraud example does; the useful principle is temporary compatibility speed, not a unique property of D030.</p>
+<p>If the product instead commits to exactly one global user-selected turbo speed and a normal/fast toggle, D030 is a simpler, legitimate alternative. Do not mix both modes casually or use REST configuration writes as a per-frame API.</p>
+<p>Before a global rollout:</p>
+<ol type="1">
+<li>Define safe boot/load/exit speed and app preferred speeds. Keep legacy KERNAL IEC and keyboard timing safe; independently validate other I/O paths.</li>
+<li>Save/restore speed and badline state with nested guards. Returning from an inner operation must not prematurely re-enable turbo. For compatibility, 1 MHz alone is not identical to 1 MHz <strong>with badlines enabled</strong>.</li>
+<li>Account for IRQ paths, app switches, warm REU resume and error exits. A SID that tolerates turbo does not prove all KERNAL/IRQ work does.</li>
+<li>Detect hardware/table differences (older U64 versus C64U/Elite-II), and report unsupported/Manual mode rather than pretending a request succeeded.</li>
+<li>Separate configured preference, live nominal selection and measured application throughput in diagnostics. Audit SYSINFO and UMHZ together.</li>
+<li>Validate physical hardware at 1, 16 and the configured top speed, including transitions during real app workflows—not only register readback.</li>
+</ol>
+<p>The current ReadyBASIC setter preserves the badline bit and is C64U-table specific. It is not yet the complete compatibility guard or shared OS service described here. The OS policy must also accommodate ReadyBASIC's intentional shim-independent command implementation without duplicating contradictory hardware rules.</p>
+</section>
+</section>
+</body>
+</html>

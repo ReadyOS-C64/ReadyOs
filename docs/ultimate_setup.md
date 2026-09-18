@@ -6,6 +6,13 @@ with `dma_loading=1` and an empty `c64u_image_path`. The image also contains
 `SETUP`, a standalone first-run utility that records the exact Ultimate host
 path of that D81 before ReadyOS boots.
 
+The path is necessary because a C64 program cannot discover the host location
+of the disk image it is running from. Drive 8 and the disk directory identify
+files *inside* a D81, not that D81's USB/SD pathname. SETUP bridges this gap by
+letting you choose the image, then writing `c64u_image_path` and `dma_loading=1`
+in the `[launcher]` section of its `apps.cfg`. This configures today's image-based
+fast loader; it is not the full folder-based installer planned for ReadyOS Ultimate.
+
 SETUP is deliberately not a ReadyOS launcher app. It is a normal `$0801` C64
 program that links only the focused ReadyOS TUI micromodules needed for its
 screen, window, menu, and small UI helpers. It has no ReadyOS shim, ReadyFS

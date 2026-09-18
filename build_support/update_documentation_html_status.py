@@ -16,7 +16,15 @@ START = "<!-- READYOS-DOC-STATUS:START -->"
 END = "<!-- READYOS-DOC-STATUS:END -->"
 
 CURRENT = {
-    "docs/DOCUMENTATION_INDEX.html": "Current documentation index, audited against the initial 0.5 development tree on 2026-08-21; its production baseline is 0.2.5.",
+    "docs/DOCUMENTATION_INDEX.html": "Current documentation index, audited against the September 2026 PRECOG 0.5 development tree; its production baseline is 0.2.5.",
+    "docs/readybasic_reference.html": "Current source-generated inventory: 98 built-ins, eight media commands, developer packages and all 45 BASIC source examples. Profile packaging is stated separately.",
+    "docs/app_requirements.html": "Current source-audited Ultimate and app-specific REU requirements, distinct from system snapshot needs and future standalone plans.",
+    "docs/documentation_audit_2026-09.html": "September 2026 documentation audit, verification record and unresolved code/packaging issues.",
+    "docs/readybasic_orbital_echoes.html": "Current Orbital Echoes usage with dated build/test evidence retained in chronological sections.",
+    "docs/readybasic_media_learnings.html": "Current media contracts and chronological investigation results. Old build measurements are evidence for those builds only.",
+    "docs/readybasic_media_load_investigation.html": "Retained investigation sequence with current loader status and safe hardware-observation requirements.",
+    "docs/readyos_ultimate_speed_policy.html": "Current demo speed explanation and retained physical comparisons; the proposed OS-wide speed service is not implemented.",
+    "privatedocs/reports/readybasic_current_state.html": "Current private ReadyBASIC media/module/lifecycle guide and product direction, distinct from preserved experiments.",
     "docs/ReadyOS_SHIM_ARCHITECTURE_0.5.html": "Current 0.5 schema-v5 shim/ReadyOS-bank architecture, including the resident-versus-REU authority split and live token lookup.",
     "docs/ultimate_dos_dma_loading.html": "Current C64 Ultimate DOS DMA behavior. The Ultimate SKU enables it and disk fallback remains part of the contract.",
     "docs/ultimate_setup.html": "Current first-run, safety, and automation contract for the C64 Ultimate D81 SETUP utility.",

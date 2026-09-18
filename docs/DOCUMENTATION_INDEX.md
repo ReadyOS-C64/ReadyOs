@@ -1,7 +1,7 @@
 # ReadyOS Documentation Index
 
 This index separates current contracts from historical records. It was audited
-against the initial `0.5` development tree on 2026-08-21. That tree is based
+against the `0.5` development sources on 2026-09-18. That tree is based
 on the audited, production-stamped `0.2.5` release state.
 
 An HTML counterpart is generated as `DOCUMENTATION_INDEX.html`. Every HTML file
@@ -13,6 +13,16 @@ changes presentation only: historical report bodies and measurements are not
 deleted or rewritten into claims about a version they did not describe.
 
 ## Start Here
+
+- [ReadyBASIC examples and commands](readybasic_reference.md)
+  ([styled HTML](readybasic_reference.html)): all 45 source examples, the current
+  built-in inventory, eight on-demand media commands and per-SKU availability.
+- [App hardware and REU requirements](app_requirements.md): Ultimate-only
+  functions, app-owned versus shared REU, and the standalone release plans.
+- [September audit](documentation_audit_2026-09.md): corrections and issues that
+  need packaging, code or validation beyond documentation.
+- [Private current-state guide](../privatedocs/reports/readybasic_current_state.md):
+  new media/module lifecycle, product direction and retained-evidence policy.
 
 - [`../README.md`](../README.md): project overview, current SKUs, app catalog,
   runtime summary, and supported build/run entry points.
@@ -39,7 +49,11 @@ deleted or rewritten into claims about a version they did not describe.
   [`readyshell_overlay_inventory.md`](readyshell_overlay_inventory.md).
 - ReadyBASIC: [`../src/apps/readybasic/READYBASIC_CURRENT_DESIGN.md`](../src/apps/readybasic/READYBASIC_CURRENT_DESIGN.md),
   graphics and sound command designs, lifecycle/REU architecture, module-making
-  guide, and the examples listed in the root README.
+  guide, and the complete reference linked above. The
+  [Orbital Echoes walkthrough](readybasic_orbital_echoes.md),
+  [media learnings](readybasic_media_learnings.md), and
+  [Ultimate speed-policy research](readyos_ultimate_speed_policy.md) separate
+  current contracts from dated test results and unimplemented OS-wide policy.
 - EasyFlash: [`reports/easyflash_boot_flow.md`](reports/easyflash_boot_flow.md).
 - File formats: the `*_format.md` and `*_seq_format.md` documents in this
   directory.
@@ -66,13 +80,29 @@ a live architecture contract.
 After changing Markdown/HTML documentation, regenerate current HTML
 counterparts and run:
 
+For a documentation-only release commit that excludes local media rebuilds,
+use `refresh_release_docs.py --manifest-ref HEAD` (also with `--check`) to keep
+artifact names aligned with committed manifests. Private HTML is refreshed
+only when its local, untracked Markdown source is available.
+
 ```sh
+python3 build_support/build_readybasic_reference.py
+python3 build_support/refresh_release_docs.py
+python3 build_support/render_current_docs.py
 python3 build_support/update_documentation_html_status.py
 python3 build_support/sync_shim_documentation.py
 python3 build_support/verify_documentation_contract.py
 python3 build_support/verify_documentation_links.py
+python3 build_support/verify_readybasic_documentation.py
 python3 build_support/verify_shim_html_source.py
+python3 build_support/render_current_docs.py --check
+python3 build_support/refresh_release_docs.py --check
 ```
+
+The reference generator preserves every `.bas` listing verbatim and refuses
+unknown built-in commands without an explanation. The release-document refresh
+uses each existing manifest's artifact names without rebuilding/renaming media.
+The renderer updates only named current counterparts, never historical reports.
 
 The documentation-contract verifier checks the current RAM/REU statements,
 the 1 MB SKU bank budget, retained-history supersession markers, and the HTML

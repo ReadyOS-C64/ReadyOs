@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Resource-load reliability investigation (2026-09-11)</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="readyos_docs.css" />
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Retained investigation sequence with current loader status and safe hardware-observation requirements.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#resource-load-reliability-investigation-2026-09-11" id="toc-resource-load-reliability-investigation-2026-09-11">Resource-load reliability investigation (2026-09-11)</a>
+<ul>
+<li><a href="#observations-not-yet-a-diagnosis" id="toc-observations-not-yet-a-diagnosis">Observations, not yet a diagnosis</a></li>
+<li><a href="#source-research" id="toc-source-research">Source research</a></li>
+<li><a href="#current-candidate-and-required-evidence" id="toc-current-candidate-and-required-evidence">Current candidate and required evidence</a></li>
+<li><a href="#implemented-safeguards-and-initial-results" id="toc-implemented-safeguards-and-initial-results">Implemented safeguards and initial results</a></li>
+<li><a href="#explicit-speed-limit-disk-loading-is-not-music-playback" id="toc-explicit-speed-limit-disk-loading-is-not-music-playback">Explicit speed limit: disk loading is not music playback</a></li>
+</ul></li>
+</ul>
+</nav></details>
+<section id="resource-load-reliability-investigation-2026-09-11" class="level1">
+<h1>Resource-load reliability investigation (2026-09-11)</h1>
+<p>This is a chronological investigation record. Current loaders now suppress sprite DMA during transfers and MCFILE hides the unfinished bitmap; subsequent findings below record their tests, not a promise of rollback or universally bounded KERNAL I/O. See the <a href="readybasic_reference.html">current media contract</a> and <a href="readybasic_orbital_echoes.html">demo walkthrough</a>. During hardware disk loading, observe video until visibly complete before reading any RAM or decoded screen; a fixed wait alone is not completion evidence. After interruption, boot afresh.</p>
+<section id="observations-not-yet-a-diagnosis" class="level2">
+<h2>Observations, not yet a diagnosis</h2>
+<p>The user reproduced a partial <code>AD</code> display, a slowly filled bitmap without its final colors, and a stalled startup on the physical C64 Ultimate. The same source had passed one earlier hardware run. No ReadyBASIC source changed during the subsequent video-recording attempt. That single passing run did not establish repeatable cold-start reliability.</p>
+<p><code>RBSND08</code> enables sprites before <code>SPRFILE</code>, <code>MCFILE</code>, and <code>MUSTUNE</code>. Its early <code>ORBITAL SHOW RUNNING</code> text precedes all three loads; it is not a completion flag. Until the animation starts, the sprite coordinates are not the final READY coordinates. Koala stores bitmap bytes before both palettes, so partial loading also explains the temporarily wrong colors without proving palette corruption.</p>
+</section>
+<section id="source-research" class="level2">
+<h2>Source research</h2>
+<ul>
+<li>Commodore KERNAL source, <code>serial4.0.s</code>, <code>ACPTR</code> (<code>$EE13</code> onward): serial reads disable IRQs, sample clock/data in tight loops, and execute CLI on return. Several clock waits have no universal wall-clock timeout. A wrapper around CHRIN therefore cannot honestly promise bounded recovery from every broken drive/bus condition. See the <a href="https://www.pagetable.com/c64ref/c64disasm/">KERNAL disassembly</a>.</li>
+<li>Sprite DMA steals CPU cycles; it is not stopped by SEI. See Linus Akesson's <a href="https://linusakesson.net/scene/nine/explanation.php">hardware timing explanation</a>. The streamed-read path must explicitly manage sprite activity, not assume the interrupt mask protects serial timing.</li>
+<li>ReadyBASIC uses <code>$01=$36</code> in its native worker: KERNAL and I/O remain visible, and stores at <code>$E000-$FF3F</code> land in underlying RAM. The image range deliberately excludes CPU vectors. The existing exact-byte VICE test verifies that mapping. Merely writing to bitmap RAM is not evidence of a memory conflict.</li>
+<li>Ultimate REST raw memory access stops and resumes the C64 (<code>dma_load_raw_buffer</code> in the official firmware source). It is unsuitable as aggressive progress polling during an IEC transfer; the drive and CPU may not pause together.</li>
+<li>VICE fast/trap disk I/O is insufficient evidence for real IEC timing.</li>
+</ul>
+</section>
+<section id="current-candidate-and-required-evidence" class="level2">
+<h2>Current candidate and required evidence</h2>
+<p>Suppress sprite DMA inside every media-file transfer, saving/restoring the caller's mask around OPEN through CLOSE on success and opened-file errors. This is deliberately internal to the loader, not a BASIC-program workaround. Test the final package through normal ReadyOS boot, verify complete image and sprite bytes plus live SID, repeat starts, exercise missing-file cleanup, and leave the physical machine playing for the user. Do not promote this candidate to a proven root cause merely because a screenshot looks correct.</p>
+<p>Presentation and transport are separate concerns: hiding an incomplete bitmap will improve startup presentation, but cannot by itself fix a serial stall. Full-image rollback would require a separately owned staging surface; it must not borrow BASIC, module-slot, shim, or arbitrary REU memory.</p>
+</section>
+<section id="implemented-safeguards-and-initial-results" class="level2">
+<h2>Implemented safeguards and initial results</h2>
+<p>The media loaders now suppress and restore <code>$D015</code> for the entire transfer. <code>MCFILE</code> also hides the bitmap using DEN until the full image and EOF are checked, then restores the display mode on both success and error. This is presentation protection, not atomic rollback of already-written bytes. These graphics commands own VIC mode setup; preserving a separately installed raster-IRQ effect is not part of this loader ABI. The demo sets all five initial positions explicitly.</p>
+<p>The first sprite-guard build passed the full fast-disk VICE audit at <code>logs/vice_auto_20260911_142158/manifest.json</code> and the physical hardware audit at <code>logs/ultimate_auto_20260911_142209/manifest.json</code>, including complete palettes and sprites, changing frames and SID ticks at 1/16/64 MHz, refresh and cleanup. The user independently confirmed the physical display was working. An initial true-drive VICE run reached live music and motion checks but its VICE process exited during the refresh wait; that interrupted run is not counted as a pass.</p>
+<p>The final package is 2237 bytes with a 1959-byte payload and unchanged 241-byte music driver. It claims the same slots as before and consumes no additional BASIC workspace. Missing-file and wrong-header tests exercise restoration of the sprite mask, display-enable bit and logical-file table. The hardware plan now asserts the installed music state immediately after startup rather than trusting early text, and captures color RAM as well as the screen palette.</p>
+<p>Final true-drive VICE run: <code>logs/vice_auto_20260911_142659/manifest.json</code>, all 100 steps passed. The original post-run selector picked an older concurrent run's manifest; this test-tool bug is fixed with unique plan IDs/paths and a standalone exact-run auditor. Re-running that auditor against the correct manifest passed exact bitmap/palette/sprite comparisons, reference line drawing, REU restoration, animation, SID, refresh and cleanup checks.</p>
+<p>Final cold-start hardware run: <code>logs/ultimate_auto_20260911_142855/manifest.json</code>. The independent audit passed at 1/16/64 MHz, including color RAM and the explicit startup music-state assertion. Regular 0.5Q and Ultimate 0.5R images passed directory ordering; extracted module and demo match the final local artifacts. The physical image was uploaded and fully read back at <code>/USB1/automation/readybasic-media/neon-e14443b1/RBe14443b1.D81</code>; its <code>apps.cfg</code> contains that exact case-insensitive path with DMA enabled. SHA-256: <code>02ce1f55f4729e6b59d8dd4b5adaf7d3c8737b28e61d9e4e9da9cfac9e41e46c</code>.</p>
+</section>
+<section id="explicit-speed-limit-disk-loading-is-not-music-playback" class="level2">
+<h2>Explicit speed limit: disk loading is not music playback</h2>
+<p>A deliberately stronger test started a fresh RUN with <strong>Manual 16 MHz already active</strong>. It failed the startup assertion at MCFILE, with music state 0: <code>logs/ultimate_auto_20260911_143229/manifest.json</code>. Do not call that configuration supported merely because post-load animation works at 16/64 MHz.</p>
+<p>The <a href="https://1541u-documentation.readthedocs.io/en/latest/config/turbo_mode.html">official Ultimate turbo documentation</a> states that Manual mode prohibits software speed changes, and that <code>$D031</code> is available only in U64 Turbo Registers / Turbo Enable Bit modes. A portable loader cannot override forced Manual turbo via those registers. Current support therefore requires <strong>1 MHz during disk loading</strong>, with higher playback speeds available after the resources are loaded. The final manual handoff uses 1 MHz so another RUN is safe. A future automatic speed guard must cover module loading as well as resource loading, preserve/restore programmable turbo state, and be tested separately; silently changing global turbo-control policy is not part of this fix. A full image buffer alone would not solve the serial timing issue.</p>
+</section>
+</section>
+</body>
+</html>

@@ -1,5 +1,16 @@
 # ReadyBASIC Sound Command Design
 
+## Current sound paths
+
+Immediate SIDCORE commands below remain built in. Background music is now a
+separate on-demand `rbm.media` package: MUSTUNE, MUSPLAY, MUSHALT and MUSDROP
+load/control a vetted PAL PSID player in MEMCAP-reserved RAM. It is not a
+general SID-file player. SIDOFF does not detach its IRQ. RBSND07 demonstrates
+music while BASIC runs; RBGFXSNDDEMO and RBUGFXSNDDEMO combine it with graphics.
+See [all commands/examples](../../../docs/readybasic_reference.md) for the
+required load order, memory release, profile availability and player limits.
+The Phase 1 no-IRQ statements below describe that immediate-sound layer only.
+
 ## Phase 1 Summary
 
 ReadyBASIC Sound Phase 1 is command-only SID support. It does not change

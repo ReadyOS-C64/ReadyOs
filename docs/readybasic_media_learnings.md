@@ -15,7 +15,10 @@ explicit way to discard variables before a later cap change. `FRE(0)` and the
 actual BASIC heap ceiling change together. The default remains 30013 bytes
 free in an empty workspace, with the program at `$2ac1`.
 
-`ZMODLD("rbm.media",M%)` loads five commands, without consuming BASIC RAM:
+`ZMODLD("rbm.media",M%)` now loads eight commands, without consuming BASIC RAM.
+The original five are listed here; MCFILE, SPRFILE and MCLINE were added later
+and are detailed in the [current command/reference guide](readybasic_reference.md)
+and [Orbital Echoes walkthrough](readybasic_orbital_echoes.md):
 
 | Command | Meaning |
 |---|---|
@@ -44,8 +47,8 @@ DOS write-mode selection. Load/close returns to default KERNAL channels.
 - Bridge-owned lifetime byte: `$c1ff` (0 empty, 1 loaded, 2 playing).
 - Tick counter: little-endian `$9006/$9007`; init/play pointers `$9008-$900b`.
 - Media module: disposable `$b000-$bfff` span, REU code offset `$8000`,
-  submodule 24; eight descriptors `$1c00-$1cff` (moved past built-in BORDER
-  and USPEED; includes the later graphics commands).
+  submodule 24; eight descriptors `$1c20-$1d1f` (moved past built-in BORDER,
+  USPEED and UMHZ; includes the later graphics commands).
   No ReadyOS shim calls in playback.
 - MEMCAP validation uses spare built-in overlay space; only its commit touches
   BASIC's pointers, in the visible core. Cold BASIC capacity isn't the space

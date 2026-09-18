@@ -1,0 +1,2616 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ReadyBASIC: commands, modules and every example</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="readyos_docs.css" />
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current source-generated inventory: 98 built-ins, eight media commands, developer packages and all 45 BASIC source examples. Profile packaging is stated separately.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#readybasic-commands-modules-and-every-example" id="toc-readybasic-commands-modules-and-every-example">ReadyBASIC: commands, modules and every example</a>
+<ul>
+<li><a href="#choose-a-starting-point" id="toc-choose-a-starting-point">Choose a starting point</a></li>
+<li><a href="#built-in-commands-versus-disk-modules" id="toc-built-in-commands-versus-disk-modules">Built-in commands versus disk modules</a></li>
+<li><a href="#new-built-in-commands" id="toc-new-built-in-commands">New built-in commands</a></li>
+<li><a href="#the-eight-on-demand-media-commands" id="toc-the-eight-on-demand-media-commands">The eight on-demand media commands</a></li>
+<li><a href="#safe-loading-and-display-behavior" id="toc-safe-loading-and-display-behavior">Safe loading and display behavior</a></li>
+<li><a href="#language-and-command-conventions" id="toc-language-and-command-conventions">Language and command conventions</a></li>
+<li><a href="#further-reading" id="toc-further-reading">Further reading</a></li>
+<li><a href="#implemented-built-in-inventory" id="toc-implemented-built-in-inventory">Implemented built-in inventory</a></li>
+<li><a href="#developer-sample-module-commands" id="toc-developer-sample-module-commands">Developer sample-module commands</a></li>
+<li><a href="#packaging-by-profile" id="toc-packaging-by-profile">Packaging by profile</a></li>
+<li><a href="#every-example-at-a-glance" id="toc-every-example-at-a-glance">Every example at a glance</a></li>
+<li><a href="#rbgfx01-modes" id="toc-rbgfx01-modes">rbgfx01_modes</a></li>
+<li><a href="#rbgfx02-hires-plot" id="toc-rbgfx02-hires-plot">rbgfx02_hires_plot</a></li>
+<li><a href="#rbgfx03-hires-lines" id="toc-rbgfx03-hires-lines">rbgfx03_hires_lines</a></li>
+<li><a href="#rbgfx04-rects" id="toc-rbgfx04-rects">rbgfx04_rects</a></li>
+<li><a href="#rbgfx05-point-read" id="toc-rbgfx05-point-read">rbgfx05_point_read</a></li>
+<li><a href="#rbgfx06-reu-surface" id="toc-rbgfx06-reu-surface">rbgfx06_reu_surface</a></li>
+<li><a href="#rbgfx07-mbitmap" id="toc-rbgfx07-mbitmap">rbgfx07_mbitmap</a></li>
+<li><a href="#rbgfx08-tile" id="toc-rbgfx08-tile">rbgfx08_tile</a></li>
+<li><a href="#rbgfx09-sprites" id="toc-rbgfx09-sprites">rbgfx09_sprites</a></li>
+<li><a href="#rbgfx10-collision" id="toc-rbgfx10-collision">rbgfx10_collision</a></li>
+<li><a href="#rbgfx11-input" id="toc-rbgfx11-input">rbgfx11_input</a></li>
+<li><a href="#rbgfx12-showcase" id="toc-rbgfx12-showcase">rbgfx12_showcase</a></li>
+<li><a href="#rbgfx13-sprite-steps" id="toc-rbgfx13-sprite-steps">rbgfx13_sprite_steps</a></li>
+<li><a href="#rbgfx14-phase2-prims" id="toc-rbgfx14-phase2-prims">rbgfx14_phase2_prims</a></li>
+<li><a href="#rbgfx15-phase2-tiles" id="toc-rbgfx15-phase2-tiles">rbgfx15_phase2_tiles</a></li>
+<li><a href="#rbgfx16-phase2-sprite-ctrl" id="toc-rbgfx16-phase2-sprite-ctrl">rbgfx16_phase2_sprite_ctrl</a></li>
+<li><a href="#rbgfx17-poly-array" id="toc-rbgfx17-poly-array">rbgfx17_poly_array</a></li>
+<li><a href="#rbgfx18-fpoly-array" id="toc-rbgfx18-fpoly-array">rbgfx18_fpoly_array</a></li>
+<li><a href="#rbgfx19-poly-reu" id="toc-rbgfx19-poly-reu">rbgfx19_poly_reu</a></li>
+<li><a href="#rbgfx20-fpoly-reu-showcase" id="toc-rbgfx20-fpoly-reu-showcase">rbgfx20_fpoly_reu_showcase</a></li>
+<li><a href="#rbgfx21-mbitmap-prims" id="toc-rbgfx21-mbitmap-prims">rbgfx21_mbitmap_prims</a></li>
+<li><a href="#rbgfx22-mbitmap-point" id="toc-rbgfx22-mbitmap-point">rbgfx22_mbitmap_point</a></li>
+<li><a href="#rbgfx23-dlist" id="toc-rbgfx23-dlist">rbgfx23_dlist</a></li>
+<li><a href="#rbgfx24-tilemap" id="toc-rbgfx24-tilemap">rbgfx24_tilemap</a></li>
+<li><a href="#rbgfx25-mbcells" id="toc-rbgfx25-mbcells">rbgfx25_mbcells</a></li>
+<li><a href="#rbgfx26-mode-matrix" id="toc-rbgfx26-mode-matrix">rbgfx26_mode_matrix</a></li>
+<li><a href="#rbgfx27-target-blit" id="toc-rbgfx27-target-blit">rbgfx27_target_blit</a></li>
+<li><a href="#rbgfx28-tile-visible" id="toc-rbgfx28-tile-visible">rbgfx28_tile_visible</a></li>
+<li><a href="#rbgfx29-mtile-visible" id="toc-rbgfx29-mtile-visible">rbgfx29_mtile_visible</a></li>
+<li><a href="#rbgfx30-mbitmap-dlist" id="toc-rbgfx30-mbitmap-dlist">rbgfx30_mbitmap_dlist</a></li>
+<li><a href="#rbgfx31-sync-blit" id="toc-rbgfx31-sync-blit">rbgfx31_sync_blit</a></li>
+<li><a href="#rbgfx32-convex-poly" id="toc-rbgfx32-convex-poly">rbgfx32_convex_poly</a></li>
+<li><a href="#rbgfxsnddemo" id="toc-rbgfxsnddemo">rbgfxsnddemo</a></li>
+<li><a href="#rbproc1" id="toc-rbproc1">rbproc1</a></li>
+<li><a href="#rbprocerr" id="toc-rbprocerr">rbprocerr</a></li>
+<li><a href="#rbsnd01-sid-basics" id="toc-rbsnd01-sid-basics">rbsnd01_sid_basics</a></li>
+<li><a href="#rbsnd02-voice-state" id="toc-rbsnd02-voice-state">rbsnd02_voice_state</a></li>
+<li><a href="#rbsnd03-notes" id="toc-rbsnd03-notes">rbsnd03_notes</a></li>
+<li><a href="#rbsnd04-filter" id="toc-rbsnd04-filter">rbsnd04_filter</a></li>
+<li><a href="#rbsnd05-voice-batch" id="toc-rbsnd05-voice-batch">rbsnd05_voice_batch</a></li>
+<li><a href="#rbsnd06-three-voice" id="toc-rbsnd06-three-voice">rbsnd06_three_voice</a></li>
+<li><a href="#rbsnd07-psid" id="toc-rbsnd07-psid">rbsnd07_psid</a></li>
+<li><a href="#rbsnd08-neon" id="toc-rbsnd08-neon">rbsnd08_neon</a></li>
+<li><a href="#rbtest1" id="toc-rbtest1">rbtest1</a></li>
+<li><a href="#rbugfxsnddemo" id="toc-rbugfxsnddemo">rbugfxsnddemo</a></li>
+</ul></li>
+</ul>
+</nav></details>
+<section id="readybasic-commands-modules-and-every-example" class="level1">
+<h1>ReadyBASIC: commands, modules and every example</h1>
+<p>ReadyBASIC adds structured routines, REU resources, graphics and sound to C64 BASIC V2. Start ReadyOS, launch ReadyBASIC, then load a demonstration from the mounted disk, for example <code>LOAD "RBGFX02",8</code> followed by <code>RUN</code>. These are BASIC programs to run inside ReadyBASIC, not independent ReadyOS apps. The source listings below explain the working combinations of commands and ordinary BASIC.</p>
+<p>The current release profiles do not all carry the same examples. Regular D81 and Ultimate D81 contain 44: three language tests, 32 graphics examples, seven sound examples and two combined demos. The original 41-example set remains in the smaller focused ReadyBASIC D64, D71 and KFF2 profiles. The separate rsdebug D81 has an older 27-example subset. The old <code>rbsnd08_neon.bas</code> is retained as historical source, not a current disk entry. The profile inventory below is generated from the actual configurations.</p>
+<section id="choose-a-starting-point" class="level2">
+<h2>Choose a starting point</h2>
+<ul>
+<li><strong>Language:</strong> RBTEST1 shows command expressions and strings; RBPROC1 covers PROC/FUNC calls, typed returns and normal BASIC expressions. RBPROCERR is an intentional error test, not a demo expected to run to completion.</li>
+<li><strong>Graphics:</strong> RBGFX01–05 introduce modes and drawing. RBGFX13/16 cover sprites; 17–20 polygons; 23 display lists; 24 tilemaps; 27/31 REU surface capture/restore.</li>
+<li><strong>Sound:</strong> RBSND01–06 control SID registers immediately. RBSND07 loads a vetted PAL tune and lets music continue while BASIC runs.</li>
+<li><strong>Combined demo:</strong> RBGFXSNDDEMO presents Orbital Echoes without Ultimate speed commands. RBUGFXSNDDEMO requires C64 Ultimate software turbo registers. Both use two cached backgrounds, animated READY sprites and palette-preserving lines. See <a href="readybasic_orbital_echoes.html">the media walkthrough</a>.</li>
+</ul>
+<p>Many graphics examples wait for a key before returning to text. The combined demo uses <strong>Space</strong> to restore the current cached picture, <strong>Q</strong> to stop music and release its memory, and <strong>M</strong> to return to text while music continues. After M, enter <code>MUSDROP():CLR:MEMCAP(40960)</code> to release the reserved arena. Some older examples are small command probes and leave handles for the session; their source is retained verbatim rather than silently changed for this guide.</p>
+</section>
+<section id="built-in-commands-versus-disk-modules" class="level2">
+<h2>Built-in commands versus disk modules</h2>
+<p>The normal graphics, immediate SID sound, input and memory commands are already registered when ReadyBASIC starts. Their code is fetched from assigned REU resources into command slots as needed; no <code>ZMODLD</code> is needed for them.</p>
+<p>Disk packages are SEQ files. <code>ZMODLD("RBM.MEDIA",M%)</code> registers eight media commands and returns their count in M%. It keeps package code/descriptors in REU, not the BASIC program area. The package is loaded only when requested. <code>RBM.SAMPLE1</code>, <code>RBM.SAMPLE2</code> and <code>RBM.SAMPLE3</code> are developer proofs of module, span and replacement-overlay dispatch; they are not prerequisites for media. Use module packages built with the matching ReadyBASIC executable.</p>
+<p>The sample packages are intrusive developer tests: their fixed descriptor offsets replace some built-in commands in the current registry. Run them in a separate session, not before normal graphics/media examples. The media package uses otherwise unused descriptor slots and does not have that overlap.</p>
+<p>The current loaders use <strong>drive 8</strong> and logical file 14. Do not open file 14 yourself while loading resources. A D71 setup that keeps modules on drive 9 needs deliberate media placement; these commands do not accept a device argument.</p>
+</section>
+<section id="new-built-in-commands" class="level2">
+<h2>New built-in commands</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Form</th>
+<th>Meaning and boundaries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MEMCAP(address)</code></td>
+<td>Set a page-aligned, exclusive BASIC memory ceiling, at most 40960 ($A000). Reserve before allocating strings. A changed cap needs an empty dynamic string heap and room beyond program/variables/arrays. It does not relocate strings or call CLR. Numeric variables/arrays survive; an unchanged cap is harmless. Invalid changes report error 14 without committing pointers.</td>
+</tr>
+<tr>
+<td><code>BORDER(color)</code></td>
+<td>Set border color using the low four bits, in any display mode. Built-in GFXCORE.</td>
+</tr>
+<tr>
+<td><code>USPEED(mhz)</code></td>
+<td>C64 Ultimate / U64 Elite-II speed setter: 1, 2, 3, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 64. Requires software turbo registers; preserves D031 bit 7 and checks readback. Error 14 for unsupported argument; 24 when unavailable. It is not the older U64 48-MHz table.</td>
+</tr>
+<tr>
+<td><code>UMHZ()</code> / <code>S%=UMHZ()</code></td>
+<td>Read the live nominal MHz selection, not the settings-menu preference or a throughput benchmark. Reports error 24 when the software registers are unavailable.</td>
+</tr>
+</tbody>
+</table>
+<p>MEMCAP reserves an arena by lowering BASIC's allocator ceiling; it is not memory protection. POKE, SYS and ordinary oversized LOAD can still overwrite it. The empty default remains 30013 BASIC free bytes starting at $2AC1. Reserving 4096 bytes for music lowers the ceiling to $9000; raising it while the media lifetime lock exists is rejected. Drop music before restoring memory, and use CLR explicitly if heap strings need discarding.</p>
+</section>
+<section id="the-eight-on-demand-media-commands" class="level2">
+<h2>The eight on-demand media commands</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Form</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MUSTUNE("RB.SUMMER")</code></td>
+<td>Load a vetted fixed-address PAL PSID v2 tune into previously reserved RAM and install its driver, without playing. Reserve with MEMCAP(36864) first.</td>
+</tr>
+<tr>
+<td><code>MUSPLAY(1)</code></td>
+<td>Initialize or restart a one-based subtune and attach raster-driven playback. BASIC can continue working.</td>
+</tr>
+<tr>
+<td><code>MUSHALT()</code></td>
+<td>Detach the player IRQ and silence SID, retaining tune data and its memory reservation.</td>
+</tr>
+<tr>
+<td><code>MUSDROP()</code></td>
+<td>Halt and clear the tune lifetime lock. Does not increase the BASIC ceiling.</td>
+</tr>
+<tr>
+<td><code>RSCFILE(name$)</code></td>
+<td>Load an RBR1 resource (destination and length in its header) into the arena above MEMCAP, ending no later than $A000. Caller owns the raw resource's lifetime.</td>
+</tr>
+<tr>
+<td><code>MCFILE(name$)</code></td>
+<td>Load a standard Koala file ($6000 prefix) or packed RKC1 stream: 8000 bitmap bytes, 1000 screen, 1000 color and one background byte.</td>
+</tr>
+<tr>
+<td><code>SPRFILE(name$)</code></td>
+<td>Load RBR1 sprite data into aligned 64-byte blocks within $CA00–$CBFF. Configure with SPRSET before loading art, since SPRSET generates a pattern.</td>
+</tr>
+<tr>
+<td><code>MCLINE(x1,y1,x2,y2,slot)</code></td>
+<td>Inclusive line in MBITMAP coordinates 0–159 / 0–199, using pixel slot 0–3. Only bitmap bits change; palette attributes remain untouched. Invalid arguments fail before writing.</td>
+</tr>
+</tbody>
+</table>
+<p>This is a constrained, vetted-player implementation, not an arbitrary SID player. Accepted PSID headers specify PAL VBI, one SID at $D400, RTS init/play entries within the loaded $9200–$9FFF payload, and a zero speed mask. The driver occupies $9000 and reserves through $91FF. The included Shiru tune was relocated and checked for its $FC–$FD scratch contract. Header checks cannot prove arbitrary machine code safe. RSID, NTSC playback, CIA/multispeed, digi and multi-SID players are outside the supported contract.</p>
+<p>Load images and sprites <strong>before</strong> MUSTUNE. Loaders reject an existing music lifetime (including halted-but-not-dropped music), invalid filenames, occupied LFN 14, bad headers, short input and trailing bytes. Filenames are limited to 16 bytes and cannot select DOS write/replacement modes. Errors are 21 (I/O), 22 (format/arguments), 23 (lifetime/channel/IRQ conflict). An I/O failure can leave partial resource bytes; these loaders do not promise memory rollback. Sprites are disabled during streamed disk I/O and their enable state restored; MCFILE also hides an incomplete bitmap until the transfer completes.</p>
+<p>END or STOP alone does not detach the music player. Use MUSHALT/MUSDROP. ReadyOS navigation from the ReadyBASIC prompt detaches playback; warm return retains the cap/tune and requires MUSPLAY to restart it. SIDOFF clears SID registers but cannot detach the player's IRQ. Avoid mixing immediate SID writes with a live music player unless that competition for the voices is intentional.</p>
+<pre class="basic"><code>10 memcap(36864)
+20 zmodld(&quot;rbm.media&quot;,m%)
+30 mustune(&quot;rb.summer&quot;):musplay(1)
+40 print &quot;music runs while basic works&quot;
+50 get a$:if a$=&quot;&quot; then 50
+60 musdrop():clr:memcap(40960)</code></pre>
+</section>
+<section id="safe-loading-and-display-behavior" class="level2">
+<h2>Safe loading and display behavior</h2>
+<p>Use 1 MHz for boot, BASIC program LOAD and resource disk reads on Ultimate. The Ultimate demo selects 64 MHz for precalculation, returns to 1 MHz for file loading and selects 64 MHz for playback, then 1 MHz on either exit. Select <strong>C64U Turbo Registers</strong> in Turbo Control; Manual mode prevents software speed control. Loading the BASIC program happens before its USPEED(1) can execute.</p>
+<p>During physical Ultimate loading, automation must observe the <strong>video stream</strong> until visible completion. REST memory reads, decoded-screen checks and RAM captures can lock up disk loading; a fixed delay does not prove completion. After an interrupted transfer, start from a fresh boot.</p>
+<p>The combined demo preloads two 40-page REU surfaces and restores them without disk I/O. GFXTGT selects the destination of GFXSYNC; immediate drawing still targets the visible surface. GFXSYNC captures bitmap/screen/color into the selected REU surface; GFXBLIT restores it. D021 background color is not cached. The demo keeps both backgrounds black. Its animation advances with completed iterations, so CPU speed changes the motion; only background renewal uses TI.</p>
+</section>
+<section id="language-and-command-conventions" class="level2">
+<h2>Language and command conventions</h2>
+<p>Ordinary BASIC V2 statements, expressions and assignments still use the ROM. ReadyBASIC adds PROC/EXEC/ENDP, FUNC with RET/RET%/RET$, REPEAT/UNTIL, LABEL/JUMP and prompt EXIT. Put routine definitions after END. Formals are global BASIC variables, not lexical locals; nested routine/loop stacks are bounded. See <a href="../src/apps/readybasic/readybasic_current_design.html">syntax and limits</a>.</p>
+<p>Write command spellings in lowercase in host <code>.bas</code> files passed to petcat, as the supplied examples do. Embedded BASIC keywords can otherwise tokenize inside names. Use explicit <code>THEN :COMMAND(...)</code> for command statements in stored files. The media demonstrations use proven numeric IF targets and integer returns; their recorded float FUNC/assignment workaround is not an interpreter fix.</p>
+<p>The implemented inventory below is drawn from command descriptors. Design documents also preserve proposals: names such as GFXINFO, FILL, TEXTAT, SCROLL and KEYDOWN are not implemented commands in this build. FCIRCLE currently fills the bounding rectangle, and FPOLY is a convex fan rather than a general concave polygon filler. Those limitations are not hidden by the command names.</p>
+</section>
+<section id="further-reading" class="level2">
+<h2>Further reading</h2>
+<ul>
+<li><a href="../src/apps/readybasic/readybasic_current_design.html">Current implementation and memory</a></li>
+<li><a href="../src/apps/readybasic/READYBASIC_GRAPHICS_COMMAND_DESIGN.md">Graphics design, implementation phases and proposals</a></li>
+<li><a href="../src/apps/readybasic/READYBASIC_SOUND_COMMAND_DESIGN.md">Immediate SID commands</a></li>
+<li><a href="../src/apps/readybasic/readybasic_making_command_guide.html">Writing commands and packages</a></li>
+<li><a href="readybasic_media_learnings.html">Media development evidence and caveats</a></li>
+<li><a href="documentation_audit_2026-09.html">Open audit findings</a></li>
+</ul>
+<p>The rest of this page is generated from source. Refresh it with <code>python3 build_support/build_readybasic_reference.py</code> after changing examples or command registrations. Existing example sources are reproduced in full.</p>
+</section>
+<section id="implemented-built-in-inventory" class="level2">
+<h2>Implemented built-in inventory</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Command</th>
+<th>Form and purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ZECHO1</code></td>
+<td><code>ZECHO1(P%)</code> — return the integer proof value.</td>
+</tr>
+<tr>
+<td><code>ZADD16</code></td>
+<td><code>ZADD16(A,B,R%) or R%=ZADD16(A,B)</code> — add integer arguments.</td>
+</tr>
+<tr>
+<td><code>UPPER</code></td>
+<td><code>UPPER(S$,T$) or T$=UPPER(S$)</code> — uppercase a bounded string.</td>
+</tr>
+<tr>
+<td><code>LOWER</code></td>
+<td><code>LOWER(S$,T$) or T$=LOWER(S$)</code> — lowercase a bounded string.</td>
+</tr>
+<tr>
+<td><code>ZHIDDENRAM</code></td>
+<td><code>ZHIDDENRAM(S$,R%)</code> — exercise string input in the under-ROM worker.</td>
+</tr>
+<tr>
+<td><code>ZSUMNUMARRAY</code></td>
+<td><code>ZSUMNUMARRAY(A%(0),N,R%)</code> — sum N integer elements.</td>
+</tr>
+<tr>
+<td><code>ZRANGENUMARRAY</code></td>
+<td><code>ZRANGENUMARRAY(START,COUNT,A%(0))</code> — write an integer range into an array.</td>
+</tr>
+<tr>
+<td><code>BUFMAKE</code></td>
+<td><code>BUFMAKE(BYTES,H%)</code> — allocate a persistent REU buffer handle, rounded to pages.</td>
+</tr>
+<tr>
+<td><code>BUFFILL</code></td>
+<td><code>BUFFILL(H%,BYTE)</code> — fill a REU buffer.</td>
+</tr>
+<tr>
+<td><code>BUFDROP</code></td>
+<td><code>BUFDROP(H%)</code> — release a persistent resource handle.</td>
+</tr>
+<tr>
+<td><code>ZTEMPSCRATCH</code></td>
+<td><code>ZTEMPSCRATCH(BYTES,R%)</code> — allocate/free temporary workspace and return its page count.</td>
+</tr>
+<tr>
+<td><code>ZFAIL</code></td>
+<td><code>ZFAIL(CODE,R%)</code> — deliberately raise a ReadyBASIC error to test output clearing.</td>
+</tr>
+<tr>
+<td><code>MEMAVL</code></td>
+<td><code>MEMAVL()</code> — report live BASIC free memory.</td>
+</tr>
+<tr>
+<td><code>SCRCAP</code></td>
+<td><code>SCRCAP(H%)</code> — capture text and color as a typed REU screen handle.</td>
+</tr>
+<tr>
+<td><code>FADD</code></td>
+<td><code>FADD(A,B,R) or R=FADD(A,B)</code> — BASIC floating-point addition.</td>
+</tr>
+<tr>
+<td><code>ZPAUSE</code></td>
+<td><code>ZPAUSE(JIFFIES)</code> — wait for the requested number of clock ticks.</td>
+</tr>
+<tr>
+<td><code>ERRCODE</code></td>
+<td><code>ERRCODE() or ERRCODE(E%)</code> — last ReadyBASIC runtime error code.</td>
+</tr>
+<tr>
+<td><code>ERRLINE</code></td>
+<td><code>ERRLINE() or ERRLINE(L%)</code> — last ReadyBASIC error line, zero for direct mode.</td>
+</tr>
+<tr>
+<td><code>ZSLOT0</code></td>
+<td><code>ZSLOT0(R%)</code> — developer proof of slot/span/overlay dispatch; returns a diagnostic integer.</td>
+</tr>
+<tr>
+<td><code>ZSLOT1</code></td>
+<td><code>ZSLOT1(R%)</code> — developer proof of slot/span/overlay dispatch; returns a diagnostic integer.</td>
+</tr>
+<tr>
+<td><code>ZSLOT2</code></td>
+<td><code>ZSLOT2(R%)</code> — developer proof of slot/span/overlay dispatch; returns a diagnostic integer.</td>
+</tr>
+<tr>
+<td><code>ZSPAN</code></td>
+<td><code>ZSPAN(R%)</code> — developer proof of slot/span/overlay dispatch; returns a diagnostic integer.</td>
+</tr>
+<tr>
+<td><code>ZOVL1</code></td>
+<td><code>ZOVL1(R%)</code> — developer proof of slot/span/overlay dispatch; returns a diagnostic integer.</td>
+</tr>
+<tr>
+<td><code>ZOVL2</code></td>
+<td><code>ZOVL2(R%)</code> — developer proof of slot/span/overlay dispatch; returns a diagnostic integer.</td>
+</tr>
+<tr>
+<td><code>ZCPYRST</code></td>
+<td><code>ZCPYRST()</code> — reset overlay-copy instrumentation.</td>
+</tr>
+<tr>
+<td><code>ZCOPY</code></td>
+<td><code>ZCOPY()</code> — inspect overlay-copy instrumentation.</td>
+</tr>
+<tr>
+<td><code>ZMODLD</code></td>
+<td><code>ZMODLD(NAME$,N%)</code> — stream/register a SEQ command package; N% receives descriptor count.</td>
+</tr>
+<tr>
+<td><code>GFXMODE</code></td>
+<td><code>GFXMODE(MODE$), M%=GFXMODE()</code> — set/query TEXT, HIRES, MBITMAP, TILE or MTILE.</td>
+</tr>
+<tr>
+<td><code>GFXTEXT</code></td>
+<td><code>GFXTEXT()</code> — restore normal text display.</td>
+</tr>
+<tr>
+<td><code>GFXCLEAR</code></td>
+<td><code>GFXCLEAR(C)</code> — clear visible screen/color and applicable bitmap memory.</td>
+</tr>
+<tr>
+<td><code>GFXSURF</code></td>
+<td><code>H%=GFXSURF(MODE$)</code> — allocate a typed REU graphics surface.</td>
+</tr>
+<tr>
+<td><code>GFXTGT</code></td>
+<td><code>GFXTGT(H%)</code> — select surface for GFXSYNC; zero selects visible target. Primitives still draw visible RAM.</td>
+</tr>
+<tr>
+<td><code>GFXBLIT</code></td>
+<td><code>GFXBLIT(H%)</code> — restore bitmap/screen/color from REU to visible graphics RAM.</td>
+</tr>
+<tr>
+<td><code>GFXSYNC</code></td>
+<td><code>GFXSYNC()</code> — capture visible bitmap/screen/color into the selected REU surface; no dirty-rectangle queue.</td>
+</tr>
+<tr>
+<td><code>PLOT</code></td>
+<td><code>PLOT(X,Y,C)</code> — set a hires bit, multicolor pair or tile cell according to mode.</td>
+</tr>
+<tr>
+<td><code>PNT</code></td>
+<td><code>PNT(X,Y,P%)</code> — read a hires bit, multicolor pair code (not resolved color), or cell.</td>
+</tr>
+<tr>
+<td><code>LINE</code></td>
+<td><code>LINE(X1,Y1,X2,Y2,C)</code> — draw a line with immediate primitive color semantics.</td>
+</tr>
+<tr>
+<td><code>RECT</code></td>
+<td><code>RECT(X1,Y1,X2,Y2,C)</code> — draw a rectangle outline.</td>
+</tr>
+<tr>
+<td><code>FBOX</code></td>
+<td><code>FBOX(X1,Y1,X2,Y2,C)</code> — fill a rectangle.</td>
+</tr>
+<tr>
+<td><code>CIRCLE</code></td>
+<td><code>CIRCLE(X,Y,R,C)</code> — midpoint outline circle.</td>
+</tr>
+<tr>
+<td><code>FCIRCLE</code></td>
+<td><code>FCIRCLE(X,Y,R,C)</code> — current placeholder fills the bounding rectangle.</td>
+</tr>
+<tr>
+<td><code>TILE</code></td>
+<td><code>TILE(X,Y,CH,C)</code> — write character/color cell in tile or ordinary text mode.</td>
+</tr>
+<tr>
+<td><code>CHARAT</code></td>
+<td><code>CHARAT(X,Y,CH,C)</code> — alias for TILE.</td>
+</tr>
+<tr>
+<td><code>SPRSET</code></td>
+<td><code>SPRSET(N,ON,C,PATTERN)</code> — enable/configure sprite and generate pattern; do this before SPRFILE.</td>
+</tr>
+<tr>
+<td><code>SPRMOVE</code></td>
+<td><code>SPRMOVE(N,X,Y)</code> — update hardware sprite position.</td>
+</tr>
+<tr>
+<td><code>SPRROW</code></td>
+<td><code>SPRROW(N,ROW,B1,B2,B3)</code> — write one 24-bit sprite row.</td>
+</tr>
+<tr>
+<td><code>SPRSIZE</code></td>
+<td><code>SPRSIZE(N,XON,YON)</code> — set horizontal/vertical expansion.</td>
+</tr>
+<tr>
+<td><code>SPRPRI</code></td>
+<td><code>SPRPRI(N,BEHIND)</code> — set sprite/background priority.</td>
+</tr>
+<tr>
+<td><code>SPRMUL</code></td>
+<td><code>SPRMUL(N,ON)</code> — enable multicolor sprite mode.</td>
+</tr>
+<tr>
+<td><code>SPRCOL</code></td>
+<td><code>SPRCOL(N,C)</code> — set sprite primary color.</td>
+</tr>
+<tr>
+<td><code>SPRMCO</code></td>
+<td><code>SPRMCO(C1,C2)</code> — set shared multicolor sprite colors.</td>
+</tr>
+<tr>
+<td><code>SPRSCAN</code></td>
+<td><code>SPRSCAN()</code> — latch sprite collision registers for polling.</td>
+</tr>
+<tr>
+<td><code>SPRCOLL</code></td>
+<td><code>SPRCOLL(N,C%)</code> — read latched collision state.</td>
+</tr>
+<tr>
+<td><code>JOY</code></td>
+<td><code>JOY(PORT,J%)</code> — poll a joystick port.</td>
+</tr>
+<tr>
+<td><code>KEYP</code></td>
+<td><code>KEYP(K%)</code> — poll the current key.</td>
+</tr>
+<tr>
+<td><code>KEYSCAN</code></td>
+<td><code>KEYSCAN()</code> — refresh keyboard polling state.</td>
+</tr>
+<tr>
+<td><code>KEYLAST</code></td>
+<td><code>KEYLAST(K%)</code> — retrieve the last scanned key.</td>
+</tr>
+<tr>
+<td><code>POLY</code></td>
+<td><code>POLY(A%(0),COUNT,C)</code> — outline integer-array coordinate pairs.</td>
+</tr>
+<tr>
+<td><code>FPOLY</code></td>
+<td><code>FPOLY(A%(0),COUNT,C)</code> — conservative convex fan fill.</td>
+</tr>
+<tr>
+<td><code>PBMAKE</code></td>
+<td><code>PBMAKE(COUNT,H%)</code> — allocate typed REU point buffer.</td>
+</tr>
+<tr>
+<td><code>PBUFSET</code></td>
+<td><code>PBUFSET(H%,INDEX,X,Y)</code> — set a zero-based point.</td>
+</tr>
+<tr>
+<td><code>PBDROP</code></td>
+<td><code>PBDROP(H%)</code> — release point buffer.</td>
+</tr>
+<tr>
+<td><code>POLYH</code></td>
+<td><code>POLYH(H%,COUNT,C)</code> — outline points from REU buffer.</td>
+</tr>
+<tr>
+<td><code>FPOLYH</code></td>
+<td><code>FPOLYH(H%,COUNT,C)</code> — convex fan fill from REU points.</td>
+</tr>
+<tr>
+<td><code>DLMAKE</code></td>
+<td><code>DLMAKE(COUNT,H%)</code> — allocate one-page retained display-list handle.</td>
+</tr>
+<tr>
+<td><code>DLRST</code></td>
+<td><code>DLRST(H%)</code> — clear retained records.</td>
+</tr>
+<tr>
+<td><code>DLPLOT</code></td>
+<td><code>DLPLOT(H%,X,Y,C)</code> — append a plot record.</td>
+</tr>
+<tr>
+<td><code>DLLINE</code></td>
+<td><code>DLLINE(H%,X1,Y1,X2,Y2)</code> — append a line record.</td>
+</tr>
+<tr>
+<td><code>DLRECT</code></td>
+<td><code>DLRECT(H%,X1,Y1,X2,Y2)</code> — append rectangle outline.</td>
+</tr>
+<tr>
+<td><code>DLFBOX</code></td>
+<td><code>DLFBOX(H%,X1,Y1,X2,Y2)</code> — append filled rectangle.</td>
+</tr>
+<tr>
+<td><code>DLDRAW</code></td>
+<td><code>DLDRAW(H%)</code> — replay records in list order.</td>
+</tr>
+<tr>
+<td><code>CHRMAKE</code></td>
+<td><code>CHRMAKE(COUNT,H%)</code> — allocate eight-page charset resource.</td>
+</tr>
+<tr>
+<td><code>CHRROW</code></td>
+<td><code>CHRROW(H%,CHAR,ROW,BYTE)</code> — set one character bitmap row.</td>
+</tr>
+<tr>
+<td><code>CHRUSE</code></td>
+<td><code>CHRUSE(H%)</code> — copy charset to visible Bank D layout.</td>
+</tr>
+<tr>
+<td><code>TSMAKE</code></td>
+<td><code>TSMAKE(COUNT,H%)</code> — allocate one-page tileset.</td>
+</tr>
+<tr>
+<td><code>TSSET</code></td>
+<td><code>TSSET(H%,INDEX,CHAR,C)</code> — define a tileset entry.</td>
+</tr>
+<tr>
+<td><code>TMMAKE</code></td>
+<td><code>TMMAKE(COUNT,H%)</code> — allocate four-page 40x25 tilemap.</td>
+</tr>
+<tr>
+<td><code>TMSET</code></td>
+<td><code>TMSET(H%,INDEX,TILE,FLAGS)</code> — set a map cell.</td>
+</tr>
+<tr>
+<td><code>TMDRAW</code></td>
+<td><code>TMDRAW(MAP%,TILES%)</code> — render tilemap through tileset.</td>
+</tr>
+<tr>
+<td><code>MCELL</code></td>
+<td><code>MCELL(CX,CY,S1,S2,S3)</code> — set multicolor bitmap cell palette attributes.</td>
+</tr>
+<tr>
+<td><code>MCBG</code></td>
+<td><code>MCBG(C)</code> — set shared background color.</td>
+</tr>
+<tr>
+<td><code>SIDRST</code></td>
+<td><code>SIDRST()</code> — clear SID registers $D400–$D418.</td>
+</tr>
+<tr>
+<td><code>SIDOFF</code></td>
+<td><code>SIDOFF()</code> — alias for SIDRST; does not detach an IRQ player.</td>
+</tr>
+<tr>
+<td><code>VOL</code></td>
+<td><code>VOL(V)</code> — master volume 0–15, preserving filter mode bits.</td>
+</tr>
+<tr>
+<td><code>FRQ</code></td>
+<td><code>FRQ(V,F)</code> — raw 16-bit frequency, voice 1–3.</td>
+</tr>
+<tr>
+<td><code>PITCH</code></td>
+<td><code>PITCH(V,SEMITONE,OCTAVE)</code> — PAL pitch table, semitone 0–11 / octave 0–7; does not gate voice.</td>
+</tr>
+<tr>
+<td><code>PULSE</code></td>
+<td><code>PULSE(V,WIDTH)</code> — pulse width 0–4095.</td>
+</tr>
+<tr>
+<td><code>ADSR</code></td>
+<td><code>ADSR(V,A,D,S,R)</code> — envelope nibbles 0–15.</td>
+</tr>
+<tr>
+<td><code>WAVE</code></td>
+<td><code>WAVE(V,MASK)</code> — write complete voice control/wave/gate byte.</td>
+</tr>
+<tr>
+<td><code>GATE</code></td>
+<td><code>GATE(V,ON)</code> — alter gate bit alone.</td>
+</tr>
+<tr>
+<td><code>VOICE</code></td>
+<td><code>VOICE(V,F,W,AD,SR)</code> — packed frequency, control and envelope setup.</td>
+</tr>
+<tr>
+<td><code>FILTER</code></td>
+<td><code>FILTER(CUTOFF,RES,ROUTE,MODE)</code> — cutoff 0–2047, resonance 0–15, route and mode masks.</td>
+</tr>
+<tr>
+<td><code>SOUND</code></td>
+<td><code>SOUND(V,F,D,W)</code> — blocking tone; duration is spin-delay units, not milliseconds.</td>
+</tr>
+<tr>
+<td><code>MEMCAP</code></td>
+<td><code>MEMCAP(ADDRESS)</code> — reserve memory by lowering the BASIC ceiling; see contract above.</td>
+</tr>
+<tr>
+<td><code>BORDER</code></td>
+<td><code>BORDER(C)</code> — set low four border-color bits.</td>
+</tr>
+<tr>
+<td><code>USPEED</code></td>
+<td><code>USPEED(MHZ)</code> — Ultimate-specific built-in speed control; see supported table above.</td>
+</tr>
+<tr>
+<td><code>UMHZ</code></td>
+<td><code>UMHZ()</code> — Ultimate-specific live nominal speed query.</td>
+</tr>
+<tr>
+<td><code>SCRPUT</code></td>
+<td><code>SCRPUT(H%)</code> — restore a captured text/color screen.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="developer-sample-module-commands" class="level2">
+<h2>Developer sample-module commands</h2>
+<p>These are dispatch/overlay proofs, not prerequisites for media. Load one with <code>ZMODLD("RBM.SAMPLE1",N%)</code> (or SAMPLE2/SAMPLE3). Call each as <code>NAME(R%)</code> or <code>R%=NAME()</code>. The sample descriptors intentionally use fixed registry offsets now occupied by built-ins: sample1 at $1500, sample2 at $1600 and sample3 at $1700. They replace existing commands in the session; do not load them in a normal graphics/media program. Restart ReadyBASIC cold to restore the original registry. Media instead uses eight otherwise unused slots beginning at $1C20.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Package</th>
+<th>Command</th>
+<th>Diagnostic behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sample1</td>
+<td><code>ZDM1</code></td>
+<td>Return 61; slot 1 proof</td>
+</tr>
+<tr>
+<td>sample2</td>
+<td><code>ZDM2S</code></td>
+<td>Return 74; slots 1+2 span proof</td>
+</tr>
+<tr>
+<td>sample2</td>
+<td><code>ZDOV1</code></td>
+<td>Return 72; slot 2 overlay 1</td>
+</tr>
+<tr>
+<td>sample2</td>
+<td><code>ZDOV2</code></td>
+<td>Return 73; slot 2 overlay 2</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSAA</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 1; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSAB</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 1; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSBA</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 2; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSBB</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 2; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSCA</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 3; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSCB</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 3; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSDA</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 4; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSDB</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 4; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSEA</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 5; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZSEB</code></td>
+<td>Stateful diagnostic, submodule 6, overlay 5; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTAA</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 1; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTAB</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 1; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTBA</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 2; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTBB</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 2; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTCA</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 3; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTCB</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 3; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTDA</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 4; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTDB</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 4; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTEA</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 5; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZTEB</code></td>
+<td>Stateful diagnostic, submodule 7, overlay 5; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUAA</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 1; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUAB</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 1; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUBA</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 2; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUBB</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 2; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUCA</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 3; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUCB</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 3; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUDA</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 4; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUDB</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 4; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUEA</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 5; paired A/B entrypoints share overlay-local state</td>
+</tr>
+<tr>
+<td>sample3</td>
+<td><code>ZUEB</code></td>
+<td>Stateful diagnostic, submodule 8, overlay 5; paired A/B entrypoints share overlay-local state</td>
+</tr>
+</tbody>
+</table>
+<p>Sample3 tests whether overlay-local state is retained when residency is reused and reset when another image replaces it. It is not persistent application storage. Exact payloads come from <code>build_support/build_readybasic_disk_modules.py</code>.</p>
+</section>
+<section id="packaging-by-profile" class="level2">
+<h2>Packaging by profile</h2>
+<p>This inventory describes source configuration, not proof that every existing binary image has been rebuilt. Example counts exclude applications/utilities.</p>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 40%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr>
+<th>Profile</th>
+<th style="text-align: right;">Example PRGs</th>
+<th>Disk packages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>precog-d81-rsdebug</code></td>
+<td style="text-align: right;">27</td>
+<td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
+</tr>
+<tr>
+<td><code>precog-d81</code></td>
+<td style="text-align: right;">44</td>
+<td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code>, <code>rbm.media</code></td>
+</tr>
+<tr>
+<td><code>precog-dual-d64</code></td>
+<td style="text-align: right;">1</td>
+<td></td>
+</tr>
+<tr>
+<td><code>precog-dual-d71-rsdebug</code></td>
+<td style="text-align: right;">41</td>
+<td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
+</tr>
+<tr>
+<td><code>precog-dual-d71</code></td>
+<td style="text-align: right;">41</td>
+<td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
+</tr>
+<tr>
+<td><code>precog-kung-fu-flash-2-d81</code></td>
+<td style="text-align: right;">41</td>
+<td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
+</tr>
+<tr>
+<td><code>precog-solo-d64-a</code></td>
+<td style="text-align: right;">1</td>
+<td></td>
+</tr>
+<tr>
+<td><code>precog-solo-d64-b</code></td>
+<td style="text-align: right;">1</td>
+<td></td>
+</tr>
+<tr>
+<td><code>precog-solo-d64-c</code></td>
+<td style="text-align: right;">1</td>
+<td></td>
+</tr>
+<tr>
+<td><code>precog-solo-d64-d</code></td>
+<td style="text-align: right;">1</td>
+<td></td>
+</tr>
+<tr>
+<td><code>precog-solo-d64-e-rsdebug</code></td>
+<td style="text-align: right;">1</td>
+<td></td>
+</tr>
+<tr>
+<td><code>precog-solo-d64-e</code></td>
+<td style="text-align: right;">1</td>
+<td></td>
+</tr>
+<tr>
+<td><code>precog-solo-d64-readybasic</code></td>
+<td style="text-align: right;">41</td>
+<td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
+</tr>
+<tr>
+<td><code>precog-ultimate</code></td>
+<td style="text-align: right;">44</td>
+<td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code>, <code>rbm.media</code></td>
+</tr>
+</tbody>
+</table>
+<p>EasyFlash preloads the runtime from CRT, but its companion data disk does not currently package this BASIC example/media collection. Supplying the runtime on cartridge is different from supplying the disk-loadable assets.</p>
+</section>
+<section id="every-example-at-a-glance" class="level2">
+<h2>Every example at a glance</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Example</th>
+<th>Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#rbgfx01-modes">rbgfx01_modes</a></td>
+<td>Switch/query all five graphics modes, then restore text.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx02-hires-plot">rbgfx02_hires_plot</a></td>
+<td>Plot a hires grid and diagonal, waiting for a key before exit.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx03-hires-lines">rbgfx03_hires_lines</a></td>
+<td>Draw intersecting hires line fans and restore text after a key.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx04-rects">rbgfx04_rects</a></td>
+<td>Compare rectangle outlines with filled boxes.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx05-point-read">rbgfx05_point_read</a></td>
+<td>Read a plotted pixel, its neighbor, then the cleared pixel with PNT.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx06-reu-surface">rbgfx06_reu_surface</a></td>
+<td>Early surface-handle probe; it predates capture/blit and does not initialize its new surface.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx07-mbitmap">rbgfx07_mbitmap</a></td>
+<td>Draw multicolor lines and pixels using the immediate primitive color encoding.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx08-tile">rbgfx08_tile</a></td>
+<td>Use plot/rectangle primitives on character cells in tile mode.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx09-sprites">rbgfx09_sprites</a></td>
+<td>Configure two generated sprites, position them and change color.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx10-collision">rbgfx10_collision</a></td>
+<td>Overlap sprites and inspect collision state; retained polling probe.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx11-input">rbgfx11_input</a></td>
+<td>Poll joystick and keyboard values without an IRQ input sampler.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx12-showcase">rbgfx12_showcase</a></td>
+<td>Combine hires lines, boxes, sprite positioning and pixel readback.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx13-sprite-steps">rbgfx13_sprite_steps</a></td>
+<td>Construct sprite art row by row and step through positions/colors with keys.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx14-phase2-prims">rbgfx14_phase2_prims</a></td>
+<td>Compare circle outline with the current rectangular FCIRCLE placeholder.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx15-phase2-tiles">rbgfx15_phase2_tiles</a></td>
+<td>Write visible character/color tiles using TILE and CHARAT.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx16-phase2-sprite-ctrl">rbgfx16_phase2_sprite_ctrl</a></td>
+<td>Step through sprite expansion, multicolor, priority and color controls.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx17-poly-array">rbgfx17_poly_array</a></td>
+<td>Outline coordinate-pair polygons held in BASIC integer arrays.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx18-fpoly-array">rbgfx18_fpoly_array</a></td>
+<td>Fill convex polygons held in BASIC integer arrays.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx19-poly-reu">rbgfx19_poly_reu</a></td>
+<td>Allocate REU point buffers, set indexed vertices and draw outlines.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx20-fpoly-reu-showcase">rbgfx20_fpoly_reu_showcase</a></td>
+<td>Fill REU-backed polygons alongside lines and rectangles.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx21-mbitmap-prims">rbgfx21_mbitmap_prims</a></td>
+<td>Exercise immediate primitives and color slots in multicolor bitmap mode.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx22-mbitmap-point">rbgfx22_mbitmap_point</a></td>
+<td>Check that PNT returns multicolor pixel slot codes 1, 2 and 3.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx23-dlist">rbgfx23_dlist</a></td>
+<td>Record plot/line/rectangle/box commands and replay a retained display list.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx24-tilemap">rbgfx24_tilemap</a></td>
+<td>Build a custom charset, tileset and tilemap, then render them together.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx25-mbcells">rbgfx25_mbcells</a></td>
+<td>Change multicolor cell palette attributes independently of bitmap drawing.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx26-mode-matrix">rbgfx26_mode_matrix</a></td>
+<td>Compare visible primitives and PNT across hires, multicolor and tile modes.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx27-target-blit">rbgfx27_target_blit</a></td>
+<td>Probe surface selection, capture/blit and error reporting before visible drawing.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx28-tile-visible">rbgfx28_tile_visible</a></td>
+<td>Draw and read back ordinary visible tile cells.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx29-mtile-visible">rbgfx29_mtile_visible</a></td>
+<td>Draw and read back multicolor tile cells.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx30-mbitmap-dlist">rbgfx30_mbitmap_dlist</a></td>
+<td>Replay a retained display list in multicolor bitmap mode.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx31-sync-blit">rbgfx31_sync_blit</a></td>
+<td>Capture a visible hires scene into REU, clear it and restore it with a key.</td>
+</tr>
+<tr>
+<td><a href="#rbgfx32-convex-poly">rbgfx32_convex_poly</a></td>
+<td>Draw a polygon outline and a convex filled polygon from integer arrays.</td>
+</tr>
+<tr>
+<td><a href="#rbgfxsnddemo">rbgfxsnddemo</a></td>
+<td>Orbital Echoes: two cached scenes, READY sprites, palette-safe lines and PAL music; no Ultimate speed calls.</td>
+</tr>
+<tr>
+<td><a href="#rbproc1">rbproc1</a></td>
+<td>Structured routine/function and typed-result regression examples, including nested expressions.</td>
+</tr>
+<tr>
+<td><a href="#rbprocerr">rbprocerr</a></td>
+<td>Intentional negative cases; run individual numbered sections to test argument/type/stack errors.</td>
+</tr>
+<tr>
+<td><a href="#rbsnd01-sid-basics">rbsnd01_sid_basics</a></td>
+<td>Hear separate triangle, saw, pulse and noise tones using immediate SID control.</td>
+</tr>
+<tr>
+<td><a href="#rbsnd02-voice-state">rbsnd02_voice_state</a></td>
+<td>Change pulse width and envelope, gating voices explicitly.</td>
+</tr>
+<tr>
+<td><a href="#rbsnd03-notes">rbsnd03_notes</a></td>
+<td>Play a chromatic scale with the PAL pitch table.</td>
+</tr>
+<tr>
+<td><a href="#rbsnd04-filter">rbsnd04_filter</a></td>
+<td>Compare low-pass, band-pass and high-pass SID filtering.</td>
+</tr>
+<tr>
+<td><a href="#rbsnd05-voice-batch">rbsnd05_voice_batch</a></td>
+<td>Set frequency, waveform and packed envelopes together with VOICE.</td>
+</tr>
+<tr>
+<td><a href="#rbsnd06-three-voice">rbsnd06_three_voice</a></td>
+<td>Combine three voices into a chord, then a bass/high-voice pair.</td>
+</tr>
+<tr>
+<td><a href="#rbsnd07-psid">rbsnd07_psid</a></td>
+<td>Load the media module and vetted PSID; play, halt, restart and release its arena.</td>
+</tr>
+<tr>
+<td><a href="#rbsnd08-neon">rbsnd08_neon</a></td>
+<td>Historical single-scene clock-paced music/graphics demo; use the newer combined demos.</td>
+</tr>
+<tr>
+<td><a href="#rbtest1">rbtest1</a></td>
+<td>Small command-expression, integer-output and uppercase-string smoke test.</td>
+</tr>
+<tr>
+<td><a href="#rbugfxsnddemo">rbugfxsnddemo</a></td>
+<td>Ultimate Orbital Echoes: the same media lifecycle, with safe-speed disk loading and 64 MHz computation/animation.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="rbgfx01-modes" class="level2">
+<h2>rbgfx01_modes</h2>
+<p>Switch/query all five graphics modes, then restore text.</p>
+<p><a href="../src/apps/readybasic/rbgfx01_modes.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>.</p>
+<p>Disk name: <code>RBGFX01</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx01 modes&quot;
+30 gfxmode(&quot;hires&quot;):m%=gfxmode():print &quot;hires mode&quot;;m%
+40 gfxclear(0)
+50 gfxmode(&quot;mbitmap&quot;):m%=gfxmode():print &quot;mbitmap mode&quot;;m%
+60 gfxclear(1)
+70 gfxmode(&quot;tile&quot;):m%=gfxmode():print &quot;tile mode&quot;;m%
+80 gfxclear(2)
+90 gfxmode(&quot;mtile&quot;):m%=gfxmode():print &quot;mtile mode&quot;;m%
+100 gfxclear(3)
+110 gfxtext()
+120 print &quot;back to text&quot;</code></pre>
+</section>
+<section id="rbgfx02-hires-plot" class="level2">
+<h2>rbgfx02_hires_plot</h2>
+<p>Plot a hires grid and diagonal, waiting for a key before exit.</p>
+<p><a href="../src/apps/readybasic/rbgfx02_hires_plot.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PLOT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX02</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx02 hires plot&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 for x=0 to 319 step 16
+50 plot(x,0,1):plot(x,199,1)
+60 next x
+70 for y=0 to 199 step 16
+80 plot(0,y,1):plot(319,y,1)
+90 next y
+100 for i=0 to 199
+110 plot(i,i,1)
+120 next i
+130 print &quot;grid and diagonal&quot;
+140 zpause(30)
+150 get a$:if a$=&quot;&quot; then 140
+160 gfxtext():print &quot;rbgfx02 complete&quot;</code></pre>
+</section>
+<section id="rbgfx03-hires-lines" class="level2">
+<h2>rbgfx03_hires_lines</h2>
+<p>Draw intersecting hires line fans and restore text after a key.</p>
+<p><a href="../src/apps/readybasic/rbgfx03_hires_lines.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX03</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx03 hires lines&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 for y=0 to 199 step 20
+50 line(0,0,319,y,1)
+60 next y
+70 for x=0 to 319 step 32
+80 line(319,199,x,0,1)
+90 next x
+100 line(0,199,319,0,1)
+110 print &quot;fan lines&quot;
+120 zpause(30)
+130 get a$:if a$=&quot;&quot; then 120
+140 gfxtext():print &quot;rbgfx03 complete&quot;</code></pre>
+</section>
+<section id="rbgfx04-rects" class="level2">
+<h2>rbgfx04_rects</h2>
+<p>Compare rectangle outlines with filled boxes.</p>
+<p><a href="../src/apps/readybasic/rbgfx04_rects.bas">Original source</a>.</p>
+<p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>RECT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX04</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx04 rects&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 rect(8,8,311,191,1)
+50 rect(32,24,288,176,1)
+60 fbox(64,48,128,96,1)
+70 fbox(192,96,256,160,1)
+80 line(0,0,319,199,1)
+90 line(0,199,319,0,1)
+100 print &quot;outline and filled rects&quot;
+110 zpause(30)
+120 get a$:if a$=&quot;&quot; then 110
+130 gfxtext():print &quot;rbgfx04 complete&quot;</code></pre>
+</section>
+<section id="rbgfx05-point-read" class="level2">
+<h2>rbgfx05_point_read</h2>
+<p>Read a plotted pixel, its neighbor, then the cleared pixel with PNT.</p>
+<p><a href="../src/apps/readybasic/rbgfx05_point_read.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PLOT</code>, <code>PNT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX05</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx05 pnt read&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 plot(40,40,1)
+50 pnt(40,40,a%)
+60 pnt(41,40,b%)
+70 print &quot;pnt 40,40&quot;;a%
+80 print &quot;pnt 41,40&quot;;b%
+90 plot(40,40,0)
+100 pnt(40,40,c%)
+110 print &quot;after clear&quot;;c%
+120 zpause(30)
+130 get a$:if a$=&quot;&quot; then 120
+140 gfxtext():print &quot;rbgfx05 complete&quot;</code></pre>
+</section>
+<section id="rbgfx06-reu-surface" class="level2">
+<h2>rbgfx06_reu_surface</h2>
+<p>Early surface-handle probe; it predates capture/blit and does not initialize its new surface.</p>
+<p><a href="../src/apps/readybasic/rbgfx06_reu_surface.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXTEXT</code>, <code>LINE</code>.</p>
+<p>Disk name: <code>RBGFX06</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx06 reu surface&quot;
+30 h%=gfxsurf(&quot;hires&quot;)
+40 print &quot;surface handle&quot;;h%
+50 gfxmode(&quot;hires&quot;):gfxclear(0)
+60 line(0,0,319,199,1)
+70 gfxblit(h%)
+80 print &quot;blit validates handle in phase 1&quot;
+90 gfxtext()</code></pre>
+</section>
+<section id="rbgfx07-mbitmap" class="level2">
+<h2>rbgfx07_mbitmap</h2>
+<p>Draw multicolor lines and pixels using the immediate primitive color encoding.</p>
+<p><a href="../src/apps/readybasic/rbgfx07_mbitmap.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PLOT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX07</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx07 mbitmap&quot;
+30 gfxmode(&quot;mbitmap&quot;):gfxclear(0)
+40 for y=10 to 190 step 12
+50 line(0,y,159,199-y,7)
+60 next y
+70 for x=16 to 144 step 16
+80 plot(x,100,55)
+90 next x
+100 print &quot;multicolor bitmap register path&quot;
+110 zpause(30)
+120 get a$:if a$=&quot;&quot; then 110
+130 gfxtext():print &quot;rbgfx07 complete&quot;</code></pre>
+</section>
+<section id="rbgfx08-tile" class="level2">
+<h2>rbgfx08_tile</h2>
+<p>Use plot/rectangle primitives on character cells in tile mode.</p>
+<p><a href="../src/apps/readybasic/rbgfx08_tile.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PLOT</code>, <code>PNT</code>, <code>RECT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX08</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx08 tile&quot;
+30 gfxmode(&quot;tile&quot;):gfxclear(0)
+40 for y=0 to 23 step 2
+50 for x=0 to 38 step 2
+60 plot(x,y,1):plot(x+1,y+1,1)
+70 next x
+80 next y
+90 rect(2,2,37,22,5)
+100 pnt(3,3,a%)
+110 print &quot;tile cells use plot&quot;;a%
+120 zpause(30)
+130 get a$:if a$=&quot;&quot; then 120
+140 gfxtext():print &quot;rbgfx08 complete&quot;</code></pre>
+</section>
+<section id="rbgfx09-sprites" class="level2">
+<h2>rbgfx09_sprites</h2>
+<p>Configure two generated sprites, position them and change color.</p>
+<p><a href="../src/apps/readybasic/rbgfx09_sprites.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>SPRCOL</code>, <code>SPRMOVE</code>, <code>SPRSET</code>.</p>
+<p>Disk name: <code>RBGFX09</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx09 sprites&quot;
+30 gfxmode(&quot;tile&quot;):gfxclear(0)
+40 sprset(0,1,2,0)
+50 sprset(1,1,7,1)
+60 sprmove(0,80,80)
+70 sprmove(1,180,110)
+80 sprcol(0,5)
+90 for t=1 to 60000:next t
+100 sprset(0,0,0,0):sprset(1,0,0,1)
+110 gfxtext():print &quot;rbgfx09 complete&quot;</code></pre>
+</section>
+<section id="rbgfx10-collision" class="level2">
+<h2>rbgfx10_collision</h2>
+<p>Overlap sprites and inspect collision state; retained polling probe.</p>
+<p><a href="../src/apps/readybasic/rbgfx10_collision.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>SPRCOLL</code>, <code>SPRMOVE</code>, <code>SPRSCAN</code>, <code>SPRSET</code>.</p>
+<p>Disk name: <code>RBGFX10</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx10 collision&quot;
+30 gfxmode(&quot;tile&quot;):gfxclear(0)
+40 sprset(0,1,2,0)
+50 sprset(1,1,3,0)
+60 sprmove(0,120,100)
+70 sprmove(1,124,104)
+80 for t=1 to 60000:next t
+90 sprcoll(0,c%):gfxtext()
+100 print &quot;sprite collision&quot;;c%
+110 sprscan()</code></pre>
+</section>
+<section id="rbgfx11-input" class="level2">
+<h2>rbgfx11_input</h2>
+<p>Poll joystick and keyboard values without an IRQ input sampler.</p>
+<p><a href="../src/apps/readybasic/rbgfx11_input.bas">Original source</a>.</p>
+<p>Commands used: <code>JOY</code>, <code>KEYLAST</code>, <code>KEYP</code>, <code>KEYSCAN</code>.</p>
+<p>Disk name: <code>RBGFX11</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx11 input&quot;
+30 for i=1 to 30
+40 joy(2,j%)
+50 keyp(k%)
+60 keylast(l%)
+70 print &quot;joy&quot;;j%;&quot; key&quot;;k%;&quot; last&quot;;l%
+80 keyscan()
+90 next i
+100 print &quot;polling only, no irq sampler&quot;</code></pre>
+</section>
+<section id="rbgfx12-showcase" class="level2">
+<h2>rbgfx12_showcase</h2>
+<p>Combine hires lines, boxes, sprite positioning and pixel readback.</p>
+<p><a href="../src/apps/readybasic/rbgfx12_showcase.bas">Original source</a>.</p>
+<p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PNT</code>, <code>RECT</code>, <code>SPRMOVE</code>, <code>SPRSET</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX12</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx12 showcase&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 rect(4,4,315,195,1)
+50 for y=16 to 184 step 16
+60 line(8,y,311,199-y,1)
+70 next y
+80 fbox(136,72,184,120,1)
+90 sprset(0,1,6,2):sprmove(0,160,100)
+100 pnt(160,100,p%)
+110 print &quot;center pnt&quot;;p%
+120 print &quot;showcase done&quot;
+130 zpause(30)
+140 get a$:if a$=&quot;&quot; then 130
+150 gfxtext():print &quot;rbgfx12 complete&quot;</code></pre>
+</section>
+<section id="rbgfx13-sprite-steps" class="level2">
+<h2>rbgfx13_sprite_steps</h2>
+<p>Construct sprite art row by row and step through positions/colors with keys.</p>
+<p><a href="../src/apps/readybasic/rbgfx13_sprite_steps.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>SPRMOVE</code>, <code>SPRROW</code>, <code>SPRSET</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX13</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx13 sprite steps&quot;
+30 gfxmode(&quot;tile&quot;):gfxclear(0)
+40 sprset(0,1,2,0):sprset(1,1,7,0)
+50 sprrow(0,0,0,24,0):sprrow(0,1,0,60,0)
+60 sprrow(0,2,0,126,0):sprrow(0,3,0,255,0)
+70 sprrow(0,4,1,255,128):sprrow(0,5,3,255,192)
+80 sprrow(0,6,7,255,224):sprrow(0,7,15,255,240)
+90 sprrow(0,8,31,255,248):sprrow(0,9,63,255,252)
+100 sprrow(0,10,127,255,254):sprrow(0,11,63,255,252)
+110 sprrow(0,12,31,255,248):sprrow(0,13,15,255,240)
+120 sprrow(0,14,7,255,224):sprrow(0,15,3,255,192)
+130 sprrow(0,16,1,255,128):sprrow(0,17,0,255,0)
+140 sprrow(0,18,0,126,0):sprrow(0,19,0,60,0)
+150 sprrow(0,20,0,24,0)
+160 sprrow(1,0,255,255,0):sprrow(1,1,128,1,0)
+170 sprrow(1,2,191,253,0):sprrow(1,3,160,5,0)
+180 sprrow(1,4,175,245,0):sprrow(1,5,168,21,0)
+190 sprrow(1,6,171,85,0):sprrow(1,7,170,85,0)
+200 sprrow(1,8,171,85,0):sprrow(1,9,168,21,0)
+210 sprrow(1,10,175,245,0):sprrow(1,11,160,5,0)
+220 sprrow(1,12,191,253,0):sprrow(1,13,128,1,0)
+230 sprrow(1,14,255,255,0):sprrow(1,15,0,0,0)
+240 sprrow(1,16,255,255,0):sprrow(1,17,128,1,0)
+250 sprrow(1,18,255,255,0):sprrow(1,19,0,0,0)
+260 sprrow(1,20,255,255,0)
+270 sprmove(0,60,70):sprmove(1,190,110)
+280 zpause(30)
+290 get a$:if a$=&quot;&quot; then 280
+300 sprmove(0,120,88):sprmove(1,145,110)
+310 zpause(30)
+320 get a$:if a$=&quot;&quot; then 310
+330 sprset(0,1,5,0):sprset(1,1,3,0)
+340 zpause(30)
+350 get a$:if a$=&quot;&quot; then 340
+360 gfxtext():print &quot;sprite demo done&quot;</code></pre>
+</section>
+<section id="rbgfx14-phase2-prims" class="level2">
+<h2>rbgfx14_phase2_prims</h2>
+<p>Compare circle outline with the current rectangular FCIRCLE placeholder.</p>
+<p><a href="../src/apps/readybasic/rbgfx14_phase2_prims.bas">Original source</a>.</p>
+<p>Commands used: <code>CIRCLE</code>, <code>FCIRCLE</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>RECT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX14</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx14 phase2 prims&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 circle(82,82,38,1)
+50 fcircle(210,92,26,1)
+60 rect(180,58,240,126,1)
+70 line(20,170,300,170,1)
+80 zpause(30)
+90 get a$:if a$=&quot;&quot; then 80
+100 gfxtext():print &quot;phase2 prims done&quot;</code></pre>
+</section>
+<section id="rbgfx15-phase2-tiles" class="level2">
+<h2>rbgfx15_phase2_tiles</h2>
+<p>Write visible character/color tiles using TILE and CHARAT.</p>
+<p><a href="../src/apps/readybasic/rbgfx15_phase2_tiles.bas">Original source</a>.</p>
+<p>Commands used: <code>CHARAT</code>, <code>GFXTEXT</code>, <code>TILE</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX15</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx15 phase2 tiles&quot;
+30 gfxtext():print chr$(147)
+40 for y=4 to 16
+50 for x=6 to 33
+60 tile(x,y,160,1+(x+y)-int((x+y)/8)*8)
+70 next x
+80 next y
+90 charat(10,7,160,2):charat(11,7,160,3)
+100 charat(12,7,160,4):charat(13,7,160,5)
+110 charat(10,9,160,6):charat(11,9,160,7)
+120 charat(12,9,160,8):charat(13,9,160,9)
+130 zpause(30)
+140 get a$:if a$=&quot;&quot; then 130
+150 gfxtext():print &quot;phase2 tiles done&quot;</code></pre>
+</section>
+<section id="rbgfx16-phase2-sprite-ctrl" class="level2">
+<h2>rbgfx16_phase2_sprite_ctrl</h2>
+<p>Step through sprite expansion, multicolor, priority and color controls.</p>
+<p><a href="../src/apps/readybasic/rbgfx16_phase2_sprite_ctrl.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>SPRCOL</code>, <code>SPRMCO</code>, <code>SPRMOVE</code>, <code>SPRMUL</code>, <code>SPRPRI</code>, <code>SPRROW</code>, <code>SPRSET</code>, <code>SPRSIZE</code>, <code>TILE</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX16</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx16 sprite controls&quot;
+30 gfxmode(&quot;tile&quot;):gfxclear(0)
+40 for y=7 to 12
+50 for x=13 to 24
+60 tile(x,y,160,6)
+70 next x
+80 next y
+90 sprset(0,1,2,0):sprmove(0,120,86)
+100 sprrow(0,0,0,60,0):sprrow(0,1,0,126,0)
+110 sprrow(0,2,0,255,0):sprrow(0,3,1,255,128)
+120 sprrow(0,4,3,255,192):sprrow(0,5,7,255,224)
+130 sprrow(0,6,15,255,240):sprrow(0,7,31,255,248)
+140 sprrow(0,8,63,255,252):sprrow(0,9,127,255,254)
+150 sprrow(0,10,255,255,255):sprrow(0,11,127,255,254)
+160 sprrow(0,12,63,255,252):sprrow(0,13,31,255,248)
+170 sprrow(0,14,15,255,240):sprrow(0,15,7,255,224)
+180 sprrow(0,16,3,255,192):sprrow(0,17,1,255,128)
+190 sprrow(0,18,0,255,0):sprrow(0,19,0,126,0)
+200 sprrow(0,20,0,60,0)
+210 zpause(30)
+220 get a$:if a$=&quot;&quot; then 210
+230 sprsize(0,1,1):sprmove(0,134,92)
+240 zpause(30)
+250 get a$:if a$=&quot;&quot; then 240
+260 sprmco(5,14)
+270 sprmul(0,1)
+280 sprpri(0,1)
+290 sprcol(0,3)
+300 zpause(30)
+310 get a$:if a$=&quot;&quot; then 300
+320 gfxtext():print &quot;phase2 sprites done&quot;</code></pre>
+</section>
+<section id="rbgfx17-poly-array" class="level2">
+<h2>rbgfx17_poly_array</h2>
+<p>Outline coordinate-pair polygons held in BASIC integer arrays.</p>
+<p><a href="../src/apps/readybasic/rbgfx17_poly_array.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>POLY</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX17</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 rem demo 17
+30 dim p%(7),q%(9)
+40 gfxmode(&quot;hires&quot;):gfxclear(0)
+50 p%(0)=50:p%(1)=35:p%(2)=140:p%(3)=35
+60 p%(4)=170:p%(5)=105:p%(6)=85:p%(7)=145
+70 poly(p%(0),4,1)
+80 q%(0)=190:q%(1)=30:q%(2)=235:q%(3)=55
+90 q%(4)=245:q%(5)=125:q%(6)=220:q%(7)=155
+100 q%(8)=175:q%(9)=95
+110 poly(q%(0),5,1)
+120 line(20,175,250,175,1)
+130 zpause(30)
+140 get a$:if a$=&quot;&quot; then 130
+150 gfxtext():print &quot;phase3 done 17&quot;</code></pre>
+</section>
+<section id="rbgfx18-fpoly-array" class="level2">
+<h2>rbgfx18_fpoly_array</h2>
+<p>Fill convex polygons held in BASIC integer arrays.</p>
+<p><a href="../src/apps/readybasic/rbgfx18_fpoly_array.bas">Original source</a>.</p>
+<p>Commands used: <code>FPOLY</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>RECT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX18</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 rem demo 18
+30 dim p%(7),q%(7)
+40 gfxmode(&quot;hires&quot;):gfxclear(0)
+50 p%(0)=45:p%(1)=48:p%(2)=130:p%(3)=34
+60 p%(4)=165:p%(5)=118:p%(6)=70:p%(7)=150
+70 fpoly(p%(0),4,1)
+80 q%(0)=185:q%(1)=42:q%(2)=245:q%(3)=70
+90 q%(4)=230:q%(5)=150:q%(6)=175:q%(7)=115
+100 fpoly(q%(0),4,1)
+110 rect(18,22,252,176,1)
+120 zpause(30)
+130 get a$:if a$=&quot;&quot; then 120
+140 gfxtext():print &quot;phase3 done 18&quot;</code></pre>
+</section>
+<section id="rbgfx19-poly-reu" class="level2">
+<h2>rbgfx19_poly_reu</h2>
+<p>Allocate REU point buffers, set indexed vertices and draw outlines.</p>
+<p><a href="../src/apps/readybasic/rbgfx19_poly_reu.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PBMAKE</code>, <code>PBUFSET</code>, <code>POLYH</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX19</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 rem demo 19
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 pbmake(5,h%)
+50 pbufset(h%,0,70,40):pbufset(h%,1,155,45)
+60 pbufset(h%,2,180,115):pbufset(h%,3,105,155)
+70 pbufset(h%,4,45,95)
+80 polyh(h%,5,1)
+90 pbmake(3,g%)
+100 pbufset(g%,0,215,45):pbufset(g%,1,245,135)
+110 pbufset(g%,2,190,150)
+120 polyh(g%,3,1)
+130 rem demo
+140 zpause(30)
+150 get a$:if a$=&quot;&quot; then 140
+160 gfxtext():print &quot;phase3 done 19&quot;</code></pre>
+</section>
+<section id="rbgfx20-fpoly-reu-showcase" class="level2">
+<h2>rbgfx20_fpoly_reu_showcase</h2>
+<p>Fill REU-backed polygons alongside lines and rectangles.</p>
+<p><a href="../src/apps/readybasic/rbgfx20_fpoly_reu_showcase.bas">Original source</a>.</p>
+<p>Commands used: <code>FPOLYH</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PBMAKE</code>, <code>PBUFSET</code>, <code>RECT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX20</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 rem demo 20
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 pbmake(4,h%)
+50 pbufset(h%,0,42,58):pbufset(h%,1,118,35)
+60 pbufset(h%,2,168,120):pbufset(h%,3,72,156)
+70 fpolyh(h%,4,1)
+80 pbmake(5,g%)
+90 pbufset(g%,0,185,42):pbufset(g%,1,244,55)
+100 pbufset(g%,2,248,112):pbufset(g%,3,226,158)
+110 pbufset(g%,4,170,106)
+120 fpolyh(g%,5,1)
+130 line(15,182,250,182,1):rect(176,24,252,170,1)
+140 rem demo
+150 zpause(30)
+160 get a$:if a$=&quot;&quot; then 150
+170 gfxtext():print &quot;phase3 done 20&quot;</code></pre>
+</section>
+<section id="rbgfx21-mbitmap-prims" class="level2">
+<h2>rbgfx21_mbitmap_prims</h2>
+<p>Exercise immediate primitives and color slots in multicolor bitmap mode.</p>
+<p><a href="../src/apps/readybasic/rbgfx21_mbitmap_prims.bas">Original source</a>.</p>
+<p>Commands used: <code>CIRCLE</code>, <code>FBOX</code>, <code>FCIRCLE</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PLOT</code>, <code>RECT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX21</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx21 mbitmap prims&quot;
+30 gfxmode(&quot;mbitmap&quot;):gfxclear(0)
+40 line(4,18,155,18,17)
+50 line(4,22,155,70,34)
+60 rect(8,82,72,144,20)
+70 fbox(86,82,148,144,37)
+80 circle(46,112,28,51)
+90 fcircle(118,112,22,58)
+100 for x=0 to 159 step 8
+110 plot(x,170,16+(x/8)-int((x/8)/15)*15)
+120 next x
+130 zpause(30)
+140 get a$:if a$=&quot;&quot; then 130
+150 gfxtext():print &quot;mbitmap prims done&quot;</code></pre>
+</section>
+<section id="rbgfx22-mbitmap-point" class="level2">
+<h2>rbgfx22_mbitmap_point</h2>
+<p>Check that PNT returns multicolor pixel slot codes 1, 2 and 3.</p>
+<p><a href="../src/apps/readybasic/rbgfx22_mbitmap_point.bas">Original source</a>.</p>
+<p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PLOT</code>, <code>PNT</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBGFX22</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx22 mbitmap pnt&quot;
+30 gfxmode(&quot;mbitmap&quot;):gfxclear(0)
+40 plot(20,40,17):plot(24,40,34):plot(28,40,51)
+50 pnt(20,40,a%):pnt(24,40,b%):pnt(28,40,c%)
+60 line(12,80,148,80,17)
+70 line(12,92,148,124,34)
+80 line(12,150,148,108,51)
+90 zpause(30)
+100 get a$:if a$=&quot;&quot; then 90
+110 gfxtext():print chr$(147);&quot;mbitmap pnt:&quot;;a%;b%;c%
+120 if a%&lt;&gt;1 or b%&lt;&gt;2 or c%&lt;&gt;3 then print &quot;?mbitmap pnt fail&quot;:stop
+130 print &quot;mbitmap pnt done&quot;</code></pre>
+</section>
+<section id="rbgfx23-dlist" class="level2">
+<h2>rbgfx23_dlist</h2>
+<p>Record plot/line/rectangle/box commands and replay a retained display list.</p>
+<p><a href="../src/apps/readybasic/rbgfx23_dlist.bas">Original source</a>.</p>
+<p>Commands used: <code>DLDRAW</code>, <code>DLFBOX</code>, <code>DLLINE</code>, <code>DLMAKE</code>, <code>DLPLOT</code>, <code>DLRECT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>.</p>
+<p>Disk name: <code>RBGFX23</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx23 dlist&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 dlmake(12,h%)
+50 dlplot(h%,80,60,1)
+60 dlline(h%,20,20,300,160)
+70 dlrect(h%,40,50,140,130)
+80 dlfbox(h%,180,70,260,140)
+90 dldraw(h%)
+100 get a$:if a$=&quot;&quot; then 100
+110 gfxtext():print &quot;phase4 dlist done&quot;</code></pre>
+</section>
+<section id="rbgfx24-tilemap" class="level2">
+<h2>rbgfx24_tilemap</h2>
+<p>Build a custom charset, tileset and tilemap, then render them together.</p>
+<p><a href="../src/apps/readybasic/rbgfx24_tilemap.bas">Original source</a>.</p>
+<p>Commands used: <code>CHRMAKE</code>, <code>CHRROW</code>, <code>CHRUSE</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>TMDRAW</code>, <code>TMMAKE</code>, <code>TMSET</code>, <code>TSMAKE</code>, <code>TSSET</code>.</p>
+<p>Disk name: <code>RBGFX24</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx24 tilemap&quot;
+30 gfxmode(&quot;tile&quot;):gfxclear(0)
+40 chrmake(256,c%)
+50 for r=0 to 7:chrrow(c%,1,r,255):next
+60 chrrow(c%,2,0,255):chrrow(c%,2,1,129)
+70 chrrow(c%,2,2,189):chrrow(c%,2,3,165)
+80 chrrow(c%,2,4,165):chrrow(c%,2,5,189)
+90 chrrow(c%,2,6,129):chrrow(c%,2,7,255)
+100 chrrow(c%,3,0,24):chrrow(c%,3,1,60)
+110 chrrow(c%,3,2,126):chrrow(c%,3,3,219)
+120 chrrow(c%,3,4,24):chrrow(c%,3,5,24)
+130 chrrow(c%,3,6,60):chrrow(c%,3,7,0)
+140 for r=0 to 7:chrrow(c%,4,r,170):next
+150 chruse(c%)
+160 tsmake(64,t%):tmmake(1000,m%)
+170 tsset(t%,0,32,0)
+180 tsset(t%,1,1,2)
+190 tsset(t%,2,2,5)
+200 tsset(t%,3,3,7)
+210 tsset(t%,4,4,1)
+220 for x=0 to 39
+230 tmset(m%,x,1,0):tmset(m%,960+x,1,0)
+240 next
+250 for y=0 to 24
+260 i=y*40:tmset(m%,i,1,0):tmset(m%,i+39,1,0)
+270 next
+280 for x=6 to 33
+290 tmset(m%,160+x,2,0):tmset(m%,320+x,3,0)
+300 tmset(m%,480+x,4,0)
+310 next
+320 tmdraw(m%,t%)
+330 get a$:if a$=&quot;&quot; then 330
+340 gfxtext():print &quot;phase4 tilemap done&quot;</code></pre>
+</section>
+<section id="rbgfx25-mbcells" class="level2">
+<h2>rbgfx25_mbcells</h2>
+<p>Change multicolor cell palette attributes independently of bitmap drawing.</p>
+<p><a href="../src/apps/readybasic/rbgfx25_mbcells.bas">Original source</a>.</p>
+<p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>MCBG</code>, <code>MCELL</code>, <code>RECT</code>.</p>
+<p>Disk name: <code>RBGFX25</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx25 mbitmap cells&quot;
+30 gfxmode(&quot;mbitmap&quot;):gfxclear(0):mcbg(0)
+40 fbox(8,16,31,47,17)
+50 fbox(40,16,63,47,34)
+60 fbox(72,16,95,47,51)
+70 mcell(2,2,6,10,2)
+80 mcell(10,2,4,12,7)
+90 mcell(18,2,1,14,5)
+100 line(4,120,150,170,49)
+110 rect(20,72,140,112,50)
+120 get a$:if a$=&quot;&quot; then 120
+130 gfxtext():print &quot;phase4 mbitmap cells done&quot;</code></pre>
+</section>
+<section id="rbgfx26-mode-matrix" class="level2">
+<h2>rbgfx26_mode_matrix</h2>
+<p>Compare visible primitives and PNT across hires, multicolor and tile modes.</p>
+<p><a href="../src/apps/readybasic/rbgfx26_mode_matrix.bas">Original source</a>.</p>
+<p>Commands used: <code>CIRCLE</code>, <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>MCBG</code>, <code>PLOT</code>, <code>PNT</code>, <code>RECT</code>.</p>
+<p>Disk name: <code>RBGFX26</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx26 mode matrix&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 plot(20,20,1):line(4,36,300,180,1)
+50 rect(32,48,138,112,1):fbox(178,72,260,140,1)
+60 circle(82,150,28,1):pnt(20,20,a%)
+70 get a$:if a$=&quot;&quot; then 70
+80 gfxmode(&quot;mbitmap&quot;):gfxclear(0):mcbg(0)
+90 plot(20,20,17):line(4,36,155,180,34)
+100 rect(8,70,70,128,20):fbox(88,78,148,142,51)
+110 circle(48,150,24,49):pnt(20,20,b%)
+120 get a$:if a$=&quot;&quot; then 120
+130 gfxmode(&quot;tile&quot;):gfxclear(0)
+140 plot(4,4,5):line(1,1,38,20,6)
+150 rect(3,5,20,16,7):fbox(24,8,34,18,2)
+160 pnt(4,4,c%)
+170 get a$:if a$=&quot;&quot; then 170
+180 gfxmode(&quot;mtile&quot;):gfxclear(0)
+190 plot(4,4,9):line(1,22,38,2,10)
+200 rect(5,4,21,17,11):fbox(25,7,35,19,12)
+210 pnt(4,4,d%)
+220 get a$:if a$=&quot;&quot; then 220
+230 gfxtext():print &quot;matrix&quot;;a%;b%;c%;d%
+240 print &quot;mode matrix done&quot;</code></pre>
+</section>
+<section id="rbgfx27-target-blit" class="level2">
+<h2>rbgfx27_target_blit</h2>
+<p>Probe surface selection, capture/blit and error reporting before visible drawing.</p>
+<p><a href="../src/apps/readybasic/rbgfx27_target_blit.bas">Original source</a>.</p>
+<p>Commands used: <code>ERRCODE</code>, <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXSYNC</code>, <code>GFXTEXT</code>, <code>GFXTGT</code>, <code>LINE</code>, <code>RECT</code>.</p>
+<p>Disk name: <code>RBGFX27</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx27 target blit&quot;
+30 h%=gfxsurf(&quot;hires&quot;)
+40 print &quot;surf&quot;;h%;&quot; err&quot;;errcode()
+50 gfxtgt(h%):print &quot;target surf err&quot;;errcode()
+60 gfxsync():print &quot;sync err&quot;;errcode()
+70 gfxblit(h%):print &quot;blit err&quot;;errcode()
+80 gfxtgt(0):print &quot;target visible err&quot;;errcode()
+90 gfxmode(&quot;hires&quot;):gfxclear(0)
+100 line(0,0,319,199,1):rect(40,40,220,150,1)
+110 get a$:if a$=&quot;&quot; then 110
+120 gfxtext():print &quot;target blit done&quot;</code></pre>
+</section>
+<section id="rbgfx28-tile-visible" class="level2">
+<h2>rbgfx28_tile_visible</h2>
+<p>Draw and read back ordinary visible tile cells.</p>
+<p><a href="../src/apps/readybasic/rbgfx28_tile_visible.bas">Original source</a>.</p>
+<p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PLOT</code>, <code>PNT</code>, <code>RECT</code>.</p>
+<p>Disk name: <code>RBGFX28</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx28 tile visible&quot;
+30 gfxmode(&quot;tile&quot;):gfxclear(0)
+40 plot(4,4,5):plot(5,4,6):plot(6,4,7)
+50 line(1,1,38,20,3)
+60 rect(3,5,20,16,10):fbox(24,8,34,18,12)
+70 pnt(4,4,a%)
+80 get a$:if a$=&quot;&quot; then 80
+90 gfxtext():print &quot;tile visible&quot;;a%</code></pre>
+</section>
+<section id="rbgfx29-mtile-visible" class="level2">
+<h2>rbgfx29_mtile_visible</h2>
+<p>Draw and read back multicolor tile cells.</p>
+<p><a href="../src/apps/readybasic/rbgfx29_mtile_visible.bas">Original source</a>.</p>
+<p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PLOT</code>, <code>PNT</code>, <code>RECT</code>.</p>
+<p>Disk name: <code>RBGFX29</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx29 mtile visible&quot;
+30 gfxmode(&quot;mtile&quot;):gfxclear(0)
+40 plot(4,4,9):plot(5,4,10):plot(6,4,11)
+50 line(1,22,38,2,6)
+60 rect(5,4,21,17,13):fbox(25,7,35,19,15)
+70 pnt(4,4,a%)
+80 get a$:if a$=&quot;&quot; then 80
+90 gfxtext():print &quot;mtile visible&quot;;a%</code></pre>
+</section>
+<section id="rbgfx30-mbitmap-dlist" class="level2">
+<h2>rbgfx30_mbitmap_dlist</h2>
+<p>Replay a retained display list in multicolor bitmap mode.</p>
+<p><a href="../src/apps/readybasic/rbgfx30_mbitmap_dlist.bas">Original source</a>.</p>
+<p>Commands used: <code>DLDRAW</code>, <code>DLFBOX</code>, <code>DLLINE</code>, <code>DLMAKE</code>, <code>DLPLOT</code>, <code>DLRECT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>MCBG</code>.</p>
+<p>Disk name: <code>RBGFX30</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx30 mbitmap dlist&quot;
+30 gfxmode(&quot;mbitmap&quot;):gfxclear(0):mcbg(0)
+40 dlmake(12,h%)
+50 dlplot(h%,20,28,17)
+60 dlline(h%,4,38,155,66)
+70 dlrect(h%,12,82,72,144)
+80 dlfbox(h%,88,86,148,148)
+90 dldraw(h%)
+100 get a$:if a$=&quot;&quot; then 100
+110 gfxtext():print &quot;mbitmap dlist done&quot;</code></pre>
+</section>
+<section id="rbgfx31-sync-blit" class="level2">
+<h2>rbgfx31_sync_blit</h2>
+<p>Capture a visible hires scene into REU, clear it and restore it with a key.</p>
+<p><a href="../src/apps/readybasic/rbgfx31_sync_blit.bas">Original source</a>.</p>
+<p>Commands used: <code>ERRCODE</code>, <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXSYNC</code>, <code>GFXTEXT</code>, <code>GFXTGT</code>, <code>LINE</code>, <code>RECT</code>.</p>
+<p>Disk name: <code>RBGFX31</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx31 sync blit&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 line(0,0,319,199,1):rect(42,38,220,150,1)
+50 h%=gfxsurf(&quot;hires&quot;)
+60 gfxtgt(h%):gfxsync():gfxtgt(0)
+70 get a$:if a$=&quot;&quot; then 70
+80 gfxclear(0)
+90 get a$:if a$=&quot;&quot; then 90
+100 gfxblit(h%)
+110 get a$:if a$=&quot;&quot; then 110
+120 gfxtext():print &quot;sync blit done&quot;;errcode()</code></pre>
+</section>
+<section id="rbgfx32-convex-poly" class="level2">
+<h2>rbgfx32_convex_poly</h2>
+<p>Draw a polygon outline and a convex filled polygon from integer arrays.</p>
+<p><a href="../src/apps/readybasic/rbgfx32_convex_poly.bas">Original source</a>.</p>
+<p>Commands used: <code>FPOLY</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>POLY</code>.</p>
+<p>Disk name: <code>RBGFX32</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem see graphics design md
+20 print chr$(147);&quot;rbgfx32 convex poly&quot;
+30 gfxmode(&quot;hires&quot;):gfxclear(0)
+40 dim a%(7)
+50 a%(0)=32:a%(1)=32:a%(2)=146:a%(3)=24
+60 a%(4)=184:a%(5)=120:a%(6)=64:a%(7)=170
+70 poly(a%(0),4,1)
+80 dim b%(9)
+90 b%(0)=196:b%(1)=36:b%(2)=278:b%(3)=58
+100 b%(4)=292:b%(5)=132:b%(6)=238:b%(7)=178
+110 b%(8)=178:b%(9)=108
+120 fpoly(b%(0),5,1)
+130 get a$:if a$=&quot;&quot; then 130
+140 gfxtext():print &quot;convex poly done&quot;</code></pre>
+</section>
+<section id="rbgfxsnddemo" class="level2">
+<h2>rbgfxsnddemo</h2>
+<p>Orbital Echoes: two cached scenes, READY sprites, palette-safe lines and PAL music; no Ultimate speed calls.</p>
+<p><a href="../src/apps/readybasic/rbgfxsnddemo.bas">Original source</a>.</p>
+<p>Commands used: <code>BORDER</code>, <code>BUFDROP</code>, <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXSYNC</code>, <code>GFXTEXT</code>, <code>GFXTGT</code>, <code>MCBG</code>, <code>MCFILE</code>, <code>MCLINE</code>, <code>MEMCAP</code>, <code>MUSDROP</code>, <code>MUSPLAY</code>, <code>MUSTUNE</code>, <code>SPRFILE</code>, <code>SPRMCO</code>, <code>SPRMOVE</code>, <code>SPRMUL</code>, <code>SPRPRI</code>, <code>SPRSET</code>, <code>SPRSIZE</code>, <code>ZMODLD</code>.</p>
+<p>Disk name: <code>RBGFXSNDDEMO</code>. Profiles: <code>precog-d81</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem =====================================
+20 rem rbgfxsnddemo - orbital echoes
+30 rem art: luis zuno / ansimuz - cc0
+40 rem opengameart.org/content/space-background-3
+42 rem opengameart.org/content/warped-city - cc0
+50 rem adapted: layers, exposure, c64 palette
+60 rem music: summer vacation - shiru 2010
+70 rem shiru.untergrund.net/music.shtml
+80 rem cc by 3.0 - sidreloc $9200 / zp $fc-fd
+90 rem ready lettering: original pixel art
+
+100 rem --- safe setup, before disk reads ---
+110 if peek(49663)&lt;&gt;0 then :musdrop()
+120 memcap(36864)
+130 bc=peek(53280) and 15:bg=peek(53281) and 15
+140 fc=peek(646)
+150 print chr$(147);&quot;ready / orbital echoes&quot;
+160 print &quot;q: stop all   m: leave music playing&quot;
+170 print &quot;space: renew image / auto: 15 seconds&quot;
+180 print &quot;precalculating motion - please wait&quot;
+190 dim s%(511),sy%(335)
+200 dim lx%(1023),ly%(1023),rx%(1023),ry%(1023)
+210 exec prep
+220 zmodld(&quot;rbm.media&quot;,m%):h%=gfxsurf(&quot;mbitmap&quot;)
+222 g%=gfxsurf(&quot;mbitmap&quot;)
+225 print &quot;orbital show running&quot;
+230 exec scene
+240 mustune(&quot;rb.summer&quot;):musplay(1)
+265 rem sp%: sprite step / ld%: sprite passes per line
+270 sp%=2:ld%=3
+280 p%=0:lc%=0:lp%=0:mi%=0:c%=1:rt=ti:rc=0:im%=0
+
+300 rem --- raw steps: no clock-driven motion or catchup ---
+310 repeat
+320   p%=(p%+sp%) and 255
+330   exec glyphs
+340   lc%=lc%+1
+350   if lc%&lt;ld% then 390
+360   lc%=0:exec weave
+370   tt=ti:if tt&lt;rt then rt=tt
+375   if tt-rt&lt;900 then 390
+380   im%=1-im%:exec clean
+390   get a$
+395   if a$&lt;&gt;&quot; &quot; then 400
+397   exec clean
+400 until a$=&quot;q&quot; or a$=&quot;m&quot;
+410 exec finish
+420 if a$=&quot;m&quot; then 500
+430 musdrop():clr:memcap(40960)
+440 print &quot;all stopped - basic memory:&quot;;fre(0)
+450 end
+
+500 rem music still owns its protected memory
+510 clr
+520 print &quot;music continues - memory stays reserved&quot;
+530 print &quot;to release it:&quot;:print &quot;musdrop():clr:memcap(40960)&quot;
+540 end
+
+1000 rem --- all sine and coordinate work happens once ---
+1010 proc prep()
+1020   for i=0 to 511
+1030     s%(i)=int(100*sin(i*0.0122718463))
+1040   next i
+1050   for i=0 to 255
+1060     sy%(i)=78+int(s%(i*2)*0.16+0.5)
+1065   next i
+1067   for i=0 to 511
+1070     lx%(i)=80+int(s%(i)*0.75)
+1080     j=(i*2) and 511:ly%(i)=112+int(s%(j)*0.70)
+1090     j=(i*3+128) and 511:rx%(i)=80+int(s%(j)*0.75)
+1100     j=(i*5+192) and 511:ry%(i)=112+int(s%(j)*0.70)
+1110     j=i+512
+1120     lx%(j)=159-lx%(i):ly%(j)=199-ly%(i)
+1130     rx%(j)=159-rx%(i):ry%(j)=199-ry%(i)
+1140   next i
+1150   rem extra samples eliminate wrapping per letter
+1160   for i=0 to 79:sy%(i+256)=sy%(i):next i
+1170 endp
+
+1300 rem --- disk setup, then cache the complete scene ---
+1310 proc scene()
+1320   gfxmode(&quot;mbitmap&quot;):gfxclear(0):border(0)
+1330   for i=0 to 4
+1340     sprset(i,1,3,0):sprmul(i,1)
+1350     sprsize(i,1,1):sprpri(i,0)
+1360     sprmove(i,56+i*52,78)
+1370   next i
+1380   sprmco(1,6):sprfile(&quot;rb.ready&quot;)
+1390   mcfile(&quot;rb.warp&quot;)
+1395   gfxtgt(g%):gfxsync():gfxtgt(0)
+1397   mcfile(&quot;rb.neon&quot;)
+1400   gfxtgt(h%):gfxsync():gfxtgt(0)
+1410 endp
+
+1600 rem --- no for loop or sine math in the hot path ---
+1610 proc glyphs()
+1620   sprmove(0,56,sy%(p%))
+1630   sprmove(1,108,sy%(p%+20))
+1640   sprmove(2,160,sy%(p%+40))
+1650   sprmove(3,212,sy%(p%+60))
+1660   sprmove(4,264,sy%(p%+80))
+1670 endp
+
+1900 rem --- mirrored pairs share one sequential sample ---
+1910 proc weave()
+1920   wi%=lp%+mi%*512
+1930   mcline(lx%(wi%),ly%(wi%),rx%(wi%),ry%(wi%),c%)
+1940   mi%=1-mi%:if mi%&lt;&gt;0 then 1970
+1950   lp%=(lp%+1) and 511
+1960   c%=c%+1:if c%=4 then c%=1
+1970 endp
+
+2200 rem --- instant refresh from the owned reu surface ---
+2210 proc clean()
+2220   if im%=1 then 2250
+2230   gfxblit(h%):goto 2260
+2250   gfxblit(g%)
+2260   rt=ti:rc=rc+1
+2270 endp
+
+2500 rem --- both exits restore the original text colors ---
+2510 proc finish()
+2530   for i=0 to 4:sprset(i,0,0,0):next i
+2540   gfxtext():mcbg(bg):border(bc)
+2550   poke 646,fc:print chr$(147);&quot;orbital echoes complete&quot;
+2555   bufdrop(h%):bufdrop(g%)
+2560   print &quot;image refreshes:&quot;;rc
+2570 endp</code></pre>
+</section>
+<section id="rbproc1" class="level2">
+<h2>rbproc1</h2>
+<p>Structured routine/function and typed-result regression examples, including nested expressions.</p>
+<p><a href="../src/apps/readybasic/rbproc1.bas">Original source</a>.</p>
+<p>Commands used: <code>FADD</code>, <code>UPPER</code>, <code>ZADD16</code>.</p>
+<p>Disk name: <code>RBPROC1</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 print &quot;procfunc&quot;
+20 exec show0
+30 exec showi(7)
+40 exec shows(&quot;yo&quot;)
+50 a%=addlate(4,5)
+60 print &quot;sum&quot;;a%
+70 a$=greet(&quot;ready&quot;)
+80 print a$
+90 print &quot;chain&quot;:exec showi(8):print &quot;after&quot;
+100 if 1 then :a%=addi(1,2)
+110 print &quot;if&quot;;a%
+120 a%=outer(3)
+130 print &quot;nested&quot;;a%
+140 print &quot;efn&quot;;addi(6,7)
+150 b=addi(2,3):print &quot;efass&quot;;b
+160 t$=greet(&quot;expr&quot;):print t$
+170 a%=idi(9):print &quot;ret%&quot;;a%
+180 t$=ids(&quot;ok&quot;):print &quot;ret$ &quot;;t$
+190 print &quot;cex&quot;;abs(zadd16(1,6)-10)
+200 t$=upper(&quot;mix&quot;):print &quot;cs$ &quot;;t$
+210 print &quot;fpex&quot;;addi(1,2+4)
+220 a%=zadd16(3,10):print &quot;fcmd&quot;;a%
+230 t$=funcupper(&quot;yo&quot;):print &quot;fs$ &quot;;t$
+240 print &quot;fminus&quot;;addi(1,6)-10
+250 print &quot;fnabs&quot;;abs(addi(1,6)-10)
+260 t$=left$(greet(&quot;ready&quot;),2):print &quot;fnleft &quot;;t$
+270 print &quot;fparen&quot;;addi(1,(2+4))
+280 print &quot;cparen&quot;;zadd16(1,(2+4))
+290 print &quot;dparen&quot;;addi((1+2),(3+4))
+300 print &quot;fadd&quot;;fadd(1.2,2.3)
+310 f=fadd(1.5,fadd(2.25,3.25)):print &quot;nfadd&quot;;f
+320 s=scale(2.25):print &quot;scale&quot;;s
+330 print &quot;naddi&quot;;addi(1,addi(2,3))
+340 print &quot;fabs&quot;;abs(fadd(1.2,2.3)-3)
+350 fadd(1.2,2.3,q):print &quot;sfadd&quot;;q
+360 t$=left$(greet(&quot;ready&quot;)+&quot;!&quot;,3):print &quot;cat &quot;;t$
+370 t$=left$(upper(greet(&quot;ready&quot;)),2):print &quot;ngs &quot;;t$
+380 end
+1000 proc show0()
+1010 print &quot;proc0&quot;
+1020 endp
+1100 proc showi(p%)
+1110 print &quot;proci&quot;;p%
+1120 endp
+1200 proc shows(s$)
+1210 print &quot;procs &quot;;s$
+1220 endp
+1300 func addi(x%,y%)
+1310 ret x%+y%
+1320 endp
+1400 func greet(n$)
+1410 r$=&quot;hi &quot;+n$
+1420 ret r$
+1430 endp
+1500 func inner(x%)
+1510 ret x%+10
+1520 endp
+1600 func outer(x%)
+1610 r%=inner(x%)
+1620 r%=r%+1
+1630 ret r%
+1640 endp
+1700 func addlate(x%,y%)
+1710 r%=x%+y%
+1720 ret r%
+1730 endp
+1800 func idi(x%)
+1810 ret% x%
+1820 endp
+1900 func ids(s$)
+1910 ret$ s$
+1920 endp
+2100 func funcupper(n$)
+2110 r$=upper(n$)
+2120 ret r$
+2130 endp
+2200 func scale(x)
+2210 ret x*1.5
+2220 endp</code></pre>
+</section>
+<section id="rbprocerr" class="level2">
+<h2>rbprocerr</h2>
+<p>Intentional negative cases; run individual numbered sections to test argument/type/stack errors.</p>
+<p><a href="../src/apps/readybasic/rbprocerr.bas">Original source</a>.</p>
+<p>Commands used: <code>FADD</code>.</p>
+<p>Disk name: <code>RBPROCERR</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem readybasic proc/fun negative probes
+20 rem run 100,200,...,1500 one case at a time
+100 exec missing(1)
+110 end
+200 exec needi()
+210 end
+300 exec needi(&quot;bad&quot;)
+310 end
+400 exec needs(7)
+410 end
+500 exec fni(7)
+510 end
+600 exec nop(1,a%)
+610 end
+700 endp
+710 end
+800 exec d1
+810 end
+900 exec needi((1+2)
+910 end
+1000 exec needi((1+2)))
+1010 end
+1100 exec needs(left$(&quot;bad&quot;,2))
+1110 end
+1200 fadd(1.2,2.3,a%)
+1210 end
+1300 a=ids(&quot;bad&quot;)
+1310 end
+1400 a$=addi(1,2)
+1410 end
+1500 print addi(1,(2+4)
+1510 end
+1600 print addi(1,(2+4)))
+1610 end
+2000 proc needi(p%)
+2010 endp
+2100 proc needs(s$)
+2110 endp
+2200 func fni(p%)
+2210 ret p%+1
+2220 endp
+2300 proc nop(p%)
+2310 endp
+2400 proc d1()
+2410 exec d2
+2420 endp
+2500 proc d2()
+2510 exec d3
+2520 endp
+2600 proc d3()
+2610 exec d4
+2620 endp
+2700 proc d4()
+2710 exec d5
+2720 endp
+2800 proc d5()
+2810 endp</code></pre>
+</section>
+<section id="rbsnd01-sid-basics" class="level2">
+<h2>rbsnd01_sid_basics</h2>
+<p>Hear separate triangle, saw, pulse and noise tones using immediate SID control.</p>
+<p><a href="../src/apps/readybasic/rbsnd01_sid_basics.bas">Original source</a>.</p>
+<p>Commands used: <code>ADSR</code>, <code>PULSE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>SOUND</code>, <code>VOL</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBSND01</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem readybasic sound design: sound design md
+20 print chr$(147);&quot;rbsnd01 sid basics&quot;
+30 print &quot;you should hear triangle, saw, pulse,&quot;
+40 print &quot;then noise. each tone is separate.&quot;
+50 sidrst():vol(15):adsr(1,0,5,12,3)
+60 print:print &quot;triangle tone&quot;
+70 sound(1,4455,45,16):zpause(20)
+80 print &quot;saw tone&quot;
+90 sound(1,4455,45,32):zpause(20)
+100 print &quot;pulse tone&quot;
+110 pulse(1,2048):sound(1,4455,45,64):zpause(20)
+120 print &quot;noise burst&quot;
+130 sound(1,4455,45,128):zpause(20)
+140 sidoff()
+150 print:print &quot;rbsnd01 done&quot;</code></pre>
+</section>
+<section id="rbsnd02-voice-state" class="level2">
+<h2>rbsnd02_voice_state</h2>
+<p>Change pulse width and envelope, gating voices explicitly.</p>
+<p><a href="../src/apps/readybasic/rbsnd02_voice_state.bas">Original source</a>.</p>
+<p>Commands used: <code>ADSR</code>, <code>FRQ</code>, <code>GATE</code>, <code>PULSE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOL</code>, <code>WAVE</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBSND02</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem readybasic sound design: sound design md
+20 print chr$(147);&quot;rbsnd02 voice state&quot;
+30 print &quot;manual sid voice setup.&quot;
+40 print &quot;listen for a pulse pitch, then changed&quot;
+50 print &quot;pulse width and envelope.&quot;
+60 sidrst():vol(15)
+70 print:print &quot;wide pulse, soft release&quot;
+80 adsr(1,0,9,12,6):pulse(1,3072):frq(1,4455)
+90 wave(1,64):gate(1,1):zpause(70):gate(1,0):zpause(50)
+100 print &quot;narrow pulse, snappier release&quot;
+110 adsr(1,0,3,15,2):pulse(1,512):frq(1,5612)
+120 wave(1,64):gate(1,1):zpause(70):gate(1,0):zpause(50)
+130 sidoff()
+140 print:print &quot;rbsnd02 done&quot;</code></pre>
+</section>
+<section id="rbsnd03-notes" class="level2">
+<h2>rbsnd03_notes</h2>
+<p>Play a chromatic scale with the PAL pitch table.</p>
+<p><a href="../src/apps/readybasic/rbsnd03_notes.bas">Original source</a>.</p>
+<p>Commands used: <code>ADSR</code>, <code>GATE</code>, <code>PITCH</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOL</code>, <code>WAVE</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBSND03</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem readybasic sound design: sound design md
+20 print chr$(147);&quot;rbsnd03 pitchs&quot;
+30 print &quot;chromatic pitch command.&quot;
+40 print &quot;you should hear c through b, then c&quot;
+50 print &quot;one octave higher.&quot;
+60 sidrst():vol(15):adsr(1,0,5,12,3):wave(1,32)
+70 for n=0 to 11
+80 pitch(1,n,4):gate(1,1):zpause(22):gate(1,0):zpause(6)
+90 next n
+100 pitch(1,0,5):gate(1,1):zpause(45):gate(1,0)
+110 sidoff()
+120 print:print &quot;rbsnd03 done&quot;</code></pre>
+</section>
+<section id="rbsnd04-filter" class="level2">
+<h2>rbsnd04_filter</h2>
+<p>Compare low-pass, band-pass and high-pass SID filtering.</p>
+<p><a href="../src/apps/readybasic/rbsnd04_filter.bas">Original source</a>.</p>
+<p>Commands used: <code>ADSR</code>, <code>FILTER</code>, <code>FRQ</code>, <code>GATE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOL</code>, <code>WAVE</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBSND04</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem readybasic sound design: sound design md
+20 print chr$(147);&quot;rbsnd04 filter&quot;
+30 print &quot;saw wave through sid filter.&quot;
+40 print &quot;listen for low-pass, band-pass,&quot;
+50 print &quot;then high-pass color changes.&quot;
+60 sidrst():vol(15):adsr(1,0,9,15,4)
+70 frq(1,2230):wave(1,33)
+80 print:print &quot;low-pass sweep-ish steps&quot;
+90 for c=150 to 950 step 200:filter(c,8,1,1):zpause(35):next c
+100 print &quot;band-pass&quot;
+110 filter(700,12,1,2):zpause(90)
+120 print &quot;high-pass&quot;
+130 filter(700,12,1,4):zpause(90)
+140 gate(1,0):sidoff()
+150 print:print &quot;rbsnd04 done&quot;</code></pre>
+</section>
+<section id="rbsnd05-voice-batch" class="level2">
+<h2>rbsnd05_voice_batch</h2>
+<p>Set frequency, waveform and packed envelopes together with VOICE.</p>
+<p><a href="../src/apps/readybasic/rbsnd05_voice_batch.bas">Original source</a>.</p>
+<p>Commands used: <code>GATE</code>, <code>PULSE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOICE</code>, <code>VOL</code>, <code>WAVE</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBSND05</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem readybasic sound design: sound design md
+20 print chr$(147);&quot;rbsnd05 voice batch&quot;
+30 print &quot;voice uses packed sid envelope bytes:&quot;
+40 print &quot;voice(v,f,wave,ad,sr).&quot;
+50 print &quot;ad=$09 and sr=$c3 in decimal.&quot;
+60 sidrst():vol(15):pulse(1,2048)
+70 print:print &quot;one batch command starts the voice&quot;
+80 voice(1,4455,65,9,195):zpause(80)
+90 print &quot;now raw ctrl turns gate off&quot;
+100 wave(1,64):zpause(50)
+110 print &quot;same voice, higher frquency&quot;
+120 voice(1,6672,65,9,195):zpause(80)
+130 gate(1,0):sidoff()
+140 print:print &quot;rbsnd05 done&quot;</code></pre>
+</section>
+<section id="rbsnd06-three-voice" class="level2">
+<h2>rbsnd06_three_voice</h2>
+<p>Combine three voices into a chord, then a bass/high-voice pair.</p>
+<p><a href="../src/apps/readybasic/rbsnd06_three_voice.bas">Original source</a>.</p>
+<p>Commands used: <code>ADSR</code>, <code>GATE</code>, <code>PITCH</code>, <code>PULSE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOL</code>, <code>WAVE</code>, <code>ZPAUSE</code>.</p>
+<p>Disk name: <code>RBSND06</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem readybasic sound design: sound design md
+20 print chr$(147);&quot;rbsnd06 three voice&quot;
+30 print &quot;three sid voices: c major, then&quot;
+40 print &quot;a lower pulse bass with a high saw.&quot;
+50 sidrst():vol(15)
+60 adsr(1,0,5,12,4):adsr(2,0,5,12,4):adsr(3,0,5,12,4)
+70 print:print &quot;c major chord&quot;
+80 pitch(1,0,4):pitch(2,4,4):pitch(3,7,4)
+90 wave(1,33):wave(2,33):wave(3,33):zpause(100)
+100 gate(1,0):gate(2,0):gate(3,0):zpause(45)
+110 print &quot;pulse bass plus high saw&quot;
+120 pulse(1,1536):pitch(1,7,2):pitch(2,2,5)
+130 wave(1,65):wave(2,33):zpause(110)
+140 gate(1,0):gate(2,0):sidoff()
+150 print:print &quot;rbsnd06 done&quot;</code></pre>
+</section>
+<section id="rbsnd07-psid" class="level2">
+<h2>rbsnd07_psid</h2>
+<p>Load the media module and vetted PSID; play, halt, restart and release its arena.</p>
+<p><a href="../src/apps/readybasic/rbsnd07_psid.bas">Original source</a>.</p>
+<p>Commands used: <code>BORDER</code>, <code>MEMCAP</code>, <code>MUSDROP</code>, <code>MUSHALT</code>, <code>MUSPLAY</code>, <code>MUSTUNE</code>, <code>ZMODLD</code>.</p>
+<p>Disk name: <code>RBSND07</code>. Profiles: <code>precog-d81</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem =====================================
+20 rem rbsnd07 - music while basic works
+30 rem summer vacation by shiru (2010)
+40 rem https://shiru.untergrund.net/music.shtml
+50 rem cc by 3.0: creativecommons.org/licenses/by/3.0/
+60 rem modified: sidreloc to $9200; zp $fc-$fd
+70 rem =====================================
+
+100 rem --- main: read this as a story ---
+110 rem reserve ram before making strings
+120 memcap(36864)
+130 bc=peek(53280) and 15
+140 exec title
+150 exec assets
+
+200 rem play: basic animates the border
+210 musplay(1)
+220 print &quot;playing - basic is still running&quot;
+230 exec animate(8)
+
+300 rem halt keeps the song in reserved ram
+310 mushalt()
+320 print &quot;halted - ram still reserved&quot;
+330 exec linger(2)
+
+400 rem play again restarts the subtune
+410 musplay(1)
+420 print &quot;restart from beginning&quot;
+430 exec animate(5)
+
+500 rem detach before returning ram to basic
+510 musdrop()
+520 border(bc)
+530 print &quot;dropped - driver detached&quot;
+540 rem clr discards any dynamic strings
+550 clr
+560 memcap(40960)
+570 print &quot;memory returned:&quot;;fre(0)
+580 print &quot;rbsnd07 done&quot;
+590 end
+
+1000 rem --- procedures: named actions ---
+1010 proc title()
+1020   print chr$(147);&quot;rbsnd07 / summer vacation&quot;
+1030   print &quot;music: shiru / cc by 3.0&quot;
+1040   print &quot;proc / func / repeat / until&quot;
+1050   print
+1060   print &quot;reserved 4096 bytes: &quot;;fre(0)
+1070 endp
+
+1200 proc assets()
+1210   zmodld(&quot;rbm.media&quot;,m%)
+1220   print &quot;module commands:&quot;;m%
+1250   rem psid player and data at $9200
+1260   mustune(&quot;rb.summer&quot;)
+1270 endp
+
+1400 proc animate(span)
+1410   rem span is seconds; mk is start time
+1420   mk=ti
+1425   c%=0
+1430   repeat
+1440     c%=shade(c%)
+1450     border(c%)
+1452     rem leave each color visible a moment
+1454     wt=ti
+1456     repeat
+1458     until age(wt)&gt;=0.25
+1460   until age(mk)&gt;=span
+1470 endp
+
+1600 proc linger(span)
+1610   rem the same clock, without animation
+1620   mk=ti
+1630   repeat
+1640   until age(mk)&gt;=span
+1650 endp
+
+2000 rem --- functions: return values ---
+2010 func shade(ix%)
+2020   rem wrap the counter through colors 0-15
+2030   ret% (ix%+1) and 15
+2040 endp
+
+2200 func age(mark)
+2210   rem ti counts 60 ticks per second
+2220   dt=ti-mark
+2230   rem allow for midnight; true is -1
+2240   ret (dt-5184000*(dt&lt;0))/60
+2250 endp</code></pre>
+</section>
+<section id="rbsnd08-neon" class="level2">
+<h2>rbsnd08_neon</h2>
+<p>Historical single-scene clock-paced music/graphics demo; use the newer combined demos.</p>
+<p><a href="../src/apps/readybasic/rbsnd08_neon.bas">Original source</a>.</p>
+<p>Commands used: <code>BORDER</code>, <code>BUFDROP</code>, <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXSYNC</code>, <code>GFXTEXT</code>, <code>GFXTGT</code>, <code>MCFILE</code>, <code>MCLINE</code>, <code>MEMCAP</code>, <code>MUSDROP</code>, <code>MUSPLAY</code>, <code>MUSTUNE</code>, <code>SPRFILE</code>, <code>SPRMCO</code>, <code>SPRMOVE</code>, <code>SPRMUL</code>, <code>SPRPRI</code>, <code>SPRSET</code>, <code>SPRSIZE</code>, <code>ZMODLD</code>.</p>
+<p>Historical source retained; no current profile disk entry. Use the newer combined demos.</p>
+<pre class="basic"><code>10 rem =====================================
+20 rem rbsnd08 - ready / orbital echoes
+30 rem art: luis zuno / ansimuz - cc0
+40 rem opengameart.org/content/space-background-3
+50 rem adapted: layers, exposure, c64 palette
+60 rem music: summer vacation - shiru 2010
+70 rem shiru.untergrund.net/music.shtml
+80 rem cc by 3.0 - sidreloc $9200 / zp $fc-fd
+90 rem ready sprite lettering: original art
+
+100 rem --- setup: all disk reads happen here ---
+110 memcap(36864)
+120 bc=peek(53280) and 15
+130 print chr$(147);&quot;ready / orbital echoes&quot;
+140 print &quot;space art: ansimuz / cc0&quot;
+150 print &quot;summer vacation: shiru / cc by 3.0&quot;
+160 print &quot;preparing picture, sprites and music&quot;
+170 print &quot;q quits / image renews every 30 sec&quot;
+180 zmodld(&quot;rbm.media&quot;,m%)
+190 dim s%(255)
+200 for i=0 to 255
+210 s%(i)=int(100*sin(i*0.0245436926))
+220 next i
+225 print &quot;orbital show running&quot;
+230 h%=gfxsurf(&quot;mbitmap&quot;)
+240 exec scene
+250 mustune(&quot;rb.summer&quot;)
+260 musplay(1)
+270 tb=ti:rt=ti:rc=0:c%=1
+
+300 rem --- show: clock-driven, additive trails ---
+310 repeat
+320   ft=ti
+330   tm=ti-tb:tm=(tm-5184000*(tm&lt;0))/60
+335   tm=tm-int(tm/8)*8
+340   p%=int(tm*32) and 255
+350   exec glyphs
+360   exec weave
+370   c%=c%+1:if c%=4 then c%=1
+375   ag=ti-rt:ag=(ag-5184000*(ag&lt;0))/60
+380   if ag&lt;30 then 390
+385   exec clean
+390   get a$
+400   rem cap fast machines at 30 updates/sec
+410   repeat
+420   until elapsed(ft)&gt;=0.0333333
+430 until a$=&quot;q&quot;
+440 exec finish
+450 clr:memcap(40960)
+460 print &quot;basic memory returned:&quot;;fre(0)
+470 end
+
+1000 rem --- initialize the bank-d scene ---
+1010 proc scene()
+1020   gfxmode(&quot;mbitmap&quot;):gfxclear(0):border(0)
+1030   for i=0 to 4
+1040     sprset(i,1,3,0)
+1050     sprmul(i,1):sprsize(i,1,1):sprpri(i,0)
+1055     sprmove(i,56+i*52,78)
+1060   next i
+1070   sprmco(1,6)
+1080   rem sprset makes patterns: replace them now
+1090   sprfile(&quot;rb.ready&quot;)
+1100   mcfile(&quot;rb.neon&quot;)
+1110   rem cache pixels, screen and color in reu
+1120   gfxtgt(h%):gfxsync():gfxtgt(0)
+1130 endp
+
+1300 rem --- five independent sine-wave letters ---
+1310 proc glyphs()
+1320   for i=0 to 4
+1330     ph%=(p%+i*20) and 255
+1340     yy=78+s%(ph%)/10
+1350     sprmove(i,56+i*52,yy)
+1360   next i
+1370 endp
+
+1500 rem --- kinetic line art, not palette writes ---
+1510 proc weave()
+1520   x1=80+s%(p%)*0.75
+1530   ph%=(p%*2) and 255
+1540   y1=112+s%(ph%)*0.70
+1550   ph%=(p%*3+64) and 255
+1560   x2=80+s%(ph%)*0.75
+1570   ph%=(p%*5+96) and 255
+1580   y2=112+s%(ph%)*0.70
+1590   rem slots 1-3 keep each 4x8 cell&#39;s colors
+1600   mcline(x1,y1,x2,y2,c%)
+1610   mcline(159-x1,199-y1,159-x2,199-y2,c%)
+1620 endp
+
+1800 rem --- a clean image, with no disk access ---
+1810 proc clean()
+1820   gfxblit(h%)
+1830   rt=ti:rc=rc+1
+1840 endp
+
+2000 rem --- leave the machine as we found it ---
+2010 proc finish()
+2020   musdrop()
+2030   for i=0 to 4:sprset(i,0,0,0):next i
+2040   gfxtext():border(bc):bufdrop(h%)
+2050   print chr$(147);&quot;orbital echoes complete&quot;
+2060   print &quot;image refreshes:&quot;;rc
+2090 endp
+
+2300 rem --- elapsed seconds, including midnight ---
+2310 func elapsed(mark)
+2320   dt=ti-mark
+2330   ret (dt-5184000*(dt&lt;0))/60
+2340 endp</code></pre>
+</section>
+<section id="rbtest1" class="level2">
+<h2>rbtest1</h2>
+<p>Small command-expression, integer-output and uppercase-string smoke test.</p>
+<p><a href="../src/apps/readybasic/rbtest1.bas">Original source</a>.</p>
+<p>Commands used: <code>UPPER</code>, <code>ZADD16</code>, <code>ZECHO1</code>.</p>
+<p>Disk name: <code>RBTEST1</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d64</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-a</code>, <code>precog-solo-d64-b</code>, <code>precog-solo-d64-c</code>, <code>precog-solo-d64-d</code>, <code>precog-solo-d64-e-rsdebug</code>, <code>precog-solo-d64-e</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 zecho1(p%)
+20 print &quot;readybasic&quot;;p%
+30 for i=1 to 3
+40 zadd16(i,10,a%)
+50 print &quot;loop&quot;;a%
+60 next i
+70 print &quot;expradd&quot;;zadd16(5,6)
+80 b=zadd16(8,9):print &quot;exprass&quot;;b
+90 s$=&quot;ready&quot;:t$=upper(s$):print &quot;exprstr&quot;;t$</code></pre>
+</section>
+<section id="rbugfxsnddemo" class="level2">
+<h2>rbugfxsnddemo</h2>
+<p>Ultimate Orbital Echoes: the same media lifecycle, with safe-speed disk loading and 64 MHz computation/animation.</p>
+<p><a href="../src/apps/readybasic/rbugfxsnddemo.bas">Original source</a>.</p>
+<p>Commands used: <code>BORDER</code>, <code>BUFDROP</code>, <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXSYNC</code>, <code>GFXTEXT</code>, <code>GFXTGT</code>, <code>MCBG</code>, <code>MCFILE</code>, <code>MCLINE</code>, <code>MEMCAP</code>, <code>MUSDROP</code>, <code>MUSPLAY</code>, <code>MUSTUNE</code>, <code>SPRFILE</code>, <code>SPRMCO</code>, <code>SPRMOVE</code>, <code>SPRMUL</code>, <code>SPRPRI</code>, <code>SPRSET</code>, <code>SPRSIZE</code>, <code>USPEED</code>, <code>ZMODLD</code>.</p>
+<p>Disk name: <code>RBUGFXSNDDEMO</code>. Profiles: <code>precog-d81</code>, <code>precog-ultimate</code>.</p>
+<pre class="basic"><code>10 rem =====================================
+20 rem rbugfxsnddemo - orbital echoes / ultimate
+30 rem art: luis zuno / ansimuz - cc0
+40 rem opengameart.org/content/space-background-3
+42 rem opengameart.org/content/warped-city - cc0
+50 rem adapted: layers, exposure, c64 palette
+60 rem music: summer vacation - shiru 2010
+70 rem shiru.untergrund.net/music.shtml
+80 rem cc by 3.0 - sidreloc $9200 / zp $fc-fd
+90 rem ready lettering: original pixel art
+
+95 rem requires c64u turbo registers, not manual mode
+100 rem --- safe setup, before disk reads ---
+105 uspeed(1)
+110 if peek(49663)&lt;&gt;0 then :musdrop()
+120 memcap(36864)
+130 bc=peek(53280) and 15:bg=peek(53281) and 15
+140 fc=peek(646)
+150 print chr$(147);&quot;ready / orbital echoes&quot;
+160 print &quot;q: stop all   m: leave music playing&quot;
+170 print &quot;space: renew image / auto: 15 seconds&quot;
+180 print &quot;precalculating motion - please wait&quot;
+185 uspeed(64)
+190 dim s%(511),sy%(335)
+200 dim lx%(1023),ly%(1023),rx%(1023),ry%(1023)
+210 exec prep
+215 uspeed(1)
+220 zmodld(&quot;rbm.media&quot;,m%):h%=gfxsurf(&quot;mbitmap&quot;)
+222 g%=gfxsurf(&quot;mbitmap&quot;)
+225 print &quot;orbital show running&quot;
+230 exec scene
+240 mustune(&quot;rb.summer&quot;):musplay(1)
+260 uspeed(64)
+265 rem sp%: sprite step / ld%: sprite passes per line
+270 sp%=2:ld%=3
+280 p%=0:lc%=0:lp%=0:mi%=0:c%=1:rt=ti:rc=0:im%=0
+
+300 rem --- raw steps: no clock-driven motion or catchup ---
+310 repeat
+320   p%=(p%+sp%) and 255
+330   exec glyphs
+340   lc%=lc%+1
+350   if lc%&lt;ld% then 390
+360   lc%=0:exec weave
+370   tt=ti:if tt&lt;rt then rt=tt
+375   if tt-rt&lt;900 then 390
+380   im%=1-im%:exec clean
+390   get a$
+395   if a$&lt;&gt;&quot; &quot; then 400
+397   exec clean
+400 until a$=&quot;q&quot; or a$=&quot;m&quot;
+410 exec finish
+420 if a$=&quot;m&quot; then 500
+430 musdrop():clr:memcap(40960)
+440 print &quot;all stopped - basic memory:&quot;;fre(0)
+450 end
+
+500 rem music still owns its protected memory
+510 clr
+520 print &quot;music continues - memory stays reserved&quot;
+530 print &quot;to release it:&quot;:print &quot;musdrop():clr:memcap(40960)&quot;
+540 end
+
+1000 rem --- all sine and coordinate work happens once ---
+1010 proc prep()
+1020   for i=0 to 511
+1030     s%(i)=int(100*sin(i*0.0122718463))
+1040   next i
+1050   for i=0 to 255
+1060     sy%(i)=78+int(s%(i*2)*0.16+0.5)
+1065   next i
+1067   for i=0 to 511
+1070     lx%(i)=80+int(s%(i)*0.75)
+1080     j=(i*2) and 511:ly%(i)=112+int(s%(j)*0.70)
+1090     j=(i*3+128) and 511:rx%(i)=80+int(s%(j)*0.75)
+1100     j=(i*5+192) and 511:ry%(i)=112+int(s%(j)*0.70)
+1110     j=i+512
+1120     lx%(j)=159-lx%(i):ly%(j)=199-ly%(i)
+1130     rx%(j)=159-rx%(i):ry%(j)=199-ry%(i)
+1140   next i
+1150   rem extra samples eliminate wrapping per letter
+1160   for i=0 to 79:sy%(i+256)=sy%(i):next i
+1170 endp
+
+1300 rem --- disk setup, then cache the complete scene ---
+1310 proc scene()
+1320   gfxmode(&quot;mbitmap&quot;):gfxclear(0):border(0)
+1330   for i=0 to 4
+1340     sprset(i,1,3,0):sprmul(i,1)
+1350     sprsize(i,1,1):sprpri(i,0)
+1360     sprmove(i,56+i*52,78)
+1370   next i
+1380   sprmco(1,6):sprfile(&quot;rb.ready&quot;)
+1390   mcfile(&quot;rb.warp&quot;)
+1395   gfxtgt(g%):gfxsync():gfxtgt(0)
+1397   mcfile(&quot;rb.neon&quot;)
+1400   gfxtgt(h%):gfxsync():gfxtgt(0)
+1410 endp
+
+1600 rem --- no for loop or sine math in the hot path ---
+1610 proc glyphs()
+1620   sprmove(0,56,sy%(p%))
+1630   sprmove(1,108,sy%(p%+20))
+1640   sprmove(2,160,sy%(p%+40))
+1650   sprmove(3,212,sy%(p%+60))
+1660   sprmove(4,264,sy%(p%+80))
+1670 endp
+
+1900 rem --- mirrored pairs share one sequential sample ---
+1910 proc weave()
+1920   wi%=lp%+mi%*512
+1930   mcline(lx%(wi%),ly%(wi%),rx%(wi%),ry%(wi%),c%)
+1940   mi%=1-mi%:if mi%&lt;&gt;0 then 1970
+1950   lp%=(lp%+1) and 511
+1960   c%=c%+1:if c%=4 then c%=1
+1970 endp
+
+2200 rem --- instant refresh from the owned reu surface ---
+2210 proc clean()
+2220   if im%=1 then 2250
+2230   gfxblit(h%):goto 2260
+2250   gfxblit(g%)
+2260   rt=ti:rc=rc+1
+2270 endp
+
+2500 rem --- both exits restore the original text colors ---
+2510 proc finish()
+2520 uspeed(1)
+2530   for i=0 to 4:sprset(i,0,0,0):next i
+2540   gfxtext():mcbg(bg):border(bc)
+2550   poke 646,fc:print chr$(147);&quot;orbital echoes complete&quot;
+2555   bufdrop(h%):bufdrop(g%)
+2560   print &quot;image refreshes:&quot;;rc
+2570 endp</code></pre>
+</section>
+</section>
+</body>
+</html>

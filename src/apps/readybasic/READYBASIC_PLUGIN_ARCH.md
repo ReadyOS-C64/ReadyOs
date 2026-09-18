@@ -1,5 +1,20 @@
 # ReadyBASIC Lean REU Plugin Architecture
 
+## September 2026 media extension
+
+See the [complete command/example reference](../../../docs/readybasic_reference.md)
+for the current public contract. Cold registration has 98 built-ins including
+MEMCAP, BORDER, USPEED and UMHZ. `rbm.media` adds eight commands on demand at
+core-bank `$1C20-$1D1F`, with code at assigned code-bank `$8000`, executing in
+slots 1+2. Its IRQ driver is separate at `$9000` in MEMCAP-reserved BASIC RAM;
+the lifetime byte is `$C1FF`. Dropping or halting a tune and restoring the BASIC
+ceiling are distinct operations. Warm ReadyOS resume retains the reservation
+but does not automatically restart playback.
+
+Exact packed lengths below retain earlier measurements; consult the generated
+memory report for the current build. Physical REU bank numbers are assigned,
+not fixed at the historical `$44/$45` examples.
+
 ## Current Module/Submodule Update
 
 This file keeps the lean-plugin history and earlier V1 notes below. The current
@@ -76,12 +91,18 @@ same ReadyOS and REU discipline.
 - `$0A00`: ReadyOS suspend/resume zero-page snapshot.
 - `$0B00`: ReadyOS suspend/resume stack-page snapshot.
 - `$0C00-$0CFF`: 192-page heap bitmap plus reserved bytes.
-- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The current build has 96 real descriptors (including MEMCAP and BORDER), 32 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128 as part of those 96 real descriptors.
+- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The cold build has 98 real descriptors, 30 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128 as part of those 98 real descriptors. Media uses eight filler slots on demand.
 - `$2000-$3FFF`: reserved common/system expansion space.
 - `$4000-$FFFF`: typed 48KB heap for buffer, screen, and Phase 1 graphics
   surface handles.
 
 ## Assigned Code Bank Regions
+
+The package loader writes descriptors to the separate **core** bank. The three
+sample descriptor ranges listed here are cross-bank references, not code-bank
+allocations. They replace current built-ins at those offsets, so run sample
+proofs in isolated sessions. Media's core-bank `$1C20-$1D1F` slots are otherwise
+unused. The payload bytes alone occupy the assigned code bank.
 
 - `$0000-$07DB`: built-in module 1 slot-0 payload, fetched into
   `$A800-$AFDB` (`$07DC`, 2012B). The linker symbol is still named
@@ -93,10 +114,10 @@ same ReadyOS and REU discipline.
 - `$13AA-$13BE`: two-slot span proof payload (`$0015`, 21B).
 - `$1455-$14FF`: free gap before the current disk-module proof offsets
   (`$00AB`, 171B).
-- `$1500-$151F`: `rbm.sample1` descriptor proof for `ZDM1`.
-- `$1600-$165F`: `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`;
+- Core bank `$1500-$151F`: `rbm.sample1` descriptor proof for `ZDM1`.
+- Core bank `$1600-$165F`: `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`;
   submodule 5 appears twice because those entries are overlays 1 and 2.
-- `$1700-$1ABF`: `rbm.sample3` descriptors for `ZSAA`-`ZUEB`.
+- Core bank `$1700-$1ABF`: `rbm.sample3` descriptors for `ZSAA`-`ZUEB`.
 - `$3000-$3014`, `$3200-$3214`, `$3300-$3314`, `$3400-$3414`: small
   disk-loaded module payload proofs.
 - `$3800-$463C`: `rbm.sample3` payload records for `ZSAA`-`ZUEB`.
@@ -119,8 +140,9 @@ same ReadyOS and REU discipline.
 - `$7800-$7A0D`: built-in `SIDCORE` replacement overlay, loaded from cold-only
   `CMDPACK2` and fetched into `$B800-$BA0D` when immediate sound commands run.
 - `$7A0E-$7FFF`: reserved `SIDCORE` growth headroom.
-- `$8000-$FFFF`: currently unreserved assigned code-bank tail for future
-  built-in command payloads or a later resource-loader/codebank split.
+- `$8000-$8FFF`: on-demand media's two-slot code reservation.
+- `$9000-$FFFF`: unreserved assigned code-bank tail; these are REU offsets,
+  not the C64 RAM music arena at the same numeric address.
 
 Descriptors store payload offsets, payload sizes, slot masks, runtime
 destinations, and entry offsets. Heap and screen commands currently fetch the
@@ -193,8 +215,9 @@ Each descriptor is 32 bytes:
   `GFXSYNC()`: module 3 `GFXCORE` Bank D setup/control commands.
   `GFXTGT(0)` selects the visible target.
 - `GFXSURF(mode$)` and `GFXBLIT(H%)`: slot-0 allocator-backed surface handle
-  commands. They allocate/validate typed handle `3`; full REU drawing/blitting
-  is future work.
+  commands. They allocate/validate typed handle `3`; GFXSYNC captures the visible
+  bitmap/screen/color data and GFXBLIT restores it. Direct drawing into an
+  offscreen REU target remains future work; D021 is not part of the saved data.
 - `PLOT(X,Y,C)`, `PNT(X,Y,OUT%)`, `LINE(X1,Y1,X2,Y2,C)`,
   `RECT(X1,Y1,X2,Y2,C)`, `FBOX(X1,Y1,X2,Y2,C)`, `CIRCLE(X,Y,R,C)`,
   `FCIRCLE(X,Y,R,C)`, `TILE(X,Y,CH,C)`, and `CHARAT(X,Y,CH,C)`: module 3
@@ -282,7 +305,7 @@ The current design includes resident flow control and error introspection:
 - `ERRCODE()` / `ERRLINE()` and statement output forms return the last
   ReadyBASIC runtime error code and line.
 
-Measured current layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
+Retained pre-media measured layout: `BASIC_START=$2AC1`; BASIC owns `$2AC1-$9FFF`, for
 `30013` formula empty free bytes. `ENTRY` is `$1000-$11FF` (`512` bytes),
 `RESIDENT` is `$1200-$2ABF` (`6336` bytes), `HIDDEN` is `$A000-$A78A`
 (`1931` bytes), `BRIDGE` is `$C000-$C1FE` (`511` bytes), `LOWPACK` is `$07DC`

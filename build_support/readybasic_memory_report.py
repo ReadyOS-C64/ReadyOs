@@ -278,15 +278,21 @@ def command_groups(commands: list[tuple[str, str]]) -> dict[str, tuple[str, ...]
     return {k: tuple(v) for k, v in groups.items()}
 
 
+def disk_descriptor_blocks() -> list[Block]:
+    return [
+        Block("rbm.sample1 descriptor", 0x1500, 0x20, "desc", "Intrusive proof: replaces a built-in descriptor.", ("ZDM1",)),
+        Block("rbm.sample2 descriptors", 0x1600, 0x60, "desc", "Intrusive proof: replaces three built-in descriptors.", ("ZDM2S", "ZDOV1", "ZDOV2")),
+        Block("rbm.sample3 descriptors", 0x1700, 0x3C0, "desc", "Intrusive proof: replaces thirty built-in descriptors.", ("ZSAA-ZUEB",)),
+        Block("rbm.media descriptors", 0x1C20, 0x100, "desc", "Eight formerly empty slots, after UMHZ at $1C00.", ("MUSTUNE", "MUSPLAY", "MUSHALT", "MUSDROP", "RSCFILE", "MCFILE", "SPRFILE", "MCLINE")),
+    ]
+
+
 def disk_module_blocks() -> list[Block]:
     # Mirrored from build_support/build_readybasic_disk_modules.py. The small
     # integer proof payloads are 21B; RBM3 overlay images contain two 30B
     # stateful entrypoints plus one shared byte of overlay-local state and are
     # stored on $100-byte strides to make spacing visible.
     return [
-        Block("rbm.sample1 descriptor", 0x1500, 0x20, "desc", "ZDM1 descriptor streamed by ZMODLD.", ("ZDM1",)),
-        Block("rbm.sample2 descriptors", 0x1600, 0x60, "desc", "Three descriptors; submodule 5 appears twice as overlays 1 and 2.", ("ZDM2S", "ZDOV1", "ZDOV2")),
-        Block("rbm.sample3 descriptors", 0x1700, 0x3C0, "desc", "Thirty descriptors for the large SEQ package proof.", ("ZSAA-ZUEB",)),
         Block("rbm.sample1 payload", 0x3000, 21, "module-a", "Module 3, submodule 1, slot 1.", ("ZDM1",)),
         Block("rbm.sample2 span payload", 0x3200, 21, "module-b", "Module 4, submodule 2, slots 1+2.", ("ZDM2S",)),
         Block("rbm.sample2 overlay 1", 0x3300, 21, "overlay", "Module 4, submodule 5, overlay 1, slot 2.", ("ZDOV1",)),
@@ -430,12 +436,13 @@ def render(ctx: dict[str, object]) -> str:
     ]
 
     disk_blocks = disk_module_blocks()
+    media_size = (ROOT / "obj/readybasic_modules/media.bin").stat().st_size
+    if not 0 < media_size <= 0x1000:
+        raise SystemExit("Media payload must fit the two-slot span")
     reu45_blocks = [
         Block("Built-in base payloads", 0x0000, base_builtin_size, "module-a", "LOWPACK, SLOTPACK1, SLOTPACK2, and SPANPACK prestashed from CMDPACK."),
-        Block("Built-in base free gap", base_builtin_size, 0x1500 - base_builtin_size, "free", "Free before current disk-module descriptor samples."),
-        *disk_blocks[:2],
-        Block("Free gap", 0x1660, 0x3000 - 0x1660, "free", "Available packed-code space before sample payloads."),
-        *disk_blocks[2:],
+        Block("Built-in base free gap", base_builtin_size, 0x3000 - base_builtin_size, "free", "Code-bank space before sample payloads; descriptors belong in the separate core bank."),
+        *disk_blocks,
         Block("Free gap before built-in overlays", 0x463D, gfxspr_off - 0x463D, "free", "Available packed-code space before fixed built-in overlay offsets."),
         Block("Built-in GFXSPR overlay", gfxspr_off, seg["OVL1PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when sprite commands run.", groups["overlay"][:1] + groups["gfxspr"]),
         Block("GFXSPR reserved headroom", gfxspr_off + seg["OVL1PACK"].size, 0x0800 - seg["OVL1PACK"].size, "free", "Reserved so the overlay can grow toward a full 2K slot without moving INPUTEV."),
@@ -449,7 +456,9 @@ def render(ctx: dict[str, object]) -> str:
         Block("GFXTILE reserved headroom", gfxtile_off + seg["OVL5PACK"].size, 0x0800 - seg["OVL5PACK"].size, "free", "Reserved for charset/tile overlay growth."),
         Block("Built-in SIDCORE overlay", sidcore_off, seg["OVL6PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when sound commands run.", groups["sidcore"]),
         Block("SIDCORE reserved headroom", sidcore_off + seg["OVL6PACK"].size, 0x0800 - seg["OVL6PACK"].size, "free", "Reserved for immediate sound command growth."),
-        Block("Payload bank free tail", sidcore_off + 0x0800, 0x10000 - (sidcore_off + 0x0800), "free", "Remaining space in the current single ReadyBASIC code bank."),
+        Block("On-demand media payload", 0x8000, media_size, "span", "Current media.bin; fetched into $B000-$BFFF slots 1+2. IRQ driver is copied separately into MEMCAP-reserved C64 RAM.", ("MUSTUNE", "MUSPLAY", "MUSHALT", "MUSDROP", "RSCFILE", "MCFILE", "SPRFILE", "MCLINE")),
+        Block("Media span headroom", 0x8000 + media_size, 0x1000 - media_size, "free", "Remaining capacity within the two-slot media reservation."),
+        Block("Payload bank free tail", 0x9000, 0x7000, "free", "REU offsets, distinct from the C64 RAM music arena at the same numeric address."),
     ]
 
     reu_overview_blocks = [
@@ -697,7 +706,11 @@ def render(ctx: dict[str, object]) -> str:
         Block("REGSEED", seg["REGSEED"].start, seg["REGSEED"].size, "registry", "Load-only registry seed."),
       ])}
     </tbody></table>
-    <h3>Disk Module Proof Storage</h3>
+    <h3>Disk Module Descriptors: Assigned Core Bank</h3>
+    <p>Cold registration contains 98 built-ins and 30 empty slots. Sample packages overwrite
+    existing built-ins and should run in isolated developer-test sessions; media uses empty slots.</p>
+    <table><thead><tr><th>Assigned core-bank offset</th><th>Item</th><th>Display size</th><th>Exact bytes</th><th>Detail</th><th>Commands</th></tr></thead><tbody>{table_rows(disk_descriptor_blocks())}</tbody></table>
+    <h3>Disk Module Payload Storage: Assigned Code Bank</h3>
     <table><thead><tr><th>Assigned code-bank offset</th><th>Item</th><th>Display size</th><th>Exact bytes</th><th>Detail</th><th>Commands</th></tr></thead><tbody>{table_rows(disk_blocks)}</tbody></table>
   </section>
 </main>

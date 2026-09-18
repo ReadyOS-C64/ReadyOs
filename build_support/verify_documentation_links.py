@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify local links in every tracked ReadyOS Markdown and HTML document."""
+"""Verify local links in tracked and new, non-ignored ReadyOS documentation."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
+from update_documentation_html_status import CURRENT
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,12 +29,21 @@ class LinkParser(html.parser.HTMLParser):
 
 def tracked_documents() -> list[Path]:
     result = subprocess.run(
-        ["git", "ls-files", "-z", "*.md", "*.html", "*.htm"],
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z", "*.md", "*.html", "*.htm"],
         cwd=ROOT,
         check=True,
         capture_output=True,
     )
-    return [ROOT / raw.decode("utf-8") for raw in result.stdout.split(b"\0") if raw]
+    paths = {ROOT / raw.decode("utf-8") for raw in result.stdout.split(b"\0") if raw}
+    # Private docs are intentionally gitignored but their current contracts
+    # still need link checking. Preserved experiment bodies remain historical.
+    paths.update(ROOT / rel for rel in CURRENT)
+    paths.update(ROOT / rel for rel in (
+        'privatedocs/README.md', 'privatedocs/reports/readybasic_current_state.md',
+        'privatedocs/top_level_md/MEMORY_MAP.md', 'privatedocs/top_level_md/SHIM_PLAN.md'))
+    return sorted(path for path in paths
+                  if not path.relative_to(ROOT).as_posix().startswith('privatedocs/')
+                  or path.exists())
 
 
 def link_target(raw: str) -> str | None:
@@ -76,6 +86,10 @@ def main() -> int:
                 failures.append(f"{path.relative_to(ROOT)}: link escapes repository: {raw}")
                 continue
             if not target.exists():
+                # Public checkouts omit the explicitly private local references.
+                if (target.is_relative_to(ROOT / 'privatedocs')
+                        and not (ROOT / 'privatedocs').exists()):
+                    continue
                 failures.append(f"{path.relative_to(ROOT)}: missing local target: {raw}")
 
     if failures:
@@ -85,7 +99,7 @@ def main() -> int:
         return 1
     print(
         "DOCUMENTATION LINK VERIFICATION PASSED: "
-        f"{len(documents)} tracked documents, {checked_links} local links"
+        f"{len(documents)} tracked/new documents, {checked_links} local links"
     )
     return 0
 

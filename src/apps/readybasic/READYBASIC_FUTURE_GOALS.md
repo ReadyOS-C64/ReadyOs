@@ -1,5 +1,22 @@
 # ReadyBASIC Future Goals
 
+## Product direction after PRECOG 0.5
+
+PRECOG 0.5 is planned as the final PRECOG release. ReadyOS Ultimate will be the
+main focus, installing and configuring files/folders on Ultimate storage;
+ReadyOS Universal will retain disk images and REU for VICE, THEC64 and original
+hardware, with effort guided by demand. Independently, standalone ReadyBASIC
+without Ultimate or ReadyOS remains a commitment. This does not imply a no-REU
+interpreter or make today's ReadyOS app PRG independently bootable. Many other
+apps are planned for standalone release, both with and without their own REU needs.
+
+The on-demand media package is now implemented, not merely a future sound idea:
+eight commands provide constrained PAL PSID playback, image/resource/sprite
+loading and palette-preserving lines. MEMCAP, BORDER, USPEED and UMHZ are built
+in. General SID compatibility, portable turbo control and richer graphics still
+need implementation work. See the [current reference](../../../docs/readybasic_reference.md)
+before treating an older proposal below as shipped functionality.
+
 This document captures intended ReadyBASIC directions that are not part of the
 current implemented design. The current source of truth remains
 `readybasic.s` plus `READYBASIC_CURRENT_DESIGN.md`; items here are planning

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>September 2026 documentation audit</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="readyos_docs.css" />
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>September 2026 documentation audit, verification record and unresolved code/packaging issues.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#september-2026-documentation-audit" id="toc-september-2026-documentation-audit">September 2026 documentation audit</a>
+<ul>
+<li><a href="#completion-checklist" id="toc-completion-checklist">Completion checklist</a></li>
+<li><a href="#findings-needing-more-than-a-documentation-edit" id="toc-findings-needing-more-than-a-documentation-edit">Findings needing more than a documentation edit</a></li>
+<li><a href="#footprint-constraint-resolved" id="toc-footprint-constraint-resolved">Footprint constraint resolved</a></li>
+<li><a href="#work-record" id="toc-work-record">Work record</a></li>
+<li><a href="#requirement-to-evidence-map" id="toc-requirement-to-evidence-map">Requirement-to-evidence map</a></li>
+</ul></li>
+</ul>
+</nav></details>
+<section id="september-2026-documentation-audit" class="level1">
+<h1>September 2026 documentation audit</h1>
+<p>This audit follows source at <code>4ef8f37</code> and subsequent documentation changes. Existing release binaries and generated outputs were already dirty at the start. Historical measurements, transcripts and experiments are preserved; a current source statement must not turn their old results into a claim about a new build.</p>
+<section id="completion-checklist" class="level2">
+<h2>Completion checklist</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="" />Current Markdown, styled HTML and private documentation agree on current ReadyBASIC commands, disk modules, examples and important limitations.</label></li>
+<li><label><input type="checkbox" checked="" />One reference page includes every BASIC example and explains the implemented command inventory, distinguishing proposed commands from implemented ones.</label></li>
+<li><label><input type="checkbox" checked="" />Main and SKU readmes explain Ultimate host-image configuration and SETUP, app hardware/REU requirements, final PRECOG and the two future directions.</label></li>
+<li><label><input type="checkbox" checked="" />Read.Me generated C/PRG is refreshed through the normal build flow and its size change measured; compact help does not duplicate the large reference.</label></li>
+<li><label><input type="checkbox" checked="" />Documentation generators preserve the changes on regeneration; HTML, links, release ordering and relevant build checks pass.</label></li>
+<li><label><input type="checkbox" checked="" />Findings needing code, packaging or hardware verification are reported below.</label></li>
+</ul>
+</section>
+<section id="findings-needing-more-than-a-documentation-edit" class="level2">
+<h2>Findings needing more than a documentation edit</h2>
+<ol type="1">
+<li><strong>Media packaging differs by profile.</strong> Regular D81 and its Ultimate derived profile include <code>rbm.media</code>, four media assets, RBSND07 and two combined demos. D71, focused D64 and KFF2 retain the three sample modules and original 41 examples; the separate rsdebug D81 has 27 examples. Documentation states this accurately; making all profiles include the new set requires packaging/capacity work.</li>
+<li><strong>Media loaders address drive 8.</strong> The new SEQ loaders use KERNAL LFN 14, device 8, secondary address 2. Copying the package onto the normal D71 drive-9 image alone is not enough to make those workflows work.</li>
+<li><strong>No general SID compatibility promise.</strong> MUSTUNE accepts a constrained PAL PSID v2 format, with a reserved $9000 driver and vetted $9200 tune. Header validation is not proof that arbitrary player code respects the scratch, memory or IRQ contract. RSID and arbitrary SID collections are not supported.</li>
+<li><strong>Existing graphics/procedure limitations.</strong> FCIRCLE is a filled rectangle placeholder; FPOLY is a conservative convex fan. Media investigation records float FUNC/assignment and IF/EXEC workarounds that are not interpreter fixes.</li>
+<li><strong>Ultimate speed is not yet an OS-wide service.</strong> USPEED/UMHZ use the C64U / U64 Elite-II register table. They do not implement automatic safe-I/O guards or older U64 speed-table detection. Keep boot and disk loads at safe speed.</li>
+<li><strong>Runtime acceptance remains separate.</strong> Prior demo evidence includes test fixture limitations and historical fixed-wait hardware procedures. Current C64U disk loading must be observed over video until visibly complete before any RAM/screen read. Documentation updates cannot revalidate old test runs.</li>
+<li><strong>Sample modules replace built-ins.</strong> The three old diagnostic packages write descriptors to core-bank $1500/$1600/$1700, now occupied by built-ins. The loader accepts those ranges. They are intrusive developer tests, not safe general-purpose add-ons. Moving them into unoccupied descriptors or adding collision-aware registration requires code/package changes. Media's eight descriptors start at $1C20 and do not share this problem.</li>
+<li><strong>ReadyShell host/C64 serialization signatures differ.</strong> The serializer writes character literals: a host build emits ASCII <code>52 53 56 31</code>, while the cc65 C64 build emits PETSCII <code>D2 D3 D6 31</code> for <code>RSV1</code>. Readers validate their target's literal bytes. Documentation now distinguishes them, but portable interchange needs an explicit byte-format decision and code/tests. No runtime serialization behavior was changed in this documentation pass.</li>
+</ol>
+</section>
+<section id="footprint-constraint-resolved" class="level2">
+<h2>Footprint constraint resolved</h2>
+<p>The existing 0.5L Ultimate D81 has one free block and the previous 27,272-byte Read.Me. The first documentation revision grew to 28,381 bytes and would not fit as a direct replacement. At the user's request, duplicated introductory prose was tightened while retaining every section, app guide, control and new feature topic. The final Read.Me is <strong>26,869 bytes: 403 bytes smaller</strong> than the original, and <strong>37 pages instead of 39</strong>. It takes 106 rather than 108 disk file blocks, removing this update's capacity problem. Regular D81 was rebuilt; other existing SKU images, including Ultimate, were not repacked merely to refresh their external documentation.</p>
+</section>
+<section id="work-record" class="level2">
+<h2>Work record</h2>
+<ul>
+<li>Initial inventory completed: source descriptors and media loaders inspected; profile differences and stale overview claims identified. Main README updated to communicate the current features, requirements and agreed product direction.</li>
+<li>Added the source-generated reference with 98 built-ins, eight media commands, 34 developer-proof commands and 45 complete, verbatim BASIC listings. Every example includes its purpose, commands used, disk name and profile availability.</li>
+<li>Refreshed 46 release readme/help files from each existing manifest's artifact names; the documentation-only refresher does not relabel or rebuild images.</li>
+<li>Refreshed current public and private Markdown, 14 styled HTML counterparts and the map-backed memory diagrams. Corrected descriptor/core-bank versus payload/code-bank placement; old measurements remain explicitly historical.</li>
+<li>Built regular D81 through <code>/bin/bash ./run.sh --profile precog-d81 --build-only</code>. Final documentation build is 0.5P. Read.Me changed from 39 to 37 pages and 27,272 to 26,869 bytes; generated C/header match source and all pages fit 38 columns by 18 lines. Readback from the D81 matches the built PRG exactly.</li>
+<li>Browser review verified the reference introduction and media-command table. Disabled dollar-delimited math in the renderer so BASIC strings and hex addresses remain literal. Added regression checks for 99 built-in-table rows, nine media-table rows, 35 sample-table rows, all full listings and anchors.</li>
+<li>Validation passed: documentation contracts, 48 HTML status classifications, all reference/Read.Me generation checks, release-doc reproducibility, local links, five byte-verified shim HTML listings, release directory ordering, and exact regular-D81 ReadyBASIC runtime/module/demo/resource readback. This was a documentation/build audit, not a new physical-hardware acceptance run.</li>
+<li>Corrected ASCII/PETSCII descriptions in QuickNotes, clipboard bundles, Simple Cells, CAL26, Dizzy and ReadyShell format documentation. Checked the stored signatures against authoritative seed files and C64 source; also corrected Simple Cells' documented binary version from 1 to 2. Legitimate host ASCII and ASCII-compatible digit descriptions remain.</li>
+</ul>
+</section>
+<section id="requirement-to-evidence-map" class="level2">
+<h2>Requirement-to-evidence map</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Requested outcome</th>
+<th>Current evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Current public/private documentation without losing history</td>
+<td>Updated canonical ReadyBASIC guides, private MEMORY_MAP/SHIM_PLAN/current-state guide, explicit historical measurement labels; existing example files untouched</td>
+</tr>
+<tr>
+<td>All examples and command explanations on one page</td>
+<td><code>verify_readybasic_documentation.py</code> checks all 45 verbatim source listings, descriptor-derived built-ins, rendered media/sample tables and every in-page anchor; examples have individual purpose descriptions</td>
+</tr>
+<tr>
+<td>Styled HTML stays aligned with Markdown</td>
+<td><code>render_current_docs.py --check</code> verifies 14 counterparts; browser inspection confirmed readable introduction/table and literal BASIC dollar signs</td>
+</tr>
+<tr>
+<td>Main/SKU setup, app requirements and future plans</td>
+<td>Main README, app-requirements guide, shared profile help generator, EasyFlash help generator and root release template; <code>refresh_release_docs.py --check</code> checks all 46 generated files</td>
+</tr>
+<tr>
+<td>Small generated Read.Me update</td>
+<td>Normal D81 build, exact generated C/header check, 37 correctly bounded pages, 403 bytes smaller than original, byte-identical PRG readback from rebuilt D81</td>
+</tr>
+<tr>
+<td>Consistency and remaining non-doc issues</td>
+<td>315 current/tracked/new documents and 289 local links checked, 48 HTML classifications, five shim listings, every release directory order; eight findings above remain deliberately unfixed</td>
+</tr>
+</tbody>
+</table>
+<p>Private documentation remains in its existing gitignored location. This audit updates it locally and checks its current links; it does not publish private material or change ignore rules. No source runtime behavior, sample BASIC program, hardware configuration, or full Ultimate image was changed by this documentation pass.</p>
+</section>
+</section>
+</body>
+</html>

@@ -1,5 +1,13 @@
 # Resource-load reliability investigation (2026-09-11)
 
+This is a chronological investigation record. Current loaders now suppress
+sprite DMA during transfers and MCFILE hides the unfinished bitmap; subsequent
+findings below record their tests, not a promise of rollback or universally
+bounded KERNAL I/O. See the [current media contract](readybasic_reference.md)
+and [demo walkthrough](readybasic_orbital_echoes.md). During hardware disk loading,
+observe video until visibly complete before reading any RAM or decoded screen;
+a fixed wait alone is not completion evidence. After interruption, boot afresh.
+
 ## Observations, not yet a diagnosis
 
 The user reproduced a partial `AD` display, a slowly filled bitmap without its
