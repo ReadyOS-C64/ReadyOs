@@ -8,6 +8,10 @@
 
 - C64 Ultimate D81 with DMA loading enabled in apps.cfg and a standalone SETUP browser for locating and validating the image through Ultimate DOS.
 
+## Before You Boot
+
+ReadyOS cannot discover which Ultimate host folder/image it was booted from: the mounted C64 drive does not provide the enclosing D81 host pathname. Ultimate DOS fast loading therefore needs the D81's absolute host path in `[launcher] c64u_image_path` in `apps.cfg`, together with `dma_loading=1`. SETUP browses Ultimate storage, validates the selected D81, and safely saves those settings inside it. Run SETUP again after moving or renaming the image. The normal disk loader remains the fallback.
+
 ## Artifacts
 
 - Boot-time drive 8: `readyos-v0.5x-ultimate.d81`
@@ -16,27 +20,37 @@
 
 ## Included Apps
 
-- Drive 8: `editor` - editor
-- Drive 8: `readyshell` - readyshell (beta)
-- Drive 8: `simplefiles` - simple files
-- Drive 8: `uzip` - ultimate zip
-- Drive 8: `clipmgr` - clipboard
-- Drive 8: `readybasic` - ready basic (beta)
-- Drive 8: `cal26` - calendar 26
-- Drive 8: `tasklist` - task list
-- Drive 8: `reuviewer` - reu viewer
-- Drive 8: `sysinfo` - system info
-- Drive 8: `quicknotes` - quicknotes
-- Drive 8: `calcplus` - calc plus
-- Drive 8: `hexview` - hex viewer
-- Drive 8: `simplecells` - simple cells (alpha)
-- Drive 8: `game2048` - 2048 game
-- Drive 8: `deminer` - deminer
-- Drive 8: `dizzy` - dizzy kanban
-- Drive 8: `readyirc` - readyirc
-- Drive 8: `readme` - read.me
-- ReadyBASIC is accompanied by all three external `rbm.*` module packages and the complete 41-program procedure, graphics, and sound example/test set.
+- Drive 8: `editor` - editor (portable; no separate app-owned REU workspace)
+- Drive 8: `readyshell` - readyshell (beta) (portable; own REU overlays/state)
+- Drive 8: `simplefiles` - simple files (portable; no separate app-owned REU workspace)
+- Drive 8: `uzip` - ultimate zip (Ultimate-only DOS; own REU package/workspace)
+- Drive 8: `clipmgr` - clipboard (portable; shared REU clipboard/history)
+- Drive 8: `readybasic` - ready basic (beta) (portable core; own REU core/code and buffers; USPEED/UMHZ require Ultimate)
+- Drive 8: `cal26` - calendar 26 (portable; no separate app-owned REU workspace)
+- Drive 8: `tasklist` - task list (portable; no separate app-owned REU workspace)
+- Drive 8: `reuviewer` - reu viewer (portable; inspects shared REU allocation records)
+- Drive 8: `sysinfo` - system info (portable diagnostics; Ultimate details available only on Ultimate)
+- Drive 8: `quicknotes` - quicknotes (portable; own REU note storage)
+- Drive 8: `calcplus` - calc plus (portable; no separate app-owned REU workspace)
+- Drive 8: `hexview` - hex viewer (portable; no separate app-owned REU workspace)
+- Drive 8: `simplecells` - simple cells (alpha) (portable; no separate app-owned REU workspace)
+- Drive 8: `game2048` - 2048 game (portable; no separate app-owned REU workspace)
+- Drive 8: `deminer` - deminer (portable; no separate app-owned REU workspace)
+- Drive 8: `dizzy` - dizzy kanban (portable; no separate app-owned REU workspace)
+- Drive 8: `readyirc` - readyirc (Ultimate-only TCP; own REU scrollback)
+- Drive 8: `readme` - read.me (portable; no separate app-owned REU workspace)
+
+All ReadyOS apps require the system REU for snapshots. The labels above distinguish additional app workspace from that baseline; shared clipboard operations also use REU. An Ultimate-only app can be present on portable media without becoming portable.
+- ReadyBASIC example and module coverage is listed below from this profile's source configuration.
 - ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable rather than as separate disk files.
+
+## ReadyBASIC examples and modules
+
+This profile defines 44 BASIC example/test PRGs and 4 disk module packages: `rbm.sample1`, `rbm.sample2`, `rbm.sample3`, `rbm.media`.
+Built-in graphics, immediate SID sound, MEMCAP and BORDER need no disk-module load. USPEED/UMHZ are built-in but require compatible Ultimate software turbo registers.
+The new set includes RBSND07, RBGFXSNDDEMO and RBUGFXSNDDEMO. Use `ZMODLD("RBM.MEDIA",M%)` for eight on-demand music/image/sprite commands. Reserve with `MEMCAP(36864)` before strings/music; load images before starting music. The vetted PSID player is PAL-only. The standard demo avoids Ultimate speed calls; the Ultimate demo requires C64U Turbo Registers and uses 1 MHz during disk I/O.
+In Orbital Echoes, Space restores the cached background, Q stops/releases music, and M keeps music playing at the text prompt. After M use `MUSDROP():CLR:MEMCAP(40960)` to release it.
+The new disk-module/resource loaders read drive 8; they do not take a device argument. See the repository's `docs/readybasic_reference.md` (and HTML counterpart) for every example, command contracts and exact per-profile availability.
 
 ## Disk Directory Order
 
@@ -61,6 +75,7 @@
 - Copy the listed disk image files to the target storage.
 - Enable the REU with at least `1MB`; use `8MB` or `16MB` where available.
 - The host-side boot PRGs are optional convenience files for emulator launching; the disk-side `PREBOOT` entry is the standard hardware boot path.
+- ReadyOS cannot discover which Ultimate host folder/image it was booted from: the mounted C64 drive does not provide the enclosing D81 host pathname. Ultimate DOS fast loading therefore needs the D81's absolute host path in `[launcher] c64u_image_path` in `apps.cfg`, together with `dma_loading=1`. SETUP browses Ultimate storage, validates the selected D81, and safely saves those settings inside it. Run SETUP again after moving or renaming the image. The normal disk loader remains the fallback.
 - This SKU compiles the regular launcher with Ultimate DOS DMA support and ships `apps.cfg` with `dma_loading=1`; disk fallback remains active whenever DMA is unavailable.
 - Before the first ReadyOS boot, mount the D81 on drive `8`, run `LOAD"SETUP",8,1`, then `RUN`.
 - SETUP is a standalone utility built from focused ReadyOS TUI micromodules. It checks REU, UCI, and Ultimate DOS, browses active Ultimate storage volumes/folders for D81 images, mounts the selection, validates its `apps.cfg`, and stages the exact host path into that image.
@@ -68,3 +83,7 @@
 - After SETUP reports `CONFIGURED`, exit with RUN/STOP and reset or boot `PREBOOT`. Do not rename or move the D81 afterward without running SETUP again.
 - Attach the single disk image on drive `8`, then boot with `LOAD "PREBOOT",8` and `RUN`.
 - This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.
+
+## After PRECOG
+
+PRECOG 0.5 is planned as the final PRECOG release: the series that established what is possible and clarified the vision. Next comes ReadyOS Ultimate, the main focus, installing/configuring real files and folders on Ultimate storage and using its hardware features; and ReadyOS Universal, continuing disk-image and REU workflows for VICE, THEC64 and original hardware. Universal effort will follow user interest and demand. These are future directions, not separate products shipped here. Standalone releases of many apps are also planned, including both apps with their own REU needs and apps without them. We remain committed to standalone ReadyBASIC independent of Ultimate and ReadyOS; this does not promise a no-REU interpreter. Current ReadyOS app PRGs still require the ReadyOS runtime.

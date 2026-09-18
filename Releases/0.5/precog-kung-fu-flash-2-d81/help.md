@@ -20,27 +20,36 @@
 
 ## Included Apps
 
-- Drive 8: `editor` - editor
-- Drive 8: `readyshell` - readyshell (beta)
-- Drive 8: `simplefiles` - simple files
-- Drive 8: `clipmgr` - clipboard
-- Drive 8: `readybasic` - ready basic (beta)
-- Drive 8: `cal26` - calendar 26
-- Drive 8: `tasklist` - task list
-- Drive 8: `reuviewer` - reu viewer
-- Drive 8: `sysinfo` - system info
-- Drive 8: `quicknotes` - quicknotes
-- Drive 8: `calcplus` - calc plus
-- Drive 8: `hexview` - hex viewer
-- Drive 8: `simplecells` - simple cells (alpha)
-- Drive 8: `game2048` - 2048 game
-- Drive 8: `deminer` - deminer
-- Drive 8: `dizzy` - dizzy kanban
-- Drive 8: `readyirc` - readyirc
-- Drive 8: `ucitest` - uci tester
-- Drive 8: `readme` - read.me
-- ReadyBASIC is accompanied by all three external `rbm.*` module packages and the complete 41-program procedure, graphics, and sound example/test set.
+- Drive 8: `editor` - editor (portable; no separate app-owned REU workspace)
+- Drive 8: `readyshell` - readyshell (beta) (portable; own REU overlays/state)
+- Drive 8: `simplefiles` - simple files (portable; no separate app-owned REU workspace)
+- Drive 8: `clipmgr` - clipboard (portable; shared REU clipboard/history)
+- Drive 8: `readybasic` - ready basic (beta) (portable core; own REU core/code and buffers; USPEED/UMHZ require Ultimate)
+- Drive 8: `cal26` - calendar 26 (portable; no separate app-owned REU workspace)
+- Drive 8: `tasklist` - task list (portable; no separate app-owned REU workspace)
+- Drive 8: `reuviewer` - reu viewer (portable; inspects shared REU allocation records)
+- Drive 8: `sysinfo` - system info (portable diagnostics; Ultimate details available only on Ultimate)
+- Drive 8: `quicknotes` - quicknotes (portable; own REU note storage)
+- Drive 8: `calcplus` - calc plus (portable; no separate app-owned REU workspace)
+- Drive 8: `hexview` - hex viewer (portable; no separate app-owned REU workspace)
+- Drive 8: `simplecells` - simple cells (alpha) (portable; no separate app-owned REU workspace)
+- Drive 8: `game2048` - 2048 game (portable; no separate app-owned REU workspace)
+- Drive 8: `deminer` - deminer (portable; no separate app-owned REU workspace)
+- Drive 8: `dizzy` - dizzy kanban (portable; no separate app-owned REU workspace)
+- Drive 8: `readyirc` - readyirc (Ultimate-only TCP; own REU scrollback)
+- Drive 8: `ucitest` - uci tester (Ultimate-only command lab; no separate app-owned REU workspace)
+- Drive 8: `readme` - read.me (portable; no separate app-owned REU workspace)
+
+All ReadyOS apps require the system REU for snapshots. The labels above distinguish additional app workspace from that baseline; shared clipboard operations also use REU. An Ultimate-only app can be present on portable media without becoming portable.
+- ReadyBASIC example and module coverage is listed below from this profile's source configuration.
 - ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable rather than as separate disk files.
+
+## ReadyBASIC examples and modules
+
+This profile defines 41 BASIC example/test PRGs and 3 disk module packages: `rbm.sample1`, `rbm.sample2`, `rbm.sample3`.
+Built-in graphics, immediate SID sound, MEMCAP and BORDER need no disk-module load. USPEED/UMHZ are built-in but require compatible Ultimate software turbo registers.
+The example count above is this profile's actual configured subset. The new `rbm.media` package, tune/images and combined demos are currently packaged in regular D81 and Ultimate D81 only. They are not implied by having the ReadyBASIC runtime.
+The new disk-module/resource loaders read drive 8; they do not take a device argument. See the repository's `docs/readybasic_reference.md` (and HTML counterpart) for every example, command contracts and exact per-profile availability.
 
 ## Disk Directory Order
 
@@ -89,3 +98,7 @@ x64sc -reu -reusize 1024 -drive8type 1581 -devicebackend8 0 +busdevice8 -8 ready
 - This profile compiles the portable launcher without Ultimate DOS DMA. Use `precog-ultimate` for the guided DMA-enabled D81, or explicitly override `LAUNCHER_DMA_LOAD=1` for development testing.
 - Attach the single disk image on drive `8`, then boot with `LOAD "PREBOOT",8` and `RUN`.
 - This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.
+
+## After PRECOG
+
+PRECOG 0.5 is planned as the final PRECOG release: the series that established what is possible and clarified the vision. Next comes ReadyOS Ultimate, the main focus, installing/configuring real files and folders on Ultimate storage and using its hardware features; and ReadyOS Universal, continuing disk-image and REU workflows for VICE, THEC64 and original hardware. Universal effort will follow user interest and demand. These are future directions, not separate products shipped here. Standalone releases of many apps are also planned, including both apps with their own REU needs and apps without them. We remain committed to standalone ReadyBASIC independent of Ultimate and ReadyOS; this does not promise a no-REU interpreter. Current ReadyOS app PRGs still require the ReadyOS runtime.

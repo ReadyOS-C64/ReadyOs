@@ -7,10 +7,21 @@ wide range of C64 setups that have a reasonably large REU. That includes VICE,
 Ultimate-family hardware, and other practical REU-capable modern paths. PRECOG
 `0.5` is the current development line.
 
-The current `0.5` development line is still comparatively generic rather
-than being explicitly tailored to the new C64 Ultimate. This cycle is expected
-to push further in that Ultimate-first direction while still trying to stay
-usable on other REU-capable C64 setups.
+`0.5` will be the last PRECOG release: the exploratory series in which we
+learned what is possible and worked out the product vision. Development after
+PRECOG will split into **ReadyOS Ultimate** and **ReadyOS Universal**.
+ReadyOS Ultimate is the main focus: a system that installs and configures real
+files and folders on Ultimate storage and makes fuller use of Ultimate features.
+ReadyOS Universal will continue the disk-image and REU approach for VICE,
+THEC64, and original hardware with suitable REU support. Investment in Universal
+will follow user interest and demand. These are plans, not two products already
+shipped by this tree.
+
+We also plan standalone releases of many apps, both those whose own work needs
+REU and those whose own work does not. In particular, we will continue investing
+in a standalone ReadyBASIC independent of both Ultimate hardware and ReadyOS.
+That promise does not imply a no-REU ReadyBASIC: its current module architecture
+uses REU. Today's ReadyOS app PRGs still depend on the ReadyOS runtime.
 
 The current tree also contains a C64 Ultimate DOS DMA launcher path. It loads
 disk PRGs directly into loader-assigned REU destinations. The dedicated
@@ -19,6 +30,15 @@ standalone `SETUP` utility; portable SKUs leave it disabled. Every enabled
 build falls back to the established disk loader whenever UCI, image mounting,
 file lookup, or transfer verification is unavailable. See
 [`docs/ultimate_dos_dma_loading.md`](docs/ultimate_dos_dma_loading.md).
+
+For that fast-loading path, ReadyOS cannot discover the host folder/D81 it was
+booted from. A C64 disk filename or drive number does not identify its enclosing
+image on Ultimate storage. Set `c64u_image_path` in the `[launcher]` section of
+`apps.cfg` to the D81's absolute Ultimate path and enable `dma_loading=1`.
+The standalone SETUP utility lets you browse to that image, validates it, and
+safely saves those settings. Run SETUP again after moving or renaming the image.
+This requirement is specific to Ultimate DOS fast loading; normal disk loading
+remains the fallback.
 
 ## The Concept
 
@@ -104,9 +124,14 @@ Boot note:
 
 ## What's New In 0.5
 
-The `0.5` line starts from the audited, production-stamped `0.2.5` tree. This
-initial branch/version transition deliberately changes no runtime contract;
-additional release work will be recorded here as it lands.
+The `0.5` line starts from the audited, production-stamped `0.2.5` tree. It now
+adds guided Ultimate SETUP, Ultimate Zip, and DMA state that survives launcher
+returns without probing or remounting. ReadyBASIC adds protected resource RAM,
+on-demand `rbm.media` music/graphics commands, and standard/Ultimate versions of
+the Orbital Echoes demo. The [examples and command guide](docs/readybasic_reference.md)
+contains the complete source collection, current command inventory, module-load
+instructions, and per-profile availability. The older foundations below remain
+part of the product; newer additions are described where their contracts differ.
 
 ### 0.2.5 foundation carried into 0.5
 
@@ -168,12 +193,12 @@ target drive types, disk capacities, and cartridge support are different.
 | Profile | Media | Why It Exists | Boot Flow | App Set |
 | --- | --- | --- | --- | --- |
 | `precog-d81` | one `D81` image on drive `8` | recommended main ReadyOS SKU and default build/run target | `PREBOOT -> BOOT` | 19 launcher apps plus ReadyBASIC modules and the complete example set; `sidetris` is also present through `app.sidetris` |
-| `precog-ultimate` | one `D81` image on drive `8` | C64 Ultimate-first full-content SKU with DMA loading enabled and guided image-path setup | run standalone `SETUP` once, then `PREBOOT -> BOOT` | same full app/module/example set as `precog-d81`, plus non-catalog `SETUP` utility |
+| `precog-ultimate` | one `D81` image on drive `8` | C64 Ultimate-first SKU with DMA loading and guided image-path setup | run standalone `SETUP` once, then `PREBOOT -> BOOT` | D81 media examples plus Ultimate Zip and non-catalog `SETUP`; app selection follows its own catalog |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | full cartridge cold-boot path for VICE and Ultimate-family setups that can keep a disk mounted | reset into cartridge boot | full current app catalog |
-| `precog-dual-d71` | two boot-time `D71` images on drives `8` and `9`, plus an optional third `D71` swapped into drive `9` | full core `1571` profile with capacity for optional apps and examples without crowding the boot pair | `PREBOOT -> SETD71 -> BOOT` | 16 core launcher apps; optional disk adds app-config versions of `sidetris`, `deminer`, `ucitest`, and `readme`, followed by all ReadyBASIC examples |
+| `precog-dual-d71` | two boot-time `D71` images on drives `8` and `9`, plus an optional third `D71` swapped into drive `9` | full core `1571` profile with capacity for optional apps and examples without crowding the boot pair | `PREBOOT -> SETD71 -> BOOT` | 16 core launcher apps; optional disk adds app-config versions of `sidetris`, `deminer`, `ucitest`, and `readme`, followed by the original 41 ReadyBASIC examples |
 | `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | broad Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | same 19-app set as `precog-d81` |
 | `precog-dual-d64` | two `D64` images on drives `8` and `9` | reduced profile for `1541`-compatible capacity limits | `PREBOOT -> BOOT` | curated subset of the current app catalog |
-| `precog-solo-d64-readybasic` | one `D64` image on drive `8` | complete ReadyBASIC environment for `1541`-only systems | `PREBOOT -> BOOT` | ReadyOS launcher, ReadyBASIC, all three module packages, and every procedure, graphics, and sound example |
+| `precog-solo-d64-readybasic` | one `D64` image on drive `8` | focused ReadyBASIC environment for `1541`-only systems | `PREBOOT -> BOOT` | ReadyOS launcher, ReadyBASIC, three sample modules and the original 41 examples; new media resources are currently D81-only |
 | `precog-solo-d64-a` | one `D64` image on drive `8` | standalone single-disk subset with editor, reference, and dizzy | `PREBOOT -> BOOT` | `editor`, `hexview`, `readme`, `dizzy` |
 | `precog-solo-d64-b` | one `D64` image on drive `8` | standalone single-disk notes/files subset | `PREBOOT -> BOOT` | `simplefiles`, `clipmgr`, `quicknotes` |
 | `precog-solo-d64-c` | one `D64` image on drive `8` | standalone single-disk planning/system subset | `PREBOOT -> BOOT` | `cal26`, `tasklist`, `reuviewer`, `sysinfo` |
@@ -221,17 +246,18 @@ productivity path that fits on two `D64`s: `editor`, `readyshell`,
 `simplefiles`, `clipmgr`, `cal26`, `tasklist`, `quicknotes`, and `calcplus`.
 
 The dual-D71 profile now treats its first two images as the stable boot set.
-ReadyBASIC and all `rbm.*` module packages stay on the normal drive-9 image.
+ReadyBASIC and the three sample `rbm.*` packages stay on the normal drive-9 image.
 Its banked `rbcore` and `rbcode` resources are contained inside the ReadyBASIC
 executable, so no ReadyBASIC overlay payload is stranded on the swap disk.
 The third image is an optional post-boot drive-9 swap: its `app.*` manifests
 come first, followed by the four lesser apps they describe, then the complete
-ReadyBASIC example collection. CAL26 and Dizzy remain on the boot-time drive-8
+original 41-program ReadyBASIC example collection. The newer media package and
+examples are not yet included in this profile. CAL26 and Dizzy remain on the boot-time drive-8
 image because their REL files must not be separated onto the optional disk.
 
-The ReadyBASIC-focused D64 fits on a single image, so no second examples disk is
-needed. It is the most direct `1541`-compatible way to try the complete
-ReadyBASIC beta environment rather than a general-purpose ReadyOS app subset.
+The ReadyBASIC-focused D64's original example collection fits on a single image,
+so no second examples disk is needed for that set. Choose regular D81 or Ultimate
+D81 for the new media module, music assets, and combined graphics/music demos.
 
 ### Disk Directory Order
 
@@ -334,7 +360,7 @@ How it works:
 - `label` is the launcher-visible app name and is limited to `31` characters.
 - The description line is limited to `38` characters.
 - Source text is expected to be lowercase. The build step writes the final
-  `apps.cfg` as a lowercase-PETASCII `SEQ` payload, and the launcher reads that
+  `apps.cfg` as a lowercase-PETSCII `SEQ` payload, and the launcher reads that
   generated file from drive `8`.
 - Blank lines and comment lines are allowed in the source profile. App records
   still follow the same alternating entry-line / description-line structure.
@@ -386,6 +412,24 @@ generated `manifest.json` are authoritative.
 | `readybasic` | ready basic (beta) | Beta BASIC V2 bridge with ReadyBASIC commands, native `PROC`/`FUNC`, REU-backed command modules, graphics/sound, and suspend/resume |
 | `readyirc` | readyirc | Ultimate TCP IRC client with setup, reconnect, channels, common IRC event parsing, help, editing, and REU-backed scrollback |
 | `ucitest` | uci tester | Ultimate command-interface lab with decoded responses, protocol guidance, and selectable examples ([guide](docs/uci_tester.md)) |
+| `uzip` | ultimate zip | Ultimate-only ZIP browser, extraction and creation using Ultimate DOS and REU resources; packaged in the Ultimate SKU |
+
+Hardware requirements are separate from inclusion in a disk image. ReadyIRC,
+UCI Tester and Ultimate Zip require Ultimate services for their principal work;
+SETUP is also Ultimate-only. A portable image may contain Ultimate-only apps.
+All apps running inside ReadyOS require its REU-backed runtime. Beyond that:
+
+| App work beyond the ReadyOS snapshot | Applications |
+| --- | --- |
+| Uses its own REU storage or code resources | QuickNotes (notes), ReadyIRC (scrollback), ReadyShell (overlays and state), ReadyBASIC (core/code and optional buffers/surfaces), Ultimate Zip (package/workspace) |
+| Depends on shared REU data as its purpose | Clipboard Manager (shared clipboard/history), REU Viewer (system allocation records) |
+| No separate app-owned REU workspace found | Editor, Calc Plus, Hex Viewer, Task List, Simple Files, Simple Cells, 2048, Sidetris, Calendar 26, Dizzy, Deminer, Read.Me, UCI Tester |
+| Hardware diagnostics | System Info detects REU and Ultimate capabilities; absence of Ultimate does not make the whole app Ultimate-only |
+
+Clipboard operations in otherwise RAM-based apps still use the shared REU
+clipboard. This classification describes today's implementation, not a claim
+that existing PRGs can already run standalone. See the
+[app requirements audit](docs/app_requirements.md) for scope and evidence.
 
 Notes:
 
@@ -409,7 +453,7 @@ Notes:
 - `LDV` and `STV` accept either embedded drive syntax like `"9:snap"` or a
   trailing drive argument like `"snap", 9`.
 - `PUT` and `ADD` use direct `COMMAND <expr>, <filename>` syntax. `PUT`
-  creates or replaces PETASCII text files; `ADD` appends to `SEQ` files and
+  creates or replaces PETSCII text files; `ADD` appends to `SEQ` files and
   creates them when missing.
 - `cal26` currently has a known regression: task reading is broken.
 - `showcfg.prg` is a BASIC inspector for the generated `apps.cfg` payload on
@@ -417,13 +461,23 @@ Notes:
 
 ### ReadyBASIC examples and current guides
 
-ReadyBASIC now builds 32 graphics example PRGs (`rbgfx01_modes` through
-`rbgfx32_convex_poly`) and 6 sound examples (`rbsnd01_sid_basics` through
-`rbsnd06_three_voice`). They progress from mode setup and immediate drawing
+ReadyBASIC retains 32 graphics examples and the original six immediate-SID
+examples, plus three language/procedure tests. Regular and Ultimate D81 profiles
+now add `RBSND07` (background PSID music), `RBGFXSNDDEMO` (standard Orbital
+Echoes), and `RBUGFXSNDDEMO` (Ultimate speed-controlled Orbital Echoes): 44
+packaged examples. The older `rbsnd08_neon.bas` remains as historical source,
+making 45 BASIC source examples in the tree. They progress from mode setup and immediate drawing
 through REU surfaces, sprites/input, polygons, display lists, tilemaps,
 multicolor bitmap operations, and three-voice SID use. The Makefile lists the
 canonical filenames; the regular and EasyFlash demo/probe suites exercise the
-same generated programs.
+baseline generated programs; the newer media demos have dedicated tests.
+
+Start with the [complete examples and command guide](docs/readybasic_reference.md)
+([formatted HTML](docs/readybasic_reference.html)). The built-in graphics/sound
+commands need no module load. Use `ZMODLD("RBM.MEDIA",M%)` for its eight media
+commands; reserve memory with `MEMCAP(36864)` before creating strings or loading
+the certified PAL tune. `USPEED` and `UMHZ` are built-in Ultimate-specific
+commands, not part of the media package. The standard demo avoids them.
 
 - [current ReadyBASIC design and measured memory](src/apps/readybasic/READYBASIC_CURRENT_DESIGN.md)
 - [graphics/event commands and demo coverage](src/apps/readybasic/READYBASIC_GRAPHICS_COMMAND_DESIGN.md)

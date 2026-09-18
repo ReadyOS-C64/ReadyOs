@@ -16,6 +16,7 @@ from typing import Dict, List
 
 import build_apps_catalog_petscii as apps_catalog
 import readyos_profiles
+from readyos_doc_content import PRODUCT_DIRECTION, app_requirement
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -544,7 +545,7 @@ def compose_easyflash_image(layout: Dict[str, object],
 
 
 def build_help_text(output_dir: Path) -> str:
-    return "\n".join([
+    text = "\n".join([
         "# readyos easyflash",
         "",
         "- attach `readyos_easyflash.crt` as an easyflash cartridge",
@@ -564,6 +565,18 @@ def build_help_text(output_dir: Path) -> str:
         "```",
         "",
     ])
+    catalog = parse_catalog(ROOT / "cfg/flavors/readyos_easyflash.ini")
+    lines = [text, "## Apps and requirements", "",
+             "Every app uses the ReadyOS REU snapshot system. Additional requirements:", ""]
+    for app in catalog['apps']:
+        name = app['prg']
+        lines.append(f"- `{name}`: {app_requirement(name)}.")
+    lines += ["", "ReadyBASIC's built-in commands are preloaded with the runtime. The companion "
+              "data D64 does not package the disk-module/example/media collection; use the "
+              "regular or Ultimate D81 for the new media demos. Cartridge preload is separate "
+              "from Ultimate DOS DMA and needs no D81 host-path setup.",
+              "", "## After PRECOG", "", PRODUCT_DIRECTION, ""]
+    return '\n'.join(lines)
 
 
 def build_release(catalog_path: Path,

@@ -6,6 +6,7 @@ ReadyOS profile loader and release packager.
 from __future__ import annotations
 
 import argparse
+from readyos_doc_content import PRODUCT_DIRECTION, ULTIMATE_PATH, app_requirement, basic_inventory
 import json
 import os
 import re
@@ -48,10 +49,10 @@ PUBLIC_VARIANT_ORDER = [
 VARIANT_NOTES = {
     "d81": "Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples.",
     "ultimate": "C64 Ultimate D81 with DMA loading enabled in apps.cfg and a standalone SETUP browser for locating and validating the image through Ultimate DOS.",
-    "dual-d71": "Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and all ReadyBASIC examples.",
+    "dual-d71": "Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and the original 41 ReadyBASIC examples.",
     "kung-fu-flash-2-d81": "Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks.",
     "dual-d64": "Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media.",
-    "solo-d64-readybasic": "Focused single-D64 ReadyBASIC profile with ReadyOS, ReadyBASIC, every module package, and the complete example set.",
+    "solo-d64-readybasic": "Focused single-D64 ReadyBASIC profile with ReadyOS, ReadyBASIC, three sample packages and the original 41 examples; new media demos are on regular/Ultimate D81.",
     "solo-d64-a": "Single-D64 subset focused on editor, reference, and dizzy for one-disk-only environments.",
     "solo-d64-b": "Single-D64 productivity subset centered on quicknotes, clipboard, calculator, and files.",
     "solo-d64-c": "Single-D64 planning subset centered on tasklist, calendar, and REU viewer.",
@@ -64,7 +65,7 @@ VARIANT_BEST_FIT = {
     "dual-d71": "C64 Ultimate, Ultimate 64, or VICE setups using two 1571-class drives, with optional drive-9 disk swapping.",
     "kung-fu-flash-2-d81": "Kung Fu Flash 2 users who want one full-content D81 and the cartridge's 1MB REU mode instead of CRT cartridge mode.",
     "dual-d64": "Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media.",
-    "solo-d64-readybasic": "1541-only users who primarily want the complete ReadyBASIC environment and examples on one disk.",
+    "solo-d64-readybasic": "1541-only users who want ReadyBASIC and the original graphics/sound examples on one disk.",
     "solo-d64-a": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
     "solo-d64-b": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
     "solo-d64-c": "THEC64, web emulators, or simple loaders that can mount only one D64 at a time.",
@@ -1376,6 +1377,8 @@ def build_help_text(profile: Dict[str, object],
         "",
     ]
     variant_warning = VARIANT_WARNINGS.get(str(profile["kind"]))
+    if str(profile.get("kind")) == "ultimate":
+        lines.extend(["## Before You Boot", "", ULTIMATE_PATH, ""])
     if variant_warning:
         lines.extend([
             "## Compatibility Warning",
@@ -1400,23 +1403,30 @@ def build_help_text(profile: Dict[str, object],
         "",
     ])
     for entry in entries:
-        lines.append(f"- Drive {entry['drive']}: `{entry['prg']}` - {entry['label']}")
+        lines.append(f"- Drive {entry['drive']}: `{entry['prg']}` - {entry['label']} ({app_requirement(entry['prg'])})")
+    lines.extend([
+        "", "All ReadyOS apps require the system REU for snapshots. The labels above distinguish "
+        "additional app workspace from that baseline; shared clipboard operations also use REU. "
+        "An Ultimate-only app can be present on portable media without becoming portable.",
+    ])
     if str(profile.get("id")) in {"precog-dual-d71", "precog-dual-d71-rsdebug"}:
         lines.extend([
-            "- The boot pair includes ReadyBASIC and all three external `rbm.*` module packages on its normal drive-9 disk; the banked `rbcore`/`rbcode` resources are carried inside `readybasic` itself.",
-            "- The optional drive-9 swap contains `app.*` manifests followed by `sidetris`, `deminer`, `ucitest`, and `readme`, then every ReadyBASIC example.",
+            "- The boot pair includes ReadyBASIC and the three sample `rbm.*` packages on its normal drive-9 disk; the banked `rbcore`/`rbcode` resources are carried inside `readybasic` itself.",
+            "- The optional drive-9 swap contains `app.*` manifests followed by `sidetris`, `deminer`, `ucitest`, and `readme`, then the original 41 ReadyBASIC examples.",
+            "- Those optional apps need no separate app-owned REU workspace; `ucitest` requires Ultimate services, while Sidetris, Deminer and Read.Me are portable ReadyOS apps.",
             "- No REL-backed app is placed on the optional disk: CAL26 and Dizzy remain on the boot-time drive-8 image.",
         ])
     if str(profile.get("kind")) in {"d81", "ultimate", "kung-fu-flash-2-d81"}:
         lines.extend([
-            "- ReadyBASIC is accompanied by all three external `rbm.*` module packages and the complete 41-program procedure, graphics, and sound example/test set.",
+            "- ReadyBASIC example and module coverage is listed below from this profile's source configuration.",
             "- ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable rather than as separate disk files.",
         ])
     if str(profile.get("kind")) == "solo-d64-readybasic":
         lines.extend([
-            "- This one D64 contains ReadyBASIC, all three external `rbm.*` module packages, and the complete 41-program procedure, graphics, and sound example/test set.",
+            "- This one D64 contains ReadyBASIC, the three sample `rbm.*` packages, and the original 41-program procedure, graphics, and sound example/test set.",
             "- ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable; no second examples disk is required.",
         ])
+    lines.extend(basic_inventory(profile))
     lines.extend([
         "",
         "## Disk Directory Order",
@@ -1510,6 +1520,7 @@ def build_help_text(profile: Dict[str, object],
     ])
     if str(profile.get("kind")) == "ultimate":
         lines.extend([
+            "- " + ULTIMATE_PATH,
             "- This SKU compiles the regular launcher with Ultimate DOS DMA support and ships `apps.cfg` with `dma_loading=1`; disk fallback remains active whenever DMA is unavailable.",
             "- Before the first ReadyOS boot, mount the D81 on drive `8`, run `LOAD\"SETUP\",8,1`, then `RUN`.",
             "- SETUP is a standalone utility built from focused ReadyOS TUI micromodules. It checks REU, UCI, and Ultimate DOS, browses active Ultimate storage volumes/folders for D81 images, mounts the selection, validates its `apps.cfg`, and stages the exact host path into that image.",
@@ -1531,7 +1542,7 @@ def build_help_text(profile: Dict[str, object],
         else:
             lines.append("- Attach all listed disk images to their matching drives before boot, then run `LOAD \"PREBOOT\",8` and `RUN`.")
         lines.append("- This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.")
-    lines.append("")
+    lines.extend(["", "## After PRECOG", "", PRODUCT_DIRECTION, ""])
     return "\n".join(lines)
 
 
