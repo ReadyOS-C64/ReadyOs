@@ -805,7 +805,7 @@ steps:
   - id: debug_hotkey_state_before_ctrl_b_after_cycles
     type: monitor.command
     params:
-      command: "raw:m 2a51 2a54"
+      command: "raw:m 2a47 2a4a"
   - id: debug_basic_state_before_ctrl_b_after_cycles
     type: monitor.command
     params:
@@ -826,7 +826,7 @@ steps:
   - id: debug_hotkey_state_after_ctrl_b_after_cycles
     type: monitor.command
     params:
-      command: "raw:m 2a51 2a54"
+      command: "raw:m 2a47 2a4a"
   - id: debug_basic_state_after_ctrl_b_after_cycles
     type: monitor.command
     params:

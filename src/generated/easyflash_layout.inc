@@ -6,8 +6,8 @@ READYOS_REU_BANK_SKIP = 32
 EASYFLASH_LAUNCHER_BANK = 1
 EASYFLASH_LAUNCHER_BANK_SPAN = 2
 EASYFLASH_LAUNCHER_LOAD_ADDR = $1000
-EASYFLASH_LAUNCHER_PAYLOAD_LEN = $692A
-EASYFLASH_LAUNCHER_CHECKSUM16 = $3398
+EASYFLASH_LAUNCHER_PAYLOAD_LEN = $69D6
+EASYFLASH_LAUNCHER_CHECKSUM16 = $BA5C
 READYSHELL_CACHE_BANK = $35
 READYSHELL_CACHE_BANK2 = $36
 READYSHELL_CACHE_BANK3 = $37
@@ -20,10 +20,10 @@ easyflash_app_table:
     .byte 2, 34, 5, 2, <$1000, >$1000, <$6D85, >$6D85, <$0951, >$0951
     .byte 3, 35, 7, 2, <$1000, >$1000, <$743B, >$743B, <$D69E, >$D69E
     .byte 4, 36, 9, 2, <$1000, >$1000, <$78AD, >$78AD, <$DD02, >$DD02
-    .byte 5, 37, 11, 2, <$1000, >$1000, <$7000, >$7000, <$A3B5, >$A3B5
-    .byte 6, 38, 13, 2, <$1000, >$1000, <$7F68, >$7F68, <$25EB, >$25EB
+    .byte 5, 37, 11, 2, <$1000, >$1000, <$7000, >$7000, <$061E, >$061E
+    .byte 6, 38, 13, 2, <$1000, >$1000, <$7F68, >$7F68, <$25FB, >$25FB
     .byte 7, 39, 15, 2, <$1000, >$1000, <$7A23, >$7A23, <$ED56, >$ED56
-    .byte 8, 40, 17, 1, <$1000, >$1000, <$3B2F, >$3B2F, <$8AAF, >$8AAF
+    .byte 8, 40, 17, 1, <$1000, >$1000, <$3C00, >$3C00, <$13B2, >$13B2
     .byte 9, 41, 18, 2, <$1000, >$1000, <$4039, >$4039, <$CBD8, >$CBD8
     .byte 10, 42, 20, 2, <$1000, >$1000, <$7A15, >$7A15, <$F75B, >$F75B
     .byte 11, 43, 22, 3, <$1000, >$1000, <$9291, >$9291, <$3E67, >$3E67
@@ -32,10 +32,10 @@ easyflash_app_table:
     .byte 14, 46, 29, 2, <$1000, >$1000, <$41F4, >$41F4, <$B21B, >$B21B
     .byte 15, 47, 31, 1, <$1000, >$1000, <$3CB7, >$3CB7, <$9E1A, >$9E1A
     .byte 16, 48, 32, 2, <$1000, >$1000, <$4F00, >$4F00, <$4D00, >$4D00
-    .byte 17, 49, 34, 3, <$1000, >$1000, <$971D, >$971D, <$AFF0, >$AFF0
+    .byte 17, 49, 34, 3, <$1000, >$1000, <$971D, >$971D, <$B000, >$B000
     .byte 18, 50, 37, 2, <$1000, >$1000, <$5A5C, >$5A5C, <$4368, >$4368
     .byte 19, 51, 39, 2, <$1000, >$1000, <$6CFB, >$6CFB, <$1EEB, >$1EEB
-    .byte 20, 52, 41, 2, <$1000, >$1000, <$6A86, >$6A86, <$8B33, >$8B33
+    .byte 20, 52, 41, 2, <$1000, >$1000, <$68F3, >$68F3, <$06AC, >$06AC
 
 easyflash_overlay_table:
     .byte 43, 1, <$8E00, >$8E00, <$32CD, >$32CD, <$5DD5, >$5DD5, 53, <$0000, >$0000, 1

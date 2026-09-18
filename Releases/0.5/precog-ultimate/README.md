@@ -1,7 +1,7 @@
 # precog ultimate (d81)
 
 - Release Line: `0.5`
-- Artifact Build: `0.5X`
+- Artifact Build: `0.5`
 - Kind: `ultimate`
 
 ## Why This Variant Exists
@@ -14,9 +14,9 @@ ReadyOS cannot discover which Ultimate host folder/image it was booted from: the
 
 ## Artifacts
 
-- Boot-time drive 8: `readyos-v0.5x-ultimate.d81`
-- Host-Side Boot PRG: `readyos-v0.5x-ultimate-preboot.prg`
-- Host-Side Boot PRG: `readyos-v0.5x-ultimate-boot.prg`
+- Boot-time drive 8: `readyos-v0.5-ultimate.d81`
+- Host-Side Boot PRG: `readyos-v0.5-ultimate-preboot.prg`
+- Host-Side Boot PRG: `readyos-v0.5-ultimate-boot.prg`
 
 ## Included Apps
 
@@ -68,7 +68,7 @@ The new disk-module/resource loaders read drive 8; they do not take a device arg
 
 - This profile uses the direct boot chain `PREBOOT -> BOOT`.
 - There is no `SETD71` stage for this variant.
-- Attach the single disk on drive `8`, then autostart `readyos-v0.5x-ultimate-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
+- Attach the single disk on drive `8`, then autostart `readyos-v0.5-ultimate-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
 
 ## C64 Ultimate
 

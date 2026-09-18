@@ -5,8 +5,8 @@
     "start_bank": 1,
     "bank_span": 2,
     "load_addr": 4096,
-    "payload_len": 26922,
-    "checksum16": 13208
+    "payload_len": 27094,
+    "checksum16": 47708
   },
   "apps": [
     {
@@ -75,7 +75,7 @@
       "bank_span": 2,
       "load_addr": 4096,
       "payload_len": 28672,
-      "checksum16": 41909,
+      "checksum16": 1566,
       "default_slot": 3,
       "resource_set": 2
     },
@@ -89,7 +89,7 @@
       "bank_span": 2,
       "load_addr": 4096,
       "payload_len": 32616,
-      "checksum16": 9707,
+      "checksum16": 9723,
       "default_slot": 0,
       "resource_set": 0
     },
@@ -116,8 +116,8 @@
       "start_bank": 17,
       "bank_span": 1,
       "load_addr": 4096,
-      "payload_len": 15151,
-      "checksum16": 35503,
+      "payload_len": 15360,
+      "checksum16": 5042,
       "default_slot": 0,
       "resource_set": 0
     },
@@ -243,7 +243,7 @@
       "bank_span": 3,
       "load_addr": 4096,
       "payload_len": 38685,
-      "checksum16": 45040,
+      "checksum16": 45056,
       "default_slot": 0,
       "resource_set": 0
     },
@@ -284,8 +284,8 @@
       "start_bank": 41,
       "bank_span": 2,
       "load_addr": 4096,
-      "payload_len": 27270,
-      "checksum16": 35635,
+      "payload_len": 26867,
+      "checksum16": 1708,
       "default_slot": 0,
       "resource_set": 0
     }
