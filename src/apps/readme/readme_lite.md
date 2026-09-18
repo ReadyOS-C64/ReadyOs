@@ -16,12 +16,12 @@ Current snapshot:
 - New since 0.1.5: **quicknotes**, **simple files**, **simple cells**,
   **sidetris**, **deminer**, **system info**, **ReadyBASIC**,
   **ReadyIRC**, **UCI Tester**, and **EasyFlash**
-- New in 0.5: the development line begins from the audited 0.2.5
-  production baseline; further release work will follow on this branch.
+- New in 0.5: SETUP, Ultimate Zip, persistent DMA state,
+  ReadyBASIC media modules and music/graphics demos.
 - New in 0.2.5: ReadyBASIC graphics/sound, resilient asynchronous UCI,
   a fuller ReadyIRC client, and opt-in launcher DMA loading
-- Experimental C64U direct-to-REU disk loading exists as an opt-in
-  build; normal release builds retain the portable disk loader.
+- Ultimate SKU enables direct-to-REU loading with disk fallback.
+  Other SKUs use portable disk loading.
 
 ---
 
@@ -29,12 +29,8 @@ Current snapshot:
 
 What if a Commodore 64 could feel ready, not just nostalgic?
 
-ReadyOS treats waiting as the enemy. It is a modern-minded
-environment for the C64 ecosystem focused on responsiveness,
-flow, and immediate interaction.
-
-The philosophy is baked into the name:
-When it says "READY." it should mean it.
+ReadyOS treats waiting as the enemy: responsive C64 workflows,
+immediate interaction, and a "READY." that means ready.
 
 *State continuity* is a core value, not a nice-to-have.
 
@@ -42,31 +38,23 @@ When it says "READY." it should mean it.
 
 ## Quick Pitch
 
-ReadyOS is a "READY."-fast C64 environment built around an
-REU-first workflow with instant app switching, suspend/resume,
-shared clipboard + history, and deep links between apps.
+REU-first C64 workflows: instant app switching, suspend/resume,
+shared clipboard/history, and deep links between apps.
 
-Designed for Commodore 64 Ultimate workflows first, ReadyOS is
-tuned to behave cleanly from 1MHz through 64MHz operation, with the
-same keyboard-first flow preserved across speed settings.
-
-It is also built for backward compatibility with classic C64 + REU
-setups and emulator-based use.
-
-Support on other Ultimate-family devices is welcome, but incidental
-rather than a primary design target.
+Commodore 64 Ultimate comes first, with keyboard-first operation
+from 1MHz to 64MHz. Classic C64 + REU and emulators remain supported.
+Other Ultimate-family devices are welcome, but not primary targets.
 
 ---
 
 ## Core Attributes
 
-ReadyOS is building a coherent operating environment, not just
-a launcher.
+An operating environment, not just a launcher.
 
 How it feels:
-- App switching is closer to Alt-Tab than save-quit-reload.
-- Apps suspend and resume without dropping your place.
-- Shared conventions keep movement between apps predictable.
+- Alt-Tab-style switching, not save-quit-reload.
+- Suspend/resume keeps your place.
+- Shared conventions make navigation predictable.
 
 Design direction (unchanged goals):
 - **Speed first** for app transitions and keyboard navigation.
@@ -75,41 +63,29 @@ Design direction (unchanged goals):
 
 Key attributes:
 - REU-backed fast app switching.
-- Tiny shim core + shared libraries that can evolve over time.
-- Shared clipboard plus clipboard history across workflows.
-- Deep links between apps to specific views or contexts.
-- Hardware-friendly speed scaling for stable UI/input behavior across
-  slower and faster machines.
-- Profile-based disk layout so the same ReadyOS runtime can ship on the main
-  D81, dual-D71, general D64, or ReadyBASIC-focused D64 media.
-- UltimateBuddy can extend launch/control workflows when present,
-  while ReadyOS remains fully usable without it.
+- Small, evolving shim and shared libraries.
+- Shared clipboard/history and deep links to app views/contexts.
+- Stable UI/input at slow and fast CPU speeds.
+- One runtime, with D81, dual-D71, general D64 and ReadyBASIC D64 profiles.
+- Optional UltimateBuddy launch/control integration.
 
 ---
 
 ## UltimateBuddy Vision
 
-UltimateBuddy is the focused companion for Commodore 64 Ultimate.
-ReadyOS remains the core environment; UltimateBuddy adds automation,
-integration, and network bridge capabilities around it.
+UltimateBuddy is an optional C64 Ultimate companion for automation,
+integration and network bridging; ReadyOS remains the core environment.
 
 Concrete examples:
-- Automate C64U actions that are not in UCI but are available through
-  the REST interface, including settings changes and disk mount/load.
-- Push app/data payloads into REU faster than normal disk-first paths.
-- Sync files between external computers and the C64U quickly.
-- Provide a WAP-style PETASCII browser that proxies modern web apps
-  into keyboard-centric C64 screens.
-- Freeze almost any C64 app and bring it into ReadyOS quick-switch
-  flow as a recoverable working state.
-- Act as a remote compiler bridge: a C64 IDE can send compile requests
-  and receive build output back immediately.
-- Bridge C64 apps to internet services (tweets, search results, and
-  other web data) through ReadyOS-friendly interfaces.
+- REST-only actions beyond UCI: settings, disk mount/load.
+- Faster REU app/data transfers and computer-to-C64U file sync.
+- WAP-style PETSCII proxy for keyboard-driven modern web apps.
+- Freeze C64 apps into recoverable ReadyOS quick-switch states.
+- Remote compilation: C64 IDE requests, external build results.
+- C64-friendly access to tweets, search and other internet data.
 
 Contract:
-- ReadyOS is complete and usable without UltimateBuddy.
-- UltimateBuddy is an optional force multiplier for C64U workflows.
+- ReadyOS works without UltimateBuddy; integration is optional.
 
 ---
 
@@ -120,10 +96,13 @@ PRECOG proves the base mechanics:
 - Stable state restore across context switches.
 - A practical daily workflow on C64-class systems.
 
-UltimateBuddy role:
-- ReadyOS is designed to integrate cleanly with UltimateBuddy
-  style workflows where they add speed and convenience.
-- ReadyOS does not depend on UltimateBuddy to function.
+0.5 is the last PRECOG. Next: ReadyOS Ultimate focuses on real storage
+installation/configuration. Universal keeps disk images/REU for VICE,
+THEC64 and original hardware, with effort based on demand. Standalone
+apps are planned with and without REU needs; ReadyBASIC will be independent
+of Ultimate and ReadyOS, not necessarily REU-free.
+
+UltimateBuddy can add speed and convenience without becoming a dependency.
 
 Future-facing themes:
 - Better cross-app information flow.
@@ -134,7 +113,7 @@ Future-facing themes:
 
 ## App Catalog
 
-The current PRECOG catalog is larger than the older 0.1.5 set.
+Apps and media profiles are listed below.
 
 ## Global App Hotkeys
 
@@ -175,15 +154,15 @@ Disk layout:
 - Drive assignments are documented in the external profile `helpme.md`.
 - The main release variants are:
   - `precog-d81`: recommended main SKU; 19 catalog apps plus Sidetris
-    on demand, ReadyBASIC modules, and all examples on one `1581` disk
+    on demand, four modules and 44 BASIC examples on one `1581` disk
   - `precog-ultimate`: the full D81 plus standalone `SETUP`; DMA loading
     is compiled and enabled, while normal disk fallback remains available
   - `precog-dual-d71`: 16 core apps on two boot-time `1571` disks;
-    a third optional drive-9 swap adds four apps and all BASIC examples
+    a third optional drive-9 swap adds four apps and the original 41 examples
   - `precog-kung-fu-flash-2-d81`: the D81 set adapted for 1MB-REU KFF2
   - `precog-dual-d64`: reduced 8-app set on two `1541` disks
-  - `precog-solo-d64-readybasic`: ReadyOS, ReadyBASIC, all modules, and
-    the full 41-program example/test set on one `1541` disk
+  - `precog-solo-d64-readybasic`: ReadyOS, ReadyBASIC, three sample modules,
+    and the original 41 examples; new media examples need D81
   - `precog-easyflash`: EasyFlash `CRT` plus companion `D64` on drive `8`
 
 Disk directory order is deliberate. Bootable images put `PREBOOT` first,
@@ -193,6 +172,8 @@ overlays/modules, REL data, and finally any ReadyBASIC examples. Each image
 omits groups it does not contain. The EasyFlash CRT uses a separate bank layout.
 
 Ultimate D81 first run:
+- C64U cannot tell ReadyOS its boot D81's host path. Fast loading needs
+  `c64u_image_path` and `dma_loading=1` in `apps.cfg`; SETUP records them.
 - Copy and mount the image on drive 8.
 - Run `LOAD"SETUP",8,1`, then `RUN` before booting ReadyOS.
 - SETUP checks REU, UCI, and Ultimate DOS, then browses Ultimate storage for
@@ -287,7 +268,7 @@ Current file-command behavior:
 - `SEL "NAME", "TYPE"` emits a new object containing only those named
   properties.
 - `TOP count, skip` keeps `count` items after skipping the first `skip` items.
-- `CAT` emits one string per text line from a PETASCII `SEQ` file.
+- `CAT` emits one string per text line from a PETSCII `SEQ` file.
 - `PUT <expr>, <file>` creates or replaces a text file from a string or array
   of strings.
 - `ADD <expr>, <file>` appends strings to an existing `SEQ` file, or creates
@@ -348,6 +329,11 @@ Beta BASIC V2 bridge with native control-flow helpers, disk-loadable command
 modules, REU buffers and surfaces, graphics, sprites, input, polygons,
 display lists, tilemaps, multicolor drawing, and immediate SID sound.
 
+New: MEMCAP, BORDER, USPEED/UMHZ (Ultimate speed). ZMODLD("RBM.MEDIA",M%)
+adds eight media commands. D81: RBSND07, RBGFXSNDDEMO, RBUGFXSNDDEMO
+(Ultimate). Music: vetted PAL PSID; reserve before strings; load at 1MHz.
+Full guide: docs/readybasic_reference.html.
+
 ### ReadyIRC
 
 Ultimate TCP IRC client with validated setup, connect/reconnect, channel
@@ -358,6 +344,13 @@ scrollback.
 
 Interactive Ultimate Command Interface lab with raw and structured calls,
 decoded results, selectable examples, and protocol-safe queue handling.
+
+### Ultimate Zip
+
+Ultimate-only ZIP create/extract. ReadyIRC and UCI Tester also need Ultimate.
+All apps use ReadyOS REU. Own REU: QuickNotes, ReadyIRC, ReadyShell,
+ReadyBASIC, Ultimate Zip. Clipboard/REU Viewer use shared records;
+other app cores need no extra workspace. Clipboard still uses shared REU.
 
 ### Task List
 
@@ -394,8 +387,7 @@ Core approach:
 - Apps are restored quickly from REU-backed state.
 - Shared libraries provide consistent UI and behavior patterns.
 
-The result is a system that feels immediate without becoming a
-monolithic always-resident OS.
+Immediate workflows without a monolithic always-resident OS.
 
 ---
 
