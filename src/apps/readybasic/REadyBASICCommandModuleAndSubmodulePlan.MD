@@ -1,5 +1,25 @@
 # ReadyBASIC Command Module And Submodule Plan
 
+## 0.5 RC2 command packaging
+
+`LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay
+proof workers are now disk-only, with no Z prefix. Load `RBM.SAMPLE1` before
+using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL,
+SLOT0, SLOT1, CPYRST or COPY. `RBM.SAMPLE2` supplies SLOT2, SPAN and OVL1/OVL2.
+The packages register 12, 7 and 32 descriptors respectively; sample3 includes
+COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo
+entries, preserving production and media commands. See
+[the complete package contract](READYBASIC_SAMPLE_MODULES.md) for names,
+placement, dependencies and examples.
+
+Cold registration has 83 built-ins and 45 empty slots. Media occupies core
+`$1A40–$1B3F`; the demo area is `$1B40–$1F3F`; SCRPUT stays at `$1FE0`.
+Demo code and the built-in SPANPACK have been removed from the runtime image.
+PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick.
+The loader remains in module 2, slot 1. BASIC still starts at `$2AC1` with
+30013 empty free bytes.
+
+
 This document is the design note for replacing ReadyBASIC's current
 `LOWPACK` / `HIDDENPACK` command-code model with assembler-only command
 modules, fixed under-ROM submodule slots, REU-backed residency tracking, and a
@@ -283,11 +303,11 @@ allocation is deferred to the future disk module loader command.
 
 The first disk module loader proof is implemented as a command in the second
 built-in module, not as resident startup code. The BASIC-visible command name is
-`ZMODLD(name$)`, intentionally avoiding the tokenized `LOAD` keyword inside the
+`LDMOD(name$)`, intentionally avoiding the tokenized `LOAD` keyword inside the
 command text. The loader command lives in slot 1/module 2 and uses the resident
 REU stash ABI to register descriptors and payload chunks.
 
-`ZMODLD()` returns the number of command descriptors registered. Failure returns
+`LDMOD()` returns the number of command descriptors registered. Failure returns
 a nonzero diagnostic value in the `240` range for the current proof build.
 
 The implemented proof loader:
@@ -340,9 +360,9 @@ profiles:
 
 | Disk file | Module | Commands | Layout proved |
 | --- | --- | --- | --- |
-| `rbm.sample1` | Module 3 | `ZDM1()` returns `61` | Single slot-1 submodule. |
-| `rbm.sample2` | Module 4 | `ZDM2S()` returns `74`; `ZDOV1()`/`ZDOV2()` return `72`/`73` | Two-slot slot 1+2 span plus two slot-2 overlays. `ZDOV1` and `ZDOV2` both use submodule 5 because they are different overlays of the same submodule family. |
-| `rbm.sample3` | Module 5 | `ZSAA()`-`ZUEB()` return stateful integer sentinels | Larger package with 30 descriptors. The command names encode submodule, overlay, and entrypoint: `ZSAA` is submodule 6, overlay 1, entry A; `ZSAB` is the second entrypoint in that same resident overlay image. Each overlay image carries one byte of local state so tests can prove when a resident overlay is reused versus freshly reloaded. `ZT*` and `ZU*` cover submodules 7 and 8. |
+| `rbm.sample1` | Module 7 | `DM1()` returns `61` | Single slot-1 submodule. |
+| `rbm.sample2` | Module 8 | `DM2S()` returns `74`; `DOV1()`/`DOV2()` return `72`/`73` | Two-slot slot 1+2 span plus two slot-2 overlays. `DOV1` and `DOV2` both use submodule 5 because they are different overlays of the same submodule family. |
+| `rbm.sample3` | Module 9 | `S6AA()`-`S8EB()` return stateful integer sentinels | Larger package with 30 stateful descriptors plus COPY/CPYRST. The command names encode submodule, overlay, and entrypoint: `S6AA` is submodule 6, overlay 1, entry A; `S6AB` is the second entrypoint in that same resident overlay image. Each overlay image carries one byte of local state so tests can prove when a resident overlay is reused versus freshly reloaded. `S7*` and `S8*` cover submodules 7 and 8. |
 
 The long-term loader should still:
 
@@ -366,7 +386,7 @@ command/module feature so the resident core stays lean.
   fields.
 - Preserve all current command behavior.
 - Keep parser signatures, call frame, result frame, and commit behavior stable.
-- Convert `ZHIDDENRAM` from a special hidden command into a normal submodule
+- Convert `HIDDENRAM` from a special hidden command into a normal submodule
   command that happens to run under BASIC ROM RAM.
 
 ### Slice 2: 2KB Submodule Slots

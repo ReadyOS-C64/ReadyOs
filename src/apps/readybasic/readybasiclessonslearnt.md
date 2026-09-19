@@ -1,5 +1,25 @@
 # ReadyBASIC Lessons Learnt
 
+## 0.5 RC2 command packaging
+
+`LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay
+proof workers are now disk-only, with no Z prefix. Load `RBM.SAMPLE1` before
+using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL,
+SLOT0, SLOT1, CPYRST or COPY. `RBM.SAMPLE2` supplies SLOT2, SPAN and OVL1/OVL2.
+The packages register 12, 7 and 32 descriptors respectively; sample3 includes
+COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo
+entries, preserving production and media commands. See
+[the complete package contract](READYBASIC_SAMPLE_MODULES.md) for names,
+placement, dependencies and examples.
+
+Cold registration has 83 built-ins and 45 empty slots. Media occupies core
+`$1A40–$1B3F`; the demo area is `$1B40–$1F3F`; SCRPUT stays at `$1FE0`.
+Demo code and the built-in SPANPACK have been removed from the runtime image.
+PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick.
+The loader remains in module 2, slot 1. BASIC still starts at `$2AC1` with
+30013 empty free bytes.
+
+
 > Current contract note (schema v5): ReadyOS snapshots `$1000-$C5FF`
 > (`$B600` bytes) and keeps mappings/status/registry state only in the combined
 > ReadyOS bank at physical `Skip`. The resident 1 KB shim owns `$C600-$C9FF`. Any
@@ -708,7 +728,7 @@ contract is fully proven.
   registry function after resume.
 - For the stored-program command contract, use:
   `READYBASIC_VISIBLE=1 bash build_support/run_readybasic_program_probe.sh`
-  This interviews each command style early: first `LIST`/`RUN` for `ZECHO1`,
+  This interviews each command style early: first `LIST`/`RUN` for `ECHO1`,
   then same-line continuation, strings, hidden workers, arrays, handles, and
 	  failure clearing. It should fail fast at the first command family that
 	  regresses.
@@ -758,7 +778,7 @@ contract is fully proven.
 
 Proven on 2026-05-23 in the expression-style branch. Returning command results
 through the BASIC eval vector is practical when the command has already produced
-a scalar/string result, as with `ZADD16(a,b)` and `UPPER(s$)`. Bare statement
+a scalar/string result, as with `ADD16(a,b)` and `UPPER(s$)`. Bare statement
 commands can also reuse the existing descriptor/signature path with only a small
 resident parser wrapper.
 

@@ -329,7 +329,7 @@ Beta BASIC V2 bridge with native control-flow helpers, disk-loadable command
 modules, REU buffers and surfaces, graphics, sprites, input, polygons,
 display lists, tilemaps, multicolor drawing, and immediate SID sound.
 
-New: MEMCAP, BORDER, USPEED/UMHZ (Ultimate speed). ZMODLD("RBM.MEDIA",M%)
+New: MEMCAP, BORDER, USPEED/UMHZ (Ultimate speed). LDMOD("RBM.MEDIA",M%)
 adds eight media commands. D81: RBSND07, RBGFXSNDDEMO, RBUGFXSNDDEMO
 (Ultimate). Music: vetted PAL PSID; reserve before strings; load at 1MHz.
 Full guide: docs/readybasic_reference.html.

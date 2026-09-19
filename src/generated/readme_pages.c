@@ -610,7 +610,7 @@ const char *const readme_page_line_text[README_PAGE_COUNT][README_LINES_PER_PAGE
         "",
         "New: MEMCAP, BORDER, USPEED/UMHZ",
         "(Ultimate speed).",
-        "ZMODLD(\"RBM.MEDIA\",M%)",
+        "LDMOD(\"RBM.MEDIA\",M%)",
         "adds eight media commands. D81:",
         "RBSND07, RBGFXSNDDEMO, RBUGFXSNDDEMO",
         "(Ultimate). Music: vetted PAL PSID;",

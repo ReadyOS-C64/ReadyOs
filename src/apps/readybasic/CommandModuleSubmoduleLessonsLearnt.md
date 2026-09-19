@@ -1,5 +1,25 @@
 # ReadyBASIC Command Module/Submodule Lessons Learnt
 
+## 0.5 RC2 command packaging
+
+`LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay
+proof workers are now disk-only, with no Z prefix. Load `RBM.SAMPLE1` before
+using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL,
+SLOT0, SLOT1, CPYRST or COPY. `RBM.SAMPLE2` supplies SLOT2, SPAN and OVL1/OVL2.
+The packages register 12, 7 and 32 descriptors respectively; sample3 includes
+COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo
+entries, preserving production and media commands. See
+[the complete package contract](READYBASIC_SAMPLE_MODULES.md) for names,
+placement, dependencies and examples.
+
+Cold registration has 83 built-ins and 45 empty slots. Media occupies core
+`$1A40–$1B3F`; the demo area is `$1B40–$1F3F`; SCRPUT stays at `$1FE0`.
+Demo code and the built-in SPANPACK have been removed from the runtime image.
+PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick.
+The loader remains in module 2, slot 1. BASIC still starts at `$2AC1` with
+30013 empty free bytes.
+
+
 This log tracks implementation lessons for the ReadyBASIC command
 module/submodule experiment. It is intentionally separate from the design plan:
 the plan describes the target architecture, while this file records what was
@@ -37,7 +57,7 @@ proven, adjusted, or rejected during implementation.
   name offset 16.
 - Routed low and hidden command payloads through one generic under-ROM
   fetch/call path.
-- Converted `ZHIDDENRAM` to that generic path without changing its public
+- Converted `HIDDENRAM` to that generic path without changing its public
   behavior.
 - Static gate:
   `make bin/readybasic.prg && make readybasic-plugin-static-check` passed.
@@ -101,7 +121,7 @@ proven, adjusted, or rejected during implementation.
   `$B800-$BFFF`, backed by the same built-in command seed payload in REU bank
   `$45`.
 - Added module 2 proof descriptors and tiny assembler proof commands:
-  `ZSLOT0()`, `ZSLOT1()`, and `ZSLOT2()`.
+  `SLOT0()`, `SLOT1()`, and `SLOT2()`.
 - Kept resident growth flat by reusing the existing `SIG_SCRCAP` no-argument
   integer parser instead of adding a new parser signature.
 - Reintroduced descriptor-driven runtime base selection for slot 0, slot 1,
@@ -132,11 +152,11 @@ proven, adjusted, or rejected during implementation.
 
 ## Slice 4: Span, Overlay, And Copy-Count Proofs
 
-- Added `ZSPAN()` as a two-slot proof payload with slot mask 1+2, linked for
+- Added `SPAN()` as a two-slot proof payload with slot mask 1+2, linked for
   `$B000-$BFFF` and returning `40`.
-- Added `ZOVL1()` and `ZOVL2()` as overlay proof payloads that both target slot
+- Added `OVL1()` and `OVL2()` as overlay proof payloads that both target slot
   2 and return distinct values, `51` and `52`.
-- Added `ZCPYRST()` and `ZCOPY()` so the visual suite can reset and inspect a
+- Added `CPYRST()` and `COPY()` so the visual suite can reset and inspect a
   tiny copy counter.
 - Added a compact residency skip path that records the last command/overlay
   identity and increments the copy counter only when a REU fetch actually
@@ -144,8 +164,8 @@ proven, adjusted, or rejected during implementation.
   design, but it proves the dispatch/fetch/call behavior without moving
   resident code above the ReadyBASIC boundary.
 - Extended the local ReadyBASIC full visual suite runner to assert:
-  `ZSLOT0()`, `ZSLOT1()`, `ZSLOT2()`, `ZSPAN()`, `ZOVL1()/ZOVL2()`, and the
-  no-recopy proof `ZCPYRST(); ZSLOT1(); ZSLOT1(); ZCOPY()`.
+  `SLOT0()`, `SLOT1()`, `SLOT2()`, `SPAN()`, `OVL1()/OVL2()`, and the
+  no-recopy proof `CPYRST(); SLOT1(); SLOT1(); COPY()`.
 - Static gate:
   `make bin/readybasic.prg && make readybasic-plugin-static-check` passed.
 - VICE gate:
@@ -174,20 +194,20 @@ proven, adjusted, or rejected during implementation.
 
 ## Slice 5: Disk Module Loader Proof
 
-- Added `ZMODLD(name$)` as a module 2 / slot 1 command. The loader lives in
+- Added `LDMOD(name$)` as a module 2 / slot 1 command. The loader lives in
   under-ROM module payload code and uses existing resident REU stash helpers;
   resident size and BASIC free bytes did not move.
 - Added `build_support/build_readybasic_disk_modules.py` to generate
   ReadyBasicModule SEQ packages named `rbm.<name>`:
-  - `rbm.sample1` registers `ZDM1()` as a single slot-1 disk-loaded command returning
+  - `rbm.sample1` registers `DM1()` as a single slot-1 disk-loaded command returning
     `61`.
-  - `rbm.sample2` registers `ZDM2S()` as a slot 1+2 span returning `74`, plus
-    `ZDOV1()` / `ZDOV2()` as slot-2 overlays returning `72` / `73`. Those two
+  - `rbm.sample2` registers `DM2S()` as a slot 1+2 span returning `74`, plus
+    `DOV1()` / `DOV2()` as slot-2 overlays returning `72` / `73`. Those two
     entries both use submodule 5 because they are two overlays of the same
     submodule family.
-  - `rbm.sample3` registers `ZSAA()` through `ZUEB()` across multiple submodule
+  - `rbm.sample3` registers `S6AA()` through `S8EB()` across multiple submodule
     families and overlays. Each command returns a stateful integer sentinel, and
-    the command name encodes submodule, overlay, and entrypoint: `ZS`/`ZT`/`ZU`
+    the command name encodes submodule, overlay, and entrypoint: `S6`/`S7`/`S8`
     are submodules 6/7/8, the middle `A`-`E` is overlay 1-5, and the final
     `A`/`B` is the entrypoint inside that resident overlay image. Each overlay
     carries a one-byte local counter so the visual tests can prove resident
@@ -195,9 +215,9 @@ proven, adjusted, or rejected during implementation.
 - Added the generated module artifacts to ReadyBASIC-capable D81 and dual-D71
   profiles so the normal ReadyOS boot disk includes the sample modules.
 - Extended the local ReadyBASIC visual suite runner to assert:
-  `ZMODLD("RBM.SAMPLE1")`, `ZDM1()`, `ZMODLD("RBM.SAMPLE2")`, `ZDM2S()`,
-  `ZDOV1()/ZDOV2()`, `ZMODLD("RBM.SAMPLE3")`, and representative
-  `ZSAA()`-`ZUEB()` calls.
+  `LDMOD("RBM.SAMPLE1")`, `DM1()`, `LDMOD("RBM.SAMPLE2")`, `DM2S()`,
+  `DOV1()/DOV2()`, `LDMOD("RBM.SAMPLE3")`, and representative
+  `S6AA()`-`S8EB()` calls.
 - Static gate:
   `make bin/readybasic.prg && make readybasic-plugin-static-check` passed.
 - VICE gate:
@@ -217,10 +237,10 @@ proven, adjusted, or rejected during implementation.
   - `BRIDGE` remains `$01F7` / 503B; `REGSEED` and PRG payload size remain
     unchanged.
 - Lesson: BASIC-visible command names must avoid embedded tokenizable keywords.
-  `ZMODLOAD` looked natural, but the `LOAD` suffix was tokenized before
-  ReadyBASIC command lookup. `ZMODLD` avoids that and should be the naming
+  `LDMOD` looked natural, but the `LOAD` suffix was tokenized before
+  ReadyBASIC command lookup. `LDMOD` avoids that and should be the naming
   pattern for future loader-style commands.
-- Lesson: the pre-v1 module files are not PRGs. `ZMODLD` uses KERNAL file I/O
+- Lesson: the pre-v1 module files are not PRGs. `LDMOD` uses KERNAL file I/O
   to stream SEQ bytes through `$C500`, then stashes descriptors in REU bank
   `$44` and payload records in bank `$45`. This is what lets large package
   files prove the module system without reducing BASIC bytes free.

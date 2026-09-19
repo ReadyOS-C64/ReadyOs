@@ -1,5 +1,11 @@
 # READY / Orbital Echoes — standard and Ultimate
 
+Current 0.5 RC2 command packaging: use `LDMOD` and `PAUSE`. There are 83 built-ins;
+media descriptors use `$1A40-$1B3F`, and disk demo packages use a separate
+`$1B40-$1F3F` area. Sample3 replaces other demo entries, preserving production
+and media commands. Older offsets/counts in dated evidence below describe
+those earlier builds. See the [sample module guide](../src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md).
+
 Latest Ultimate deployment: **0.5L**, two-scene 64 MHz raw-motion version, at
 `/USB1/automation/readybasic-media/neon-d91a3778/RBd91a3778.D81` with matching
 DMA apps.cfg. Both CC0 backgrounds are packed losslessly and cached separately

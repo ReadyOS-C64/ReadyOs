@@ -55,7 +55,7 @@ def basic_inventory(profile):
              "USPEED/UMHZ are built-in but require compatible Ultimate software turbo registers."]
     if 'rbm.media' in packages:
         lines += ["The new set includes RBSND07, RBGFXSNDDEMO and RBUGFXSNDDEMO. "
-                  "Use `ZMODLD(\"RBM.MEDIA\",M%)` for eight on-demand music/image/sprite commands. "
+                  "Use `LDMOD(\"RBM.MEDIA\",M%)` for eight on-demand music/image/sprite commands. "
                   "Reserve with `MEMCAP(36864)` before strings/music; load images before starting music. "
                   "The vetted PSID player is PAL-only. The standard demo avoids Ultimate speed calls; "
                   "the Ultimate demo requires C64U Turbo Registers and uses 1 MHz during disk I/O.",

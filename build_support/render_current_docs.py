@@ -14,6 +14,7 @@ PAIRS = {
         "readybasic_reference", "app_requirements", "documentation_audit_2026-09",
         "readybasic_orbital_echoes", "readybasic_media_learnings",
         "readybasic_media_load_investigation", "readyos_ultimate_speed_policy")},
+    "src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md": "src/apps/readybasic/readybasic_sample_modules.html",
     "src/apps/readybasic/READYBASIC_CURRENT_DESIGN.md": "src/apps/readybasic/readybasic_current_design.html",
     "src/apps/readybasic/READYBASIC_LIFECYCLE_AND_REU_ARCHITECTURE.md": "src/apps/readybasic/readybasic_lifecycle_visual_guide.html",
     "src/apps/readybasic/READYBASIC_MAKING_COMMAND_GUIDE.md": "src/apps/readybasic/readybasic_making_command_guide.html",

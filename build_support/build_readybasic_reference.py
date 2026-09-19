@@ -4,7 +4,7 @@ import argparse
 import re
 from pathlib import Path
 import readyos_profiles as profiles
-from build_readybasic_disk_modules import rbm3_payload_commands
+from build_readybasic_disk_modules import rbm3_payload_commands, sample_inventory
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "src/apps/readybasic"
@@ -70,28 +70,28 @@ def example_topic(stem):
 # Forms are public syntax, not internal signature IDs. Proof commands use the
 # descriptor's name and the examples as their executable usage reference.
 CONTRACTS = {
-    "ZECHO1": "ZECHO1(P%) — return the integer proof value.",
-    "ZADD16": "ZADD16(A,B,R%) or R%=ZADD16(A,B) — add integer arguments.",
+    "ECHO1": "ECHO1(P%) — return the integer proof value.",
+    "ADD16": "ADD16(A,B,R%) or R%=ADD16(A,B) — add integer arguments.",
     "UPPER": "UPPER(S$,T$) or T$=UPPER(S$) — uppercase a bounded string.",
     "LOWER": "LOWER(S$,T$) or T$=LOWER(S$) — lowercase a bounded string.",
-    "ZHIDDENRAM": "ZHIDDENRAM(S$,R%) — exercise string input in the under-ROM worker.",
-    "ZSUMNUMARRAY": "ZSUMNUMARRAY(A%(0),N,R%) — sum N integer elements.",
-    "ZRANGENUMARRAY": "ZRANGENUMARRAY(START,COUNT,A%(0)) — write an integer range into an array.",
+    "HIDDENRAM": "HIDDENRAM(S$,R%) — exercise string input in the under-ROM worker.",
+    "SUMNUMARRAY": "SUMNUMARRAY(A%(0),N,R%) — sum N integer elements.",
+    "RANGENUMARRAY": "RANGENUMARRAY(START,COUNT,A%(0)) — write an integer range into an array.",
     "BUFMAKE": "BUFMAKE(BYTES,H%) — allocate a persistent REU buffer handle, rounded to pages.",
     "BUFFILL": "BUFFILL(H%,BYTE) — fill a REU buffer.",
     "BUFDROP": "BUFDROP(H%) — release a persistent resource handle.",
-    "ZTEMPSCRATCH": "ZTEMPSCRATCH(BYTES,R%) — allocate/free temporary workspace and return its page count.",
-    "ZFAIL": "ZFAIL(CODE,R%) — deliberately raise a ReadyBASIC error to test output clearing.",
+    "TEMPSCRATCH": "TEMPSCRATCH(BYTES,R%) — allocate/free temporary workspace and return its page count.",
+    "FAIL": "FAIL(CODE,R%) — deliberately raise a ReadyBASIC error to test output clearing.",
     "MEMAVL": "MEMAVL() — report live BASIC free memory.",
     "SCRCAP": "SCRCAP(H%) — capture text and color as a typed REU screen handle.",
     "SCRPUT": "SCRPUT(H%) — restore a captured text/color screen.",
     "FADD": "FADD(A,B,R) or R=FADD(A,B) — BASIC floating-point addition.",
-    "ZPAUSE": "ZPAUSE(JIFFIES) — wait for the requested number of clock ticks.",
+    "PAUSE": "PAUSE(UNITS) — busy-loop delay using the low byte; duration depends on CPU speed.",
     "ERRCODE": "ERRCODE() or ERRCODE(E%) — last ReadyBASIC runtime error code.",
     "ERRLINE": "ERRLINE() or ERRLINE(L%) — last ReadyBASIC error line, zero for direct mode.",
-    "ZCPYRST": "ZCPYRST() — reset overlay-copy instrumentation.",
-    "ZCOPY": "ZCOPY() — inspect overlay-copy instrumentation.",
-    "ZMODLD": "ZMODLD(NAME$,N%) — stream/register a SEQ command package; N% receives descriptor count.",
+    "CPYRST": "CPYRST() — reset overlay-copy instrumentation.",
+    "COPY": "COPY() — inspect overlay-copy instrumentation.",
+    "LDMOD": "LDMOD(NAME$,N%) — stream/register a SEQ command package; N% receives descriptor count.",
     "GFXMODE": "GFXMODE(MODE$), M%=GFXMODE() — set/query TEXT, HIRES, MBITMAP, TILE or MTILE.",
     "GFXTEXT": "GFXTEXT() — restore normal text display.",
     "GFXCLEAR": "GFXCLEAR(C) — clear visible screen/color and applicable bitmap memory.",
@@ -177,32 +177,44 @@ def main():
     for name in commands:
         description = CONTRACTS.get(name)
         if description is None:
-            if name not in {"ZSLOT0", "ZSLOT1", "ZSLOT2", "ZSPAN", "ZOVL1", "ZOVL2"}:
+            if name not in {"SLOT0", "SLOT1", "SLOT2", "SPAN", "OVL1", "OVL2"}:
                 raise SystemExit(f"Document new command: {name}")
             description = f"{name}(R%) — developer proof of slot/span/overlay dispatch; returns a diagnostic integer."
         form, purpose = description.split(' — ', 1)
         lines.append(f"| `{name}` | `{form}` — {purpose} |")
     lines += ["", "## Developer sample-module commands", "",
-              "These are dispatch/overlay proofs, not prerequisites for media. Load one with",
-              '`ZMODLD("RBM.SAMPLE1",N%)` (or SAMPLE2/SAMPLE3). Call each as',
-              "`NAME(R%)` or `R%=NAME()`. The sample descriptors intentionally use fixed",
-              "registry offsets now occupied by built-ins: sample1 at $1500, sample2",
-              "at $1600 and sample3 at $1700. They replace existing commands in the",
-              "session; do not load them in a normal graphics/media program. Restart",
-              "ReadyBASIC cold to restore the original registry. Media instead uses",
-              "eight otherwise unused slots beginning at $1C20.", "",
-              "| Package | Command | Diagnostic behavior |", "| --- | --- | --- |",
-              "| sample1 | `ZDM1` | Return 61; slot 1 proof |",
-              "| sample2 | `ZDM2S` | Return 74; slots 1+2 span proof |",
-              "| sample2 | `ZDOV1` | Return 72; slot 2 overlay 1 |",
-              "| sample2 | `ZDOV2` | Return 73; slot 2 overlay 2 |"]
-    for c in rbm3_payload_commands():
-        lines.append(f"| sample3 | `{c['name']}` | Stateful diagnostic, submodule {c['submodule_id']}, "
-                     f"overlay {c['overlay_id']}; paired A/B entrypoints share overlay-local state |")
-    lines += ["", "Sample3 tests whether overlay-local state is retained when residency is",
-              "reused and reset when another image replaces it. It is not persistent",
-              "application storage. Exact payloads come from",
-              "`build_support/build_readybasic_disk_modules.py`.", "",
+              "The scalar, array, scratch-allocation and slot/overlay examples are disk-only.",
+              "Their names have no Z prefix. PAUSE and LDMOD remain built in.",
+              '`LDMOD("RBM.SAMPLE1",N%)` returns 12; SAMPLE2 returns 7 and SAMPLE3 returns 32.',
+              "Load sample1 before running RBTEST1/RBPROC1 or typing the scalar examples.",
+              "Those two programs also load it on line 5 when RUN.",
+              "Sample1 and sample2 coexist. Sample3 replaces their demo registry entries",
+              "and supplies its own COPY/CPYRST commands alongside 30 stateful entries.",
+              "Reload sample1/sample2 when returning to those examples. All packages preserve",
+              "the production commands and media registry; there are 49 distinct demo names",
+              "and 51 package entries because COPY/CPYRST occur in two packages.", "",
+              "Media occupies core-bank $1A40-$1B3F. Sample1 uses $1B40-$1CBF;",
+              "sample2 uses $1CC0-$1D9F; sample3 uses $1B40-$1F3F.",
+              "All disk payloads and the runtime must be rebuilt together.", "",
+              "| Package | Command | Diagnostic behavior |", "| --- | --- | --- |"]
+    values = {"SLOT0": 30, "SLOT1": 31, "SLOT2": 32, "SPAN": 40,
+              "OVL1": 51, "OVL2": 52, "DM1": 61, "DM2S": 74, "DOV1": 72, "DOV2": 73}
+    stateful = {str(c["name"]): c for c in rbm3_payload_commands()}
+    for package, names in sample_inventory().items():
+        for name in names:
+            if name in stateful:
+                c = stateful[name]
+                purpose = (f"Stateful diagnostic, submodule {c['submodule_id']}, overlay {c['overlay_id']}; "
+                           "paired A/B entrypoints share overlay-local state")
+            elif name in values:
+                purpose = f"Return {values[name]}; slot/span/overlay dispatch proof"
+            else:
+                purpose = CONTRACTS[name].split(" — ", 1)[1]
+            lines.append(f"| {package} | `{name}` | {purpose} |")
+    lines += ["", "Sample3 tests whether overlay-local state survives reuse and resets after",
+              "another image replaces it. It is temporary state, rather than application storage.",
+              "Workers live in `src/apps/readybasic/sample_low.s`; packaging and generated",
+              "slot/overlay payloads are in `build_support/build_readybasic_disk_modules.py`.", "",
               "## Packaging by profile", "",
               "This inventory describes source configuration, not proof that every existing",
               "binary image has been rebuilt. Example counts exclude applications/utilities.", "",
@@ -214,7 +226,7 @@ def main():
         profile = profiles.load_profile(pid)
         contents = [c for d in profile['disks'] for c in d['contents']]
         examples = [c for c in contents if Path(c['artifact']).stem in by_stem]
-        packages = [c['name'] for c in contents if c['name'].startswith('rbm.')]
+        packages = sorted({c['name'] for c in contents if c['name'].startswith('rbm.')})
         if examples or packages:
             lines.append(f"| `{pid}` | {len(examples)} | {', '.join('`'+x+'`' for x in packages)} |")
         for c in examples:
@@ -228,7 +240,7 @@ def main():
         topic = example_topic(p.stem)
         lines.append(f"| [{p.stem}](#{p.stem.lower().replace('_','-')}) | {topic} |")
     names = set(commands) | {'MUSTUNE','MUSPLAY','MUSHALT','MUSDROP','RSCFILE','MCFILE','SPRFILE','MCLINE',
-                            'ZDM1','ZDM2S','ZDOV1','ZDOV2'} | {str(c['name']) for c in rbm3_payload_commands()}
+                            } | {n for names in sample_inventory().values() for n in names}
     for p in sources:
         source = p.read_text().rstrip()
         used = sorted(n for n in names if re.search(r'\b'+n+r'\s*\(', source, re.I))

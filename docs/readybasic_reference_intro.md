@@ -39,23 +39,24 @@ their source is retained verbatim rather than silently changed for this guide.
 
 The normal graphics, immediate SID sound, input and memory commands are already
 registered when ReadyBASIC starts. Their code is fetched from assigned REU
-resources into command slots as needed; no `ZMODLD` is needed for them.
+resources into command slots as needed; no `LDMOD` is needed for them.
 
-Disk packages are SEQ files. `ZMODLD("RBM.MEDIA",M%)` registers eight media
+Disk packages are SEQ files. `LDMOD("RBM.MEDIA",M%)` registers eight media
 commands and returns their count in M%. It keeps package code/descriptors in
 REU, not the BASIC program area. The package is loaded only when requested.
 `RBM.SAMPLE1`, `RBM.SAMPLE2` and `RBM.SAMPLE3` are developer proofs of module,
 span and replacement-overlay dispatch; they are not prerequisites for media.
 Use module packages built with the matching ReadyBASIC executable.
 
-The sample packages are intrusive developer tests: their fixed descriptor
-offsets replace some built-in commands in the current registry. Run them in a
-separate session, not before normal graphics/media examples. The media package
-uses otherwise unused descriptor slots and does not have that overlap.
+`PAUSE` and `LDMOD` are built in. The scalar, array and slot/overlay proofs
+are disk-only examples with plain names. RBTEST1/RBPROC1 load sample1 on line 5.
+Sample1 and sample2 coexist; sample3 replaces their demo entries while preserving
+all production and media commands. See the generated inventory below and the
+[sample module guide](../src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md).
 
-The current loaders use **drive 8** and logical file 14. Do not open file 14
-yourself while loading resources. A D71 setup that keeps modules on drive 9
-needs deliberate media placement; these commands do not accept a device argument.
+The loaders use **drive 8**. LDMOD uses logical file 1; media resource loading
+uses logical file 14. Keep those channels available while loading. These commands
+do not accept a device argument.
 
 ## New built-in commands
 
@@ -111,7 +112,7 @@ with a live music player unless that competition for the voices is intentional.
 
 ```basic
 10 memcap(36864)
-20 zmodld("rbm.media",m%)
+20 ldmod("rbm.media",m%)
 30 mustune("rb.summer"):musplay(1)
 40 print "music runs while basic works"
 50 get a$:if a$="" then 50

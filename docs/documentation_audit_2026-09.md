@@ -1,5 +1,11 @@
 # September 2026 documentation audit
 
+Current 0.5 RC2 command packaging: use `LDMOD` and `PAUSE`. There are 83 built-ins;
+media descriptors use `$1A40-$1B3F`, and disk demo packages use a separate
+`$1B40-$1F3F` area. Sample3 replaces other demo entries, preserving production
+and media commands. Older offsets/counts in dated evidence below describe
+those earlier builds. See the [sample module guide](../src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md).
+
 This audit follows source at `4ef8f37` and subsequent documentation changes.
 Existing release binaries and generated outputs were already dirty at the start.
 Historical measurements, transcripts and experiments are preserved; a current

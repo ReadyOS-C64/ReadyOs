@@ -125,7 +125,7 @@ Manual voice control:
 ```basic
 10 sidrst():vol(15)
 20 adsr(1,0,9,12,6):pulse(1,3072):frq(1,4455)
-30 wave(1,64):gate(1,1):zpause(70):gate(1,0)
+30 wave(1,64):gate(1,1):pause(70):gate(1,0)
 ```
 
 Packed fast path:
@@ -133,7 +133,7 @@ Packed fast path:
 ```basic
 10 sidrst():vol(15):pulse(1,2048)
 20 voice(1,4455,65,9,195)
-30 zpause(80):wave(1,64)
+30 pause(80):wave(1,64)
 ```
 
 Here `65` is pulse plus gate, `9` is packed attack/decay `$09`, and `195` is
@@ -144,9 +144,9 @@ Filter example:
 ```basic
 10 sidrst():vol(15):adsr(1,0,9,15,4)
 20 frq(1,2230):wave(1,33)
-30 for c=150 to 950 step 200:filter(c,8,1,1):zpause(35):next
-40 filter(700,12,1,2):zpause(90)
-50 filter(700,12,1,4):zpause(90)
+30 for c=150 to 950 step 200:filter(c,8,1,1):pause(35):next
+40 filter(700,12,1,2):pause(90)
+50 filter(700,12,1,4):pause(90)
 60 sidoff()
 ```
 

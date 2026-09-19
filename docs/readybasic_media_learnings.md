@@ -1,5 +1,11 @@
 # ReadyBASIC MEMCAP / media experiment
 
+Current 0.5 RC2 command packaging: use `LDMOD` and `PAUSE`. There are 83 built-ins;
+media descriptors use `$1A40-$1B3F`, and disk demo packages use a separate
+`$1B40-$1F3F` area. Sample3 replaces other demo entries, preserving production
+and media commands. Older offsets/counts in dated evidence below describe
+those earlier builds. See the [sample module guide](../src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md).
+
 Branch: `codex/readybasic-memcap-sidplay`. Experimental regular D81 profile.
 
 ## Contract and commands
@@ -15,7 +21,7 @@ explicit way to discard variables before a later cap change. `FRE(0)` and the
 actual BASIC heap ceiling change together. The default remains 30013 bytes
 free in an empty workspace, with the program at `$2ac1`.
 
-`ZMODLD("rbm.media",M%)` now loads eight commands, without consuming BASIC RAM.
+`LDMOD("rbm.media",M%)` now loads eight commands, without consuming BASIC RAM.
 The original five are listed here; MCFILE, SPRFILE and MCLINE were added later
 and are detailed in the [current command/reference guide](readybasic_reference.md)
 and [Orbital Echoes walkthrough](readybasic_orbital_echoes.md):
@@ -559,7 +565,7 @@ ignored so backups and recordings cannot accidentally enter a source commit.
   Both current demos now use an independent LP% and increment one sample only
   after the mirrored pair completes; sprite phase remains time-driven.
 - Ultimate preparation now selects 64 MHz for DIM and precalculation, then
-  1 MHz before ZMODLD/scene/MUSTUNE, then 16 MHz for playback. Both exits still
+  1 MHz before LDMOD/scene/MUSTUNE, then 16 MHz for playback. Both exits still
   restore 1 MHz. This does not add a general ReadyOS speed/IRQ guard.
 - Gouraud's source explicitly justifies D030 for 1 MHz KERNAL keyboard scans
   and return to a configured 64 MHz. No evidence was found that it was chosen

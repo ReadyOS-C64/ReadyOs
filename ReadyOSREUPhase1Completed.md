@@ -646,7 +646,7 @@ Verification completed after this checkpoint:
 The dotnet VICE launcher probes exercise the cartridge SKU from the launcher
 screen, not by direct-loading apps. The ReadyBASIC probe enters ReadyBASIC from
 the cartridge launcher, verifies `PRINT 6*7` produces `42`, and verifies
-`ZADD16(1,2)` produces `SUM 3`. The ReadyShell probe enters ReadyShell from the
+`ADD16(1,2)` produces `SUM 3`. The ReadyShell probe enters ReadyShell from the
 cartridge launcher and verifies `VER` plus `LST "RSHELP"`.
 
 ## Current v4 Architecture Detail

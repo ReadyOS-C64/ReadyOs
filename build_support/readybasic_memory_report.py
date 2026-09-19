@@ -77,7 +77,6 @@ def parse_map_segments(path: Path) -> dict[str, Segment]:
         "LOWPACK",
         "SLOTPACK1",
         "SLOTPACK2",
-        "SPANPACK",
         "OVL1PACK",
         "OVL2PACK",
         "OVL3PACK",
@@ -279,28 +278,41 @@ def command_groups(commands: list[tuple[str, str]]) -> dict[str, tuple[str, ...]
 
 
 def disk_descriptor_blocks() -> list[Block]:
-    return [
-        Block("rbm.sample1 descriptor", 0x1500, 0x20, "desc", "Intrusive proof: replaces a built-in descriptor.", ("ZDM1",)),
-        Block("rbm.sample2 descriptors", 0x1600, 0x60, "desc", "Intrusive proof: replaces three built-in descriptors.", ("ZDM2S", "ZDOV1", "ZDOV2")),
-        Block("rbm.sample3 descriptors", 0x1700, 0x3C0, "desc", "Intrusive proof: replaces thirty built-in descriptors.", ("ZSAA-ZUEB",)),
-        Block("rbm.media descriptors", 0x1C20, 0x100, "desc", "Eight formerly empty slots, after UMHZ at $1C00.", ("MUSTUNE", "MUSPLAY", "MUSHALT", "MUSDROP", "RSCFILE", "MCFILE", "SPRFILE", "MCLINE")),
-    ]
+    blocks = []
+    for name in ("media", "sample1", "sample2", "sample3"):
+        data = (ROOT / f"obj/readybasic_modules/rbm.{name}.seq").read_bytes()
+        count, offset = data[6], int.from_bytes(data[8:10], "little")
+        names = tuple(data[32+i*32:32+i*32+data[31+i*32]].decode("ascii") for i in range(count))
+        detail = ("Sample3 replaces sample1/2 demo entries; built-ins and media stay available."
+                  if name == "sample3" else "Uses cold-empty registry slots; preserves built-ins.")
+        blocks.append(Block(f"rbm.{name} descriptors", offset, count*32, "desc", detail, names))
+    return blocks
 
 
 def disk_module_blocks() -> list[Block]:
-    # Mirrored from build_support/build_readybasic_disk_modules.py. The small
-    # integer proof payloads are 21B; RBM3 overlay images contain two 30B
-    # stateful entrypoints plus one shared byte of overlay-local state and are
-    # stored on $100-byte strides to make spacing visible.
-    return [
-        Block("rbm.sample1 payload", 0x3000, 21, "module-a", "Module 3, submodule 1, slot 1.", ("ZDM1",)),
-        Block("rbm.sample2 span payload", 0x3200, 21, "module-b", "Module 4, submodule 2, slots 1+2.", ("ZDM2S",)),
-        Block("rbm.sample2 overlay 1", 0x3300, 21, "overlay", "Module 4, submodule 5, overlay 1, slot 2.", ("ZDOV1",)),
-        Block("rbm.sample2 overlay 2", 0x3400, 21, "overlay", "Module 4, submodule 5, overlay 2, slot 2.", ("ZDOV2",)),
-        Block("rbm.sample3 group A", 0x3800, 0x43D, "module-a", "ZSAA-ZSEB payload records, submodule 6 overlays 1-5 with A/B entrypoints sharing one state byte inside each loaded overlay image.", ("ZSAA-ZSEB",)),
-        Block("rbm.sample3 group B", 0x3D00, 0x43D, "module-b", "ZTAA-ZTEB payload records, submodule 7 overlays 1-5 with A/B entrypoints sharing one state byte inside each loaded overlay image.", ("ZTAA-ZTEB",)),
-        Block("rbm.sample3 group C", 0x4200, 0x43D, "span", "ZUAA-ZUEB payload records, submodule 8 overlays 1-5 with A/B entrypoints sharing one state byte inside each loaded overlay image and using the slot 1+2 span mask.", ("ZUAA-ZUEB",)),
-    ]
+    blocks = []
+    seen = set()
+    for name in ("sample1", "sample2", "sample3"):
+        data = (ROOT / f"obj/readybasic_modules/rbm.{name}.seq").read_bytes()
+        descriptors = [data[16+i*32:48+i*32] for i in range(data[6])]
+        pos = 16+data[6]*32
+        for _ in range(data[7]):
+            offset = int.from_bytes(data[pos:pos+2], "little")
+            size = int.from_bytes(data[pos+2:pos+4], "little")
+            pos += 6+size
+            if offset in seen:
+                continue
+            seen.add(offset)
+            entries = [d for d in descriptors if int.from_bytes(d[2:4], "little") == offset]
+            names = tuple(d[16:16+d[15]].decode("ascii") for d in entries)
+            desc = entries[0]
+            slots = {1: "slot 0", 2: "slot 1", 4: "slot 2", 6: "slots 1+2"}[desc[8]]
+            detail = f"Disk-only demo, submodule {desc[6]}, overlay {desc[7]}, {slots}."
+            if offset == 0xA000:
+                detail += " Sample3 also carries this payload for COPY/CPYRST."
+            blocks.append(Block(f"rbm.{name}: {names[0]}", offset, size,
+                                "span" if desc[8] == 6 else "module-a", detail, names))
+    return blocks
 
 
 def render(ctx: dict[str, object]) -> str:
@@ -321,7 +333,7 @@ def render(ctx: dict[str, object]) -> str:
     hidload_start, hidload_size = cfg["HIDLOAD"]
     brload_start, brload_size = cfg["BRLOAD"]
     regseed_start, regseed_size = cfg["REGSEED"]
-    base_builtin_size = (sym["__SPANPACK_LOAD__"] - sym["__LOWPACK_LOAD__"]) + seg["SPANPACK"].size
+    base_builtin_size = (sym["__SLOTPACK2_LOAD__"] - sym["__LOWPACK_LOAD__"]) + seg["SLOTPACK2"].size
     built_in_payload_size = (
         base_builtin_size
         + seg["OVL1PACK"].size
@@ -376,14 +388,13 @@ def render(ctx: dict[str, object]) -> str:
 
     cmdpack_blocks = [
         Block("Slot 0 payload seed", sym["__LOWPACK_LOAD__"], seg["LOWPACK"].size, "module-a", f"Module 1 system/default payload; runtime {fmt_range(seg['LOWPACK'].start, seg['LOWPACK'].end)}.", groups["slot0"] + groups["end"]),
-        Block("Slot 1 payload seed", sym["__SLOTPACK1_LOAD__"], seg["SLOTPACK1"].size, "module-b", f"Module 2 proof, loader, and GFXCORE payload; runtime {fmt_range(seg['SLOTPACK1'].start, seg['SLOTPACK1'].end)}.", groups["slot1"] + groups["gfxcore"]),
-        Block("Slot 2 base seed", sym["__SLOTPACK2_LOAD__"], seg["SLOTPACK2"].size, "module-c", f"Module 2 slot-2 proof plus GFXPRIM payload; runtime {fmt_range(seg['SLOTPACK2'].start, seg['SLOTPACK2'].end)}.", groups["slot2"] + groups["gfxprim"]),
-        Block("Span seed", sym["__SPANPACK_LOAD__"], seg["SPANPACK"].size, "span", f"Two-slot proof payload; runtime {fmt_range(seg['SPANPACK'].start, seg['SPANPACK'].end)}.", groups["span"]),
-        Block("CMDPACK free seed room", sym["__SPANPACK_LOAD__"] + seg["SPANPACK"].size, (cmdpack_start + cmdpack_size) - (sym["__SPANPACK_LOAD__"] + seg["SPANPACK"].size), "free", "Unused cold-load seed capacity."),
+        Block("Slot 1 payload seed", sym["__SLOTPACK1_LOAD__"], seg["SLOTPACK1"].size, "module-b", f"Module 2 loader and GFXCORE payload; runtime {fmt_range(seg['SLOTPACK1'].start, seg['SLOTPACK1'].end)}.", groups["slot1"] + groups["gfxcore"]),
+        Block("Slot 2 base seed", sym["__SLOTPACK2_LOAD__"], seg["SLOTPACK2"].size, "module-c", f"GFXPRIM payload; runtime {fmt_range(seg['SLOTPACK2'].start, seg['SLOTPACK2'].end)}.", groups["slot2"] + groups["gfxprim"]),
+        Block("CMDPACK free seed room", sym["__SLOTPACK2_LOAD__"] + seg["SLOTPACK2"].size, (cmdpack_start + cmdpack_size) - (sym["__SLOTPACK2_LOAD__"] + seg["SLOTPACK2"].size), "free", "Unused cold-load seed capacity."),
     ]
     cmdpack2_blocks = [
-        Block("Overlay 1 seed", sym["__OVL1PACK_LOAD__"], seg["OVL1PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL1PACK'].start, seg['OVL1PACK'].end)}; REU code offset {fmt_hex(gfxspr_off)}.", ("ZOVL1",)),
-        Block("Overlay 2 seed", sym["__OVL2PACK_LOAD__"], seg["OVL2PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL2PACK'].start, seg['OVL2PACK'].end)}; REU code offset {fmt_hex(inputev_off)}.", ("ZOVL2",)),
+        Block("Overlay 1 seed", sym["__OVL1PACK_LOAD__"], seg["OVL1PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL1PACK'].start, seg['OVL1PACK'].end)}; REU code offset {fmt_hex(gfxspr_off)}.", groups["gfxspr"]),
+        Block("Overlay 2 seed", sym["__OVL2PACK_LOAD__"], seg["OVL2PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL2PACK'].start, seg['OVL2PACK'].end)}; REU code offset {fmt_hex(inputev_off)}.", groups["inputev"]),
         Block("Overlay 3 seed", sym["__OVL3PACK_LOAD__"], seg["OVL3PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL3PACK'].start, seg['OVL3PACK'].end)}; REU code offset {fmt_hex(gfxpoly_off)}.", groups["gfxpoly"]),
         Block("Overlay 4 seed", sym["__OVL4PACK_LOAD__"], seg["OVL4PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL4PACK'].start, seg['OVL4PACK'].end)}; REU code offset {fmt_hex(gfxdl_off)}.", groups["gfxdl"]),
         Block("Overlay 5 seed", sym["__OVL5PACK_LOAD__"], seg["OVL5PACK"].size, "overlay", f"Slot-2 replacement overlay; runtime {fmt_range(seg['OVL5PACK'].start, seg['OVL5PACK'].end)}; REU code offset {fmt_hex(gfxtile_off)}.", groups["gfxtile"]),
@@ -403,7 +414,7 @@ def render(ctx: dict[str, object]) -> str:
     slot_blocks = [
         Block("Slot 0 current", 0xA800, slot0_used, "module-a", "Module 1 system/default payload.", groups["slot0"] + groups["end"]),
         Block("Slot 0 free", 0xA800 + slot0_used, slot_size - slot0_used, "free", f"{fmt_size(slot_size - slot0_used)} free inside slot 0."),
-        Block("Slot 1 current", 0xB000, slot1_used, "module-b", "Module 2 proof, ZMODLD, and GFXCORE.", groups["slot1"] + groups["gfxcore"]),
+        Block("Slot 1 current", 0xB000, slot1_used, "module-b", "Module 2 proof, LDMOD, and GFXCORE.", groups["slot1"] + groups["gfxcore"]),
         Block("Slot 1 free", 0xB000 + slot1_used, slot_size - slot1_used, "free", f"{fmt_size(slot_size - slot1_used)} free inside slot 1."),
         Block("Slot 2 GFXPRIM current", 0xB800, seg["SLOTPACK2"].size, "module-c", "Base proof plus GFXPRIM; replacement overlays load over this when called.", groups["slot2"] + groups["gfxprim"]),
         Block("Slot 2 GFXPRIM free", 0xB800 + seg["SLOTPACK2"].size, slot_size - seg["SLOTPACK2"].size, "free", f"{fmt_size(slot_size - seg['SLOTPACK2'].size)} free in the GFXPRIM slot image."),
@@ -440,10 +451,8 @@ def render(ctx: dict[str, object]) -> str:
     if not 0 < media_size <= 0x1000:
         raise SystemExit("Media payload must fit the two-slot span")
     reu45_blocks = [
-        Block("Built-in base payloads", 0x0000, base_builtin_size, "module-a", "LOWPACK, SLOTPACK1, SLOTPACK2, and SPANPACK prestashed from CMDPACK."),
-        Block("Built-in base free gap", base_builtin_size, 0x3000 - base_builtin_size, "free", "Code-bank space before sample payloads; descriptors belong in the separate core bank."),
-        *disk_blocks,
-        Block("Free gap before built-in overlays", 0x463D, gfxspr_off - 0x463D, "free", "Available packed-code space before fixed built-in overlay offsets."),
+        Block("Built-in base payloads", 0x0000, base_builtin_size, "module-a", "LOWPACK, SLOTPACK1, and SLOTPACK2 prestashed from CMDPACK."),
+        Block("Built-in base free gap", base_builtin_size, gfxspr_off - base_builtin_size, "free", "Code-bank space before production overlays; descriptors belong in the separate core bank."),
         Block("Built-in GFXSPR overlay", gfxspr_off, seg["OVL1PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when sprite commands run.", groups["overlay"][:1] + groups["gfxspr"]),
         Block("GFXSPR reserved headroom", gfxspr_off + seg["OVL1PACK"].size, 0x0800 - seg["OVL1PACK"].size, "free", "Reserved so the overlay can grow toward a full 2K slot without moving INPUTEV."),
         Block("Built-in INPUTEV overlay", inputev_off, seg["OVL2PACK"].size, "overlay", "Prestashed from CMDPACK2 and fetched into slot 2 when input commands run.", groups["inputev"]),
@@ -458,7 +467,9 @@ def render(ctx: dict[str, object]) -> str:
         Block("SIDCORE reserved headroom", sidcore_off + seg["OVL6PACK"].size, 0x0800 - seg["OVL6PACK"].size, "free", "Reserved for immediate sound command growth."),
         Block("On-demand media payload", 0x8000, media_size, "span", "Current media.bin; fetched into $B000-$BFFF slots 1+2. IRQ driver is copied separately into MEMCAP-reserved C64 RAM.", ("MUSTUNE", "MUSPLAY", "MUSHALT", "MUSDROP", "RSCFILE", "MCFILE", "SPRFILE", "MCLINE")),
         Block("Media span headroom", 0x8000 + media_size, 0x1000 - media_size, "free", "Remaining capacity within the two-slot media reservation."),
-        Block("Payload bank free tail", 0x9000, 0x7000, "free", "REU offsets, distinct from the C64 RAM music arena at the same numeric address."),
+        Block("Free code gap", 0x9000, 0x1000, "free", "Space before disk-only examples."),
+        *disk_blocks,
+        Block("Payload bank free tail", 0xCE3D, 0x31C3, "free", "Space after disk sample overlays."),
     ]
 
     reu_overview_blocks = [
@@ -693,9 +704,8 @@ def render(ctx: dict[str, object]) -> str:
         Block("RESIDENT", seg["RESIDENT"].start, seg["RESIDENT"].size, "resident", "Visible ReadyBASIC core."),
         Block("HIDDEN", seg["HIDDEN"].start, seg["HIDDEN"].size, "underrom", "Common under-ROM helper."),
         Block("LOWPACK", seg["LOWPACK"].start, seg["LOWPACK"].size, "module-a", "Slot 0 built-in payload.", groups["slot0"] + groups["end"]),
-        Block("SLOTPACK1", seg["SLOTPACK1"].start, seg["SLOTPACK1"].size, "module-b", "Slot 1 proof/loader/GFXCORE payload.", groups["slot1"] + groups["gfxcore"]),
-        Block("SLOTPACK2", seg["SLOTPACK2"].start, seg["SLOTPACK2"].size, "module-c", "Slot 2 proof/GFXPRIM payload.", groups["slot2"] + groups["gfxprim"]),
-        Block("SPANPACK", seg["SPANPACK"].start, seg["SPANPACK"].size, "span", "Two-slot proof payload.", groups["span"]),
+        Block("SLOTPACK1", seg["SLOTPACK1"].start, seg["SLOTPACK1"].size, "module-b", "Slot 1 loader/GFXCORE payload.", groups["slot1"] + groups["gfxcore"]),
+        Block("SLOTPACK2", seg["SLOTPACK2"].start, seg["SLOTPACK2"].size, "module-c", "Slot 2 GFXPRIM payload.", groups["slot2"] + groups["gfxprim"]),
         Block("OVL1PACK", seg["OVL1PACK"].start, seg["OVL1PACK"].size, "overlay", "Slot 2 replacement overlay for GFXSPR.", groups["overlay"][:1] + groups["gfxspr"]),
         Block("OVL2PACK", seg["OVL2PACK"].start, seg["OVL2PACK"].size, "overlay", "Slot 2 replacement overlay for INPUTEV.", groups["overlay"][1:] + groups["inputev"]),
         Block("OVL3PACK", seg["OVL3PACK"].start, seg["OVL3PACK"].size, "overlay", "Slot 2 replacement overlay for GFXPOLY.", groups["gfxpoly"]),
@@ -707,8 +717,8 @@ def render(ctx: dict[str, object]) -> str:
       ])}
     </tbody></table>
     <h3>Disk Module Descriptors: Assigned Core Bank</h3>
-    <p>Cold registration contains 98 built-ins and 30 empty slots. Sample packages overwrite
-    existing built-ins and should run in isolated developer-test sessions; media uses empty slots.</p>
+    <p>Cold registration contains 83 built-ins and 45 empty slots. Media uses eight empty slots;
+    sample1 and sample2 coexist in the demo area. Sample3 replaces those demo entries and includes COPY/CPYRST.</p>
     <table><thead><tr><th>Assigned core-bank offset</th><th>Item</th><th>Display size</th><th>Exact bytes</th><th>Detail</th><th>Commands</th></tr></thead><tbody>{table_rows(disk_descriptor_blocks())}</tbody></table>
     <h3>Disk Module Payload Storage: Assigned Code Bank</h3>
     <table><thead><tr><th>Assigned code-bank offset</th><th>Item</th><th>Display size</th><th>Exact bytes</th><th>Detail</th><th>Commands</th></tr></thead><tbody>{table_rows(disk_blocks)}</tbody></table>
@@ -728,7 +738,6 @@ def build_context(args: argparse.Namespace) -> dict[str, object]:
             "__LOWPACK_LOAD__",
             "__SLOTPACK1_LOAD__",
             "__SLOTPACK2_LOAD__",
-            "__SPANPACK_LOAD__",
             "__OVL1PACK_LOAD__",
             "__OVL2PACK_LOAD__",
             "__OVL3PACK_LOAD__",

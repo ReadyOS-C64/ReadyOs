@@ -1,5 +1,25 @@
 # ReadyBASIC Refactor Guidelines
 
+## 0.5 RC2 command packaging
+
+`LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay
+proof workers are now disk-only, with no Z prefix. Load `RBM.SAMPLE1` before
+using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL,
+SLOT0, SLOT1, CPYRST or COPY. `RBM.SAMPLE2` supplies SLOT2, SPAN and OVL1/OVL2.
+The packages register 12, 7 and 32 descriptors respectively; sample3 includes
+COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo
+entries, preserving production and media commands. See
+[the complete package contract](READYBASIC_SAMPLE_MODULES.md) for names,
+placement, dependencies and examples.
+
+Cold registration has 83 built-ins and 45 empty slots. Media occupies core
+`$1A40–$1B3F`; the demo area is `$1B40–$1F3F`; SCRPUT stays at `$1FE0`.
+Demo code and the built-in SPANPACK have been removed from the runtime image.
+PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick.
+The loader remains in module 2, slot 1. BASIC still starts at `$2AC1` with
+30013 empty free bytes.
+
+
 This file is the discipline checklist for ReadyBASIC refactors. It complements
 `READYBASIC_CURRENT_DESIGN.md`, `READYBASIC_LIFECYCLE_AND_REU_ARCHITECTURE.md`,
 `READYBASIC_PLUGIN_ARCH.md`, and `REadyBASICCommandModuleAndSubmodulePlan.MD`.
@@ -103,7 +123,7 @@ They are not PRG files and must not carry a two-byte PRG load address. The file
 contents still begin with the module package header magic `RBM!` version `1`.
 That is a package-format header, not a C64 PRG header.
 
-The disk loader command `ZMODLD(name$)` opens the SEQ file and streams it
+The disk loader command `LDMOD(name$)` opens the SEQ file and streams it
 through the existing `$C500` page buffer into the allocated REU descriptor and
 payload areas. It must not load the module package into the BASIC workspace or
 consume BASIC free bytes.
@@ -173,8 +193,8 @@ Do not break these ordinary BASIC contracts:
 
 ReadyBASIC extensions currently include:
 
-- bare command statements: `ZECHO1(P%)`;
-- expression commands: `PRINT ZADD16(2,3)`;
+- bare command statements: `ECHO1(P%)`;
+- expression commands: `PRINT ADD16(2,3)`;
 - `REPEAT` / `UNTIL`;
 - `LABEL` / `JUMP`;
 - `PROC` / `EXEC` / `ENDP`;
@@ -185,7 +205,7 @@ forms. Descriptor-backed command statements after `THEN` should use an explicit
 colon, such as:
 
 ```basic
-IF 1 THEN :ZECHO1(P%)
+IF 1 THEN :ECHO1(P%)
 ```
 
 The command-name reader expands BASIC's FN, FRE, PI and OR tokens; the OR case
@@ -193,8 +213,8 @@ permits `BORDER` without altering stored BASIC tokens or the ROM expression
 evaluator. Do not broadly exempt token-containing command names from the static
 checker without adding the corresponding reader support and regression tests.
 Built-in descriptor growth must also be checked against disk-module registration
-ranges: BORDER occupies $1BC0, USPEED $1BE0, and UMHZ $1C00, so the media package
-now starts at $1C20. Use the matching rebuilt package; older experimental
+ranges: BORDER occupies $19E0, USPEED $1A00, and UMHZ $1A20, so the media package
+now starts at $1A40. Use the matching rebuilt package; older experimental
 packages can overwrite these built-in descriptors.
 
 ## Parameter And Result Contracts
@@ -258,7 +278,11 @@ regressions, prefer deterministic probes over visual impressions.
 Minimum focused tests after ReadyBASIC runtime changes:
 
 ```sh
-make bin/readybasic.prg readybasic-plugin-static-check
+/bin/bash ./run.sh --profile precog-d81 --build-only
+python3 build_support/verify_readybasic_plugin.py
+python3 build_support/verify_readybasic_media.py
+python3 build_support/verify_readybasic_samples.py
+# Only when VICE is available and UI execution is authorized:
 READYBASIC_SKIP_BUILD=1 READYBASIC_VISIBLE=0 make readybasic-vice-suites
 ```
 

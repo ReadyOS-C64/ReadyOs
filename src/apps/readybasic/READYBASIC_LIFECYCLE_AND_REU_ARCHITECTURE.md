@@ -1,5 +1,25 @@
 # ReadyBASIC Lifecycle And REU Architecture Deep Dive
 
+## 0.5 RC2 command packaging
+
+`LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay
+proof workers are now disk-only, with no Z prefix. Load `RBM.SAMPLE1` before
+using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL,
+SLOT0, SLOT1, CPYRST or COPY. `RBM.SAMPLE2` supplies SLOT2, SPAN and OVL1/OVL2.
+The packages register 12, 7 and 32 descriptors respectively; sample3 includes
+COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo
+entries, preserving production and media commands. See
+[the complete package contract](READYBASIC_SAMPLE_MODULES.md) for names,
+placement, dependencies and examples.
+
+Cold registration has 83 built-ins and 45 empty slots. Media occupies core
+`$1A40–$1B3F`; the demo area is `$1B40–$1F3F`; SCRPUT stays at `$1FE0`.
+Demo code and the built-in SPANPACK have been removed from the runtime image.
+PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick.
+The loader remains in module 2, slot 1. BASIC still starts at `$2AC1` with
+30013 empty free bytes.
+
+
 ## September 2026 lifecycle extension
 
 MEMCAP can lower the BASIC ceiling before strings are allocated, without
@@ -8,7 +28,7 @@ on-demand SEQ package with eight commands, stored in assigned REU code space
 and fetched into disposable slots 1+2. Its asynchronous music driver instead
 lives at $9000 in reserved BASIC RAM, with lifetime state at $C1FF. No IRQ may
 point into replaceable overlay code. Built-ins now include BORDER, MEMCAP,
-USPEED and UMHZ; the full registry has 98 real descriptors and 30 empty slots.
+USPEED and UMHZ; the full registry has 83 real descriptors and 45 empty slots.
 
 MUSHALT detaches/silences but retains the tune lock; MUSDROP clears that lock
 without raising the cap. END/STOP do not unload music. Prompt-level ReadyOS
@@ -172,7 +192,7 @@ flowchart TB
   I["Assigned core bank $3000 HIDDEN SHADOW<br/>refreshed on EXIT"]
   J["$A000-$A6E9 COMMON HELPER<br/>runs under BASIC ROM RAM"]
   K["$A800-$AECD SLOT 0 PAYLOAD<br/>module 1 system/default payload"]
-  O["$B000-$B23A SLOT 1 PAYLOAD<br/>module 2 proof and ZMODLD loader"]
+  O["$B000-$B23A SLOT 1 PAYLOAD<br/>module 2 proof and LDMOD loader"]
   P["$B800-$B814 SLOT 2 / OVERLAYS<br/>proof and overlay slices"]
   L["$C000-$C1FE BRIDGE STATE<br/>magic, saved vectors, overlay vars, handle scratch, PROC/FUNC stack"]
   M["$C600-$C7FF SHIM EXPANSION RESERVE<br/>resident ReadyOS capacity, not app RAM"]
@@ -225,7 +245,7 @@ There are two separate limits:
 | Layer | Current size | What it means |
 |---|---:|---|
 | C64 `CMDPACK` cold-load window | `$1500` / 5.25K | The linker currently places the initial packed command seed bytes at `$2B00-$3FFF` before cold setup copies them out. This is a seed window, not the architectural command-code ceiling. |
-| Assigned command-code bank | `$10000` / 64.0K | The current descriptor format uses 16-bit offsets/sizes into this bank, so one code bank can address up to 64K of packed command bodies. Built-in payloads currently occupy `$0000-$085B`; disk-module proof descriptors/payloads currently use `$1500`, `$1600`, `$3000`, `$3200`, `$3300`, and `$3400`. Native `PROC`/`FUNC` definitions and resident flow-control markers are BASIC text and do not use this bank. |
+| Assigned command-code bank | `$10000` / 64.0K | The current descriptor format uses 16-bit offsets/sizes into this bank, so one code bank can address up to 64K of packed command bodies. Production and disk-only demonstration payloads use the distinct ranges documented below. Native `PROC`/`FUNC` definitions and resident flow-control markers are BASIC text and do not use this bank. |
 | Beyond one code bank | More than 64K | Requires a descriptor/loader extension for additional code banks or a bank-selection field. That is future architecture, not the current single-bank ABI. |
 
 So, with the current descriptor and REU command-code architecture, packed command
@@ -312,21 +332,10 @@ Exact assigned core-bank suballocation sizes:
 | `$2000-$3FFF` | Reserved common/system expansion space. | `$2000` | 8.0K | 8192 |
 | `$4000-$FFFF` | Typed handle heap, 192 pages. | `$C000` | 48.0K | 49152 |
 
-The command descriptor table at `$1000-$1FFF` is intentionally sparse. The
-following table preserves the original 17-command snapshot; **today** slots
-1–97 contain built-ins through UMHZ, 98–127 are initially empty, and SCRPUT
-remains in slot 128 (98 real / 30 filler). Media fills slots 98–105 on demand.
-
-| Descriptor range | REU offset | Role | Slots | Size |
-|---|---:|---|---:|---:|
-| Slots 1-16 | `$1000-$11FF` | Original front commands from `ZECHO1` through `FADD`. | 16 | `$0200` / 512B |
-| Slots 17-127 | `$1200-$1FDF` | Zero-filled filler descriptors reserved for future commands. | 111 | `$0DE0` / 3.5K / 3552 exact bytes |
-| Slot 128 | `$1FE0-$1FFF` | `SCRPUT`, placed at the end to prove full-table lookup. | 1 | `$0020` / 32B |
-
-In that original snapshot, `SCRCAP` is adjacent to the front command set in slot 14, with `FADD`
-in slot 16. `SCRPUT` was separated from it by 111 empty filler slots, so the
-visual/test coverage proves
-that ReadyBASIC fetches descriptor pages and scans the whole 128-slot registry.
+The command descriptor table at `$1000-$1FFF` has 83 real entries and 45
+empty entries on cold start. Slots 1–82 contain production commands through
+UMHZ; SCRPUT remains at slot 128 to exercise lookup at the end of the table.
+Media fills slots 83–90. Samples use slots 91–122; slots 123–127 remain spare.
 
 Persistent buffers use the typed heap in the assigned core bank, pages `$40-$FF`. Each
 handle records a bank, starting page, page count, and type in the REU-backed
@@ -336,40 +345,18 @@ byte buffer, and type `2` is a screen text+color buffer.
 
 ### Assigned Code Bank: Packed Command-Code Bank
 
-The flow/table below retain early payload lengths. Placement correction: disk
-**descriptors** go to the assigned core bank; only disk **payloads** go to the
-code bank. Old sample descriptors at core `$1500/$1600/$1700` now overwrite
-built-ins; they are isolated developer tests. Media uses free core descriptors
-at `$1C20` and code-bank `$8000`, with a `$1000` two-slot reservation.
+Production base payloads occupy code-bank `$0000` onward; replacement
+GFXSPR/INPUTEV/GFXPOLY/GFXDL/GFXTILE/SIDCORE images use `$5000/$5800/$6000/$6800/$7000/$7800`.
+Media uses `$8000-$8FFF`. Disk-only scalar examples use `$A000`, slot-1 examples
+`$A800`, sample2 `$B000/$B100/$B200/$B300`, and sample3 `$C000-$CE3C`.
+There is no built-in span proof payload.
 
-```mermaid
-flowchart LR
-  S0["$0000-$06CD Slot 0 payload<br/>copied into $A800-$AECD"]
-  S1["$06CE-$0908 Slot 1 payload<br/>copied into $B000-$B23A"]
-  S2["$0909-$095C Slot 2/span/overlay proofs<br/>copied into $B800/$B000 as needed"]
-  D1["Separate core bank: $1500/$1600 descriptors"]
-  DP["$3000+ Disk module proof payloads"]
-  S0 --> S1 --> S2 --> D1 --> DP
-```
-
-The descriptor stores payload offsets, sizes, slot masks, runtime destinations,
-and entry offsets inside the assigned code bank. Small proof commands can copy tiny slices.
-Heap commands currently copy the whole slot-0 payload because their wrappers
-call shared allocator helper routines in the same module payload.
-
-Exact assigned code-bank suballocation sizes:
-
-| Offset range | Role | Hex size | Display size | Exact bytes |
-|---|---|---:|---:|---:|
-| `$0000-$06CD` | Built-in module 1 slot-0 payload fetched into `$A800-$AECD`. | `$06CE` | 1.7K | 1742 |
-| `$06CE-$0908` | Built-in module 2 slot-1 proof and streaming `ZMODLD` loader payload fetched into `$B000-$B23A`. | `$023B` | 571B | 571 |
-| `$0909-$095C` | Built-in slot-2, span, and overlay proof slices. | `$0054` | 84B | 84 |
-| `$095D-$14FF` | Free gap before current disk-module descriptor proof offsets. | `$0BA3` | 2.9K | 2979 |
-| `$1500-$151F` | `rbm.sample1` descriptor proof for `ZDM1`. | `$0020` | 32B | 32 |
-| `$1600-$165F` | `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`; submodule 5 appears twice because those entries are overlays 1 and 2. | `$0060` | 96B | 96 |
-| `$1700-$1ABF` | `rbm.sample3` descriptors for `ZSAA`-`ZUEB`. | `$03C0` | 960B | 960 |
-| `$3000-$3014`, `$3200-$3214`, `$3300-$3314`, `$3400-$3414` | Small disk-module proof payloads. | `$0015` each | 21B each | 21 each |
-| `$3800-$463C` | `rbm.sample3` payload records for `ZSAA`-`ZUEB`, stored on `$100`-byte strides. | `$003D` per overlay image | 61B per overlay image | 61 each |
+Descriptors are in the **core bank**: media `$1A40-$1B3F`, sample1
+`$1B40-$1CBF`, sample2 `$1CC0-$1D9F`, or alternate sample3 `$1B40-$1F3F`.
+Sample3 replaces demo entries; all production/media entries remain intact.
+See [the generated memory diagrams](../../../docs/readybasic_memory_diagrams.html)
+for measured payload lengths, and [the sample guide](READYBASIC_SAMPLE_MODULES.md)
+for module/submodule identifiers and package dependencies.
 
 ## Descriptor ABI
 
@@ -661,24 +648,24 @@ BASIC's string heap.
 
 | Command | Code placement | REU code bytes copied | Parameters | Result behavior |
 |---|---|---:|---|---|
-| `ZECHO1(OUT%)` / `ZECHO1()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | 0 copied on current path | output int or expression int | Returns `1`. |
-| `ZADD16(A,B,OUT%)` / `ZADD16(A,B)` | Module 1 slot 0 payload | small slice | two numeric expressions, output or expression int | Returns 16-bit sum. |
+| `ECHO1(OUT%)` / `ECHO1()` | Disk sample1, module 7 / slot 0 | 0 copied on current path | output int or expression int | Returns `1`. |
+| `ADD16(A,B,OUT%)` / `ADD16(A,B)` | Disk sample1, module 7 / slot 0 | small slice | two numeric expressions, output or expression int | Returns 16-bit sum. |
 | `FADD(A,B,OUT)` / `FADD(A,B)` | Resident-computed float demo; descriptor slot 16 has a one-byte low stub | `$0001` stub if fetched | two plain numeric expressions, output/expression float | Uses BASIC ROM floating addition. |
-| `ZPAUSE(TICKS)` | Module 1 slot 0 payload | small slice | tick count | Waits for the requested jiffy count. |
+| `PAUSE(TICKS)` | Module 1 slot 0 payload | small slice | delay units (low byte) | Runs a busy-loop delay using the argument low byte; timing depends on CPU speed. |
 | `UPPER(S$,OUT$)` / `UPPER(S$)` | Module 1 slot 0 payload | small slice | string variable or literal, output/expression string | Uppercases staged bytes. |
 | `LOWER(S$,OUT$)` / `LOWER(S$)` | Module 1 slot 0 payload | small slice | string variable or literal, output/expression string | Lowercases staged byte values; tests assert `ASC()` bytes because C64 display case is charset-dependent. |
-| `ZHIDDENRAM(S$,OUT%)` / `ZHIDDENRAM(S$)` | Module 1 slot 0 under-ROM worker | small slice | string variable or literal, output/expression int | Sums uppercase bytes. |
-| `ZSUMNUMARRAY(A%(0),COUNT,OUT%)` / `ZSUMNUMARRAY(A%(0),COUNT)` | Module 1 slot 0 payload | small slice | integer array base/count, output/expression int | Sums integer array values. |
-| `ZRANGENUMARRAY(START,COUNT,A%(0))` | Module 1 slot 0 payload | small slice | start/count, output array | Stages consecutive integers. |
+| `HIDDENRAM(S$,OUT%)` / `HIDDENRAM(S$)` | Disk sample1, module 7 / slot 0 | small slice | string variable or literal, output/expression int | Sums uppercase bytes. |
+| `SUMNUMARRAY(A%(0),COUNT,OUT%)` / `SUMNUMARRAY(A%(0),COUNT)` | Disk sample1, module 7 / slot 0 | small slice | integer array base/count, output/expression int | Sums integer array values. |
+| `RANGENUMARRAY(START,COUNT,A%(0))` | Disk sample1, module 7 / slot 0 | small slice | start/count, output array | Stages consecutive integers. |
 | `BUFMAKE(LEN,H%)` / `BUFMAKE(LEN)` | Module 1 slot 0 payload | `$06CE` (1.7K) | length, output/expression handle | Allocates persistent buffer pages in the assigned core bank. |
 | `BUFFILL(H%,BYTE)` | Module 1 slot 0 payload | `$06CE` (1.7K) | buffer handle, byte | Fills buffer handle pages using `$C500` page buffer. |
 | `BUFDROP(H%)` | Module 1 slot 0 payload | `$06CE` (1.7K) | handle | Frees any valid handle type and clears metadata. |
-| `ZTEMPSCRATCH(LEN,OUT%)` / `ZTEMPSCRATCH(LEN)` | Module 1 slot 0 payload | `$06CE` (1.7K) | length, output/expression int | Allocates then frees pages, returns page count. |
-| `ZFAIL(CODE,OUT%)` | Module 1 slot 0 payload | small slice | code, output int | Clears output first, then returns `?RB ERROR code`. |
+| `TEMPSCRATCH(LEN,OUT%)` / `TEMPSCRATCH(LEN)` | Disk sample1, module 7 / slot 0 | `$06CE` (1.7K) | length, output/expression int | Allocates then frees pages, returns page count. |
+| `FAIL(CODE,OUT%)` | Disk sample1, module 7 / slot 0 | small slice | code, output int | Clears output first, then returns `?RB ERROR code`. |
 | `MEMAVL()` | Module 1 slot 0 payload | small slice | none | Prints live free BASIC bytes. |
 | `SCRCAP(H%)` / `SCRCAP()` | Slot 14; module 1 slot 0 payload | `$06CE` (1.7K) | output/expression screen handle | Captures screen text and color RAM into a type-2 handle. |
-| `ERRCODE(OUT%)` / `ERRCODE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | 0 copied on current path | output int or expression int | Returns the last ReadyBASIC runtime error code. |
-| `ERRLINE(OUT%)` / `ERRLINE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | 0 copied on current path | output int or expression int | Returns the last ReadyBASIC runtime error line, or 0 in direct mode. |
+| `ERRCODE(OUT%)` / `ERRCODE()` | Resident-precomputed result; shared no-op stub remains in `LOWPACK` | 0 copied on current path | output int or expression int | Returns the last ReadyBASIC runtime error code. |
+| `ERRLINE(OUT%)` / `ERRLINE()` | Resident-precomputed result; shared no-op stub remains in `LOWPACK` | 0 copied on current path | output int or expression int | Returns the last ReadyBASIC runtime error line, or 0 in direct mode. |
 | `SCRPUT(H%)` | Slot 128; module 1 slot 0 payload | `$06CE` (1.7K) | screen handle | Restores screen text and color RAM after type validation. |
 
 The heap-oriented commands copy the full `$06CE` slot-0 payload because allocator,
@@ -708,7 +695,7 @@ type-1 buffer handles, fills `$C500` with the byte, and stashes it page by page
 into the assigned core bank at page offsets `$40-$FF`. `SCRCAP` creates a type-2 handle and
 stashes screen text plus color RAM; `SCRPUT` validates type `2` before restore.
 `BUFDROP` clears both the handle descriptor and bitmap for any valid handle type.
-`ZTEMPSCRATCH` proves temporary allocation by finding pages without persisting a
+`TEMPSCRATCH` proves temporary allocation by finding pages without persisting a
 live descriptor.
 
 This handle model is the right direction for future commands that maintain

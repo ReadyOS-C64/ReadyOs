@@ -1,5 +1,25 @@
 # ReadyBASIC Plugin Progress
 
+## 0.5 RC2 command packaging
+
+`LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay
+proof workers are now disk-only, with no Z prefix. Load `RBM.SAMPLE1` before
+using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL,
+SLOT0, SLOT1, CPYRST or COPY. `RBM.SAMPLE2` supplies SLOT2, SPAN and OVL1/OVL2.
+The packages register 12, 7 and 32 descriptors respectively; sample3 includes
+COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo
+entries, preserving production and media commands. See
+[the complete package contract](READYBASIC_SAMPLE_MODULES.md) for names,
+placement, dependencies and examples.
+
+Cold registration has 83 built-ins and 45 empty slots. Media occupies core
+`$1A40–$1B3F`; the demo area is `$1B40–$1F3F`; SCRPUT stays at `$1FE0`.
+Demo code and the built-in SPANPACK have been removed from the runtime image.
+PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick.
+The loader remains in module 2, slot 1. BASIC still starts at `$2AC1` with
+30013 empty free bytes.
+
+
 > Chronology note: entries below record the contract that existed when each
 > experiment ran. The current schema-v5 contract uses a `$1000-$C5FF` (`$B600`)
 > app snapshot and a combined ReadyOS bank at physical `Skip`; the resident
@@ -9,12 +29,12 @@ This is a chronological progress log. Older entries intentionally preserve the
 layout and addresses that were current when the tests were run. For the current
 memory map, use `READYBASIC_CURRENT_DESIGN.md`.
 
-Current runtime command names use `ZECHO1`, `ZADD16`, `UPPER`, `LOWER`,
-`ZHIDDENRAM`, `ZSUMNUMARRAY`, `ZRANGENUMARRAY`, `ZTEMPSCRATCH`, `ZPAUSE`,
-`ZFAIL`, `MEMAVL`, `ERRCODE`, and `ERRLINE` for the core demo/proof commands.
-The module/submodule branch also includes `ZSLOT0`, `ZSLOT1`, `ZSLOT2`,
-`ZSPAN`, `ZOVL1`, `ZOVL2`, `ZCPYRST`, `ZCOPY`, `ZMODLD`, and disk-loaded sample
-commands `ZDM1`, `ZDM2S`, `ZDOV1`, and `ZDOV2`. Native language features also include `PROC`/`FUNC`,
+Current runtime command names use `ECHO1`, `ADD16`, `UPPER`, `LOWER`,
+`HIDDENRAM`, `SUMNUMARRAY`, `RANGENUMARRAY`, `TEMPSCRATCH`, `PAUSE`,
+`FAIL`, `MEMAVL`, `ERRCODE`, and `ERRLINE` for the core demo/proof commands.
+The module/submodule branch also includes `SLOT0`, `SLOT1`, `SLOT2`,
+`SPAN`, `OVL1`, `OVL2`, `CPYRST`, `COPY`, `LDMOD`, and disk-loaded sample
+commands `DM1`, `DM2S`, `DOV1`, and `DOV2`. Native language features also include `PROC`/`FUNC`,
 `REPEAT`/`UNTIL`, and `LABEL`/`JUMP`. Older entries below may mention historical names such
 as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
 `FAIL`; those are retained as dated notes, not current aliases.
@@ -97,7 +117,7 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
   returned strings.
 - Added shared one-wrapper numeric actual parsing for command expression
   parsing and native `FUNC` argument binding. Proven forms include
-  `ADDI(1,(2+4))`, `ZADD16(1,(2+4))`, and `ADDI((1+2),(3+4))`.
+  `ADDI(1,(2+4))`, `ADD16(1,(2+4))`, and `ADDI((1+2),(3+4))`.
 - Proven nested return forms now include `ABS(ADDI(1,6)-10)` and
   `LEFT$(GREET("READY"),2)`. General ReadyBASIC terms nested inside other
   ReadyBASIC actual lists and plain floating variables remain branch-2 scope.
@@ -119,8 +139,8 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
   `!COMMAND args` statement form was later removed on this branch to keep the
   natural BASIC syntax lean.
 - Added `$030A/$030B` eval-vector hook for selected expression returns:
-  `ZECHO1()`, `ZADD16(a,b)`, `UPPER(s$)`, `LOWER(s$)`, `ZHIDDENRAM(s$)`,
-  `ZSUMNUMARRAY(a%(0),n)`, `BUFMAKE(n)`, `ZTEMPSCRATCH(n)`, and `SCRCAP()`.
+  `ECHO1()`, `ADD16(a,b)`, `UPPER(s$)`, `LOWER(s$)`, `HIDDENRAM(s$)`,
+  `SUMNUMARRAY(a%(0),n)`, `BUFMAKE(n)`, `TEMPSCRATCH(n)`, and `SCRCAP()`.
 - Added parenthesized `PROC`/`FUNC` definitions and parenthesized non-empty
   `EXEC` actual lists. Zero-argument routines still use `EXEC NAME`; `EXEC
   NAME()` was cut for resident size.
@@ -231,8 +251,8 @@ as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`, `RANGEAI`, `TEMPSCRATCH`, and
   - `BRIDGE` `$C000-$C19A`, size `$019B` (411B).
   - Empty BASIC free bytes remain `33789`.
 - Behavior covered:
-  - Proof/demo names are now `ZECHO1`, `ZADD16`, `ZHIDDENRAM`,
-    `ZSUMNUMARRAY`, `ZRANGENUMARRAY`, `ZTEMPSCRATCH`, and `ZFAIL`.
+  - Proof/demo names are now `ECHO1`, `ADD16`, `HIDDENRAM`,
+    `SUMNUMARRAY`, `RANGENUMARRAY`, `TEMPSCRATCH`, and `FAIL`.
   - `STRUP` is replaced by `UPPER`; `LOWER` is added and verified by `ASC()`
     byte values because C64 visual case is charset-dependent.
   - Old names are rejected with the existing unknown-command error.

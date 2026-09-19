@@ -121,3 +121,8 @@ the complete resident shim, compares all `.byte` directives with
   mark a claim as superseded, but the evidence itself is preserved.
 - Current decisions belong in the root README, `docs/`, the canonical private
   memory/shim documents, or the relevant app's current-design document.
+
+## ReadyBASIC 0.5 RC2 sample packages
+
+[Disk sample commands and loading](../src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md)
+covers LDMOD, PAUSE, the disk-only scalar proofs, and slot/overlay demonstrations.

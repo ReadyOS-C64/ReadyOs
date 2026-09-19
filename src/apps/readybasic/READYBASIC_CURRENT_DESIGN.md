@@ -1,9 +1,29 @@
 # ReadyBASIC Current Design
 
+## 0.5 RC2 command packaging
+
+`LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay
+proof workers are now disk-only, with no Z prefix. Load `RBM.SAMPLE1` before
+using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL,
+SLOT0, SLOT1, CPYRST or COPY. `RBM.SAMPLE2` supplies SLOT2, SPAN and OVL1/OVL2.
+The packages register 12, 7 and 32 descriptors respectively; sample3 includes
+COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo
+entries, preserving production and media commands. See
+[the complete package contract](READYBASIC_SAMPLE_MODULES.md) for names,
+placement, dependencies and examples.
+
+Cold registration has 83 built-ins and 45 empty slots. Media occupies core
+`$1A40–$1B3F`; the demo area is `$1B40–$1F3F`; SCRPUT stays at `$1FE0`.
+Demo code and the built-in SPANPACK have been removed from the runtime image.
+PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick.
+The loader remains in module 2, slot 1. BASIC still starts at `$2AC1` with
+30013 empty free bytes.
+
+
 ## September 2026 current additions
 
 The [complete command/example reference](../../../docs/readybasic_reference.md)
-documents all 98 built-in descriptors, eight `rbm.media` commands, three sample
+documents all 83 built-in descriptors, eight `rbm.media` commands, three sample
 packages and all 45 retained BASIC source examples. Regular and Ultimate D81
 package 44 examples; the historical RBSND08 source remains outside the release
 directory. Other profiles retain the original set as detailed in the reference.
@@ -11,11 +31,11 @@ directory. Other profiles retain the original set as detailed in the reference.
 MEMCAP, BORDER, USPEED and UMHZ are built in. MEMCAP is opt-in: the BASIC start
 remains $2AC1 and the default empty workspace remains 30013 free bytes. Media
 adds bounded resource/image/sprite loaders and a vetted PAL PSID player through
-`ZMODLD("RBM.MEDIA",M%)`. The media lifetime flag is $C1FF; its driver lives at
+`LDMOD("RBM.MEDIA",M%)`. The media lifetime flag is $C1FF; its driver lives at
 $9000 in MEMCAP-reserved RAM, outside every disposable command slot. The code
 package uses slots 1+2, logical module 6/submodule 24, assigned code-bank offset
-$8000 and eight descriptors at core-bank $1C20–$1D1F. Built-in UMHZ occupies
-$1C00; packages must match the runtime to avoid overwriting its descriptor.
+$8000 and eight descriptors at core-bank $1A40–$1B3F. Built-in UMHZ occupies
+$1A20; packages must match the runtime to avoid overwriting its descriptor.
 
 END/STOP alone does not detach music. ReadyOS prompt navigation halts it before
 yield; warm resume preserves cap/tune but requires MUSPLAY to restart. Q in the
@@ -78,17 +98,17 @@ report for current lengths; the bridge now also owns media state at `$C1FF`):
 | `ENTRY` | `$1000-$11FF`, `$0200` / 512B |
 | `RESIDENT` | `$1200-$2ABF`, `$18C0` / 6336B |
 | BASIC sentinel | `$2AC0` |
-| Common under-ROM helper | `$A000-$A78A`, `$078B` / 1931B |
-| Slot 0 / module 1 | `$A800-$AFDB`, `$07DC` / 2012B |
-| Slot 1 / module 2/GFXCORE | `$B000-$B540`, `$0541` / 1345B |
-| Slot 2 / GFXPRIM | `$B800-$BF37`, `$0738` / 1848B |
-| Slot 2 overlay 1 / GFXSPR | `$B800-$BA71` replacement overlay, `$0272` / 626B |
-| Slot 2 overlay 2 / INPUTEV | `$B800-$B86C` replacement overlay, `$006D` / 109B |
+| Common under-ROM helper | `$A000-$A7A9`, `$07AA` / 1962B |
+| Slot 0 / module 1 | `$A800-$AE53`, `$0654` / 1620B |
+| Slot 1 / module 2/GFXCORE | `$B000-$B536`, `$0537` / 1335B |
+| Slot 2 / GFXPRIM | `$B800-$BF22`, `$0723` / 1827B |
+| Slot 2 overlay 1 / GFXSPR | `$B800-$BA5C` replacement overlay, `$025D` / 605B |
+| Slot 2 overlay 2 / INPUTEV | `$B800-$B926` replacement overlay, `$0127` / 295B |
 | Slot 2 overlay 3 / GFXPOLY | `$B800-$BF78` replacement overlay, `$0779` / 1913B |
 | Slot 2 overlay 4 / GFXDL | `$B800-$BF82` replacement overlay, `$0783` / 1923B |
 | Slot 2 overlay 5 / GFXTILE | `$B800-$BCD9` replacement overlay, `$04DA` / 1242B |
 | Slot 2 overlay 6 / SIDCORE | `$B800-$BA0D` replacement overlay, `$020E` / 526B |
-| `BRIDGE` | `$C000-$C1FE`, `$01FF` / 511B |
+| `BRIDGE` | `$C000-$C1FF`, `$0200` / 512B |
 | Shared frames/buffers | `$C200-$C5FF` |
 | `REGSEED` load-only registry | `$5000-$600F`, `$1010` / 4112B |
 
@@ -103,8 +123,8 @@ ReadyBASIC now treats `$A000-$BFFF` as a common under-ROM helper area plus three
 |---|---:|---|
 | Common under-ROM | `$A000-$A7FF` | Helper code and future resident-code relief. |
 | Slot 0 | `$A800-$AFFF` | Default/system module; existing core commands run here. |
-| Slot 1 | `$B000-$B7FF` | Built-in proof module and `ZMODLD` disk-module loader. |
-| Slot 2 | `$B800-$BFFF` | Proof submodule and overlay target. |
+| Slot 1 | `$B000-$B7FF` | `LDMOD` disk-module loader and GFXCORE. |
+| Slot 2 | `$B800-$BFFF` | Graphics/sound submodules and disk-demo overlay target. |
 
 Command descriptors are still 32 bytes, but they are module-aware records now:
 command id, module id, payload offset/size in the assigned code bank, submodule id,
@@ -113,15 +133,14 @@ offset, signature id, and command name. The special hidden-command dispatch
 category is gone; all descriptor-backed machine-code commands execute from RAM
 hidden behind BASIC ROM.
 
-The current proof commands added by the module work are `ZSLOT0`, `ZSLOT1`,
-`ZSLOT2`, `ZSPAN`, `ZOVL1`, `ZOVL2`, `ZCPYRST`, and `ZCOPY`. The disk-module
-loader proof is `ZMODLD(name$)` in module 2/slot 1. It opens ReadyBasicModule
-SEQ packages named `rbm.<name>` and streams them through the `$C500` page buffer
-into REU, rather than loading them as PRG files. Current sample packages are
-`rbm.sample1`, `rbm.sample2`, and `rbm.sample3`.
+The former built-in proof commands are now supplied by sample1 and sample2.
+The package loader is `LDMOD(name$)` in module 2/slot 1. It streams SEQ files
+through `$C500` into REU. Sample1 contains scalar/array/scratch workers and
+slot-0/slot-1 proofs; sample2 contains slot-2/span/overlay proofs. Sample3 is
+the alternate stateful overlay demonstration. See the package contract above.
 
 Phase 1 through Phase 5 graphics commands are also built in and prestashed to the
-assigned code bank; they do not require `ZMODLD`. They use module id `3`: `GFXCORE`
+assigned code bank; they do not require `LDMOD`. They use module id `3`: `GFXCORE`
 submodule `16` in slot 1, `GFXPRIM` submodule `17` in slot 2, `GFXSPR`
 submodule `18` as slot-2 overlay 1, and `INPUTEV` submodule `19` as slot-2
 overlay 2, `GFXPOLY` submodule `20` as slot-2 overlay 3, `GFXDL` submodule `21`
@@ -130,7 +149,7 @@ surface handle entry points `GFXSURF` and `GFXBLIT` use the existing system slot
 allocator path so typed REU graphics handles can share the same handle directory
 as `BUFMAKE` and `SCRCAP`.
 
-Sound Phase 1 is also built in and does not require `ZMODLD`. It uses module id
+Sound Phase 1 is also built in and does not require `LDMOD`. It uses module id
 `4`: `SIDCORE` submodule `23` as slot-2 overlay 6, prestashed to the assigned
 code bank at `$7800`.
 
@@ -181,19 +200,19 @@ or evaluate an expression:
 
 | Context | Supported | Notes |
 |---|---:|---|
-| Immediate mode statement | Yes | Example: `ZECHO1(P%)`. |
+| Immediate mode statement | Yes | Example: `ECHO1(P%)`. |
 | Stored program line start | Yes | Raw command text survives `LIST` and runs through `$0308`. |
-| After `:` | Yes | Example: `PRINT "A":ZECHO1(P%)`. |
+| After `:` | Yes | Example: `PRINT "A":ECHO1(P%)`. |
 | Inside `FOR/NEXT` body | Yes | Use it as a statement in the loop body. |
-| After `IF ... THEN` | Limited | `EXEC` and `JUMP` are normalized by the crunch hook to `THEN :EXEC` and `THEN :JUMP`. Bare command statements should use an explicit colon, such as `IF 1 THEN :ZECHO1(P%)`. Ordinary BASIC assignments like `IF 1 THEN A%=ZADD16(1,2)` work through BASIC's normal assignment path. |
-| Inside `PRINT`, assignments, or larger expressions | Selected commands only | `ZADD16(2,3)+7`, `ABS(ADDI(1,6)-10)`, `ABS(FADD(1.2,2.3)-3)`, `LEFT$(GREET("READY")+"!",3)`, `UPPER(S$)`, and numeric/string/float `FUNC` expression returns are supported. |
+| After `IF ... THEN` | Limited | `EXEC` and `JUMP` are normalized by the crunch hook to `THEN :EXEC` and `THEN :JUMP`. Bare command statements should use an explicit colon, such as `IF 1 THEN :ECHO1(P%)`. Ordinary BASIC assignments like `IF 1 THEN A%=ADD16(1,2)` work through BASIC's normal assignment path. |
+| Inside `PRINT`, assignments, or larger expressions | Selected commands only | `ADD16(2,3)+7`, `ABS(ADDI(1,6)-10)`, `ABS(FADD(1.2,2.3)-3)`, `LEFT$(GREET("READY")+"!",3)`, `UPPER(S$)`, and numeric/string/float `FUNC` expression returns are supported. |
 | Inside strings, `REM`, or `DATA` | Ordinary text | These are not rewritten or dispatched. |
 | After `ELSE` | No native support | BASIC V2 has no `ELSE`; ReadyBASIC does not add it. |
 
 `IF 1 THEN EXEC SHOW(7)` and `IF I%>0 THEN JUMP LOOP` work when typed
 interactively, but their stored/listed forms include the inserted colon after
 `THEN`. For descriptor-backed command statements, write the colon explicitly:
-`IF 1 THEN :ZECHO1(P%)`. This keeps BASIC's existing statement dispatcher in
+`IF 1 THEN :ECHO1(P%)`. This keeps BASIC's existing statement dispatcher in
 charge without adding a larger custom IF parser.
 
 Native routines use ordinary BASIC program text:
@@ -383,7 +402,7 @@ The last ReadyBASIC runtime error can be read back with `ERRCODE` and
 `ERRLINE`, either as expression functions or statement output commands:
 
 ```basic
-10 ZFAIL(6,X%)
+10 FAIL(6,X%)
 20 PRINT ERRCODE();ERRLINE()
 30 ERRCODE(E%):ERRLINE(L%):PRINT E%;L%
 ```
@@ -398,62 +417,62 @@ support, not the final product command catalog.
 
 | Category | Commands | Purpose |
 |---|---|---|
-| Scalar Outputs | `ZECHO1`, `ZADD16` | Prove integer output variables, numeric expression parsing, and scalar result commit. |
+| Scalar Outputs | `ECHO1`, `ADD16` | Prove integer output variables, numeric expression parsing, and scalar result commit. |
 | String Transfer/Transform | `UPPER`, `LOWER` | Prove string input capture and resident-owned BASIC string output allocation. |
-| Under-ROM Worker | `ZHIDDENRAM` | Prove worker code can run behind BASIC ROM in the shared slot-0 module payload. |
-| Integer Array Transfer | `ZSUMNUMARRAY`, `ZRANGENUMARRAY` | Prove array input/output via explicit base element plus count. |
+| Under-ROM Worker | `HIDDENRAM` | Prove worker code can run behind BASIC ROM in the shared slot-0 module payload. |
+| Integer Array Transfer | `SUMNUMARRAY`, `RANGENUMARRAY` | Prove array input/output via explicit base element plus count. |
 | Persistent REU Handles | `BUFMAKE`, `BUFFILL`, `BUFDROP`, `SCRCAP`, `SCRPUT` | Prove stable BASIC-visible handles for persistent REU-backed data, including typed screen text+color resources. |
-| Temporary REU Workspace | `ZTEMPSCRATCH` | Prove temporary page allocation and cleanup. |
-| Error/Failure Contract | `ZFAIL` | Prove outputs are cleared before execution and stale results are not committed. |
-| Timing/Delay | `ZPAUSE` | Prove a small timing command can wait for a number of jiffies without command overlay growth elsewhere. |
+| Temporary REU Workspace | `TEMPSCRATCH` | Prove temporary page allocation and cleanup. |
+| Error/Failure Contract | `FAIL` | Prove outputs are cleared before execution and stale results are not committed. |
+| Timing/Delay | `PAUSE` | Provide a small busy-loop delay; duration depends on CPU speed. |
 | Runtime Introspection | `MEMAVL`, `ERRCODE`, `ERRLINE` | Prints live BASIC free memory and exposes the last ReadyBASIC runtime error. |
-| Module/Submodule Proofs | `ZSLOT0`, `ZSLOT1`, `ZSLOT2`, `ZSPAN`, `ZOVL1`, `ZOVL2`, `ZCPYRST`, `ZCOPY`, `ZMODLD`, `ZDM1`, `ZDM2S`, `ZDOV1`, `ZDOV2`, `ZSAA`-`ZUEB` | Prove slot dispatch, multi-slot span loading, overlay replacement, no-recopy behavior, SEQ package streaming, and disk-loaded module registration. |
+| Module/Submodule Proofs | `SLOT0`, `SLOT1`, `SLOT2`, `SPAN`, `OVL1`, `OVL2`, `CPYRST`, `COPY`, `LDMOD`, `DM1`, `DM2S`, `DOV1`, `DOV2`, `S6AA`-`S8EB` | Prove slot dispatch, multi-slot span loading, overlay replacement, no-recopy behavior, SEQ package streaming, and disk-loaded module registration. |
 | ReadyOS Yield | `EXIT` | Save BASIC runtime state, restore vectors, and return through the ReadyOS shim. |
 
 ### Command Inventory
 
 | Command | Code placement | Parameters | Result behavior |
 |---|---|---|---|
-| `ZECHO1(OUT%)` / `ZECHO1()` | Resident-precomputed result; a legacy low stub remains in `LOWPACK` | output integer, or expression integer | Returns `1` without fetching an overlay in the current runtime. |
-| `ZADD16(A,B,OUT%)` / `ZADD16(A,B)` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | two numeric expressions, output integer or expression integer | Returns 16-bit sum. |
+| `ECHO1(OUT%)` / `ECHO1()` | Disk sample1, module 7 / slot 0 | output integer, or expression integer | Returns `1` from the disk-loaded example worker. |
+| `ADD16(A,B,OUT%)` / `ADD16(A,B)` | Disk sample1, module 7 / slot 0 | two numeric expressions, output integer or expression integer | Returns 16-bit sum. |
 | `FADD(A,B,OUT)` / `FADD(A,B)` | Resident-computed float demo command; descriptor slot 16 has a tiny slot-0 stub | two plain numeric expressions, output plain numeric variable or expression float | Uses BASIC ROM floating addition. Statement output must be a plain numeric variable, not `%`. |
-| `ZPAUSE(TICKS)` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | tick count | Waits for the requested jiffy count. |
+| `PAUSE(TICKS)` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | delay units (low byte) | Runs a busy-loop delay using the argument low byte; timing depends on CPU speed. |
 | `UPPER(S$,OUT$)` / `UPPER(S$)` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | string variable or quoted literal, output string or expression string | Uppercases staged bytes. |
 | `LOWER(S$,OUT$)` / `LOWER(S$)` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | string variable or quoted literal, output string or expression string | Lowercases string byte values. On the default C64 screen this is verified by `ASC()` values, because display case is charset-dependent. |
-| `ZHIDDENRAM(S$,OUT%)` / `ZHIDDENRAM(S$)` | Module 1 slot 0 at `$A800+`, unified under-ROM dispatch | string variable or quoted literal, output integer or expression integer | Returns a simple uppercase-byte checksum. |
-| `ZSUMNUMARRAY(A%(0),COUNT,OUT%)` / `ZSUMNUMARRAY(A%(0),COUNT)` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | integer array base, count, output integer or expression integer | Sums integer array elements. |
-| `ZRANGENUMARRAY(START,COUNT,A%(0))` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | start value, count, output array base | Stages consecutive integers, then resident code writes them to the array. |
-| `BUFMAKE(LEN,H%)` / `BUFMAKE(LEN)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | byte length, output handle or expression handle | Allocates buffer pages in the assigned core bank and returns a one-based handle. |
-| `BUFFILL(H%,BYTE)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | buffer handle, fill byte | Fills buffer handles through the `$C500` page buffer and rejects non-buffer handles. |
-| `BUFDROP(H%)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | handle | Frees any valid handle type and clears metadata/page bitmap state. |
-| `ZTEMPSCRATCH(LEN,OUT%)` / `ZTEMPSCRATCH(LEN)` | Module 1 slot 0, copies full `$07DC` slot-0 payload | byte length, output integer or expression integer | Allocates and frees temporary pages, returning page count. |
-| `ZFAIL(CODE,OUT%)` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | error code, output integer | Clears output first, then reports `?RB ERROR code`. |
+| `HIDDENRAM(S$,OUT%)` / `HIDDENRAM(S$)` | Disk sample1, module 7 / slot 0 | string variable or quoted literal, output integer or expression integer | Returns a simple uppercase-byte checksum. |
+| `SUMNUMARRAY(A%(0),COUNT,OUT%)` / `SUMNUMARRAY(A%(0),COUNT)` | Disk sample1, module 7 / slot 0 | integer array base, count, output integer or expression integer | Sums integer array elements. |
+| `RANGENUMARRAY(START,COUNT,A%(0))` | Disk sample1, module 7 / slot 0 | start value, count, output array base | Stages consecutive integers, then resident code writes them to the array. |
+| `BUFMAKE(LEN,H%)` / `BUFMAKE(LEN)` | Module 1 slot 0, copies full `$0654` slot-0 payload | byte length, output handle or expression handle | Allocates buffer pages in the assigned core bank and returns a one-based handle. |
+| `BUFFILL(H%,BYTE)` | Module 1 slot 0, copies full `$0654` slot-0 payload | buffer handle, fill byte | Fills buffer handles through the `$C500` page buffer and rejects non-buffer handles. |
+| `BUFDROP(H%)` | Module 1 slot 0, copies full `$0654` slot-0 payload | handle | Frees any valid handle type and clears metadata/page bitmap state. |
+| `TEMPSCRATCH(LEN,OUT%)` / `TEMPSCRATCH(LEN)` | Disk sample1, module 7 / slot 0 | byte length, output integer or expression integer | Allocates and frees temporary pages, returning page count. |
+| `FAIL(CODE,OUT%)` | Disk sample1, module 7 / slot 0 | error code, output integer | Clears output first, then reports `?RB ERROR code`. |
 | `MEMAVL()` | Module 1 slot 0 at `$A800+`, descriptor-backed slice | none | Prints current live BASIC free bytes. |
-| `SCRCAP(H%)` / `SCRCAP()` | Slot 14 descriptor; module 1 slot 0, copies full `$07DC` slot-0 payload | output handle or expression handle | Captures screen text `$0400-$07E7` and color RAM `$D800-$DBE7` into a typed screen handle. |
-| `ERRCODE(OUT%)` / `ERRCODE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | output integer, or expression integer | Returns the last ReadyBASIC runtime error code. |
-| `ERRLINE(OUT%)` / `ERRLINE()` | Resident-precomputed result; legacy low stub remains in `LOWPACK` | output integer, or expression integer | Returns the line number of the last ReadyBASIC runtime error, or `0` for direct mode. |
-| `SCRPUT(H%)` | Slot 128 descriptor; module 1 slot 0, copies full `$07DC` slot-0 payload | screen handle | Validates the screen handle type and restores text plus color RAM. |
-| `ZSLOT0()` / `ZSLOT1()` / `ZSLOT2()` | Built-in module proof payloads in slot 0, slot 1, and slot 2 | none | Prove each 2K submodule slot can dispatch independently. |
-| `ZSPAN()` | Built-in module 2 two-slot span payload for slots 1+2 | none | Proves a payload can claim adjacent slots. |
-| `ZOVL1()` / `ZOVL2()` | Built-in module 2 slot-2 overlay proof payloads | none | Prove overlay replacement in slot 2. |
-| `ZCPYRST()` / `ZCOPY()` | Built-in module 1 slot-0 copy-count proof helpers | none | Reset and inspect the tiny no-recopy proof counter. |
-| `ZMODLD(NAME$)` | Built-in module 2 slot-1 disk-module loader | module package filename string | Opens generated SEQ packages such as `RBM.SAMPLE1`, `RBM.SAMPLE2`, and `RBM.SAMPLE3`, registering their descriptors in the assigned core bank and payloads in the assigned code bank. |
-| `ZDM1()` / `ZDM2S()` / `ZDOV1()` / `ZDOV2()` | Disk-loaded sample module payloads in the assigned code bank | none | Prove disk module, span, and overlay registration after `ZMODLD`. |
-| `ZSAA()`-`ZUEB()` | `rbm.sample3` disk-loaded proof payloads in the assigned code bank | none | Return stateful integer sentinels; the command name encodes submodule, overlay, and entrypoint while copy-count tests prove residency. `ZS/ZT/ZU` mean submodules 6/7/8, `A`-`E` mean overlays 1-5, and the final `A/B` is the entrypoint. Each overlay image has one local counter byte, so reuse increments while reload resets. |
+| `SCRCAP(H%)` / `SCRCAP()` | Slot 14 descriptor; module 1 slot 0, copies full `$0654` slot-0 payload | output handle or expression handle | Captures screen text `$0400-$07E7` and color RAM `$D800-$DBE7` into a typed screen handle. |
+| `ERRCODE(OUT%)` / `ERRCODE()` | Resident-precomputed result; shared no-op stub remains in `LOWPACK` | output integer, or expression integer | Returns the last ReadyBASIC runtime error code. |
+| `ERRLINE(OUT%)` / `ERRLINE()` | Resident-precomputed result; shared no-op stub remains in `LOWPACK` | output integer, or expression integer | Returns the line number of the last ReadyBASIC runtime error, or `0` for direct mode. |
+| `SCRPUT(H%)` | Slot 128 descriptor; module 1 slot 0, copies full `$0654` slot-0 payload | screen handle | Validates the screen handle type and restores text plus color RAM. |
+| `SLOT0()` / `SLOT1()` / `SLOT2()` | Disk sample1 (slots 0/1) and sample2 (slot 2) | none | Return 30, 31 and 32 to demonstrate slot dispatch. |
+| `SPAN()` | Disk sample2, slots 1+2 | none | Returns 40 and claims adjacent slots. |
+| `OVL1()` / `OVL2()` | Disk sample2, slot-2 replacement overlays | none | Return 51/52 to demonstrate overlay replacement. |
+| `CPYRST()` / `COPY()` | Disk sample1 or sample3, slot 0 | none | Reset/read the diagnostic byte-sized copy counter. |
+| `LDMOD(NAME$)` | Built-in module 2 slot-1 disk-module loader | module package filename string | Opens generated SEQ packages such as `RBM.SAMPLE1`, `RBM.SAMPLE2`, and `RBM.SAMPLE3`, registering their descriptors in the assigned core bank and payloads in the assigned code bank. |
+| `DM1()` / `DM2S()` / `DOV1()` / `DOV2()` | Disk-loaded sample module payloads in the assigned code bank | none | Prove disk module, span, and overlay registration after `LDMOD`. |
+| `S6AA()`-`S8EB()` | `rbm.sample3` disk-loaded proof payloads in the assigned code bank | none | Return stateful integer sentinels; the command name encodes submodule, overlay, and entrypoint while copy-count tests prove residency. `S6/S7/S8` mean submodules 6/7/8, `A`-`E` mean overlays 1-5, and the final `A/B` is the entrypoint. Each overlay image has one local counter byte, so reuse increments while reload resets. |
 
 The handle-oriented commands copy the full slot-0 payload because their wrappers
 share allocator helper routines that currently live in that module payload.
 That keeps the resident core lean at the cost of copying more under-ROM bytes
-for these sample commands.
+for these production resource commands.
 
 `SCRCAP`/`SCRPUT` were named to avoid C64 BASIC tokenizer conflicts with
 embedded `SAVE`/`LOAD` tokens. They are the implemented forms of the original
 screen save/load concept.
 
-Historical proof names such as `PING`, `ADD16`, `STRUP`, `HCRC`, `SUMAI`,
-`RANGEAI`, `TEMPSCRATCH`, and `FAIL` are no longer runtime command aliases.
-Their current demo/proof forms use the `Z...` namespace, and array demo names
-use `NUM` rather than `INT` to avoid the BASIC `INT` token.
+The proof commands now have plain names and live in disk sample packages.
+Array demo names use `NUM` rather than `INT` to avoid the BASIC INT token.
+The old Z spellings are not aliases. Production PAUSE/LDMOD likewise have
+only their new names.
 
 ## Command Overlay Loading And Files Involved
 
@@ -463,7 +482,7 @@ inside that one PRG load image:
 
 | File or artifact | Role |
 |---|---|
-| `src/apps/readybasic/readybasic.s` | All current ReadyBASIC code, command descriptors, module/submodule payloads, overlay proof payloads, and hidden helpers. |
+| `src/apps/readybasic/readybasic.s` | Production ReadyBASIC code, built-in descriptors/payloads, loader and hidden helpers; disk examples live in sample_low.s and the module generator. |
 | `cfg/ready_app_readybasic.cfg` | Defines the load/run split: resident code, `CMDPACK`, `REGSEED`, hidden helper load image, bridge load image, and runtime overlay slots. |
 | `Makefile` | Assembles `readybasic.s`, links it with `ready_app_readybasic.cfg`, and writes `bin/readybasic.prg` plus `obj/readybasic.map`. |
 | `obj/readybasic.map` | Current source of truth for segment ranges and sizes. |
@@ -480,18 +499,17 @@ different:
 
 | Segment | Size | Load/source role | Runtime role |
 |---|---:|---|---|
-| `LOWPACK` | `$07DC` (2.0K, 2012 exact bytes) | Historical segment name for the built-in module 1 slot-0 payload loaded from `CMDPACK` and prestashed to assigned code-bank offset `$0000`. | Fetched on demand into `$A800-$AFDB`. |
-| `SLOTPACK1` | `$0541` (1.3K, 1345 exact bytes) | Built-in module 2 proof, streaming `ZMODLD` loader, and `GFXCORE` payload, prestashed to assigned code-bank offset `$07DC`. | Fetched on demand into `$B000-$B540`. |
-| `SLOTPACK2` | `$0738` (1.8K, 1848 exact bytes) | Built-in module 2 slot proof plus `GFXPRIM`, prestashed to assigned code-bank offset `$0D1D`. | Fetched on demand into `$B800-$BF37`. |
-| `SPANPACK` | `$0015` (21B) | Built-in two-slot span proof payload. | Fetched into slots 1+2 at `$B000-$B014`. |
-| `OVL1PACK` | `$0272` (626B) | Built-in slot-2 overlay proof plus `GFXSPR`, loaded from `CMDPACK2` `$6200` and prestashed to assigned code-bank offset `$5000`. | Fetched as a replacement overlay into `$B800-$BA71`. |
-| `OVL2PACK` | `$006D` (109B) | Built-in slot-2 overlay proof plus `INPUTEV`, loaded from `CMDPACK2` `$6472` and prestashed to assigned code-bank offset `$5800`. | Fetched as a replacement overlay into `$B800-$B86C`. |
-| `OVL3PACK` | `$0779` (1.9K, 1913 exact bytes) | Built-in slot-2 overlay proof plus `GFXPOLY`, loaded from `CMDPACK2` and prestashed to assigned code-bank offset `$6000`. | Fetched as a replacement overlay into `$B800-$BF78`. |
+| `LOWPACK` | `$0654` (1.6K, 1620 exact bytes) | Historical segment name for the built-in module 1 slot-0 payload loaded from `CMDPACK` and prestashed to assigned code-bank offset `$0000`. | Fetched on demand into `$A800-$AE53`. |
+| `SLOTPACK1` | `$0537` (1.3K, 1335 exact bytes) | Built-in module 2 streaming `LDMOD` loader, and `GFXCORE` payload, prestashed to assigned code-bank offset `$0654`. | Fetched on demand into `$B000-$B536`. |
+| `SLOTPACK2` | `$0723` (1.8K, 1827 exact bytes) | Built-in `GFXPRIM`, prestashed to assigned code-bank offset `$0B8B`. | Fetched on demand into `$B800-$BF22`. |
+| `OVL1PACK` | `$025D` (605B) | Built-in `GFXSPR`, loaded from `CMDPACK2` `$6200` and prestashed to assigned code-bank offset `$5000`. | Fetched as a replacement overlay into `$B800-$BA5C`. |
+| `OVL2PACK` | `$0127` (295B) | Built-in `INPUTEV`, loaded from `CMDPACK2` `$645D` and prestashed to assigned code-bank offset `$5800`. | Fetched as a replacement overlay into `$B800-$B926`. |
+| `OVL3PACK` | `$0779` (1.9K, 1913 exact bytes) | Built-in `GFXPOLY`, loaded from `CMDPACK2` and prestashed to assigned code-bank offset `$6000`. | Fetched as a replacement overlay into `$B800-$BF78`. |
 | `OVL4PACK` | `$0783` (1.9K, 1923 exact bytes) | Built-in `GFXDL` display-list overlay, prestashed to assigned code-bank offset `$6800`. | Fetched as a replacement overlay into `$B800-$BF82`. |
 | `OVL5PACK` | `$04DA` (1.2K, 1242 exact bytes) | Built-in `GFXTILE` charset/tilemap/multicolor-cell overlay, prestashed to assigned code-bank offset `$7000`. | Fetched as a replacement overlay into `$B800-$BCD9`. |
 | `OVL6PACK` | `$020E` (526B) | Built-in `SIDCORE` immediate sound overlay, prestashed to assigned code-bank offset `$7800`. | Fetched as a replacement overlay into `$B800-$BA0D`. |
-| `HIDLOAD` | `$078B` (1.9K, 1931 exact bytes) | Load-only hidden helper seed starting at `$4000`. | Copied on cold boot into `$A000-$A78A` and stashed to the assigned core-bank hidden shadow at `$3000`. |
-| `BRLOAD` | `$01FF` (511B) | Load-only bridge seed starting at `$4800`. | Copied on cold boot into `$C000-$C1FE`. |
+| `HIDLOAD` | `$07AA` (1.9K, 1962 exact bytes) | Load-only hidden helper seed starting at `$4000`. | Copied on cold boot into `$A000-$A7A9` and stashed to the assigned core-bank hidden shadow at `$3000`. |
+| `BRLOAD` | `$0200` (512B) | Load-only bridge seed starting at `$4800`. | Copied on cold boot into `$C000-$C1FF`. |
 | `REGSEED` | `$1010` (4.0K, 4112 exact bytes) | Load-only registry header and 128 command descriptors at `$5000-$600F`. | Copied on cold boot into assigned core-bank offsets `$0000` and `$1000`. |
 
 Cold boot is the only time the load-image command pack and `REGSEED` are trusted.
@@ -512,7 +530,7 @@ to fetch:
    `$B000`, `$B800`, or a multi-slot span, calls the entry, then returns to
    visible resident code for result commit.
 5. Commands can fetch a small slice or a full slot payload. The current handle
-   and screen-handle commands fetch the whole `$07DC` slot-0 payload because
+   and screen-handle commands fetch the whole `$0654` slot-0 payload because
    their shared allocator and screen-copy helpers live there.
 
 ## C64 RAM Layout
@@ -528,24 +546,24 @@ the full `$C600-$C9FF` region is resident shim space.
 | BASIC sentinel | `$2AC0` | 1 byte | Must stay zero before stored-program `RUN`. |
 | BASIC workspace | `$2AC1-$9FFF` | `$753F` region, `30013` formula free bytes (29.3K) | Program text, variables, arrays, string heap. |
 | Command pack load image | `$2B00-$3FFF` | `$1500` (5.25K) file range | Built-in module/submodule payload seed bytes before cold prestash. |
-| Hidden helper load image | `$4000+` | `$078B` (1.9K, 1931 exact bytes) load-only | Hidden helper seed copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
-| Bridge load image | `$4800+` | `$01FF` (511B) load-only | Bridge seed copied to `$C000`. |
+| Hidden helper load image | `$4000+` | `$07AA` (1.9K, 1962 exact bytes) load-only | Hidden helper seed copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
+| Bridge load image | `$4800+` | `$0200` (512B) load-only | Bridge seed copied to `$C000`. |
 | Registry seed load image | `$5000-$600F` | `$1010` (4.0K, 4112 exact bytes) load-only | Header and 128 descriptors copied to the assigned core bank. |
 | Command pack 2 load image | `$6200-$7FFF` | `$1E00` (7.5K) file range | Built-in replacement overlay seed bytes before cold prestash. |
 | Runtime snapshot | Assigned core bank offsets `$0A00-$0BFF` | `$0200` (0.5K) plus bridge metadata | Saved zero page, stack page, SP, resume mode, line-chain guards. |
-| Common under-ROM helper | `$A000-$A78A` | `$078B` (1931B) | Helper code run with RAM mapped under BASIC ROM. |
-| Slot 0 module payload | `$A800-$AFDB` | `$07DC` (2012B) | Module 1 system/default payload fetched from the assigned code bank. |
-| Slot 1 module payload | `$B000-$B540` | `$0541` (1345B) | Module 2 proof, streaming `ZMODLD` loader, and `GFXCORE` payload. |
-| Slot 2 `GFXPRIM` image | `$B800-$BF37` | `$0738` (1848B) | Slot-2 base/proof plus `GFXPRIM`; replacement overlays load over this when called. |
-| Slot 2 `GFXSPR` overlay image | `$B800-$BA71` | `$0272` (626B) | Replacement overlay for sprite commands. |
-| Slot 2 `INPUTEV` overlay image | `$B800-$B86C` | `$006D` (109B) | Replacement overlay for polling input commands. |
+| Common under-ROM helper | `$A000-$A7A9` | `$07AA` (1962B) | Helper code run with RAM mapped under BASIC ROM. |
+| Slot 0 module payload | `$A800-$AE53` | `$0654` (1620B) | Module 1 system/default payload fetched from the assigned code bank. |
+| Slot 1 module payload | `$B000-$B536` | `$0537` (1335B) | Module 2 streaming `LDMOD` loader, and `GFXCORE` payload. |
+| Slot 2 `GFXPRIM` image | `$B800-$BF22` | `$0723` (1827B) | Slot-2 base payload for `GFXPRIM`; replacement overlays load over this when called. |
+| Slot 2 `GFXSPR` overlay image | `$B800-$BA5C` | `$025D` (605B) | Replacement overlay for sprite commands. |
+| Slot 2 `INPUTEV` overlay image | `$B800-$B926` | `$0127` (295B) | Replacement overlay for polling input commands. |
 | Slot 2 `GFXPOLY` overlay image | `$B800-$BF78` | `$0779` (1913B) | Replacement overlay for polygon and REU point-buffer commands. |
 | Slot 2 `GFXDL` overlay image | `$B800-$BF82` | `$0783` (1923B) | Replacement overlay for display-list commands. |
 | Slot 2 `GFXTILE` overlay image | `$B800-$BCD9` | `$04DA` (1242B) | Replacement overlay for charset, tileset, tilemap, and multicolor-cell commands. |
 | Slot 2 `SIDCORE` overlay image | `$B800-$BA0D` | `$020E` (526B) | Replacement overlay for immediate SID sound commands. |
-| `BRIDGE` | `$C000-$C1FE` | `$01FF` (511B) | Persistent bridge state, saved vectors, overlay variables, current handle scratch, debug bytes, native routine return stack, and flow-control scratch. |
+| `BRIDGE` | `$C000-$C1FF` | `$0200` (512B) | Persistent bridge state, saved vectors, overlay variables, current handle scratch, debug bytes, native routine return stack, and flow-control scratch. |
 | Shared frames | `$C200-$C5FF` | `$0400` (1.0K) | Call frame, result frame, descriptor buffer, command-name buffer, page/runtime buffers. |
-| Hidden helper shadow | Assigned core bank `$3000+` | `$078B` (1931B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
+| Hidden helper shadow | Assigned core bank `$3000+` | `$07AA` (1962B) | REU source for restoring `$A000` helper on warm resume; refreshed during `EXIT` and cold seed. |
 | ReadyOS shim expansion reserve | `$C600-$C7FF` | `$0200` (0.5K) shared | Resident capacity for future shim functionality; not ReadyBASIC RAM. |
 | ReadyOS shim ABI | `$C800-$C9FF` | `$0200` (0.5K) shared | Stable ReadyOS jump table and data; the full shim region is 1 KB. |
 
@@ -756,7 +774,7 @@ table at `$C600-$C6FF`. ReadyBASIC scans that table at startup and does not use
 | `$0A00` | Saved zero page for ReadyOS suspend/resume. |
 | `$0B00` | Saved stack page for ReadyOS suspend/resume. |
 | `$0C00-$0CFF` | 192-byte heap page bitmap plus reserved bytes. |
-| `$1000-$1FFF` | 128 command descriptor slots, 32 bytes each. Cold build has 98 real descriptors, 30 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128. |
+| `$1000-$1FFF` | 128 command descriptor slots, 32 bytes each. Cold build has 83 real descriptors, 45 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128. |
 | `$2000-$3FFF` | Reserved common/system space for future ReadyBASIC metadata. |
 | `$4000-$FFFF` | Typed handle heap: 192 pages / 48KB. |
 
@@ -767,9 +785,11 @@ count:
 
 | Descriptor range | REU offset | Role | Slots | Size |
 |---|---:|---|---:|---:|
-| Slots 1-97 | `$1000-$1C1F` | Current built-in descriptors from `ZECHO1` through `UMHZ`. | 97 | `$0C20` / 3104B |
-| Slots 98-127 | `$1C20-$1FDF` | Cold zero-filled descriptors; media uses the first eight when loaded. | 30 | `$03C0` / 960B |
-| Slot 128 | `$1FE0-$1FFF` | `SCRPUT`, deliberately placed at the end to prove full-table lookup. | 1 | `$0020` / 32B |
+| Slots 1-82 | `$1000-$1A3F` | Built-ins UPPER through UMHZ. | 82 | `$0A40` / 2624B |
+| Slots 83-90 | `$1A40-$1B3F` | Empty at cold start; media descriptors when loaded. | 8 | `$0100` / 256B |
+| Slots 91-122 | `$1B40-$1F3F` | Empty at cold start; sample1+sample2 or sample3 demo registry. | 32 | `$0400` / 1024B |
+| Slots 123-127 | `$1F40-$1FDF` | Spare descriptors. | 5 | `$00A0` / 160B |
+| Slot 128 | `$1FE0-$1FFF` | SCRPUT, retained at the end for full-table lookup. | 1 | `$0020` / 32B |
 
 The persistent handle model supports 128 live handles. Each handle is
 represented to BASIC as a small integer from `1` to `128`, while canonical
@@ -782,45 +802,21 @@ banks and keep the same small handle model.
 
 ### Assigned Code Bank: Packed Command Code
 
-Descriptor-placement correction: package descriptors are streamed to the
-**core** bank, not the code bank. The sample descriptor rows below are retained
-as cross-bank references and explicitly labelled. Their fixed offsets overwrite
-built-ins in today's registry; run these developer proofs in isolated sessions.
-Only payload records occupy the assigned code bank. Media uses empty descriptor
-slots at core `$1C20-$1D1F` and code at `$8000`.
+Package descriptors go to the core bank; only executable payloads go to the
+code bank. Production payloads and disk demonstrations use disjoint code areas.
+The generated [memory diagram](../../../docs/readybasic_memory_diagrams.html)
+reads the actual link map and RBM packages for exact sizes.
 
-| Offset | Region |
-|---:|---|
-| `$0000-$07DB` | Built-in module 1 slot-0 payload copied into `$A800-$AFDB` (`$07DC`, 2012B). |
-| `$07DC-$0D1C` | Built-in module 2 slot-1 proof, streaming `ZMODLD` loader, and `GFXCORE` payload copied into `$B000-$B540` (`$0541`, 1345B). |
-| `$0D1D-$1454` | Built-in slot-2 proof plus `GFXPRIM` copied into `$B800-$BF37` (`$0738`, 1848B). |
-| `$13AA-$13BE` | Built-in two-slot span proof payload (`$0015`, 21B). |
-| `$1455-$14FF` | Free gap before current disk-module descriptor proof offsets (`$00AB`, 171B). |
-| Core bank `$1500-$151F` | `rbm.sample1` descriptor for `ZDM1`; not code-bank storage. |
-| Core bank `$1600-$165F` | `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`; not code-bank storage. |
-| Core bank `$1700-$1ABF` | `rbm.sample3` descriptors for `ZSAA`-`ZUEB`; not code-bank storage. |
-| `$3000-$3014`, `$3200-$3214`, `$3300-$3314`, `$3400-$3414` | Small sample disk-loaded payload proofs. |
-| `$3800-$463C` | `rbm.sample3` payload records for `ZSAA`-`ZUEB`, stored on `$100`-byte strides. |
-| `$463D-$4FFF` | Free gap before fixed built-in replacement overlay offsets (`$09C3`, 2499B). |
-| `$5000-$5271` | Built-in slot-2 replacement overlay plus `GFXSPR` (`$0272`, 626B). |
-| `$5272-$57FF` | Reserved `GFXSPR` overlay growth headroom (`$058E`, 1422B). |
-| `$5800-$586C` | Built-in slot-2 replacement overlay plus `INPUTEV` (`$006D`, 109B). |
-| `$586D-$5FFF` | Reserved `INPUTEV` overlay growth headroom (`$0793`, 1939B). |
-| `$6000-$6778` | Built-in slot-2 replacement overlay plus `GFXPOLY` (`$0779`, 1913B). |
-| `$6779-$67FF` | Reserved `GFXPOLY` overlay growth headroom (`$0087`, 135B). |
-| `$6800-$6F82` | Built-in `GFXDL` replacement overlay (`$0783`, 1923B). |
-| `$6F83-$6FFF` | Reserved `GFXDL` overlay growth headroom (`$007D`, 125B). |
-| `$7000-$74D9` | Built-in `GFXTILE` replacement overlay (`$04DA`, 1242B). |
-| `$74DA-$77FF` | Reserved `GFXTILE` overlay growth headroom (`$0326`, 806B). |
-| `$7800-$7A0D` | Built-in `SIDCORE` replacement overlay (`$020E`, 526B). |
-| `$7A0E-$7FFF` | Reserved `SIDCORE` overlay growth headroom (`$05F2`, 1522B). |
-| `$8000-$8FFF` | Reserved on-demand media span, fetched into slots 1+2; actual package length is build-dependent. |
-| `$9000-$FFFF` | Tail beyond the media span reservation (REU offsets, not the C64 music arena). |
+| Code-bank offset | Payload |
+|---|---|
+| `$0000` onward | Production LOWPACK, SLOTPACK1 and SLOTPACK2, packed consecutively. |
+| `$5000`, `$5800`, `$6000`, `$6800`, `$7000`, `$7800` | Production GFXSPR, INPUTEV, GFXPOLY, GFXDL, GFXTILE and SIDCORE overlays. |
+| `$8000-$8FFF` | Media reservation. |
+| `$A000` | Disk sample slot-0 workers, including COPY/CPYRST. |
+| `$A800` | Sample1 SLOT1/DM1 payload. |
+| `$B000`, `$B100`, `$B200`, `$B300` | Sample2 slot-2, span and two overlay images. |
+| `$C000-$CE3C` | Sample3 stateful overlay images on `$100` strides. |
 
-Descriptors point into these packed bytes with payload offset, payload size,
-slot mask, runtime destination, and entry offset. Heap and screen-handle
-commands currently fetch the whole `$07DC` slot-0 payload because shared
-allocator and screen-copy helpers live there.
 
 ## Cold Boot Lifecycle
 
@@ -866,7 +862,7 @@ On `EXIT`, ReadyBASIC:
 2. Stores bridge and entry magic for READY-mode resume.
 3. Calls hidden save-state code.
 4. Saves zero page `$0000-$00FF` to assigned core-bank offset `$0A00`.
-5. Saves stack page `$0100-$01FF` to assigned core-bank offset `$0B00`.
+5. Saves stack page `$0100-$0200` to assigned core-bank offset `$0B00`.
 6. Saves SP, mode, runtime magic, and line-chain guards in bridge metadata.
 7. Refreshes the assigned-core-bank hidden-helper shadow at `$3000`.
 8. Clears pending ReadyBASIC/KERNAL keyboard state and calls `CLRCHN`.
@@ -954,17 +950,17 @@ particular the bridge now ends at `$C1FF` and INPUTEV includes memory/speed help
 | `ENTRY` | `$1000-$11FF` | `$0200` (512B) |
 | `RESIDENT` | `$1200-$2ABF` | `$18C0` (6.2K, 6336 exact bytes) |
 | `REGSEED` | `$5000-$600F` | `$1010` (4.0K, 4112 exact bytes) |
-| `HIDDEN` | `$A000-$A78A` | `$078B` (1931B) |
-| `LOWPACK` / slot 0 payload | `$A800-$AFDB` | `$07DC` (2012B) |
-| `SLOTPACK1` / slot 1 payload | `$B000-$B540` | `$0541` (1345B) |
-| `SLOTPACK2` / GFXPRIM | `$B800-$BF37` | `$0738` (1848B) |
-| `OVL1PACK` / GFXSPR | `$B800-$BA71` | `$0272` (626B) |
-| `OVL2PACK` / INPUTEV | `$B800-$B86C` | `$006D` (109B) |
+| `HIDDEN` | `$A000-$A7A9` | `$07AA` (1962B) |
+| `LOWPACK` / slot 0 payload | `$A800-$AE53` | `$0654` (1620B) |
+| `SLOTPACK1` / slot 1 payload | `$B000-$B536` | `$0537` (1335B) |
+| `SLOTPACK2` / GFXPRIM | `$B800-$BF22` | `$0723` (1827B) |
+| `OVL1PACK` / GFXSPR | `$B800-$BA5C` | `$025D` (605B) |
+| `OVL2PACK` / INPUTEV | `$B800-$B926` | `$0127` (295B) |
 | `OVL3PACK` / GFXPOLY | `$B800-$BF78` | `$0779` (1913B) |
 | `OVL4PACK` / GFXDL | `$B800-$BF82` | `$0783` (1923B) |
 | `OVL5PACK` / GFXTILE | `$B800-$BCD9` | `$04DA` (1242B) |
 | `OVL6PACK` / SIDCORE | `$B800-$BA0D` | `$020E` (526B) |
-| `BRIDGE` | `$C000-$C1FE` | `$01FF` (511B) |
+| `BRIDGE` | `$C000-$C1FF` | `$0200` (512B) |
 
 Current measured guardrails:
 
@@ -974,9 +970,9 @@ Current measured guardrails:
 | Empty BASIC free bytes | `30013` |
 | `bin/readybasic.prg` size | `28674` |
 | `RESIDENT` | `$18C0` / 6336B |
-| `LOWPACK` | `$07DC` / 2012B |
-| `HIDDEN` | `$078B` / 1931B |
-| `BRIDGE` | `$01FF` / 511B |
+| `LOWPACK` | `$0654` / 1620B |
+| `HIDDEN` | `$07AA` / 1962B |
+| `BRIDGE` | `$0200` / 512B |
 | `REGSEED` | `$1010` / 4112B |
 | `GFXPOLY` overlay | `$0779` / 1913B |
 | `GFXDL` overlay | `$0783` / 1923B |
@@ -1027,12 +1023,12 @@ values as BASIC expressions while keeping the resident implementation tight.
 Supported command expressions:
 
 ```basic
-ZECHO1(P%)
-ZADD16(4,5,A%)
-PRINT ZADD16(5,10)
-A=ZADD16(8,9)
+ECHO1(P%)
+ADD16(4,5,A%)
+PRINT ADD16(5,10)
+A=ADD16(8,9)
 T$=UPPER("ready")
-PRINT ZHIDDENRAM("A")
+PRINT HIDDENRAM("A")
 ```
 
 Supported native routine forms:
@@ -1061,10 +1057,10 @@ BASIC statements remain outside V1.
 Numeric actuals for command and `FUNC` calls can be ordinary numeric
 expressions in the flat forms tested by `rbproc1`, such as `ADDI(1,2+4)`.
 ReadyBASIC also accepts a single wrapper pair around numeric actual
-expressions, including `ADDI(1,(2+4))`, `ZADD16(1,(2+4))`, and
+expressions, including `ADDI(1,(2+4))`, `ADD16(1,(2+4))`, and
 `ADDI((1+2),(3+4))`. String actuals remain string variables or quoted literals.
 Command and `FUNC` returns can be assigned or printed directly; command numeric
-returns work in `ABS(ZADD16(1,6)-10)`, and `FUNC` returns now work in the tested
+returns work in `ABS(ADD16(1,6)-10)`, and `FUNC` returns now work in the tested
 ROM consumer forms `ABS(ADDI(1,6)-10)` and `LEFT$(GREET("READY"),2)`. Fully
 recursive ReadyBASIC terms inside other ReadyBASIC actual lists remain future
 work.

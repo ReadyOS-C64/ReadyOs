@@ -100,6 +100,7 @@
 <ul>
 <li><a href="#readybasic-current-design" id="toc-readybasic-current-design">ReadyBASIC Current Design</a>
 <ul>
+<li><a href="#rc2-command-packaging" id="toc-rc2-command-packaging">0.5 RC2 command packaging</a></li>
 <li><a href="#september-2026-current-additions" id="toc-september-2026-current-additions">September 2026 current additions</a></li>
 <li><a href="#current-modulesubmodule-snapshot" id="toc-current-modulesubmodule-snapshot">Current Module/Submodule Snapshot</a></li>
 <li><a href="#current-syntax-and-statement-behavior" id="toc-current-syntax-and-statement-behavior">Current Syntax And Statement Behavior</a></li>
@@ -125,10 +126,15 @@
 </nav></details>
 <section id="readybasic-current-design" class="level1">
 <h1>ReadyBASIC Current Design</h1>
+<section id="rc2-command-packaging" class="level2">
+<h2>0.5 RC2 command packaging</h2>
+<p><code>LDMOD</code> and <code>PAUSE</code> remain built in. All scalar/array/scratch and slot/overlay proof workers are now disk-only, with no Z prefix. Load <code>RBM.SAMPLE1</code> before using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL, SLOT0, SLOT1, CPYRST or COPY. <code>RBM.SAMPLE2</code> supplies SLOT2, SPAN and OVL1/OVL2. The packages register 12, 7 and 32 descriptors respectively; sample3 includes COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo entries, preserving production and media commands. See <a href="readybasic_sample_modules.html">the complete package contract</a> for names, placement, dependencies and examples.</p>
+<p>Cold registration has 83 built-ins and 45 empty slots. Media occupies core <code>$1A40–$1B3F</code>; the demo area is <code>$1B40–$1F3F</code>; SCRPUT stays at <code>$1FE0</code>. Demo code and the built-in SPANPACK have been removed from the runtime image. PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick. The loader remains in module 2, slot 1. BASIC still starts at <code>$2AC1</code> with 30013 empty free bytes.</p>
+</section>
 <section id="september-2026-current-additions" class="level2">
 <h2>September 2026 current additions</h2>
-<p>The <a href="../../../docs/readybasic_reference.html">complete command/example reference</a> documents all 98 built-in descriptors, eight <code>rbm.media</code> commands, three sample packages and all 45 retained BASIC source examples. Regular and Ultimate D81 package 44 examples; the historical RBSND08 source remains outside the release directory. Other profiles retain the original set as detailed in the reference.</p>
-<p>MEMCAP, BORDER, USPEED and UMHZ are built in. MEMCAP is opt-in: the BASIC start remains $2AC1 and the default empty workspace remains 30013 free bytes. Media adds bounded resource/image/sprite loaders and a vetted PAL PSID player through <code>ZMODLD("RBM.MEDIA",M%)</code>. The media lifetime flag is $C1FF; its driver lives at $9000 in MEMCAP-reserved RAM, outside every disposable command slot. The code package uses slots 1+2, logical module 6/submodule 24, assigned code-bank offset $8000 and eight descriptors at core-bank $1C20–$1D1F. Built-in UMHZ occupies $1C00; packages must match the runtime to avoid overwriting its descriptor.</p>
+<p>The <a href="../../../docs/readybasic_reference.html">complete command/example reference</a> documents all 83 built-in descriptors, eight <code>rbm.media</code> commands, three sample packages and all 45 retained BASIC source examples. Regular and Ultimate D81 package 44 examples; the historical RBSND08 source remains outside the release directory. Other profiles retain the original set as detailed in the reference.</p>
+<p>MEMCAP, BORDER, USPEED and UMHZ are built in. MEMCAP is opt-in: the BASIC start remains $2AC1 and the default empty workspace remains 30013 free bytes. Media adds bounded resource/image/sprite loaders and a vetted PAL PSID player through <code>LDMOD("RBM.MEDIA",M%)</code>. The media lifetime flag is $C1FF; its driver lives at $9000 in MEMCAP-reserved RAM, outside every disposable command slot. The code package uses slots 1+2, logical module 6/submodule 24, assigned code-bank offset $8000 and eight descriptors at core-bank $1A40–$1B3F. Built-in UMHZ occupies $1A20; packages must match the runtime to avoid overwriting its descriptor.</p>
 <p>END/STOP alone does not detach music. ReadyOS prompt navigation halts it before yield; warm resume preserves cap/tune but requires MUSPLAY to restart. Q in the combined demo drops music and both REU surfaces, while M keeps music at the prompt. See <a href="../../../docs/readybasic_media_learnings.html">media lifecycle and evidence</a> and <a href="../../../docs/readybasic_orbital_echoes.html">Orbital Echoes</a>.</p>
 <p>The detailed segment tables below retain earlier measured layouts. Fixed ABI boundaries remain contracts; packed lengths/endpoints are measurements of their original build, not current capacity promises. Regenerate the memory report against the current map for current byte counts.</p>
 <p>This is the current ReadyBASIC design as implemented by <code>src/apps/readybasic/readybasic.s</code>, linked by <code>cfg/ready_app_readybasic.cfg</code>, with current byte counts available from <code>obj/readybasic.map</code>. Earlier measured tables are retained below for design provenance, not asserted as fresh measurements.</p>
@@ -176,27 +182,27 @@
 </tr>
 <tr>
 <td>Common under-ROM helper</td>
-<td style="text-align: right;"><code>$A000-$A78A</code>, <code>$078B</code> / 1931B</td>
+<td style="text-align: right;"><code>$A000-$A7A9</code>, <code>$07AA</code> / 1962B</td>
 </tr>
 <tr>
 <td>Slot 0 / module 1</td>
-<td style="text-align: right;"><code>$A800-$AFDB</code>, <code>$07DC</code> / 2012B</td>
+<td style="text-align: right;"><code>$A800-$AE53</code>, <code>$0654</code> / 1620B</td>
 </tr>
 <tr>
 <td>Slot 1 / module 2/GFXCORE</td>
-<td style="text-align: right;"><code>$B000-$B540</code>, <code>$0541</code> / 1345B</td>
+<td style="text-align: right;"><code>$B000-$B536</code>, <code>$0537</code> / 1335B</td>
 </tr>
 <tr>
 <td>Slot 2 / GFXPRIM</td>
-<td style="text-align: right;"><code>$B800-$BF37</code>, <code>$0738</code> / 1848B</td>
+<td style="text-align: right;"><code>$B800-$BF22</code>, <code>$0723</code> / 1827B</td>
 </tr>
 <tr>
 <td>Slot 2 overlay 1 / GFXSPR</td>
-<td style="text-align: right;"><code>$B800-$BA71</code> replacement overlay, <code>$0272</code> / 626B</td>
+<td style="text-align: right;"><code>$B800-$BA5C</code> replacement overlay, <code>$025D</code> / 605B</td>
 </tr>
 <tr>
 <td>Slot 2 overlay 2 / INPUTEV</td>
-<td style="text-align: right;"><code>$B800-$B86C</code> replacement overlay, <code>$006D</code> / 109B</td>
+<td style="text-align: right;"><code>$B800-$B926</code> replacement overlay, <code>$0127</code> / 295B</td>
 </tr>
 <tr>
 <td>Slot 2 overlay 3 / GFXPOLY</td>
@@ -216,7 +222,7 @@
 </tr>
 <tr>
 <td><code>BRIDGE</code></td>
-<td style="text-align: right;"><code>$C000-$C1FE</code>, <code>$01FF</code> / 511B</td>
+<td style="text-align: right;"><code>$C000-$C1FF</code>, <code>$0200</code> / 512B</td>
 </tr>
 <tr>
 <td>Shared frames/buffers</td>
@@ -257,19 +263,19 @@
 <tr>
 <td>Slot 1</td>
 <td style="text-align: right;"><code>$B000-$B7FF</code></td>
-<td>Built-in proof module and <code>ZMODLD</code> disk-module loader.</td>
+<td><code>LDMOD</code> disk-module loader and GFXCORE.</td>
 </tr>
 <tr>
 <td>Slot 2</td>
 <td style="text-align: right;"><code>$B800-$BFFF</code></td>
-<td>Proof submodule and overlay target.</td>
+<td>Graphics/sound submodules and disk-demo overlay target.</td>
 </tr>
 </tbody>
 </table>
 <p>Command descriptors are still 32 bytes, but they are module-aware records now: command id, module id, payload offset/size in the assigned code bank, submodule id, overlay id, slot mask, generation/check byte, runtime destination, entry offset, signature id, and command name. The special hidden-command dispatch category is gone; all descriptor-backed machine-code commands execute from RAM hidden behind BASIC ROM.</p>
-<p>The current proof commands added by the module work are <code>ZSLOT0</code>, <code>ZSLOT1</code>, <code>ZSLOT2</code>, <code>ZSPAN</code>, <code>ZOVL1</code>, <code>ZOVL2</code>, <code>ZCPYRST</code>, and <code>ZCOPY</code>. The disk-module loader proof is <code>ZMODLD(name$)</code> in module 2/slot 1. It opens ReadyBasicModule SEQ packages named <code>rbm.&lt;name&gt;</code> and streams them through the <code>$C500</code> page buffer into REU, rather than loading them as PRG files. Current sample packages are <code>rbm.sample1</code>, <code>rbm.sample2</code>, and <code>rbm.sample3</code>.</p>
-<p>Phase 1 through Phase 5 graphics commands are also built in and prestashed to the assigned code bank; they do not require <code>ZMODLD</code>. They use module id <code>3</code>: <code>GFXCORE</code> submodule <code>16</code> in slot 1, <code>GFXPRIM</code> submodule <code>17</code> in slot 2, <code>GFXSPR</code> submodule <code>18</code> as slot-2 overlay 1, and <code>INPUTEV</code> submodule <code>19</code> as slot-2 overlay 2, <code>GFXPOLY</code> submodule <code>20</code> as slot-2 overlay 3, <code>GFXDL</code> submodule <code>21</code> as slot-2 overlay 4, and <code>GFXTILE</code> submodule <code>22</code> as slot-2 overlay 5. The surface handle entry points <code>GFXSURF</code> and <code>GFXBLIT</code> use the existing system slot allocator path so typed REU graphics handles can share the same handle directory as <code>BUFMAKE</code> and <code>SCRCAP</code>.</p>
-<p>Sound Phase 1 is also built in and does not require <code>ZMODLD</code>. It uses module id <code>4</code>: <code>SIDCORE</code> submodule <code>23</code> as slot-2 overlay 6, prestashed to the assigned code bank at <code>$7800</code>.</p>
+<p>The former built-in proof commands are now supplied by sample1 and sample2. The package loader is <code>LDMOD(name$)</code> in module 2/slot 1. It streams SEQ files through <code>$C500</code> into REU. Sample1 contains scalar/array/scratch workers and slot-0/slot-1 proofs; sample2 contains slot-2/span/overlay proofs. Sample3 is the alternate stateful overlay demonstration. See the package contract above.</p>
+<p>Phase 1 through Phase 5 graphics commands are also built in and prestashed to the assigned code bank; they do not require <code>LDMOD</code>. They use module id <code>3</code>: <code>GFXCORE</code> submodule <code>16</code> in slot 1, <code>GFXPRIM</code> submodule <code>17</code> in slot 2, <code>GFXSPR</code> submodule <code>18</code> as slot-2 overlay 1, and <code>INPUTEV</code> submodule <code>19</code> as slot-2 overlay 2, <code>GFXPOLY</code> submodule <code>20</code> as slot-2 overlay 3, <code>GFXDL</code> submodule <code>21</code> as slot-2 overlay 4, and <code>GFXTILE</code> submodule <code>22</code> as slot-2 overlay 5. The surface handle entry points <code>GFXSURF</code> and <code>GFXBLIT</code> use the existing system slot allocator path so typed REU graphics handles can share the same handle directory as <code>BUFMAKE</code> and <code>SCRCAP</code>.</p>
+<p>Sound Phase 1 is also built in and does not require <code>LDMOD</code>. It uses module id <code>4</code>: <code>SIDCORE</code> submodule <code>23</code> as slot-2 overlay 6, prestashed to the assigned code bank at <code>$7800</code>.</p>
 <p><code>GFXSPR</code>, <code>INPUTEV</code>, <code>GFXPOLY</code>, <code>GFXDL</code>, <code>GFXTILE</code>, and <code>SIDCORE</code> are true slot-2 replacement overlays. They are loaded from the second cold-only command seed window (<code>CMDPACK2</code>) into fixed assigned code-bank offsets <code>$5000</code>, <code>$5800</code>, <code>$6000</code>, <code>$6800</code>, <code>$7000</code>, and <code>$7800</code>, then fetched into <code>$B800</code> only when their commands run. This removes the old slot-2 packing mismatch where <code>GFXPRIM</code>, <code>GFXSPR</code>, <code>INPUTEV</code>, and polygon work would otherwise consume one runtime strip.</p>
 <p>The graphics Bank D layout intentionally avoids ReadyBASIC/ReadyOS state: screen RAM is <code>$CC00-$CFFF</code>, sprite data is <code>$CA00-$CBFF</code>, bitmap/charset RAM is <code>$E000-$FFFF</code>, and color RAM is <code>$D800-$DBE7</code>. ReadyBASIC owns bridge/shared frames through <code>$C5FF</code>; the resident 1 KB shim owns <code>$C600-$C9FF</code>, with its expansion reserve below the stable ABI at <code>$C800</code>.</p>
 <p>The naming nuance matters. A module is the logical command family identified by module id. A module package/container is the disk SEQ file that carries descriptors and payload records. A submodule is the runtime payload family that claims one or more 2K command slots. An overlay is one swappable image of that submodule. That is why the RBM2 sample can mention submodule <code>5</code> twice: both entries are the same submodule family, but they are different overlays.</p>
@@ -299,7 +305,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 <tr>
 <td>Immediate mode statement</td>
 <td style="text-align: right;">Yes</td>
-<td>Example: <code>ZECHO1(P%)</code>.</td>
+<td>Example: <code>ECHO1(P%)</code>.</td>
 </tr>
 <tr>
 <td>Stored program line start</td>
@@ -309,7 +315,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 <tr>
 <td>After <code>:</code></td>
 <td style="text-align: right;">Yes</td>
-<td>Example: <code>PRINT "A":ZECHO1(P%)</code>.</td>
+<td>Example: <code>PRINT "A":ECHO1(P%)</code>.</td>
 </tr>
 <tr>
 <td>Inside <code>FOR/NEXT</code> body</td>
@@ -319,12 +325,12 @@ PRINT COMMAND(arg,arg)</code></pre>
 <tr>
 <td>After <code>IF ... THEN</code></td>
 <td style="text-align: right;">Limited</td>
-<td><code>EXEC</code> and <code>JUMP</code> are normalized by the crunch hook to <code>THEN :EXEC</code> and <code>THEN :JUMP</code>. Bare command statements should use an explicit colon, such as <code>IF 1 THEN :ZECHO1(P%)</code>. Ordinary BASIC assignments like <code>IF 1 THEN A%=ZADD16(1,2)</code> work through BASIC's normal assignment path.</td>
+<td><code>EXEC</code> and <code>JUMP</code> are normalized by the crunch hook to <code>THEN :EXEC</code> and <code>THEN :JUMP</code>. Bare command statements should use an explicit colon, such as <code>IF 1 THEN :ECHO1(P%)</code>. Ordinary BASIC assignments like <code>IF 1 THEN A%=ADD16(1,2)</code> work through BASIC's normal assignment path.</td>
 </tr>
 <tr>
 <td>Inside <code>PRINT</code>, assignments, or larger expressions</td>
 <td style="text-align: right;">Selected commands only</td>
-<td><code>ZADD16(2,3)+7</code>, <code>ABS(ADDI(1,6)-10)</code>, <code>ABS(FADD(1.2,2.3)-3)</code>, <code>LEFT$(GREET("READY")+"!",3)</code>, <code>UPPER(S$)</code>, and numeric/string/float <code>FUNC</code> expression returns are supported.</td>
+<td><code>ADD16(2,3)+7</code>, <code>ABS(ADDI(1,6)-10)</code>, <code>ABS(FADD(1.2,2.3)-3)</code>, <code>LEFT$(GREET("READY")+"!",3)</code>, <code>UPPER(S$)</code>, and numeric/string/float <code>FUNC</code> expression returns are supported.</td>
 </tr>
 <tr>
 <td>Inside strings, <code>REM</code>, or <code>DATA</code></td>
@@ -338,7 +344,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 </tbody>
 </table>
-<p><code>IF 1 THEN EXEC SHOW(7)</code> and <code>IF I%&gt;0 THEN JUMP LOOP</code> work when typed interactively, but their stored/listed forms include the inserted colon after <code>THEN</code>. For descriptor-backed command statements, write the colon explicitly: <code>IF 1 THEN :ZECHO1(P%)</code>. This keeps BASIC's existing statement dispatcher in charge without adding a larger custom IF parser.</p>
+<p><code>IF 1 THEN EXEC SHOW(7)</code> and <code>IF I%&gt;0 THEN JUMP LOOP</code> work when typed interactively, but their stored/listed forms include the inserted colon after <code>THEN</code>. For descriptor-backed command statements, write the colon explicitly: <code>IF 1 THEN :ECHO1(P%)</code>. This keeps BASIC's existing statement dispatcher in charge without adding a larger custom IF parser.</p>
 <p>Native routines use ordinary BASIC program text:</p>
 <pre class="basic"><code>1000 PROC SHOW(P%,M$)
 1010 PRINT P%;M$
@@ -563,7 +569,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 <p><code>REPEAT</code> records the current BASIC text pointer and line number. <code>UNTIL expr</code> evaluates the expression through BASIC ROM; false loops back and true continues after the <code>UNTIL</code>. Loops can be nested four deep. A fifth active <code>REPEAT</code> reports <code>?RB ERROR 35</code>; <code>UNTIL</code> without a matching active <code>REPEAT</code> reports <code>?RB ERROR 36</code>.</p>
 <p><code>LABEL name</code> is a no-op marker in stored BASIC text. <code>JUMP name</code> scans the stored program for the matching label, sets the current execution line, and continues there. It works forward, backward, after colons, and after normalized <code>IF ... THEN</code>. Missing labels report <code>?RB ERROR 39</code>. Numeric <code>GOTO</code> remains the ordinary BASIC ROM statement.</p>
 <p>The last ReadyBASIC runtime error can be read back with <code>ERRCODE</code> and <code>ERRLINE</code>, either as expression functions or statement output commands:</p>
-<pre class="basic"><code>10 ZFAIL(6,X%)
+<pre class="basic"><code>10 FAIL(6,X%)
 20 PRINT ERRCODE();ERRLINE()
 30 ERRCODE(E%):ERRLINE(L%):PRINT E%;L%</code></pre>
 <p>After a ReadyBASIC runtime error, <code>ERRCODE()</code> returns the <code>?RB ERROR</code> code and <code>ERRLINE()</code> returns the BASIC line number. Direct-mode errors report line <code>0</code>.</p>
@@ -587,7 +593,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 <tbody>
 <tr>
 <td>Scalar Outputs</td>
-<td><code>ZECHO1</code>, <code>ZADD16</code></td>
+<td><code>ECHO1</code>, <code>ADD16</code></td>
 <td>Prove integer output variables, numeric expression parsing, and scalar result commit.</td>
 </tr>
 <tr>
@@ -597,12 +603,12 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td>Under-ROM Worker</td>
-<td><code>ZHIDDENRAM</code></td>
+<td><code>HIDDENRAM</code></td>
 <td>Prove worker code can run behind BASIC ROM in the shared slot-0 module payload.</td>
 </tr>
 <tr>
 <td>Integer Array Transfer</td>
-<td><code>ZSUMNUMARRAY</code>, <code>ZRANGENUMARRAY</code></td>
+<td><code>SUMNUMARRAY</code>, <code>RANGENUMARRAY</code></td>
 <td>Prove array input/output via explicit base element plus count.</td>
 </tr>
 <tr>
@@ -612,18 +618,18 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td>Temporary REU Workspace</td>
-<td><code>ZTEMPSCRATCH</code></td>
+<td><code>TEMPSCRATCH</code></td>
 <td>Prove temporary page allocation and cleanup.</td>
 </tr>
 <tr>
 <td>Error/Failure Contract</td>
-<td><code>ZFAIL</code></td>
+<td><code>FAIL</code></td>
 <td>Prove outputs are cleared before execution and stale results are not committed.</td>
 </tr>
 <tr>
 <td>Timing/Delay</td>
-<td><code>ZPAUSE</code></td>
-<td>Prove a small timing command can wait for a number of jiffies without command overlay growth elsewhere.</td>
+<td><code>PAUSE</code></td>
+<td>Provide a small busy-loop delay; duration depends on CPU speed.</td>
 </tr>
 <tr>
 <td>Runtime Introspection</td>
@@ -632,7 +638,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td>Module/Submodule Proofs</td>
-<td><code>ZSLOT0</code>, <code>ZSLOT1</code>, <code>ZSLOT2</code>, <code>ZSPAN</code>, <code>ZOVL1</code>, <code>ZOVL2</code>, <code>ZCPYRST</code>, <code>ZCOPY</code>, <code>ZMODLD</code>, <code>ZDM1</code>, <code>ZDM2S</code>, <code>ZDOV1</code>, <code>ZDOV2</code>, <code>ZSAA</code>-<code>ZUEB</code></td>
+<td><code>SLOT0</code>, <code>SLOT1</code>, <code>SLOT2</code>, <code>SPAN</code>, <code>OVL1</code>, <code>OVL2</code>, <code>CPYRST</code>, <code>COPY</code>, <code>LDMOD</code>, <code>DM1</code>, <code>DM2S</code>, <code>DOV1</code>, <code>DOV2</code>, <code>S6AA</code>-<code>S8EB</code></td>
 <td>Prove slot dispatch, multi-slot span loading, overlay replacement, no-recopy behavior, SEQ package streaming, and disk-loaded module registration.</td>
 </tr>
 <tr>
@@ -661,14 +667,14 @@ PRINT COMMAND(arg,arg)</code></pre>
 </thead>
 <tbody>
 <tr>
-<td><code>ZECHO1(OUT%)</code> / <code>ZECHO1()</code></td>
-<td>Resident-precomputed result; a legacy low stub remains in <code>LOWPACK</code></td>
+<td><code>ECHO1(OUT%)</code> / <code>ECHO1()</code></td>
+<td>Disk sample1, module 7 / slot 0</td>
 <td>output integer, or expression integer</td>
-<td>Returns <code>1</code> without fetching an overlay in the current runtime.</td>
+<td>Returns <code>1</code> from the disk-loaded example worker.</td>
 </tr>
 <tr>
-<td><code>ZADD16(A,B,OUT%)</code> / <code>ZADD16(A,B)</code></td>
-<td>Module 1 slot 0 at <code>$A800+</code>, descriptor-backed slice</td>
+<td><code>ADD16(A,B,OUT%)</code> / <code>ADD16(A,B)</code></td>
+<td>Disk sample1, module 7 / slot 0</td>
 <td>two numeric expressions, output integer or expression integer</td>
 <td>Returns 16-bit sum.</td>
 </tr>
@@ -679,10 +685,10 @@ PRINT COMMAND(arg,arg)</code></pre>
 <td>Uses BASIC ROM floating addition. Statement output must be a plain numeric variable, not <code>%</code>.</td>
 </tr>
 <tr>
-<td><code>ZPAUSE(TICKS)</code></td>
+<td><code>PAUSE(TICKS)</code></td>
 <td>Module 1 slot 0 at <code>$A800+</code>, descriptor-backed slice</td>
-<td>tick count</td>
-<td>Waits for the requested jiffy count.</td>
+<td>delay units (low byte)</td>
+<td>Runs a busy-loop delay using the argument low byte; timing depends on CPU speed.</td>
 </tr>
 <tr>
 <td><code>UPPER(S$,OUT$)</code> / <code>UPPER(S$)</code></td>
@@ -697,50 +703,50 @@ PRINT COMMAND(arg,arg)</code></pre>
 <td>Lowercases string byte values. On the default C64 screen this is verified by <code>ASC()</code> values, because display case is charset-dependent.</td>
 </tr>
 <tr>
-<td><code>ZHIDDENRAM(S$,OUT%)</code> / <code>ZHIDDENRAM(S$)</code></td>
-<td>Module 1 slot 0 at <code>$A800+</code>, unified under-ROM dispatch</td>
+<td><code>HIDDENRAM(S$,OUT%)</code> / <code>HIDDENRAM(S$)</code></td>
+<td>Disk sample1, module 7 / slot 0</td>
 <td>string variable or quoted literal, output integer or expression integer</td>
 <td>Returns a simple uppercase-byte checksum.</td>
 </tr>
 <tr>
-<td><code>ZSUMNUMARRAY(A%(0),COUNT,OUT%)</code> / <code>ZSUMNUMARRAY(A%(0),COUNT)</code></td>
-<td>Module 1 slot 0 at <code>$A800+</code>, descriptor-backed slice</td>
+<td><code>SUMNUMARRAY(A%(0),COUNT,OUT%)</code> / <code>SUMNUMARRAY(A%(0),COUNT)</code></td>
+<td>Disk sample1, module 7 / slot 0</td>
 <td>integer array base, count, output integer or expression integer</td>
 <td>Sums integer array elements.</td>
 </tr>
 <tr>
-<td><code>ZRANGENUMARRAY(START,COUNT,A%(0))</code></td>
-<td>Module 1 slot 0 at <code>$A800+</code>, descriptor-backed slice</td>
+<td><code>RANGENUMARRAY(START,COUNT,A%(0))</code></td>
+<td>Disk sample1, module 7 / slot 0</td>
 <td>start value, count, output array base</td>
 <td>Stages consecutive integers, then resident code writes them to the array.</td>
 </tr>
 <tr>
 <td><code>BUFMAKE(LEN,H%)</code> / <code>BUFMAKE(LEN)</code></td>
-<td>Module 1 slot 0, copies full <code>$07DC</code> slot-0 payload</td>
+<td>Module 1 slot 0, copies full <code>$0654</code> slot-0 payload</td>
 <td>byte length, output handle or expression handle</td>
 <td>Allocates buffer pages in the assigned core bank and returns a one-based handle.</td>
 </tr>
 <tr>
 <td><code>BUFFILL(H%,BYTE)</code></td>
-<td>Module 1 slot 0, copies full <code>$07DC</code> slot-0 payload</td>
+<td>Module 1 slot 0, copies full <code>$0654</code> slot-0 payload</td>
 <td>buffer handle, fill byte</td>
 <td>Fills buffer handles through the <code>$C500</code> page buffer and rejects non-buffer handles.</td>
 </tr>
 <tr>
 <td><code>BUFDROP(H%)</code></td>
-<td>Module 1 slot 0, copies full <code>$07DC</code> slot-0 payload</td>
+<td>Module 1 slot 0, copies full <code>$0654</code> slot-0 payload</td>
 <td>handle</td>
 <td>Frees any valid handle type and clears metadata/page bitmap state.</td>
 </tr>
 <tr>
-<td><code>ZTEMPSCRATCH(LEN,OUT%)</code> / <code>ZTEMPSCRATCH(LEN)</code></td>
-<td>Module 1 slot 0, copies full <code>$07DC</code> slot-0 payload</td>
+<td><code>TEMPSCRATCH(LEN,OUT%)</code> / <code>TEMPSCRATCH(LEN)</code></td>
+<td>Disk sample1, module 7 / slot 0</td>
 <td>byte length, output integer or expression integer</td>
 <td>Allocates and frees temporary pages, returning page count.</td>
 </tr>
 <tr>
-<td><code>ZFAIL(CODE,OUT%)</code></td>
-<td>Module 1 slot 0 at <code>$A800+</code>, descriptor-backed slice</td>
+<td><code>FAIL(CODE,OUT%)</code></td>
+<td>Disk sample1, module 7 / slot 0</td>
 <td>error code, output integer</td>
 <td>Clears output first, then reports <code>?RB ERROR code</code>.</td>
 </tr>
@@ -752,75 +758,75 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td><code>SCRCAP(H%)</code> / <code>SCRCAP()</code></td>
-<td>Slot 14 descriptor; module 1 slot 0, copies full <code>$07DC</code> slot-0 payload</td>
+<td>Slot 14 descriptor; module 1 slot 0, copies full <code>$0654</code> slot-0 payload</td>
 <td>output handle or expression handle</td>
 <td>Captures screen text <code>$0400-$07E7</code> and color RAM <code>$D800-$DBE7</code> into a typed screen handle.</td>
 </tr>
 <tr>
 <td><code>ERRCODE(OUT%)</code> / <code>ERRCODE()</code></td>
-<td>Resident-precomputed result; legacy low stub remains in <code>LOWPACK</code></td>
+<td>Resident-precomputed result; shared no-op stub remains in <code>LOWPACK</code></td>
 <td>output integer, or expression integer</td>
 <td>Returns the last ReadyBASIC runtime error code.</td>
 </tr>
 <tr>
 <td><code>ERRLINE(OUT%)</code> / <code>ERRLINE()</code></td>
-<td>Resident-precomputed result; legacy low stub remains in <code>LOWPACK</code></td>
+<td>Resident-precomputed result; shared no-op stub remains in <code>LOWPACK</code></td>
 <td>output integer, or expression integer</td>
 <td>Returns the line number of the last ReadyBASIC runtime error, or <code>0</code> for direct mode.</td>
 </tr>
 <tr>
 <td><code>SCRPUT(H%)</code></td>
-<td>Slot 128 descriptor; module 1 slot 0, copies full <code>$07DC</code> slot-0 payload</td>
+<td>Slot 128 descriptor; module 1 slot 0, copies full <code>$0654</code> slot-0 payload</td>
 <td>screen handle</td>
 <td>Validates the screen handle type and restores text plus color RAM.</td>
 </tr>
 <tr>
-<td><code>ZSLOT0()</code> / <code>ZSLOT1()</code> / <code>ZSLOT2()</code></td>
-<td>Built-in module proof payloads in slot 0, slot 1, and slot 2</td>
+<td><code>SLOT0()</code> / <code>SLOT1()</code> / <code>SLOT2()</code></td>
+<td>Disk sample1 (slots 0/1) and sample2 (slot 2)</td>
 <td>none</td>
-<td>Prove each 2K submodule slot can dispatch independently.</td>
+<td>Return 30, 31 and 32 to demonstrate slot dispatch.</td>
 </tr>
 <tr>
-<td><code>ZSPAN()</code></td>
-<td>Built-in module 2 two-slot span payload for slots 1+2</td>
+<td><code>SPAN()</code></td>
+<td>Disk sample2, slots 1+2</td>
 <td>none</td>
-<td>Proves a payload can claim adjacent slots.</td>
+<td>Returns 40 and claims adjacent slots.</td>
 </tr>
 <tr>
-<td><code>ZOVL1()</code> / <code>ZOVL2()</code></td>
-<td>Built-in module 2 slot-2 overlay proof payloads</td>
+<td><code>OVL1()</code> / <code>OVL2()</code></td>
+<td>Disk sample2, slot-2 replacement overlays</td>
 <td>none</td>
-<td>Prove overlay replacement in slot 2.</td>
+<td>Return 51/52 to demonstrate overlay replacement.</td>
 </tr>
 <tr>
-<td><code>ZCPYRST()</code> / <code>ZCOPY()</code></td>
-<td>Built-in module 1 slot-0 copy-count proof helpers</td>
+<td><code>CPYRST()</code> / <code>COPY()</code></td>
+<td>Disk sample1 or sample3, slot 0</td>
 <td>none</td>
-<td>Reset and inspect the tiny no-recopy proof counter.</td>
+<td>Reset/read the diagnostic byte-sized copy counter.</td>
 </tr>
 <tr>
-<td><code>ZMODLD(NAME$)</code></td>
+<td><code>LDMOD(NAME$)</code></td>
 <td>Built-in module 2 slot-1 disk-module loader</td>
 <td>module package filename string</td>
 <td>Opens generated SEQ packages such as <code>RBM.SAMPLE1</code>, <code>RBM.SAMPLE2</code>, and <code>RBM.SAMPLE3</code>, registering their descriptors in the assigned core bank and payloads in the assigned code bank.</td>
 </tr>
 <tr>
-<td><code>ZDM1()</code> / <code>ZDM2S()</code> / <code>ZDOV1()</code> / <code>ZDOV2()</code></td>
+<td><code>DM1()</code> / <code>DM2S()</code> / <code>DOV1()</code> / <code>DOV2()</code></td>
 <td>Disk-loaded sample module payloads in the assigned code bank</td>
 <td>none</td>
-<td>Prove disk module, span, and overlay registration after <code>ZMODLD</code>.</td>
+<td>Prove disk module, span, and overlay registration after <code>LDMOD</code>.</td>
 </tr>
 <tr>
-<td><code>ZSAA()</code>-<code>ZUEB()</code></td>
+<td><code>S6AA()</code>-<code>S8EB()</code></td>
 <td><code>rbm.sample3</code> disk-loaded proof payloads in the assigned code bank</td>
 <td>none</td>
-<td>Return stateful integer sentinels; the command name encodes submodule, overlay, and entrypoint while copy-count tests prove residency. <code>ZS/ZT/ZU</code> mean submodules 6/7/8, <code>A</code>-<code>E</code> mean overlays 1-5, and the final <code>A/B</code> is the entrypoint. Each overlay image has one local counter byte, so reuse increments while reload resets.</td>
+<td>Return stateful integer sentinels; the command name encodes submodule, overlay, and entrypoint while copy-count tests prove residency. <code>S6/S7/S8</code> mean submodules 6/7/8, <code>A</code>-<code>E</code> mean overlays 1-5, and the final <code>A/B</code> is the entrypoint. Each overlay image has one local counter byte, so reuse increments while reload resets.</td>
 </tr>
 </tbody>
 </table>
-<p>The handle-oriented commands copy the full slot-0 payload because their wrappers share allocator helper routines that currently live in that module payload. That keeps the resident core lean at the cost of copying more under-ROM bytes for these sample commands.</p>
+<p>The handle-oriented commands copy the full slot-0 payload because their wrappers share allocator helper routines that currently live in that module payload. That keeps the resident core lean at the cost of copying more under-ROM bytes for these production resource commands.</p>
 <p><code>SCRCAP</code>/<code>SCRPUT</code> were named to avoid C64 BASIC tokenizer conflicts with embedded <code>SAVE</code>/<code>LOAD</code> tokens. They are the implemented forms of the original screen save/load concept.</p>
-<p>Historical proof names such as <code>PING</code>, <code>ADD16</code>, <code>STRUP</code>, <code>HCRC</code>, <code>SUMAI</code>, <code>RANGEAI</code>, <code>TEMPSCRATCH</code>, and <code>FAIL</code> are no longer runtime command aliases. Their current demo/proof forms use the <code>Z...</code> namespace, and array demo names use <code>NUM</code> rather than <code>INT</code> to avoid the BASIC <code>INT</code> token.</p>
+<p>The proof commands now have plain names and live in disk sample packages. Array demo names use <code>NUM</code> rather than <code>INT</code> to avoid the BASIC INT token. The old Z spellings are not aliases. Production PAUSE/LDMOD likewise have only their new names.</p>
 </section>
 </section>
 <section id="command-overlay-loading-and-files-involved" class="level2">
@@ -840,7 +846,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 <tbody>
 <tr>
 <td><code>src/apps/readybasic/readybasic.s</code></td>
-<td>All current ReadyBASIC code, command descriptors, module/submodule payloads, overlay proof payloads, and hidden helpers.</td>
+<td>Production ReadyBASIC code, built-in descriptors/payloads, loader and hidden helpers; disk examples live in sample_low.s and the module generator.</td>
 </tr>
 <tr>
 <td><code>cfg/ready_app_readybasic.cfg</code></td>
@@ -899,44 +905,38 @@ PRINT COMMAND(arg,arg)</code></pre>
 <tbody>
 <tr>
 <td><code>LOWPACK</code></td>
-<td style="text-align: right;"><code>$07DC</code> (2.0K, 2012 exact bytes)</td>
+<td style="text-align: right;"><code>$0654</code> (1.6K, 1620 exact bytes)</td>
 <td>Historical segment name for the built-in module 1 slot-0 payload loaded from <code>CMDPACK</code> and prestashed to assigned code-bank offset <code>$0000</code>.</td>
-<td>Fetched on demand into <code>$A800-$AFDB</code>.</td>
+<td>Fetched on demand into <code>$A800-$AE53</code>.</td>
 </tr>
 <tr>
 <td><code>SLOTPACK1</code></td>
-<td style="text-align: right;"><code>$0541</code> (1.3K, 1345 exact bytes)</td>
-<td>Built-in module 2 proof, streaming <code>ZMODLD</code> loader, and <code>GFXCORE</code> payload, prestashed to assigned code-bank offset <code>$07DC</code>.</td>
-<td>Fetched on demand into <code>$B000-$B540</code>.</td>
+<td style="text-align: right;"><code>$0537</code> (1.3K, 1335 exact bytes)</td>
+<td>Built-in module 2 streaming <code>LDMOD</code> loader, and <code>GFXCORE</code> payload, prestashed to assigned code-bank offset <code>$0654</code>.</td>
+<td>Fetched on demand into <code>$B000-$B536</code>.</td>
 </tr>
 <tr>
 <td><code>SLOTPACK2</code></td>
-<td style="text-align: right;"><code>$0738</code> (1.8K, 1848 exact bytes)</td>
-<td>Built-in module 2 slot proof plus <code>GFXPRIM</code>, prestashed to assigned code-bank offset <code>$0D1D</code>.</td>
-<td>Fetched on demand into <code>$B800-$BF37</code>.</td>
-</tr>
-<tr>
-<td><code>SPANPACK</code></td>
-<td style="text-align: right;"><code>$0015</code> (21B)</td>
-<td>Built-in two-slot span proof payload.</td>
-<td>Fetched into slots 1+2 at <code>$B000-$B014</code>.</td>
+<td style="text-align: right;"><code>$0723</code> (1.8K, 1827 exact bytes)</td>
+<td>Built-in <code>GFXPRIM</code>, prestashed to assigned code-bank offset <code>$0B8B</code>.</td>
+<td>Fetched on demand into <code>$B800-$BF22</code>.</td>
 </tr>
 <tr>
 <td><code>OVL1PACK</code></td>
-<td style="text-align: right;"><code>$0272</code> (626B)</td>
-<td>Built-in slot-2 overlay proof plus <code>GFXSPR</code>, loaded from <code>CMDPACK2</code> <code>$6200</code> and prestashed to assigned code-bank offset <code>$5000</code>.</td>
-<td>Fetched as a replacement overlay into <code>$B800-$BA71</code>.</td>
+<td style="text-align: right;"><code>$025D</code> (605B)</td>
+<td>Built-in <code>GFXSPR</code>, loaded from <code>CMDPACK2</code> <code>$6200</code> and prestashed to assigned code-bank offset <code>$5000</code>.</td>
+<td>Fetched as a replacement overlay into <code>$B800-$BA5C</code>.</td>
 </tr>
 <tr>
 <td><code>OVL2PACK</code></td>
-<td style="text-align: right;"><code>$006D</code> (109B)</td>
-<td>Built-in slot-2 overlay proof plus <code>INPUTEV</code>, loaded from <code>CMDPACK2</code> <code>$6472</code> and prestashed to assigned code-bank offset <code>$5800</code>.</td>
-<td>Fetched as a replacement overlay into <code>$B800-$B86C</code>.</td>
+<td style="text-align: right;"><code>$0127</code> (295B)</td>
+<td>Built-in <code>INPUTEV</code>, loaded from <code>CMDPACK2</code> <code>$645D</code> and prestashed to assigned code-bank offset <code>$5800</code>.</td>
+<td>Fetched as a replacement overlay into <code>$B800-$B926</code>.</td>
 </tr>
 <tr>
 <td><code>OVL3PACK</code></td>
 <td style="text-align: right;"><code>$0779</code> (1.9K, 1913 exact bytes)</td>
-<td>Built-in slot-2 overlay proof plus <code>GFXPOLY</code>, loaded from <code>CMDPACK2</code> and prestashed to assigned code-bank offset <code>$6000</code>.</td>
+<td>Built-in <code>GFXPOLY</code>, loaded from <code>CMDPACK2</code> and prestashed to assigned code-bank offset <code>$6000</code>.</td>
 <td>Fetched as a replacement overlay into <code>$B800-$BF78</code>.</td>
 </tr>
 <tr>
@@ -959,15 +959,15 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td><code>HIDLOAD</code></td>
-<td style="text-align: right;"><code>$078B</code> (1.9K, 1931 exact bytes)</td>
+<td style="text-align: right;"><code>$07AA</code> (1.9K, 1962 exact bytes)</td>
 <td>Load-only hidden helper seed starting at <code>$4000</code>.</td>
-<td>Copied on cold boot into <code>$A000-$A78A</code> and stashed to the assigned core-bank hidden shadow at <code>$3000</code>.</td>
+<td>Copied on cold boot into <code>$A000-$A7A9</code> and stashed to the assigned core-bank hidden shadow at <code>$3000</code>.</td>
 </tr>
 <tr>
 <td><code>BRLOAD</code></td>
-<td style="text-align: right;"><code>$01FF</code> (511B)</td>
+<td style="text-align: right;"><code>$0200</code> (512B)</td>
 <td>Load-only bridge seed starting at <code>$4800</code>.</td>
-<td>Copied on cold boot into <code>$C000-$C1FE</code>.</td>
+<td>Copied on cold boot into <code>$C000-$C1FF</code>.</td>
 </tr>
 <tr>
 <td><code>REGSEED</code></td>
@@ -984,7 +984,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 <li>Descriptor bytes <code>6-9</code> name the submodule id, overlay id, slot mask, and generation/check byte.</li>
 <li>Descriptor bytes <code>10-13</code> name the runtime destination offset from <code>$A000</code> and the entry offset inside the loaded payload.</li>
 <li>ReadyBASIC maps RAM under BASIC ROM, fetches the payload into <code>$A800</code>, <code>$B000</code>, <code>$B800</code>, or a multi-slot span, calls the entry, then returns to visible resident code for result commit.</li>
-<li>Commands can fetch a small slice or a full slot payload. The current handle and screen-handle commands fetch the whole <code>$07DC</code> slot-0 payload because their shared allocator and screen-copy helpers live there.</li>
+<li>Commands can fetch a small slice or a full slot payload. The current handle and screen-handle commands fetch the whole <code>$0654</code> slot-0 payload because their shared allocator and screen-copy helpers live there.</li>
 </ol>
 </section>
 <section id="c64-ram-layout" class="level2">
@@ -1039,13 +1039,13 @@ PRINT COMMAND(arg,arg)</code></pre>
 <tr>
 <td>Hidden helper load image</td>
 <td style="text-align: right;"><code>$4000+</code></td>
-<td style="text-align: right;"><code>$078B</code> (1.9K, 1931 exact bytes) load-only</td>
+<td style="text-align: right;"><code>$07AA</code> (1.9K, 1962 exact bytes) load-only</td>
 <td>Hidden helper seed copied to <code>$A000</code> and stashed to assigned core-bank offset <code>$3000</code>.</td>
 </tr>
 <tr>
 <td>Bridge load image</td>
 <td style="text-align: right;"><code>$4800+</code></td>
-<td style="text-align: right;"><code>$01FF</code> (511B) load-only</td>
+<td style="text-align: right;"><code>$0200</code> (512B) load-only</td>
 <td>Bridge seed copied to <code>$C000</code>.</td>
 </tr>
 <tr>
@@ -1068,38 +1068,38 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td>Common under-ROM helper</td>
-<td style="text-align: right;"><code>$A000-$A78A</code></td>
-<td style="text-align: right;"><code>$078B</code> (1931B)</td>
+<td style="text-align: right;"><code>$A000-$A7A9</code></td>
+<td style="text-align: right;"><code>$07AA</code> (1962B)</td>
 <td>Helper code run with RAM mapped under BASIC ROM.</td>
 </tr>
 <tr>
 <td>Slot 0 module payload</td>
-<td style="text-align: right;"><code>$A800-$AFDB</code></td>
-<td style="text-align: right;"><code>$07DC</code> (2012B)</td>
+<td style="text-align: right;"><code>$A800-$AE53</code></td>
+<td style="text-align: right;"><code>$0654</code> (1620B)</td>
 <td>Module 1 system/default payload fetched from the assigned code bank.</td>
 </tr>
 <tr>
 <td>Slot 1 module payload</td>
-<td style="text-align: right;"><code>$B000-$B540</code></td>
-<td style="text-align: right;"><code>$0541</code> (1345B)</td>
-<td>Module 2 proof, streaming <code>ZMODLD</code> loader, and <code>GFXCORE</code> payload.</td>
+<td style="text-align: right;"><code>$B000-$B536</code></td>
+<td style="text-align: right;"><code>$0537</code> (1335B)</td>
+<td>Module 2 streaming <code>LDMOD</code> loader, and <code>GFXCORE</code> payload.</td>
 </tr>
 <tr>
 <td>Slot 2 <code>GFXPRIM</code> image</td>
-<td style="text-align: right;"><code>$B800-$BF37</code></td>
-<td style="text-align: right;"><code>$0738</code> (1848B)</td>
-<td>Slot-2 base/proof plus <code>GFXPRIM</code>; replacement overlays load over this when called.</td>
+<td style="text-align: right;"><code>$B800-$BF22</code></td>
+<td style="text-align: right;"><code>$0723</code> (1827B)</td>
+<td>Slot-2 base payload for <code>GFXPRIM</code>; replacement overlays load over this when called.</td>
 </tr>
 <tr>
 <td>Slot 2 <code>GFXSPR</code> overlay image</td>
-<td style="text-align: right;"><code>$B800-$BA71</code></td>
-<td style="text-align: right;"><code>$0272</code> (626B)</td>
+<td style="text-align: right;"><code>$B800-$BA5C</code></td>
+<td style="text-align: right;"><code>$025D</code> (605B)</td>
 <td>Replacement overlay for sprite commands.</td>
 </tr>
 <tr>
 <td>Slot 2 <code>INPUTEV</code> overlay image</td>
-<td style="text-align: right;"><code>$B800-$B86C</code></td>
-<td style="text-align: right;"><code>$006D</code> (109B)</td>
+<td style="text-align: right;"><code>$B800-$B926</code></td>
+<td style="text-align: right;"><code>$0127</code> (295B)</td>
 <td>Replacement overlay for polling input commands.</td>
 </tr>
 <tr>
@@ -1128,8 +1128,8 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td><code>BRIDGE</code></td>
-<td style="text-align: right;"><code>$C000-$C1FE</code></td>
-<td style="text-align: right;"><code>$01FF</code> (511B)</td>
+<td style="text-align: right;"><code>$C000-$C1FF</code></td>
+<td style="text-align: right;"><code>$0200</code> (512B)</td>
 <td>Persistent bridge state, saved vectors, overlay variables, current handle scratch, debug bytes, native routine return stack, and flow-control scratch.</td>
 </tr>
 <tr>
@@ -1141,7 +1141,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 <tr>
 <td>Hidden helper shadow</td>
 <td style="text-align: right;">Assigned core bank <code>$3000+</code></td>
-<td style="text-align: right;"><code>$078B</code> (1931B)</td>
+<td style="text-align: right;"><code>$07AA</code> (1962B)</td>
 <td>REU source for restoring <code>$A000</code> helper on warm resume; refreshed during <code>EXIT</code> and cold seed.</td>
 </tr>
 <tr>
@@ -1589,7 +1589,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td style="text-align: right;"><code>$1000-$1FFF</code></td>
-<td>128 command descriptor slots, 32 bytes each. Cold build has 98 real descriptors, 30 zero-filled filler descriptors, and <code>SCRPUT</code> deliberately kept in slot 128.</td>
+<td>128 command descriptor slots, 32 bytes each. Cold build has 83 real descriptors, 45 zero-filled filler descriptors, and <code>SCRPUT</code> deliberately kept in slot 128.</td>
 </tr>
 <tr>
 <td style="text-align: right;"><code>$2000-$3FFF</code></td>
@@ -1621,23 +1621,37 @@ PRINT COMMAND(arg,arg)</code></pre>
 </thead>
 <tbody>
 <tr>
-<td>Slots 1-97</td>
-<td style="text-align: right;"><code>$1000-$1C1F</code></td>
-<td>Current built-in descriptors from <code>ZECHO1</code> through <code>UMHZ</code>.</td>
-<td style="text-align: right;">97</td>
-<td style="text-align: right;"><code>$0C20</code> / 3104B</td>
+<td>Slots 1-82</td>
+<td style="text-align: right;"><code>$1000-$1A3F</code></td>
+<td>Built-ins UPPER through UMHZ.</td>
+<td style="text-align: right;">82</td>
+<td style="text-align: right;"><code>$0A40</code> / 2624B</td>
 </tr>
 <tr>
-<td>Slots 98-127</td>
-<td style="text-align: right;"><code>$1C20-$1FDF</code></td>
-<td>Cold zero-filled descriptors; media uses the first eight when loaded.</td>
-<td style="text-align: right;">30</td>
-<td style="text-align: right;"><code>$03C0</code> / 960B</td>
+<td>Slots 83-90</td>
+<td style="text-align: right;"><code>$1A40-$1B3F</code></td>
+<td>Empty at cold start; media descriptors when loaded.</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;"><code>$0100</code> / 256B</td>
+</tr>
+<tr>
+<td>Slots 91-122</td>
+<td style="text-align: right;"><code>$1B40-$1F3F</code></td>
+<td>Empty at cold start; sample1+sample2 or sample3 demo registry.</td>
+<td style="text-align: right;">32</td>
+<td style="text-align: right;"><code>$0400</code> / 1024B</td>
+</tr>
+<tr>
+<td>Slots 123-127</td>
+<td style="text-align: right;"><code>$1F40-$1FDF</code></td>
+<td>Spare descriptors.</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;"><code>$00A0</code> / 160B</td>
 </tr>
 <tr>
 <td>Slot 128</td>
 <td style="text-align: right;"><code>$1FE0-$1FFF</code></td>
-<td><code>SCRPUT</code>, deliberately placed at the end to prove full-table lookup.</td>
+<td>SCRPUT, retained at the end for full-table lookup.</td>
 <td style="text-align: right;">1</td>
 <td style="text-align: right;"><code>$0020</code> / 32B</td>
 </tr>
@@ -1647,122 +1661,49 @@ PRINT COMMAND(arg,arg)</code></pre>
 </section>
 <section id="assigned-code-bank-packed-command-code" class="level3">
 <h3>Assigned Code Bank: Packed Command Code</h3>
-<p>Descriptor-placement correction: package descriptors are streamed to the <strong>core</strong> bank, not the code bank. The sample descriptor rows below are retained as cross-bank references and explicitly labelled. Their fixed offsets overwrite built-ins in today's registry; run these developer proofs in isolated sessions. Only payload records occupy the assigned code bank. Media uses empty descriptor slots at core <code>$1C20-$1D1F</code> and code at <code>$8000</code>.</p>
+<p>Package descriptors go to the core bank; only executable payloads go to the code bank. Production payloads and disk demonstrations use disjoint code areas. The generated <a href="../../../docs/readybasic_memory_diagrams.html">memory diagram</a> reads the actual link map and RBM packages for exact sizes.</p>
 <table>
 <colgroup>
-<col style="width: 57%" />
-<col style="width: 42%" />
+<col style="width: 50%" />
+<col style="width: 50%" />
 </colgroup>
 <thead>
 <tr>
-<th style="text-align: right;">Offset</th>
-<th>Region</th>
+<th>Code-bank offset</th>
+<th>Payload</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: right;"><code>$0000-$07DB</code></td>
-<td>Built-in module 1 slot-0 payload copied into <code>$A800-$AFDB</code> (<code>$07DC</code>, 2012B).</td>
+<td><code>$0000</code> onward</td>
+<td>Production LOWPACK, SLOTPACK1 and SLOTPACK2, packed consecutively.</td>
 </tr>
 <tr>
-<td style="text-align: right;"><code>$07DC-$0D1C</code></td>
-<td>Built-in module 2 slot-1 proof, streaming <code>ZMODLD</code> loader, and <code>GFXCORE</code> payload copied into <code>$B000-$B540</code> (<code>$0541</code>, 1345B).</td>
+<td><code>$5000</code>, <code>$5800</code>, <code>$6000</code>, <code>$6800</code>, <code>$7000</code>, <code>$7800</code></td>
+<td>Production GFXSPR, INPUTEV, GFXPOLY, GFXDL, GFXTILE and SIDCORE overlays.</td>
 </tr>
 <tr>
-<td style="text-align: right;"><code>$0D1D-$1454</code></td>
-<td>Built-in slot-2 proof plus <code>GFXPRIM</code> copied into <code>$B800-$BF37</code> (<code>$0738</code>, 1848B).</td>
+<td><code>$8000-$8FFF</code></td>
+<td>Media reservation.</td>
 </tr>
 <tr>
-<td style="text-align: right;"><code>$13AA-$13BE</code></td>
-<td>Built-in two-slot span proof payload (<code>$0015</code>, 21B).</td>
+<td><code>$A000</code></td>
+<td>Disk sample slot-0 workers, including COPY/CPYRST.</td>
 </tr>
 <tr>
-<td style="text-align: right;"><code>$1455-$14FF</code></td>
-<td>Free gap before current disk-module descriptor proof offsets (<code>$00AB</code>, 171B).</td>
+<td><code>$A800</code></td>
+<td>Sample1 SLOT1/DM1 payload.</td>
 </tr>
 <tr>
-<td style="text-align: right;">Core bank <code>$1500-$151F</code></td>
-<td><code>rbm.sample1</code> descriptor for <code>ZDM1</code>; not code-bank storage.</td>
+<td><code>$B000</code>, <code>$B100</code>, <code>$B200</code>, <code>$B300</code></td>
+<td>Sample2 slot-2, span and two overlay images.</td>
 </tr>
 <tr>
-<td style="text-align: right;">Core bank <code>$1600-$165F</code></td>
-<td><code>rbm.sample2</code> descriptors for <code>ZDM2S</code>, <code>ZDOV1</code>, and <code>ZDOV2</code>; not code-bank storage.</td>
-</tr>
-<tr>
-<td style="text-align: right;">Core bank <code>$1700-$1ABF</code></td>
-<td><code>rbm.sample3</code> descriptors for <code>ZSAA</code>-<code>ZUEB</code>; not code-bank storage.</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$3000-$3014</code>, <code>$3200-$3214</code>, <code>$3300-$3314</code>, <code>$3400-$3414</code></td>
-<td>Small sample disk-loaded payload proofs.</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$3800-$463C</code></td>
-<td><code>rbm.sample3</code> payload records for <code>ZSAA</code>-<code>ZUEB</code>, stored on <code>$100</code>-byte strides.</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$463D-$4FFF</code></td>
-<td>Free gap before fixed built-in replacement overlay offsets (<code>$09C3</code>, 2499B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$5000-$5271</code></td>
-<td>Built-in slot-2 replacement overlay plus <code>GFXSPR</code> (<code>$0272</code>, 626B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$5272-$57FF</code></td>
-<td>Reserved <code>GFXSPR</code> overlay growth headroom (<code>$058E</code>, 1422B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$5800-$586C</code></td>
-<td>Built-in slot-2 replacement overlay plus <code>INPUTEV</code> (<code>$006D</code>, 109B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$586D-$5FFF</code></td>
-<td>Reserved <code>INPUTEV</code> overlay growth headroom (<code>$0793</code>, 1939B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$6000-$6778</code></td>
-<td>Built-in slot-2 replacement overlay plus <code>GFXPOLY</code> (<code>$0779</code>, 1913B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$6779-$67FF</code></td>
-<td>Reserved <code>GFXPOLY</code> overlay growth headroom (<code>$0087</code>, 135B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$6800-$6F82</code></td>
-<td>Built-in <code>GFXDL</code> replacement overlay (<code>$0783</code>, 1923B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$6F83-$6FFF</code></td>
-<td>Reserved <code>GFXDL</code> overlay growth headroom (<code>$007D</code>, 125B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$7000-$74D9</code></td>
-<td>Built-in <code>GFXTILE</code> replacement overlay (<code>$04DA</code>, 1242B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$74DA-$77FF</code></td>
-<td>Reserved <code>GFXTILE</code> overlay growth headroom (<code>$0326</code>, 806B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$7800-$7A0D</code></td>
-<td>Built-in <code>SIDCORE</code> replacement overlay (<code>$020E</code>, 526B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$7A0E-$7FFF</code></td>
-<td>Reserved <code>SIDCORE</code> overlay growth headroom (<code>$05F2</code>, 1522B).</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$8000-$8FFF</code></td>
-<td>Reserved on-demand media span, fetched into slots 1+2; actual package length is build-dependent.</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$9000-$FFFF</code></td>
-<td>Tail beyond the media span reservation (REU offsets, not the C64 music arena).</td>
+<td><code>$C000-$CE3C</code></td>
+<td>Sample3 stateful overlay images on <code>$100</code> strides.</td>
 </tr>
 </tbody>
 </table>
-<p>Descriptors point into these packed bytes with payload offset, payload size, slot mask, runtime destination, and entry offset. Heap and screen-handle commands currently fetch the whole <code>$07DC</code> slot-0 payload because shared allocator and screen-copy helpers live there.</p>
 </section>
 </section>
 <section id="cold-boot-lifecycle" class="level2">
@@ -1789,7 +1730,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 <li>Stores bridge and entry magic for READY-mode resume.</li>
 <li>Calls hidden save-state code.</li>
 <li>Saves zero page <code>$0000-$00FF</code> to assigned core-bank offset <code>$0A00</code>.</li>
-<li>Saves stack page <code>$0100-$01FF</code> to assigned core-bank offset <code>$0B00</code>.</li>
+<li>Saves stack page <code>$0100-$0200</code> to assigned core-bank offset <code>$0B00</code>.</li>
 <li>Saves SP, mode, runtime magic, and line-chain guards in bridge metadata.</li>
 <li>Refreshes the assigned-core-bank hidden-helper shadow at <code>$3000</code>.</li>
 <li>Clears pending ReadyBASIC/KERNAL keyboard state and calls <code>CLRCHN</code>.</li>
@@ -1891,33 +1832,33 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td><code>HIDDEN</code></td>
-<td style="text-align: right;"><code>$A000-$A78A</code></td>
-<td style="text-align: right;"><code>$078B</code> (1931B)</td>
+<td style="text-align: right;"><code>$A000-$A7A9</code></td>
+<td style="text-align: right;"><code>$07AA</code> (1962B)</td>
 </tr>
 <tr>
 <td><code>LOWPACK</code> / slot 0 payload</td>
-<td style="text-align: right;"><code>$A800-$AFDB</code></td>
-<td style="text-align: right;"><code>$07DC</code> (2012B)</td>
+<td style="text-align: right;"><code>$A800-$AE53</code></td>
+<td style="text-align: right;"><code>$0654</code> (1620B)</td>
 </tr>
 <tr>
 <td><code>SLOTPACK1</code> / slot 1 payload</td>
-<td style="text-align: right;"><code>$B000-$B540</code></td>
-<td style="text-align: right;"><code>$0541</code> (1345B)</td>
+<td style="text-align: right;"><code>$B000-$B536</code></td>
+<td style="text-align: right;"><code>$0537</code> (1335B)</td>
 </tr>
 <tr>
 <td><code>SLOTPACK2</code> / GFXPRIM</td>
-<td style="text-align: right;"><code>$B800-$BF37</code></td>
-<td style="text-align: right;"><code>$0738</code> (1848B)</td>
+<td style="text-align: right;"><code>$B800-$BF22</code></td>
+<td style="text-align: right;"><code>$0723</code> (1827B)</td>
 </tr>
 <tr>
 <td><code>OVL1PACK</code> / GFXSPR</td>
-<td style="text-align: right;"><code>$B800-$BA71</code></td>
-<td style="text-align: right;"><code>$0272</code> (626B)</td>
+<td style="text-align: right;"><code>$B800-$BA5C</code></td>
+<td style="text-align: right;"><code>$025D</code> (605B)</td>
 </tr>
 <tr>
 <td><code>OVL2PACK</code> / INPUTEV</td>
-<td style="text-align: right;"><code>$B800-$B86C</code></td>
-<td style="text-align: right;"><code>$006D</code> (109B)</td>
+<td style="text-align: right;"><code>$B800-$B926</code></td>
+<td style="text-align: right;"><code>$0127</code> (295B)</td>
 </tr>
 <tr>
 <td><code>OVL3PACK</code> / GFXPOLY</td>
@@ -1941,8 +1882,8 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td><code>BRIDGE</code></td>
-<td style="text-align: right;"><code>$C000-$C1FE</code></td>
-<td style="text-align: right;"><code>$01FF</code> (511B)</td>
+<td style="text-align: right;"><code>$C000-$C1FF</code></td>
+<td style="text-align: right;"><code>$0200</code> (512B)</td>
 </tr>
 </tbody>
 </table>
@@ -1973,15 +1914,15 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td><code>LOWPACK</code></td>
-<td style="text-align: right;"><code>$07DC</code> / 2012B</td>
+<td style="text-align: right;"><code>$0654</code> / 1620B</td>
 </tr>
 <tr>
 <td><code>HIDDEN</code></td>
-<td style="text-align: right;"><code>$078B</code> / 1931B</td>
+<td style="text-align: right;"><code>$07AA</code> / 1962B</td>
 </tr>
 <tr>
 <td><code>BRIDGE</code></td>
-<td style="text-align: right;"><code>$01FF</code> / 511B</td>
+<td style="text-align: right;"><code>$0200</code> / 512B</td>
 </tr>
 <tr>
 <td><code>REGSEED</code></td>
@@ -2080,12 +2021,12 @@ PRINT COMMAND(arg,arg)</code></pre>
 <h2>Current Bare Commands And Expressions</h2>
 <p>Parenthesized calls are the preferred syntax. Selected commands can return values as BASIC expressions while keeping the resident implementation tight.</p>
 <p>Supported command expressions:</p>
-<pre class="basic"><code>ZECHO1(P%)
-ZADD16(4,5,A%)
-PRINT ZADD16(5,10)
-A=ZADD16(8,9)
+<pre class="basic"><code>ECHO1(P%)
+ADD16(4,5,A%)
+PRINT ADD16(5,10)
+A=ADD16(8,9)
 T$=UPPER(&quot;ready&quot;)
-PRINT ZHIDDENRAM(&quot;A&quot;)</code></pre>
+PRINT HIDDENRAM(&quot;A&quot;)</code></pre>
 <p>Supported native routine forms:</p>
 <pre class="basic"><code>100 PROC SHOWI(P%)
 110 PRINT P%
@@ -2098,7 +2039,7 @@ PRINT ZHIDDENRAM(&quot;A&quot;)</code></pre>
 10 EXEC SHOWI(7)
 20 T$=GREET(&quot;READY&quot;):PRINT T$</code></pre>
 <p><code>PROC</code>/<code>FUNC</code> definitions and <code>EXEC</code> calls accept parentheses for non-empty argument lists. Zero-argument routines still use <code>EXEC NAME</code>; <code>EXEC NAME()</code> was cut to save resident bytes. <code>FUNC</code> uses <code>RET expr</code>, with optional <code>RET% expr</code> or <code>RET$ expr</code> type markers. <code>EXEC</code> runs <code>PROC</code> bodies only; <code>FUNC</code> returns the value as the expression result. <code>FUNC</code> calls scan the body, execute simple scalar assignments, and evaluate the <code>RET</code> expression; arbitrary earlier BASIC statements remain outside V1.</p>
-<p>Numeric actuals for command and <code>FUNC</code> calls can be ordinary numeric expressions in the flat forms tested by <code>rbproc1</code>, such as <code>ADDI(1,2+4)</code>. ReadyBASIC also accepts a single wrapper pair around numeric actual expressions, including <code>ADDI(1,(2+4))</code>, <code>ZADD16(1,(2+4))</code>, and <code>ADDI((1+2),(3+4))</code>. String actuals remain string variables or quoted literals. Command and <code>FUNC</code> returns can be assigned or printed directly; command numeric returns work in <code>ABS(ZADD16(1,6)-10)</code>, and <code>FUNC</code> returns now work in the tested ROM consumer forms <code>ABS(ADDI(1,6)-10)</code> and <code>LEFT$(GREET("READY"),2)</code>. Fully recursive ReadyBASIC terms inside other ReadyBASIC actual lists remain future work.</p>
+<p>Numeric actuals for command and <code>FUNC</code> calls can be ordinary numeric expressions in the flat forms tested by <code>rbproc1</code>, such as <code>ADDI(1,2+4)</code>. ReadyBASIC also accepts a single wrapper pair around numeric actual expressions, including <code>ADDI(1,(2+4))</code>, <code>ADD16(1,(2+4))</code>, and <code>ADDI((1+2),(3+4))</code>. String actuals remain string variables or quoted literals. Command and <code>FUNC</code> returns can be assigned or printed directly; command numeric returns work in <code>ABS(ADD16(1,6)-10)</code>, and <code>FUNC</code> returns now work in the tested ROM consumer forms <code>ABS(ADDI(1,6)-10)</code> and <code>LEFT$(GREET("READY"),2)</code>. Fully recursive ReadyBASIC terms inside other ReadyBASIC actual lists remain future work.</p>
 </section>
 <section id="current-float-term-support" class="level2">
 <h2>Current Float-Term Support</h2>

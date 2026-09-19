@@ -45,6 +45,7 @@
 </nav></details>
 <section id="september-2026-documentation-audit" class="level1">
 <h1>September 2026 documentation audit</h1>
+<p>Current 0.5 RC2 command packaging: use <code>LDMOD</code> and <code>PAUSE</code>. There are 83 built-ins; media descriptors use <code>$1A40-$1B3F</code>, and disk demo packages use a separate <code>$1B40-$1F3F</code> area. Sample3 replaces other demo entries, preserving production and media commands. Older offsets/counts in dated evidence below describe those earlier builds. See the <a href="../src/apps/readybasic/readybasic_sample_modules.html">sample module guide</a>.</p>
 <p>This audit follows source at <code>4ef8f37</code> and subsequent documentation changes. Existing release binaries and generated outputs were already dirty at the start. Historical measurements, transcripts and experiments are preserved; a current source statement must not turn their old results into a claim about a new build.</p>
 <section id="completion-checklist" class="level2">
 <h2>Completion checklist</h2>

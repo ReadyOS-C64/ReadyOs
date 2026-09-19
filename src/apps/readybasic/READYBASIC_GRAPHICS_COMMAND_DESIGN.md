@@ -649,7 +649,7 @@ shared signatures:
 | Signature shape | Examples |
 |---|---|
 | No args, optional integer expression result | `GFXMODE()`, `SPRSCAN()`, `KEYSCAN()` |
-| String input | `GFXMODE("HIRES")`, `ZMODLD("RBM.GFX")` |
+| String input | `GFXMODE("HIRES")`, `LDMOD("RBM.GFX")` |
 | Handle input | `GFXBLIT(H%)`, `DLDRAW(H%)`, `TILESET(H%)` |
 | Numeric pair | `PLOT(x,y,c)`, `SPRMOVE(n,x,y)` |
 | Four numeric coords | `LINE(x1,y1,x2,y2,c)`, `RECT(...)` |

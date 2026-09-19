@@ -16,8 +16,9 @@ START = "<!-- READYOS-DOC-STATUS:START -->"
 END = "<!-- READYOS-DOC-STATUS:END -->"
 
 CURRENT = {
+    "src/apps/readybasic/readybasic_sample_modules.html": "Current 0.5 RC2 disk-only demo commands, package loading and slot/overlay layout.",
     "docs/DOCUMENTATION_INDEX.html": "Current documentation index, audited against the September 2026 PRECOG 0.5 development tree; its production baseline is 0.2.5.",
-    "docs/readybasic_reference.html": "Current source-generated inventory: 98 built-ins, eight media commands, developer packages and all 45 BASIC source examples. Profile packaging is stated separately.",
+    "docs/readybasic_reference.html": "Current source-generated inventory: 83 built-ins, eight media commands, developer packages and all 45 BASIC source examples. Profile packaging is stated separately.",
     "docs/app_requirements.html": "Current source-audited Ultimate and app-specific REU requirements, distinct from system snapshot needs and future standalone plans.",
     "docs/documentation_audit_2026-09.html": "September 2026 documentation audit, verification record and unresolved code/packaging issues.",
     "docs/readybasic_orbital_echoes.html": "Current Orbital Echoes usage with dated build/test evidence retained in chronological sections.",

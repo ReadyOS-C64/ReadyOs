@@ -1,11 +1,31 @@
 # ReadyBASIC Lean REU Plugin Architecture
 
+## 0.5 RC2 command packaging
+
+`LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay
+proof workers are now disk-only, with no Z prefix. Load `RBM.SAMPLE1` before
+using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL,
+SLOT0, SLOT1, CPYRST or COPY. `RBM.SAMPLE2` supplies SLOT2, SPAN and OVL1/OVL2.
+The packages register 12, 7 and 32 descriptors respectively; sample3 includes
+COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo
+entries, preserving production and media commands. See
+[the complete package contract](READYBASIC_SAMPLE_MODULES.md) for names,
+placement, dependencies and examples.
+
+Cold registration has 83 built-ins and 45 empty slots. Media occupies core
+`$1A40–$1B3F`; the demo area is `$1B40–$1F3F`; SCRPUT stays at `$1FE0`.
+Demo code and the built-in SPANPACK have been removed from the runtime image.
+PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick.
+The loader remains in module 2, slot 1. BASIC still starts at `$2AC1` with
+30013 empty free bytes.
+
+
 ## September 2026 media extension
 
 See the [complete command/example reference](../../../docs/readybasic_reference.md)
-for the current public contract. Cold registration has 98 built-ins including
+for the current public contract. Cold registration has 83 built-ins including
 MEMCAP, BORDER, USPEED and UMHZ. `rbm.media` adds eight commands on demand at
-core-bank `$1C20-$1D1F`, with code at assigned code-bank `$8000`, executing in
+core-bank `$1A40-$1B3F`, with code at assigned code-bank `$8000`, executing in
 slots 1+2. Its IRQ driver is separate at `$9000` in MEMCAP-reserved BASIC RAM;
 the lifetime byte is `$C1FF`. Dropping or halting a tune and restoring the BASIC
 ceiling are distinct operations. Warm ReadyOS resume retains the reservation
@@ -37,9 +57,9 @@ same ReadyOS and REU discipline.
   fixed `$44/$45` banks.
 - Descriptors remain 32 bytes but now carry module id, submodule id, overlay
   id, slot mask, payload REU offset/size, runtime destination, and entry offset.
-- The disk-loader proof command is `ZMODLD(name$)` in module 2/slot 1. It opens
+- The disk-loader proof command is `LDMOD(name$)` in module 2/slot 1. It opens
   ReadyBasicModule SEQ packages named `rbm.<name>` and streams them into REU.
-  Sample packages add `ZDM1`, `ZDM2S`, `ZDOV1`, `ZDOV2`, and `ZSAA`-`ZUEB`.
+  Sample packages add `DM1`, `DM2S`, `DOV1`, `DOV2`, and `S6AA`-`S8EB`.
 - Graphics commands are built-in module id `3`: `GFXCORE` submodule `16` in
   slot 1, `GFXPRIM` submodule `17` in the base slot-2 image, `GFXSPR`
   submodule `18` as a slot-2 replacement overlay prestashed at code-bank offset
@@ -60,7 +80,7 @@ same ReadyOS and REU discipline.
   snapshot, the packed low command image was `$063D` bytes (1.6K, 1597 exact bytes).
 - `$C200-$C5FF`: fixed call frame, result frame, descriptor buffer, command-name buffer, page buffer, and warm-resume staging (`$0400`, 1.0K).
 - `$A000-$A376`: hidden helper code (`$0377`, 887B), restored from the visible `$C280` shadow.
-- `$A800-$A84C`: hidden worker overlay slot (`$004D`, 77B) used by `ZHIDDENRAM`.
+- `$A800-$A84C`: hidden worker overlay slot (`$004D`, 77B) used by `HIDDENRAM`.
 - `$C000` bridge state plus native routine return stack and flow-control
   scratch; this pre-module snapshot also stayed below `$C200`.
 
@@ -91,63 +111,25 @@ same ReadyOS and REU discipline.
 - `$0A00`: ReadyOS suspend/resume zero-page snapshot.
 - `$0B00`: ReadyOS suspend/resume stack-page snapshot.
 - `$0C00-$0CFF`: 192-page heap bitmap plus reserved bytes.
-- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The cold build has 98 real descriptors, 30 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128 as part of those 98 real descriptors. Media uses eight filler slots on demand.
+- `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The cold build has 83 real descriptors, 45 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128 as part of those 83 real descriptors. Media uses eight filler slots on demand.
 - `$2000-$3FFF`: reserved common/system expansion space.
 - `$4000-$FFFF`: typed 48KB heap for buffer, screen, and Phase 1 graphics
   surface handles.
 
 ## Assigned Code Bank Regions
 
-The package loader writes descriptors to the separate **core** bank. The three
-sample descriptor ranges listed here are cross-bank references, not code-bank
-allocations. They replace current built-ins at those offsets, so run sample
-proofs in isolated sessions. Media's core-bank `$1C20-$1D1F` slots are otherwise
-unused. The payload bytes alone occupy the assigned code bank.
+Production base payloads occupy code-bank `$0000` onward; replacement
+GFXSPR/INPUTEV/GFXPOLY/GFXDL/GFXTILE/SIDCORE images use `$5000/$5800/$6000/$6800/$7000/$7800`.
+Media uses `$8000-$8FFF`. Disk-only scalar examples use `$A000`, slot-1 examples
+`$A800`, sample2 `$B000/$B100/$B200/$B300`, and sample3 `$C000-$CE3C`.
+There is no built-in span proof payload.
 
-- `$0000-$07DB`: built-in module 1 slot-0 payload, fetched into
-  `$A800-$AFDB` (`$07DC`, 2012B). The linker symbol is still named
-  `LOWPACK` for compatibility, but the current runtime slot base is `$A800`.
-- `$07DC-$0D1C`: built-in module 2 slot-1 proof, streaming `ZMODLD` loader,
-  and `GFXCORE`, fetched into `$B000-$B540` (`$0541`, 1345B).
-- `$0D1D-$1454`: built-in slot-2 proof plus `GFXPRIM`, fetched into
-  `$B800-$BF37` (`$0738`, 1848B).
-- `$13AA-$13BE`: two-slot span proof payload (`$0015`, 21B).
-- `$1455-$14FF`: free gap before the current disk-module proof offsets
-  (`$00AB`, 171B).
-- Core bank `$1500-$151F`: `rbm.sample1` descriptor proof for `ZDM1`.
-- Core bank `$1600-$165F`: `rbm.sample2` descriptors for `ZDM2S`, `ZDOV1`, and `ZDOV2`;
-  submodule 5 appears twice because those entries are overlays 1 and 2.
-- Core bank `$1700-$1ABF`: `rbm.sample3` descriptors for `ZSAA`-`ZUEB`.
-- `$3000-$3014`, `$3200-$3214`, `$3300-$3314`, `$3400-$3414`: small
-  disk-loaded module payload proofs.
-- `$3800-$463C`: `rbm.sample3` payload records for `ZSAA`-`ZUEB`.
-- `$5000-$5271`: built-in `GFXSPR` replacement overlay, loaded from cold-only
-  `CMDPACK2` and fetched into `$B800-$BA71` when sprite commands run.
-- `$5272-$57FF`: reserved `GFXSPR` growth headroom inside the assigned code bank.
-- `$5800-$586C`: built-in `INPUTEV` replacement overlay, loaded from cold-only
-  `CMDPACK2` and fetched into `$B800-$B86C` when input commands run.
-- `$586D-$5FFF`: reserved `INPUTEV` growth headroom.
-- `$6000-$6778`: built-in `GFXPOLY` replacement overlay, loaded from cold-only
-  `CMDPACK2` and fetched into `$B800-$BF78` when polygon commands run.
-- `$6779-$67FF`: reserved `GFXPOLY` growth headroom.
-- `$6800-$6F82`: built-in `GFXDL` replacement overlay, loaded from cold-only
-  `CMDPACK2` and fetched into `$B800-$BF82` when display-list commands run.
-- `$6F83-$6FFF`: reserved `GFXDL` growth headroom.
-- `$7000-$74D9`: built-in `GFXTILE` replacement overlay, loaded from cold-only
-  `CMDPACK2` and fetched into `$B800-$BCD9` when charset, tileset, tilemap, or
-  explicit multicolor-cell commands run.
-- `$74DA-$77FF`: reserved `GFXTILE` growth headroom.
-- `$7800-$7A0D`: built-in `SIDCORE` replacement overlay, loaded from cold-only
-  `CMDPACK2` and fetched into `$B800-$BA0D` when immediate sound commands run.
-- `$7A0E-$7FFF`: reserved `SIDCORE` growth headroom.
-- `$8000-$8FFF`: on-demand media's two-slot code reservation.
-- `$9000-$FFFF`: unreserved assigned code-bank tail; these are REU offsets,
-  not the C64 RAM music arena at the same numeric address.
-
-Descriptors store payload offsets, payload sizes, slot masks, runtime
-destinations, and entry offsets. Heap and screen commands currently fetch the
-whole slot-0 payload because their allocator, REU descriptor, bitmap, and
-screen-copy helpers live together in that payload rather than resident core RAM.
+Descriptors are in the **core bank**: media `$1A40-$1B3F`, sample1
+`$1B40-$1CBF`, sample2 `$1CC0-$1D9F`, or alternate sample3 `$1B40-$1F3F`.
+Sample3 replaces demo entries; all production/media entries remain intact.
+See [the generated memory diagrams](../../../docs/readybasic_memory_diagrams.html)
+for measured payload lengths, and [the sample guide](READYBASIC_SAMPLE_MODULES.md)
+for module/submodule identifiers and package dependencies.
 
 ## Descriptor ABI
 
@@ -186,29 +168,29 @@ Each descriptor is 32 bytes:
 
 ## Implemented Commands
 
-- `ZECHO1(OUT%)` / `ZECHO1()`: resident-precomputed scalar result, returns `1`.
-- `ZADD16(A,B,OUT%)` / `ZADD16(A,B)`: module 1 slot 0 payload, returns 16-bit sum.
+- `ECHO1(OUT%)` / `ECHO1()`: disk sample1 slot-0 worker, returns `1`.
+- `ADD16(A,B,OUT%)` / `ADD16(A,B)`: disk sample1 slot 0 payload, returns 16-bit sum.
 - `UPPER(S$,OUT$)` / `UPPER(S$)`: module 1 slot 0 payload, copies and uppercases a string variable or quoted literal.
 - `LOWER(S$,OUT$)` / `LOWER(S$)`: module 1 slot 0 payload, lowercases string byte values; tests verify bytes with `ASC()` because screen display case depends on the C64 charset mode.
-- `ZHIDDENRAM(S$,OUT%)` / `ZHIDDENRAM(S$)`: module 1 slot 0 under-ROM worker proof, returns a simple checksum.
-- `ZSUMNUMARRAY(A%(0),COUNT,OUT%)` / `ZSUMNUMARRAY(A%(0),COUNT)`: module 1 slot 0 payload, sums integer array elements.
-- `ZRANGENUMARRAY(START,COUNT,A%(0))`: module 1 slot 0 payload, stages integer array output and resident commit writes it.
+- `HIDDENRAM(S$,OUT%)` / `HIDDENRAM(S$)`: disk sample1 slot 0 under-ROM worker proof, returns a simple checksum.
+- `SUMNUMARRAY(A%(0),COUNT,OUT%)` / `SUMNUMARRAY(A%(0),COUNT)`: disk sample1 slot 0 payload, sums integer array elements.
+- `RANGENUMARRAY(START,COUNT,A%(0))`: disk sample1 slot 0 payload, stages integer array output and resident commit writes it.
 - `BUFMAKE(LEN,H%)` / `BUFMAKE(LEN)`: module 1 slot 0 payload, creates a persistent handle in bank `$44`.
 - `BUFFILL(H%,BYTE)`: module 1 slot 0 payload, fills buffer handle pages and rejects non-buffer handles.
 - `BUFDROP(H%)`: module 1 slot 0 payload, frees any valid handle type.
-- `ZTEMPSCRATCH(LEN,OUT%)` / `ZTEMPSCRATCH(LEN)`: module 1 slot 0 payload, allocates and frees temporary pages, returning page count.
-- `ZFAIL(CODE,OUT%)`: module 1 slot 0 payload, exercises the error path after output clearing.
+- `TEMPSCRATCH(LEN,OUT%)` / `TEMPSCRATCH(LEN)`: disk sample1 slot 0 payload, allocates and frees temporary pages, returning page count.
+- `FAIL(CODE,OUT%)`: disk sample1 slot 0 payload, exercises the error path after output clearing.
 - `MEMAVL()`: module 1 slot 0 payload, prints the current live BASIC free-byte count.
 - `SCRCAP(H%)` / `SCRCAP()`: module 1 slot 0 payload, captures screen text plus color RAM into a typed screen handle.
 - `FADD(A,B,OUT)` / `FADD(A,B)`: resident-computed demo command, returns a plain C64 BASIC float.
-- `ZPAUSE(TICKS)`: module 1 slot 0 payload, waits for a number of jiffies.
+- `PAUSE(TICKS)`: module 1 slot 0 payload, runs a CPU-dependent busy loop using the low byte of the argument.
 - `ERRCODE(OUT%)` / `ERRCODE()`: resident-precomputed, returns the last ReadyBASIC runtime error code.
 - `ERRLINE(OUT%)` / `ERRLINE()`: resident-precomputed, returns the last ReadyBASIC runtime error line, or `0` in direct mode.
 - `SCRPUT(H%)`: module 1 slot 0 payload, validates a typed screen handle and restores screen text plus color RAM. This descriptor lives in slot 128 to prove full-table lookup.
-- `ZSLOT0`, `ZSLOT1`, `ZSLOT2`, `ZSPAN`, `ZOVL1`, `ZOVL2`, `ZCPYRST`, and
-  `ZCOPY`: built-in slot/span/overlay proof commands.
-- `ZMODLD(name$)`: module 2 slot 1 SEQ package loader proof command.
-- `ZDM1`, `ZDM2S`, `ZDOV1`, `ZDOV2`, and `ZSAA`-`ZUEB`: disk-loaded sample module commands.
+- `SLOT0`, `SLOT1`, `SLOT2`, `SPAN`, `OVL1`, `OVL2`, `CPYRST`, and
+  `COPY`: disk sample1/sample2 slot/span/overlay proofs; counters are also in sample3.
+- `LDMOD(name$)`: module 2 slot 1 SEQ package loader proof command.
+- `DM1`, `DM2S`, `DOV1`, `DOV2`, and `S6AA`-`S8EB`: disk-loaded sample module commands.
 - `GFXMODE(mode$)` / `GFXMODE()`: module 3 `GFXCORE`, switches or reads
   `TEXT`, `HIRES`, `MBITMAP`, `TILE`, and `MTILE`.
 - `GFXTEXT()`, `GFXCLEAR(C)`, `GFXTGT(H%)`, and
@@ -283,7 +265,7 @@ Native flow-control forms:
 - Command lookup is linear over descriptor pages in bank `$44`: one 256-byte page is fetched into `$C500`, eight descriptors are scanned locally, and the matched descriptor is copied into `$C480`.
 - String input uses BASIC ROM string expression evaluation and then stages up to
   64 bytes. Numeric inputs support nested ReadyBASIC expression terms in the
-  tested command and `FUNC` actual forms, including `ZADD16(1,ADDI(2,3))`-style
+  tested command and `FUNC` actual forms, including `ADD16(1,ADDI(2,3))`-style
   integer cases and `FADD(1.5,FADD(2.25,3.25))` float cases.
 - V1 integer arrays are explicit base element plus count, e.g. `A%(0),N`.
 - Native routine V1 formals support `%`, `$`, and plain C64 BASIC float
@@ -326,7 +308,7 @@ resident parsing/return handling for selected nested expression forms:
 - Command and `FUNC` returns can be consumed by the tested BASIC ROM wrappers
   `ABS(ADDI(1,6)-10)` and `LEFT$(GREET("READY"),2)`.
 - Numeric actuals for commands and `FUNC` calls accept one extra wrapper pair,
-  as in `ADDI(1,(2+4))`, `ZADD16(1,(2+4))`, and `ADDI((1+2),(3+4))`.
+  as in `ADDI(1,(2+4))`, `ADD16(1,(2+4))`, and `ADDI((1+2),(3+4))`.
 - Fully recursive ReadyBASIC terms inside other ReadyBASIC actual lists remain
   future work.
 
@@ -349,8 +331,8 @@ ReadyBASIC installs an additional eval-vector hook at `$030A/$030B`. The hook
 recognizes a small allow-list of expression-safe command calls and selected
 numeric/string `FUNC` calls.
 
-- Command expressions: `ZECHO1()`, `ZADD16(a,b)`, `ZHIDDENRAM(s$)`,
-  `ZSUMNUMARRAY(a%(0),n)`, `BUFMAKE(n)`, `ZTEMPSCRATCH(n)`, and `SCRCAP()`
+- Command expressions: `ECHO1()`, `ADD16(a,b)`, `HIDDENRAM(s$)`,
+  `SUMNUMARRAY(a%(0),n)`, `BUFMAKE(n)`, `TEMPSCRATCH(n)`, and `SCRCAP()`
   return integers or handles; `UPPER(s$)` and `LOWER(s$)` return strings.
 - Parenthesized routine syntax: `PROC NAME(P%,S$)`, `FUNC NAME(S$)`, and
   `EXEC NAME(actuals...)` for non-empty argument lists.

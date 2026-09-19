@@ -39,23 +39,24 @@ their source is retained verbatim rather than silently changed for this guide.
 
 The normal graphics, immediate SID sound, input and memory commands are already
 registered when ReadyBASIC starts. Their code is fetched from assigned REU
-resources into command slots as needed; no `ZMODLD` is needed for them.
+resources into command slots as needed; no `LDMOD` is needed for them.
 
-Disk packages are SEQ files. `ZMODLD("RBM.MEDIA",M%)` registers eight media
+Disk packages are SEQ files. `LDMOD("RBM.MEDIA",M%)` registers eight media
 commands and returns their count in M%. It keeps package code/descriptors in
 REU, not the BASIC program area. The package is loaded only when requested.
 `RBM.SAMPLE1`, `RBM.SAMPLE2` and `RBM.SAMPLE3` are developer proofs of module,
 span and replacement-overlay dispatch; they are not prerequisites for media.
 Use module packages built with the matching ReadyBASIC executable.
 
-The sample packages are intrusive developer tests: their fixed descriptor
-offsets replace some built-in commands in the current registry. Run them in a
-separate session, not before normal graphics/media examples. The media package
-uses otherwise unused descriptor slots and does not have that overlap.
+`PAUSE` and `LDMOD` are built in. The scalar, array and slot/overlay proofs
+are disk-only examples with plain names. RBTEST1/RBPROC1 load sample1 on line 5.
+Sample1 and sample2 coexist; sample3 replaces their demo entries while preserving
+all production and media commands. See the generated inventory below and the
+[sample module guide](../src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md).
 
-The current loaders use **drive 8** and logical file 14. Do not open file 14
-yourself while loading resources. A D71 setup that keeps modules on drive 9
-needs deliberate media placement; these commands do not accept a device argument.
+The loaders use **drive 8**. LDMOD uses logical file 1; media resource loading
+uses logical file 14. Keep those channels available while loading. These commands
+do not accept a device argument.
 
 ## New built-in commands
 
@@ -111,7 +112,7 @@ with a live music player unless that competition for the voices is intentional.
 
 ```basic
 10 memcap(36864)
-20 zmodld("rbm.media",m%)
+20 ldmod("rbm.media",m%)
 30 mustune("rb.summer"):musplay(1)
 40 print "music runs while basic works"
 50 get a$:if a$="" then 50
@@ -175,33 +176,18 @@ or command registrations. Existing example sources are reproduced in full.
 
 | Command | Form and purpose |
 | --- | --- |
-| `ZECHO1` | `ZECHO1(P%)` — return the integer proof value. |
-| `ZADD16` | `ZADD16(A,B,R%) or R%=ZADD16(A,B)` — add integer arguments. |
 | `UPPER` | `UPPER(S$,T$) or T$=UPPER(S$)` — uppercase a bounded string. |
 | `LOWER` | `LOWER(S$,T$) or T$=LOWER(S$)` — lowercase a bounded string. |
-| `ZHIDDENRAM` | `ZHIDDENRAM(S$,R%)` — exercise string input in the under-ROM worker. |
-| `ZSUMNUMARRAY` | `ZSUMNUMARRAY(A%(0),N,R%)` — sum N integer elements. |
-| `ZRANGENUMARRAY` | `ZRANGENUMARRAY(START,COUNT,A%(0))` — write an integer range into an array. |
 | `BUFMAKE` | `BUFMAKE(BYTES,H%)` — allocate a persistent REU buffer handle, rounded to pages. |
 | `BUFFILL` | `BUFFILL(H%,BYTE)` — fill a REU buffer. |
 | `BUFDROP` | `BUFDROP(H%)` — release a persistent resource handle. |
-| `ZTEMPSCRATCH` | `ZTEMPSCRATCH(BYTES,R%)` — allocate/free temporary workspace and return its page count. |
-| `ZFAIL` | `ZFAIL(CODE,R%)` — deliberately raise a ReadyBASIC error to test output clearing. |
 | `MEMAVL` | `MEMAVL()` — report live BASIC free memory. |
 | `SCRCAP` | `SCRCAP(H%)` — capture text and color as a typed REU screen handle. |
 | `FADD` | `FADD(A,B,R) or R=FADD(A,B)` — BASIC floating-point addition. |
-| `ZPAUSE` | `ZPAUSE(JIFFIES)` — wait for the requested number of clock ticks. |
+| `PAUSE` | `PAUSE(UNITS)` — busy-loop delay using the low byte; duration depends on CPU speed. |
 | `ERRCODE` | `ERRCODE() or ERRCODE(E%)` — last ReadyBASIC runtime error code. |
 | `ERRLINE` | `ERRLINE() or ERRLINE(L%)` — last ReadyBASIC error line, zero for direct mode. |
-| `ZSLOT0` | `ZSLOT0(R%)` — developer proof of slot/span/overlay dispatch; returns a diagnostic integer. |
-| `ZSLOT1` | `ZSLOT1(R%)` — developer proof of slot/span/overlay dispatch; returns a diagnostic integer. |
-| `ZSLOT2` | `ZSLOT2(R%)` — developer proof of slot/span/overlay dispatch; returns a diagnostic integer. |
-| `ZSPAN` | `ZSPAN(R%)` — developer proof of slot/span/overlay dispatch; returns a diagnostic integer. |
-| `ZOVL1` | `ZOVL1(R%)` — developer proof of slot/span/overlay dispatch; returns a diagnostic integer. |
-| `ZOVL2` | `ZOVL2(R%)` — developer proof of slot/span/overlay dispatch; returns a diagnostic integer. |
-| `ZCPYRST` | `ZCPYRST()` — reset overlay-copy instrumentation. |
-| `ZCOPY` | `ZCOPY()` — inspect overlay-copy instrumentation. |
-| `ZMODLD` | `ZMODLD(NAME$,N%)` — stream/register a SEQ command package; N% receives descriptor count. |
+| `LDMOD` | `LDMOD(NAME$,N%)` — stream/register a SEQ command package; N% receives descriptor count. |
 | `GFXMODE` | `GFXMODE(MODE$), M%=GFXMODE()` — set/query TEXT, HIRES, MBITMAP, TILE or MTILE. |
 | `GFXTEXT` | `GFXTEXT()` — restore normal text display. |
 | `GFXCLEAR` | `GFXCLEAR(C)` — clear visible screen/color and applicable bitmap memory. |
@@ -276,56 +262,79 @@ or command registrations. Existing example sources are reproduced in full.
 
 ## Developer sample-module commands
 
-These are dispatch/overlay proofs, not prerequisites for media. Load one with
-`ZMODLD("RBM.SAMPLE1",N%)` (or SAMPLE2/SAMPLE3). Call each as
-`NAME(R%)` or `R%=NAME()`. The sample descriptors intentionally use fixed
-registry offsets now occupied by built-ins: sample1 at $1500, sample2
-at $1600 and sample3 at $1700. They replace existing commands in the
-session; do not load them in a normal graphics/media program. Restart
-ReadyBASIC cold to restore the original registry. Media instead uses
-eight otherwise unused slots beginning at $1C20.
+The scalar, array, scratch-allocation and slot/overlay examples are disk-only.
+Their names have no Z prefix. PAUSE and LDMOD remain built in.
+`LDMOD("RBM.SAMPLE1",N%)` returns 12; SAMPLE2 returns 7 and SAMPLE3 returns 32.
+Load sample1 before running RBTEST1/RBPROC1 or typing the scalar examples.
+Those two programs also load it on line 5 when RUN.
+Sample1 and sample2 coexist. Sample3 replaces their demo registry entries
+and supplies its own COPY/CPYRST commands alongside 30 stateful entries.
+Reload sample1/sample2 when returning to those examples. All packages preserve
+the production commands and media registry; there are 49 distinct demo names
+and 51 package entries because COPY/CPYRST occur in two packages.
+
+Media occupies core-bank $1A40-$1B3F. Sample1 uses $1B40-$1CBF;
+sample2 uses $1CC0-$1D9F; sample3 uses $1B40-$1F3F.
+All disk payloads and the runtime must be rebuilt together.
 
 | Package | Command | Diagnostic behavior |
 | --- | --- | --- |
-| sample1 | `ZDM1` | Return 61; slot 1 proof |
-| sample2 | `ZDM2S` | Return 74; slots 1+2 span proof |
-| sample2 | `ZDOV1` | Return 72; slot 2 overlay 1 |
-| sample2 | `ZDOV2` | Return 73; slot 2 overlay 2 |
-| sample3 | `ZSAA` | Stateful diagnostic, submodule 6, overlay 1; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZSAB` | Stateful diagnostic, submodule 6, overlay 1; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZSBA` | Stateful diagnostic, submodule 6, overlay 2; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZSBB` | Stateful diagnostic, submodule 6, overlay 2; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZSCA` | Stateful diagnostic, submodule 6, overlay 3; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZSCB` | Stateful diagnostic, submodule 6, overlay 3; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZSDA` | Stateful diagnostic, submodule 6, overlay 4; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZSDB` | Stateful diagnostic, submodule 6, overlay 4; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZSEA` | Stateful diagnostic, submodule 6, overlay 5; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZSEB` | Stateful diagnostic, submodule 6, overlay 5; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTAA` | Stateful diagnostic, submodule 7, overlay 1; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTAB` | Stateful diagnostic, submodule 7, overlay 1; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTBA` | Stateful diagnostic, submodule 7, overlay 2; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTBB` | Stateful diagnostic, submodule 7, overlay 2; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTCA` | Stateful diagnostic, submodule 7, overlay 3; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTCB` | Stateful diagnostic, submodule 7, overlay 3; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTDA` | Stateful diagnostic, submodule 7, overlay 4; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTDB` | Stateful diagnostic, submodule 7, overlay 4; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTEA` | Stateful diagnostic, submodule 7, overlay 5; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZTEB` | Stateful diagnostic, submodule 7, overlay 5; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUAA` | Stateful diagnostic, submodule 8, overlay 1; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUAB` | Stateful diagnostic, submodule 8, overlay 1; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUBA` | Stateful diagnostic, submodule 8, overlay 2; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUBB` | Stateful diagnostic, submodule 8, overlay 2; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUCA` | Stateful diagnostic, submodule 8, overlay 3; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUCB` | Stateful diagnostic, submodule 8, overlay 3; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUDA` | Stateful diagnostic, submodule 8, overlay 4; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUDB` | Stateful diagnostic, submodule 8, overlay 4; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUEA` | Stateful diagnostic, submodule 8, overlay 5; paired A/B entrypoints share overlay-local state |
-| sample3 | `ZUEB` | Stateful diagnostic, submodule 8, overlay 5; paired A/B entrypoints share overlay-local state |
+| sample1 | `CPYRST` | reset overlay-copy instrumentation. |
+| sample1 | `COPY` | inspect overlay-copy instrumentation. |
+| sample1 | `ECHO1` | return the integer proof value. |
+| sample1 | `ADD16` | add integer arguments. |
+| sample1 | `HIDDENRAM` | exercise string input in the under-ROM worker. |
+| sample1 | `SUMNUMARRAY` | sum N integer elements. |
+| sample1 | `RANGENUMARRAY` | write an integer range into an array. |
+| sample1 | `TEMPSCRATCH` | allocate/free temporary workspace and return its page count. |
+| sample1 | `FAIL` | deliberately raise a ReadyBASIC error to test output clearing. |
+| sample1 | `SLOT0` | Return 30; slot/span/overlay dispatch proof |
+| sample1 | `SLOT1` | Return 31; slot/span/overlay dispatch proof |
+| sample1 | `DM1` | Return 61; slot/span/overlay dispatch proof |
+| sample2 | `SLOT2` | Return 32; slot/span/overlay dispatch proof |
+| sample2 | `SPAN` | Return 40; slot/span/overlay dispatch proof |
+| sample2 | `DM2S` | Return 74; slot/span/overlay dispatch proof |
+| sample2 | `OVL1` | Return 51; slot/span/overlay dispatch proof |
+| sample2 | `DOV1` | Return 72; slot/span/overlay dispatch proof |
+| sample2 | `OVL2` | Return 52; slot/span/overlay dispatch proof |
+| sample2 | `DOV2` | Return 73; slot/span/overlay dispatch proof |
+| sample3 | `CPYRST` | reset overlay-copy instrumentation. |
+| sample3 | `COPY` | inspect overlay-copy instrumentation. |
+| sample3 | `S6AA` | Stateful diagnostic, submodule 6, overlay 1; paired A/B entrypoints share overlay-local state |
+| sample3 | `S6AB` | Stateful diagnostic, submodule 6, overlay 1; paired A/B entrypoints share overlay-local state |
+| sample3 | `S6BA` | Stateful diagnostic, submodule 6, overlay 2; paired A/B entrypoints share overlay-local state |
+| sample3 | `S6BB` | Stateful diagnostic, submodule 6, overlay 2; paired A/B entrypoints share overlay-local state |
+| sample3 | `S6CA` | Stateful diagnostic, submodule 6, overlay 3; paired A/B entrypoints share overlay-local state |
+| sample3 | `S6CB` | Stateful diagnostic, submodule 6, overlay 3; paired A/B entrypoints share overlay-local state |
+| sample3 | `S6DA` | Stateful diagnostic, submodule 6, overlay 4; paired A/B entrypoints share overlay-local state |
+| sample3 | `S6DB` | Stateful diagnostic, submodule 6, overlay 4; paired A/B entrypoints share overlay-local state |
+| sample3 | `S6EA` | Stateful diagnostic, submodule 6, overlay 5; paired A/B entrypoints share overlay-local state |
+| sample3 | `S6EB` | Stateful diagnostic, submodule 6, overlay 5; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7AA` | Stateful diagnostic, submodule 7, overlay 1; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7AB` | Stateful diagnostic, submodule 7, overlay 1; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7BA` | Stateful diagnostic, submodule 7, overlay 2; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7BB` | Stateful diagnostic, submodule 7, overlay 2; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7CA` | Stateful diagnostic, submodule 7, overlay 3; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7CB` | Stateful diagnostic, submodule 7, overlay 3; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7DA` | Stateful diagnostic, submodule 7, overlay 4; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7DB` | Stateful diagnostic, submodule 7, overlay 4; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7EA` | Stateful diagnostic, submodule 7, overlay 5; paired A/B entrypoints share overlay-local state |
+| sample3 | `S7EB` | Stateful diagnostic, submodule 7, overlay 5; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8AA` | Stateful diagnostic, submodule 8, overlay 1; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8AB` | Stateful diagnostic, submodule 8, overlay 1; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8BA` | Stateful diagnostic, submodule 8, overlay 2; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8BB` | Stateful diagnostic, submodule 8, overlay 2; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8CA` | Stateful diagnostic, submodule 8, overlay 3; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8CB` | Stateful diagnostic, submodule 8, overlay 3; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8DA` | Stateful diagnostic, submodule 8, overlay 4; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8DB` | Stateful diagnostic, submodule 8, overlay 4; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8EA` | Stateful diagnostic, submodule 8, overlay 5; paired A/B entrypoints share overlay-local state |
+| sample3 | `S8EB` | Stateful diagnostic, submodule 8, overlay 5; paired A/B entrypoints share overlay-local state |
 
-Sample3 tests whether overlay-local state is retained when residency is
-reused and reset when another image replaces it. It is not persistent
-application storage. Exact payloads come from
-`build_support/build_readybasic_disk_modules.py`.
+Sample3 tests whether overlay-local state survives reuse and resets after
+another image replaces it. It is temporary state, rather than application storage.
+Workers live in `src/apps/readybasic/sample_low.s`; packaging and generated
+slot/overlay payloads are in `build_support/build_readybasic_disk_modules.py`.
 
 ## Packaging by profile
 
@@ -335,19 +344,19 @@ binary image has been rebuilt. Example counts exclude applications/utilities.
 | Profile | Example PRGs | Disk packages |
 | --- | ---: | --- |
 | `precog-d81-rsdebug` | 27 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
-| `precog-d81` | 44 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3`, `rbm.media` |
-| `precog-dual-d64` | 1 |  |
+| `precog-d81` | 44 | `rbm.media`, `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
+| `precog-dual-d64` | 1 | `rbm.sample1` |
 | `precog-dual-d71-rsdebug` | 41 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
 | `precog-dual-d71` | 41 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
 | `precog-kung-fu-flash-2-d81` | 41 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
-| `precog-solo-d64-a` | 1 |  |
-| `precog-solo-d64-b` | 1 |  |
-| `precog-solo-d64-c` | 1 |  |
-| `precog-solo-d64-d` | 1 |  |
-| `precog-solo-d64-e-rsdebug` | 1 |  |
-| `precog-solo-d64-e` | 1 |  |
+| `precog-solo-d64-a` | 1 | `rbm.sample1` |
+| `precog-solo-d64-b` | 1 | `rbm.sample1` |
+| `precog-solo-d64-c` | 1 | `rbm.sample1` |
+| `precog-solo-d64-d` | 1 | `rbm.sample1` |
+| `precog-solo-d64-e-rsdebug` | 1 | `rbm.sample1` |
+| `precog-solo-d64-e` | 1 | `rbm.sample1` |
 | `precog-solo-d64-readybasic` | 41 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
-| `precog-ultimate` | 44 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3`, `rbm.media` |
+| `precog-ultimate` | 44 | `rbm.media`, `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
 
 EasyFlash preloads the runtime from CRT, but its companion data disk does
 not currently package this BASIC example/media collection. Supplying the
@@ -435,7 +444,7 @@ Plot a hires grid and diagonal, waiting for a key before exit.
 
 [Original source](../src/apps/readybasic/rbgfx02_hires_plot.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PLOT`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `PLOT`.
 
 Disk name: `RBGFX02`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -454,7 +463,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 110 plot(i,i,1)
 120 next i
 130 print "grid and diagonal"
-140 zpause(30)
+140 pause(30)
 150 get a$:if a$="" then 140
 160 gfxtext():print "rbgfx02 complete"
 ```
@@ -465,7 +474,7 @@ Draw intersecting hires line fans and restore text after a key.
 
 [Original source](../src/apps/readybasic/rbgfx03_hires_lines.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`.
 
 Disk name: `RBGFX03`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -482,7 +491,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 90 next x
 100 line(0,199,319,0,1)
 110 print "fan lines"
-120 zpause(30)
+120 pause(30)
 130 get a$:if a$="" then 120
 140 gfxtext():print "rbgfx03 complete"
 ```
@@ -493,7 +502,7 @@ Compare rectangle outlines with filled boxes.
 
 [Original source](../src/apps/readybasic/rbgfx04_rects.bas).
 
-Commands used: `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `RECT`, `ZPAUSE`.
+Commands used: `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `RECT`.
 
 Disk name: `RBGFX04`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -509,7 +518,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 80 line(0,0,319,199,1)
 90 line(0,199,319,0,1)
 100 print "outline and filled rects"
-110 zpause(30)
+110 pause(30)
 120 get a$:if a$="" then 110
 130 gfxtext():print "rbgfx04 complete"
 ```
@@ -520,7 +529,7 @@ Read a plotted pixel, its neighbor, then the cleared pixel with PNT.
 
 [Original source](../src/apps/readybasic/rbgfx05_point_read.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PLOT`, `PNT`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `PLOT`, `PNT`.
 
 Disk name: `RBGFX05`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -537,7 +546,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 90 plot(40,40,0)
 100 pnt(40,40,c%)
 110 print "after clear";c%
-120 zpause(30)
+120 pause(30)
 130 get a$:if a$="" then 120
 140 gfxtext():print "rbgfx05 complete"
 ```
@@ -571,7 +580,7 @@ Draw multicolor lines and pixels using the immediate primitive color encoding.
 
 [Original source](../src/apps/readybasic/rbgfx07_mbitmap.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PLOT`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PLOT`.
 
 Disk name: `RBGFX07`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -587,7 +596,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 80 plot(x,100,55)
 90 next x
 100 print "multicolor bitmap register path"
-110 zpause(30)
+110 pause(30)
 120 get a$:if a$="" then 110
 130 gfxtext():print "rbgfx07 complete"
 ```
@@ -598,7 +607,7 @@ Use plot/rectangle primitives on character cells in tile mode.
 
 [Original source](../src/apps/readybasic/rbgfx08_tile.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PLOT`, `PNT`, `RECT`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `PLOT`, `PNT`, `RECT`.
 
 Disk name: `RBGFX08`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -615,7 +624,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 90 rect(2,2,37,22,5)
 100 pnt(3,3,a%)
 110 print "tile cells use plot";a%
-120 zpause(30)
+120 pause(30)
 130 get a$:if a$="" then 120
 140 gfxtext():print "rbgfx08 complete"
 ```
@@ -700,7 +709,7 @@ Combine hires lines, boxes, sprite positioning and pixel readback.
 
 [Original source](../src/apps/readybasic/rbgfx12_showcase.bas).
 
-Commands used: `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PNT`, `RECT`, `SPRMOVE`, `SPRSET`, `ZPAUSE`.
+Commands used: `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PNT`, `RECT`, `SPRMOVE`, `SPRSET`.
 
 Disk name: `RBGFX12`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -718,7 +727,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 100 pnt(160,100,p%)
 110 print "center pnt";p%
 120 print "showcase done"
-130 zpause(30)
+130 pause(30)
 140 get a$:if a$="" then 130
 150 gfxtext():print "rbgfx12 complete"
 ```
@@ -729,7 +738,7 @@ Construct sprite art row by row and step through positions/colors with keys.
 
 [Original source](../src/apps/readybasic/rbgfx13_sprite_steps.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `SPRMOVE`, `SPRROW`, `SPRSET`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `SPRMOVE`, `SPRROW`, `SPRSET`.
 
 Disk name: `RBGFX13`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -762,13 +771,13 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 250 sprrow(1,18,255,255,0):sprrow(1,19,0,0,0)
 260 sprrow(1,20,255,255,0)
 270 sprmove(0,60,70):sprmove(1,190,110)
-280 zpause(30)
+280 pause(30)
 290 get a$:if a$="" then 280
 300 sprmove(0,120,88):sprmove(1,145,110)
-310 zpause(30)
+310 pause(30)
 320 get a$:if a$="" then 310
 330 sprset(0,1,5,0):sprset(1,1,3,0)
-340 zpause(30)
+340 pause(30)
 350 get a$:if a$="" then 340
 360 gfxtext():print "sprite demo done"
 ```
@@ -779,7 +788,7 @@ Compare circle outline with the current rectangular FCIRCLE placeholder.
 
 [Original source](../src/apps/readybasic/rbgfx14_phase2_prims.bas).
 
-Commands used: `CIRCLE`, `FCIRCLE`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `RECT`, `ZPAUSE`.
+Commands used: `CIRCLE`, `FCIRCLE`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `RECT`.
 
 Disk name: `RBGFX14`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -792,7 +801,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 50 fcircle(210,92,26,1)
 60 rect(180,58,240,126,1)
 70 line(20,170,300,170,1)
-80 zpause(30)
+80 pause(30)
 90 get a$:if a$="" then 80
 100 gfxtext():print "phase2 prims done"
 ```
@@ -803,7 +812,7 @@ Write visible character/color tiles using TILE and CHARAT.
 
 [Original source](../src/apps/readybasic/rbgfx15_phase2_tiles.bas).
 
-Commands used: `CHARAT`, `GFXTEXT`, `TILE`, `ZPAUSE`.
+Commands used: `CHARAT`, `GFXTEXT`, `PAUSE`, `TILE`.
 
 Disk name: `RBGFX15`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -821,7 +830,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 100 charat(12,7,160,4):charat(13,7,160,5)
 110 charat(10,9,160,6):charat(11,9,160,7)
 120 charat(12,9,160,8):charat(13,9,160,9)
-130 zpause(30)
+130 pause(30)
 140 get a$:if a$="" then 130
 150 gfxtext():print "phase2 tiles done"
 ```
@@ -832,7 +841,7 @@ Step through sprite expansion, multicolor, priority and color controls.
 
 [Original source](../src/apps/readybasic/rbgfx16_phase2_sprite_ctrl.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `SPRCOL`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRROW`, `SPRSET`, `SPRSIZE`, `TILE`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `SPRCOL`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRROW`, `SPRSET`, `SPRSIZE`, `TILE`.
 
 Disk name: `RBGFX16`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -858,16 +867,16 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 180 sprrow(0,16,3,255,192):sprrow(0,17,1,255,128)
 190 sprrow(0,18,0,255,0):sprrow(0,19,0,126,0)
 200 sprrow(0,20,0,60,0)
-210 zpause(30)
+210 pause(30)
 220 get a$:if a$="" then 210
 230 sprsize(0,1,1):sprmove(0,134,92)
-240 zpause(30)
+240 pause(30)
 250 get a$:if a$="" then 240
 260 sprmco(5,14)
 270 sprmul(0,1)
 280 sprpri(0,1)
 290 sprcol(0,3)
-300 zpause(30)
+300 pause(30)
 310 get a$:if a$="" then 300
 320 gfxtext():print "phase2 sprites done"
 ```
@@ -878,7 +887,7 @@ Outline coordinate-pair polygons held in BASIC integer arrays.
 
 [Original source](../src/apps/readybasic/rbgfx17_poly_array.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `POLY`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `POLY`.
 
 Disk name: `RBGFX17`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -896,7 +905,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 100 q%(8)=175:q%(9)=95
 110 poly(q%(0),5,1)
 120 line(20,175,250,175,1)
-130 zpause(30)
+130 pause(30)
 140 get a$:if a$="" then 130
 150 gfxtext():print "phase3 done 17"
 ```
@@ -907,7 +916,7 @@ Fill convex polygons held in BASIC integer arrays.
 
 [Original source](../src/apps/readybasic/rbgfx18_fpoly_array.bas).
 
-Commands used: `FPOLY`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `RECT`, `ZPAUSE`.
+Commands used: `FPOLY`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `RECT`.
 
 Disk name: `RBGFX18`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -924,7 +933,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 90 q%(4)=230:q%(5)=150:q%(6)=175:q%(7)=115
 100 fpoly(q%(0),4,1)
 110 rect(18,22,252,176,1)
-120 zpause(30)
+120 pause(30)
 130 get a$:if a$="" then 120
 140 gfxtext():print "phase3 done 18"
 ```
@@ -935,7 +944,7 @@ Allocate REU point buffers, set indexed vertices and draw outlines.
 
 [Original source](../src/apps/readybasic/rbgfx19_poly_reu.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PBMAKE`, `PBUFSET`, `POLYH`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `PBMAKE`, `PBUFSET`, `POLYH`.
 
 Disk name: `RBGFX19`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -954,7 +963,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 110 pbufset(g%,2,190,150)
 120 polyh(g%,3,1)
 130 rem demo
-140 zpause(30)
+140 pause(30)
 150 get a$:if a$="" then 140
 160 gfxtext():print "phase3 done 19"
 ```
@@ -965,7 +974,7 @@ Fill REU-backed polygons alongside lines and rectangles.
 
 [Original source](../src/apps/readybasic/rbgfx20_fpoly_reu_showcase.bas).
 
-Commands used: `FPOLYH`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PBMAKE`, `PBUFSET`, `RECT`, `ZPAUSE`.
+Commands used: `FPOLYH`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PBMAKE`, `PBUFSET`, `RECT`.
 
 Disk name: `RBGFX20`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -985,7 +994,7 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 120 fpolyh(g%,5,1)
 130 line(15,182,250,182,1):rect(176,24,252,170,1)
 140 rem demo
-150 zpause(30)
+150 pause(30)
 160 get a$:if a$="" then 150
 170 gfxtext():print "phase3 done 20"
 ```
@@ -996,7 +1005,7 @@ Exercise immediate primitives and color slots in multicolor bitmap mode.
 
 [Original source](../src/apps/readybasic/rbgfx21_mbitmap_prims.bas).
 
-Commands used: `CIRCLE`, `FBOX`, `FCIRCLE`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PLOT`, `RECT`, `ZPAUSE`.
+Commands used: `CIRCLE`, `FBOX`, `FCIRCLE`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PLOT`, `RECT`.
 
 Disk name: `RBGFX21`.
 Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -1014,7 +1023,7 @@ Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-ku
 100 for x=0 to 159 step 8
 110 plot(x,170,16+(x/8)-int((x/8)/15)*15)
 120 next x
-130 zpause(30)
+130 pause(30)
 140 get a$:if a$="" then 130
 150 gfxtext():print "mbitmap prims done"
 ```
@@ -1025,7 +1034,7 @@ Check that PNT returns multicolor pixel slot codes 1, 2 and 3.
 
 [Original source](../src/apps/readybasic/rbgfx22_mbitmap_point.bas).
 
-Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PLOT`, `PNT`, `ZPAUSE`.
+Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PLOT`, `PNT`.
 
 Disk name: `RBGFX22`.
 Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -1039,7 +1048,7 @@ Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-ku
 60 line(12,80,148,80,17)
 70 line(12,92,148,124,34)
 80 line(12,150,148,108,51)
-90 zpause(30)
+90 pause(30)
 100 get a$:if a$="" then 90
 110 gfxtext():print chr$(147);"mbitmap pnt:";a%;b%;c%
 120 if a%<>1 or b%<>2 or c%<>3 then print "?mbitmap pnt fail":stop
@@ -1341,7 +1350,7 @@ Orbital Echoes: two cached scenes, READY sprites, palette-safe lines and PAL mus
 
 [Original source](../src/apps/readybasic/rbgfxsnddemo.bas).
 
-Commands used: `BORDER`, `BUFDROP`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `MCBG`, `MCFILE`, `MCLINE`, `MEMCAP`, `MUSDROP`, `MUSPLAY`, `MUSTUNE`, `SPRFILE`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRSET`, `SPRSIZE`, `ZMODLD`.
+Commands used: `BORDER`, `BUFDROP`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `LDMOD`, `MCBG`, `MCFILE`, `MCLINE`, `MEMCAP`, `MUSDROP`, `MUSPLAY`, `MUSTUNE`, `SPRFILE`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRSET`, `SPRSIZE`.
 
 Disk name: `RBGFXSNDDEMO`.
 Profiles: `precog-d81`, `precog-ultimate`.
@@ -1370,7 +1379,7 @@ Profiles: `precog-d81`, `precog-ultimate`.
 190 dim s%(511),sy%(335)
 200 dim lx%(1023),ly%(1023),rx%(1023),ry%(1023)
 210 exec prep
-220 zmodld("rbm.media",m%):h%=gfxsurf("mbitmap")
+220 ldmod("rbm.media",m%):h%=gfxsurf("mbitmap")
 222 g%=gfxsurf("mbitmap")
 225 print "orbital show running"
 230 exec scene
@@ -1483,12 +1492,13 @@ Structured routine/function and typed-result regression examples, including nest
 
 [Original source](../src/apps/readybasic/rbproc1.bas).
 
-Commands used: `FADD`, `UPPER`, `ZADD16`.
+Commands used: `ADD16`, `FADD`, `LDMOD`, `UPPER`.
 
 Disk name: `RBPROC1`.
 Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
 
 ```basic
+5 ldmod("rbm.sample1",m%)
 10 print "procfunc"
 20 exec show0
 30 exec showi(7)
@@ -1507,16 +1517,16 @@ Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-ku
 160 t$=greet("expr"):print t$
 170 a%=idi(9):print "ret%";a%
 180 t$=ids("ok"):print "ret$ ";t$
-190 print "cex";abs(zadd16(1,6)-10)
+190 print "cex";abs(add16(1,6)-10)
 200 t$=upper("mix"):print "cs$ ";t$
 210 print "fpex";addi(1,2+4)
-220 a%=zadd16(3,10):print "fcmd";a%
+220 a%=add16(3,10):print "fcmd";a%
 230 t$=funcupper("yo"):print "fs$ ";t$
 240 print "fminus";addi(1,6)-10
 250 print "fnabs";abs(addi(1,6)-10)
 260 t$=left$(greet("ready"),2):print "fnleft ";t$
 270 print "fparen";addi(1,(2+4))
-280 print "cparen";zadd16(1,(2+4))
+280 print "cparen";add16(1,(2+4))
 290 print "dparen";addi((1+2),(3+4))
 300 print "fadd";fadd(1.2,2.3)
 310 f=fadd(1.5,fadd(2.25,3.25)):print "nfadd";f
@@ -1647,7 +1657,7 @@ Hear separate triangle, saw, pulse and noise tones using immediate SID control.
 
 [Original source](../src/apps/readybasic/rbsnd01_sid_basics.bas).
 
-Commands used: `ADSR`, `PULSE`, `SIDOFF`, `SIDRST`, `SOUND`, `VOL`, `ZPAUSE`.
+Commands used: `ADSR`, `PAUSE`, `PULSE`, `SIDOFF`, `SIDRST`, `SOUND`, `VOL`.
 
 Disk name: `RBSND01`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -1659,13 +1669,13 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 40 print "then noise. each tone is separate."
 50 sidrst():vol(15):adsr(1,0,5,12,3)
 60 print:print "triangle tone"
-70 sound(1,4455,45,16):zpause(20)
+70 sound(1,4455,45,16):pause(20)
 80 print "saw tone"
-90 sound(1,4455,45,32):zpause(20)
+90 sound(1,4455,45,32):pause(20)
 100 print "pulse tone"
-110 pulse(1,2048):sound(1,4455,45,64):zpause(20)
+110 pulse(1,2048):sound(1,4455,45,64):pause(20)
 120 print "noise burst"
-130 sound(1,4455,45,128):zpause(20)
+130 sound(1,4455,45,128):pause(20)
 140 sidoff()
 150 print:print "rbsnd01 done"
 ```
@@ -1676,7 +1686,7 @@ Change pulse width and envelope, gating voices explicitly.
 
 [Original source](../src/apps/readybasic/rbsnd02_voice_state.bas).
 
-Commands used: `ADSR`, `FRQ`, `GATE`, `PULSE`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`, `ZPAUSE`.
+Commands used: `ADSR`, `FRQ`, `GATE`, `PAUSE`, `PULSE`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`.
 
 Disk name: `RBSND02`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -1690,10 +1700,10 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 60 sidrst():vol(15)
 70 print:print "wide pulse, soft release"
 80 adsr(1,0,9,12,6):pulse(1,3072):frq(1,4455)
-90 wave(1,64):gate(1,1):zpause(70):gate(1,0):zpause(50)
+90 wave(1,64):gate(1,1):pause(70):gate(1,0):pause(50)
 100 print "narrow pulse, snappier release"
 110 adsr(1,0,3,15,2):pulse(1,512):frq(1,5612)
-120 wave(1,64):gate(1,1):zpause(70):gate(1,0):zpause(50)
+120 wave(1,64):gate(1,1):pause(70):gate(1,0):pause(50)
 130 sidoff()
 140 print:print "rbsnd02 done"
 ```
@@ -1704,7 +1714,7 @@ Play a chromatic scale with the PAL pitch table.
 
 [Original source](../src/apps/readybasic/rbsnd03_notes.bas).
 
-Commands used: `ADSR`, `GATE`, `PITCH`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`, `ZPAUSE`.
+Commands used: `ADSR`, `GATE`, `PAUSE`, `PITCH`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`.
 
 Disk name: `RBSND03`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -1717,9 +1727,9 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 50 print "one octave higher."
 60 sidrst():vol(15):adsr(1,0,5,12,3):wave(1,32)
 70 for n=0 to 11
-80 pitch(1,n,4):gate(1,1):zpause(22):gate(1,0):zpause(6)
+80 pitch(1,n,4):gate(1,1):pause(22):gate(1,0):pause(6)
 90 next n
-100 pitch(1,0,5):gate(1,1):zpause(45):gate(1,0)
+100 pitch(1,0,5):gate(1,1):pause(45):gate(1,0)
 110 sidoff()
 120 print:print "rbsnd03 done"
 ```
@@ -1730,7 +1740,7 @@ Compare low-pass, band-pass and high-pass SID filtering.
 
 [Original source](../src/apps/readybasic/rbsnd04_filter.bas).
 
-Commands used: `ADSR`, `FILTER`, `FRQ`, `GATE`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`, `ZPAUSE`.
+Commands used: `ADSR`, `FILTER`, `FRQ`, `GATE`, `PAUSE`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`.
 
 Disk name: `RBSND04`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -1744,11 +1754,11 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 60 sidrst():vol(15):adsr(1,0,9,15,4)
 70 frq(1,2230):wave(1,33)
 80 print:print "low-pass sweep-ish steps"
-90 for c=150 to 950 step 200:filter(c,8,1,1):zpause(35):next c
+90 for c=150 to 950 step 200:filter(c,8,1,1):pause(35):next c
 100 print "band-pass"
-110 filter(700,12,1,2):zpause(90)
+110 filter(700,12,1,2):pause(90)
 120 print "high-pass"
-130 filter(700,12,1,4):zpause(90)
+130 filter(700,12,1,4):pause(90)
 140 gate(1,0):sidoff()
 150 print:print "rbsnd04 done"
 ```
@@ -1759,7 +1769,7 @@ Set frequency, waveform and packed envelopes together with VOICE.
 
 [Original source](../src/apps/readybasic/rbsnd05_voice_batch.bas).
 
-Commands used: `GATE`, `PULSE`, `SIDOFF`, `SIDRST`, `VOICE`, `VOL`, `WAVE`, `ZPAUSE`.
+Commands used: `GATE`, `PAUSE`, `PULSE`, `SIDOFF`, `SIDRST`, `VOICE`, `VOL`, `WAVE`.
 
 Disk name: `RBSND05`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -1772,11 +1782,11 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 50 print "ad=$09 and sr=$c3 in decimal."
 60 sidrst():vol(15):pulse(1,2048)
 70 print:print "one batch command starts the voice"
-80 voice(1,4455,65,9,195):zpause(80)
+80 voice(1,4455,65,9,195):pause(80)
 90 print "now raw ctrl turns gate off"
-100 wave(1,64):zpause(50)
+100 wave(1,64):pause(50)
 110 print "same voice, higher frquency"
-120 voice(1,6672,65,9,195):zpause(80)
+120 voice(1,6672,65,9,195):pause(80)
 130 gate(1,0):sidoff()
 140 print:print "rbsnd05 done"
 ```
@@ -1787,7 +1797,7 @@ Combine three voices into a chord, then a bass/high-voice pair.
 
 [Original source](../src/apps/readybasic/rbsnd06_three_voice.bas).
 
-Commands used: `ADSR`, `GATE`, `PITCH`, `PULSE`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`, `ZPAUSE`.
+Commands used: `ADSR`, `GATE`, `PAUSE`, `PITCH`, `PULSE`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`.
 
 Disk name: `RBSND06`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
@@ -1801,11 +1811,11 @@ Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog
 60 adsr(1,0,5,12,4):adsr(2,0,5,12,4):adsr(3,0,5,12,4)
 70 print:print "c major chord"
 80 pitch(1,0,4):pitch(2,4,4):pitch(3,7,4)
-90 wave(1,33):wave(2,33):wave(3,33):zpause(100)
-100 gate(1,0):gate(2,0):gate(3,0):zpause(45)
+90 wave(1,33):wave(2,33):wave(3,33):pause(100)
+100 gate(1,0):gate(2,0):gate(3,0):pause(45)
 110 print "pulse bass plus high saw"
 120 pulse(1,1536):pitch(1,7,2):pitch(2,2,5)
-130 wave(1,65):wave(2,33):zpause(110)
+130 wave(1,65):wave(2,33):pause(110)
 140 gate(1,0):gate(2,0):sidoff()
 150 print:print "rbsnd06 done"
 ```
@@ -1816,7 +1826,7 @@ Load the media module and vetted PSID; play, halt, restart and release its arena
 
 [Original source](../src/apps/readybasic/rbsnd07_psid.bas).
 
-Commands used: `BORDER`, `MEMCAP`, `MUSDROP`, `MUSHALT`, `MUSPLAY`, `MUSTUNE`, `ZMODLD`.
+Commands used: `BORDER`, `LDMOD`, `MEMCAP`, `MUSDROP`, `MUSHALT`, `MUSPLAY`, `MUSTUNE`.
 
 Disk name: `RBSND07`.
 Profiles: `precog-d81`, `precog-ultimate`.
@@ -1873,7 +1883,7 @@ Profiles: `precog-d81`, `precog-ultimate`.
 1070 endp
 
 1200 proc assets()
-1210   zmodld("rbm.media",m%)
+1210   ldmod("rbm.media",m%)
 1220   print "module commands:";m%
 1250   rem psid player and data at $9200
 1260   mustune("rb.summer")
@@ -1920,7 +1930,7 @@ Historical single-scene clock-paced music/graphics demo; use the newer combined 
 
 [Original source](../src/apps/readybasic/rbsnd08_neon.bas).
 
-Commands used: `BORDER`, `BUFDROP`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `MCFILE`, `MCLINE`, `MEMCAP`, `MUSDROP`, `MUSPLAY`, `MUSTUNE`, `SPRFILE`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRSET`, `SPRSIZE`, `ZMODLD`.
+Commands used: `BORDER`, `BUFDROP`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `LDMOD`, `MCFILE`, `MCLINE`, `MEMCAP`, `MUSDROP`, `MUSPLAY`, `MUSTUNE`, `SPRFILE`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRSET`, `SPRSIZE`.
 
 Historical source retained; no current profile disk entry. Use the newer combined demos.
 
@@ -1943,7 +1953,7 @@ Historical source retained; no current profile disk entry. Use the newer combine
 150 print "summer vacation: shiru / cc by 3.0"
 160 print "preparing picture, sprites and music"
 170 print "q quits / image renews every 30 sec"
-180 zmodld("rbm.media",m%)
+180 ldmod("rbm.media",m%)
 190 dim s%(255)
 200 for i=0 to 255
 210 s%(i)=int(100*sin(i*0.0245436926))
@@ -2044,20 +2054,21 @@ Small command-expression, integer-output and uppercase-string smoke test.
 
 [Original source](../src/apps/readybasic/rbtest1.bas).
 
-Commands used: `UPPER`, `ZADD16`, `ZECHO1`.
+Commands used: `ADD16`, `ECHO1`, `LDMOD`, `UPPER`.
 
 Disk name: `RBTEST1`.
 Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d64`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-a`, `precog-solo-d64-b`, `precog-solo-d64-c`, `precog-solo-d64-d`, `precog-solo-d64-e-rsdebug`, `precog-solo-d64-e`, `precog-solo-d64-readybasic`, `precog-ultimate`.
 
 ```basic
-10 zecho1(p%)
+5 ldmod("rbm.sample1",m%)
+10 echo1(p%)
 20 print "readybasic";p%
 30 for i=1 to 3
-40 zadd16(i,10,a%)
+40 add16(i,10,a%)
 50 print "loop";a%
 60 next i
-70 print "expradd";zadd16(5,6)
-80 b=zadd16(8,9):print "exprass";b
+70 print "expradd";add16(5,6)
+80 b=add16(8,9):print "exprass";b
 90 s$="ready":t$=upper(s$):print "exprstr";t$
 ```
 
@@ -2067,7 +2078,7 @@ Ultimate Orbital Echoes: the same media lifecycle, with safe-speed disk loading 
 
 [Original source](../src/apps/readybasic/rbugfxsnddemo.bas).
 
-Commands used: `BORDER`, `BUFDROP`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `MCBG`, `MCFILE`, `MCLINE`, `MEMCAP`, `MUSDROP`, `MUSPLAY`, `MUSTUNE`, `SPRFILE`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRSET`, `SPRSIZE`, `USPEED`, `ZMODLD`.
+Commands used: `BORDER`, `BUFDROP`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `LDMOD`, `MCBG`, `MCFILE`, `MCLINE`, `MEMCAP`, `MUSDROP`, `MUSPLAY`, `MUSTUNE`, `SPRFILE`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRSET`, `SPRSIZE`, `USPEED`.
 
 Disk name: `RBUGFXSNDDEMO`.
 Profiles: `precog-d81`, `precog-ultimate`.
@@ -2100,7 +2111,7 @@ Profiles: `precog-d81`, `precog-ultimate`.
 200 dim lx%(1023),ly%(1023),rx%(1023),ry%(1023)
 210 exec prep
 215 uspeed(1)
-220 zmodld("rbm.media",m%):h%=gfxsurf("mbitmap")
+220 ldmod("rbm.media",m%):h%=gfxsurf("mbitmap")
 222 g%=gfxsurf("mbitmap")
 225 print "orbital show running"
 230 exec scene

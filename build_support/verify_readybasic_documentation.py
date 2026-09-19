@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 
+from build_readybasic_disk_modules import sample_inventory
 from build_readme_app_assets import write_header, write_source
 from readme_lite_common import parse_markdown_lite
 
@@ -59,7 +60,7 @@ def main():
     parsed.feed(rendered)
     expected_rows = {'implemented-built-in-inventory': len(names) + 1,
                      'the-eight-on-demand-media-commands': 9,
-                     'developer-sample-module-commands': 35,
+                     'developer-sample-module-commands': 1 + sum(map(len, sample_inventory().values())),
                      'every-example-at-a-glance': len(list(app.glob('*.bas'))) + 1}
     for section, count in expected_rows.items():
         if parsed.rows.get(section) != count:
@@ -83,7 +84,7 @@ def main():
         for file in (header, source):
             if file.read_bytes() != (ROOT / 'src/generated' / file.name).read_bytes():
                 raise SystemExit(f'Stale generated Read.Me data: {file.name}; rebuild through run.sh')
-    print(f'ReadyBASIC documentation verified: {len(names)} built-ins, 8 media, 34 sample commands, '
+    print(f'ReadyBASIC documentation verified: {len(names)} built-ins, 8 media, 49 distinct sample commands, '
           f'{len(list(app.glob("*.bas")))} verbatim source listings and all internal anchors')
     print(f'Read.Me generated content verified: {len(pages)} pages, 38 columns, 18 lines per page')
 

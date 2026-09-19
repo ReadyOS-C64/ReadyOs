@@ -474,7 +474,7 @@ baseline generated programs; the newer media demos have dedicated tests.
 
 Start with the [complete examples and command guide](docs/readybasic_reference.md)
 ([formatted HTML](docs/readybasic_reference.html)). The built-in graphics/sound
-commands need no module load. Use `ZMODLD("RBM.MEDIA",M%)` for its eight media
+commands need no module load. Use `LDMOD("RBM.MEDIA",M%)` for its eight media
 commands; reserve memory with `MEMCAP(36864)` before creating strings or loading
 the certified PAL tune. `USPEED` and `UMHZ` are built-in Ultimate-specific
 commands, not part of the media package. The standard demo avoids them.

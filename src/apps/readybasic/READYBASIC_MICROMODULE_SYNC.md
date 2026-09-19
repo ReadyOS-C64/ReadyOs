@@ -1,5 +1,25 @@
 # ReadyBASIC Micromodule Sync Ledger
 
+## 0.5 RC2 command packaging
+
+`LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay
+proof workers are now disk-only, with no Z prefix. Load `RBM.SAMPLE1` before
+using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL,
+SLOT0, SLOT1, CPYRST or COPY. `RBM.SAMPLE2` supplies SLOT2, SPAN and OVL1/OVL2.
+The packages register 12, 7 and 32 descriptors respectively; sample3 includes
+COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo
+entries, preserving production and media commands. See
+[the complete package contract](READYBASIC_SAMPLE_MODULES.md) for names,
+placement, dependencies and examples.
+
+Cold registration has 83 built-ins and 45 empty slots. Media occupies core
+`$1A40–$1B3F`; the demo area is `$1B40–$1F3F`; SCRPUT stays at `$1FE0`.
+Demo code and the built-in SPANPACK have been removed from the runtime image.
+PAUSE retains its CPU-dependent busy loop; its argument is not a clock tick.
+The loader remains in module 2, slot 1. BASIC still starts at `$2AC1` with
+30013 empty free bytes.
+
+
 ReadyBASIC now duplicates a small amount of ReadyOS REU and shim knowledge in assembler. Keep this file updated whenever either side changes.
 
 ## September 2026 synchronization additions
@@ -8,8 +28,8 @@ The fixed slot boundaries remain unchanged. The bridge now extends through
 `$C1FF`, whose final byte holds media lifetime state; do not put persistent state
 in disposable command slots or `$C4xx` warm-resume staging. Media executes across
 slots 1+2, code-bank `$8000`, logical module 6/submodule 24. Its eight descriptors
-start at core-bank `$1C20`, after built-in UMHZ at `$1C00`. Cold registration has
-98 real descriptors and 30 filler slots. The IRQ driver runs separately at
+start at core-bank `$1A40`, after built-in UMHZ at `$1A20`. Cold registration has
+83 real descriptors and 45 filler slots. The IRQ driver runs separately at
 `$9000` in MEMCAP-reserved RAM. These are synchronization requirements, not just
 documentation addresses: rebuild disk modules with the matching runtime.
 
@@ -127,7 +147,7 @@ helper area. BASIC free bytes are unchanged, and the 2K helper area still has
 - `$0A00`: zero-page snapshot.
 - `$0B00`: stack-page snapshot.
 - `$0C00-$0CFF`: heap page bitmap, 192 pages tracked in REU.
-- `$1000-$1FFF`: 128 command descriptor slots, 32 bytes each. Slots 1-16 are current front commands, slots 17-127 are filler, and slot 128 is `SCRPUT`.
+- `$1000-$1FFF`: 128 command descriptor slots, 32 bytes each. Slots 1-82 are built-ins, slots 83-127 are cold-empty, and slot 128 is `SCRPUT`.
 - `$2000-$3FFF`: reserved common/system expansion space.
 - `$3000`: current hidden-helper warm-resume shadow (`$06A8` bytes).
 - `$4000-$FFFF`: typed handle heap, 48KB.
@@ -138,25 +158,22 @@ scans eight descriptors locally, and copies the matched descriptor into
 
 ## Assigned Code Bank Command Code Layout
 
-- `$0000-$06CD`: built-in module 1/default slot-0 payload, fetched to `$A800-$AECD`.
-- `$06CE-$0908`: built-in module 2 slot-1 proof and streaming `ZMODLD` loader payload, fetched to `$B000-$B23A`.
-- `$0909-$091D`: built-in module 2 slot-2 proof payload, fetched to `$B800-$B814`.
-- `$091E-$0932`: built-in two-slot span proof payload, fetched to `$B000-$B014`.
-- `$0933-$0947`: built-in slot-2 overlay proof 1, fetched to `$B815-$B829`.
-- `$0948-$095C`: built-in slot-2 overlay proof 2, fetched to `$B82A-$B83E`.
-- `$1500-$151F`: `rbm.sample1` disk-module descriptor sample for `ZDM1`.
-- `$1600-$165F`: `rbm.sample2` disk-module descriptor samples for `ZDM2S`, `ZDOV1`, and `ZDOV2`.
-- `$1700-$1ABF`: `rbm.sample3` disk-module descriptors for `ZSAA`-`ZUEB`.
-- `$3000-$3014`, `$3200-$3214`, `$3300-$3314`, `$3400-$3414`: current small disk-module proof payloads.
-- `$3800-$463C`: `rbm.sample3` payload records for `ZSAA`-`ZUEB`.
+Production base payloads occupy code-bank `$0000` onward; replacement
+GFXSPR/INPUTEV/GFXPOLY/GFXDL/GFXTILE/SIDCORE images use `$5000/$5800/$6000/$6800/$7000/$7800`.
+Media uses `$8000-$8FFF`. Disk-only scalar examples use `$A000`, slot-1 examples
+`$A800`, sample2 `$B000/$B100/$B200/$B300`, and sample3 `$C000-$CE3C`.
+There is no built-in span proof payload.
 
-Cold entry prestashes these bytes once. Warm resume reuses the REU copies and
-must not reread `CMDPACK`, `HIDLOAD`, `BRLOAD`, or `REGSEED` from BASIC-owned
-load-image addresses.
+Descriptors are in the **core bank**: media `$1A40-$1B3F`, sample1
+`$1B40-$1CBF`, sample2 `$1CC0-$1D9F`, or alternate sample3 `$1B40-$1F3F`.
+Sample3 replaces demo entries; all production/media entries remain intact.
+See [the generated memory diagrams](../../../docs/readybasic_memory_diagrams.html)
+for measured payload lengths, and [the sample guide](READYBASIC_SAMPLE_MODULES.md)
+for module/submodule identifiers and package dependencies.
 
-Native `PROC`/`FUNC` routines are deliberately absent from the assigned code bank: their
-bodies are BASIC program text, found by scanning the stored program during
-`EXEC`. They add no descriptor slots and no command-code bank bytes.
+Cold entry prestashes production payloads once. LDMOD supplies disk examples
+on demand. Warm resume reuses REU copies and must not reread BASIC-owned seed
+addresses. PROC/FUNC bodies remain BASIC text rather than module payloads.
 
 ## Current Nested-Term Sync Points
 
@@ -166,7 +183,7 @@ ROM-consumable command/`FUNC` returns and one-wrapper numeric actual parsing.
 - Proven targeted nested return forms: `ABS(ADDI(1,6)-10)` and
   `LEFT$(GREET("READY"),2)`.
 - Proven one-wrapper numeric actual forms: `ADDI(1,(2+4))`,
-  `ZADD16(1,(2+4))`, and `ADDI((1+2),(3+4))`.
+  `ADD16(1,(2+4))`, and `ADDI((1+2),(3+4))`.
 
 ## Current Float-Term Sync Points
 
@@ -188,9 +205,9 @@ dispatch wrappers over existing descriptors.
 - Bare statement commands use the same descriptor/signature parser as expression
   commands.
 - Command expressions cover scalar/string-result signatures such as
-  `ZECHO1()`, `ZADD16(a,b)`, `UPPER(s$)`, `LOWER(s$)`, `ZHIDDENRAM(s$)`,
-  `BUFMAKE(n)`, `ZTEMPSCRATCH(n)`, `SCRCAP()`, and
-  `ZSUMNUMARRAY(a%(0),n)`.
+  `ECHO1()`, `ADD16(a,b)`, `UPPER(s$)`, `LOWER(s$)`, `HIDDENRAM(s$)`,
+  `BUFMAKE(n)`, `TEMPSCRATCH(n)`, `SCRCAP()`, and
+  `SUMNUMARRAY(a%(0),n)`.
 - String and numeric `FUNC` calls return through `RET`, `RET%`, or `RET$`.
   `FUNC` is expression-only; calls scan the body, execute simple scalar
   assignments before `RET`, and evaluate

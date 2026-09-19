@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ReadyBASIC disk sample modules — 0.5 RC2</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="../../../docs/readyos_docs.css" />
+</head>
+<body>
+<!-- READYOS-DOC-STATUS:START -->
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current 0.5 RC2 disk-only demo commands, package loading and slot/overlay layout.</aside>
+<!-- READYOS-DOC-STATUS:END -->
+<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#readybasic-disk-sample-modules-0.5-rc2" id="toc-readybasic-disk-sample-modules-0.5-rc2">ReadyBASIC disk sample modules — 0.5 RC2</a>
+<ul>
+<li><a href="#loading-and-using-examples" id="toc-loading-and-using-examples">Loading and using examples</a></li>
+<li><a href="#sample1-scalar-array-temporary-memory-and-two-slots" id="toc-sample1-scalar-array-temporary-memory-and-two-slots">Sample1: scalar, array, temporary memory and two slots</a></li>
+<li><a href="#sample2-slot-2-a-two-slot-span-and-replacement-overlays" id="toc-sample2-slot-2-a-two-slot-span-and-replacement-overlays">Sample2: slot 2, a two-slot span and replacement overlays</a></li>
+<li><a href="#sample3-stateful-overlays" id="toc-sample3-stateful-overlays">Sample3: stateful overlays</a></li>
+<li><a href="#registry-and-payload-layout" id="toc-registry-and-payload-layout">Registry and payload layout</a></li>
+<li><a href="#space-recovered" id="toc-space-recovered">Space recovered</a></li>
+<li><a href="#verification" id="toc-verification">Verification</a></li>
+</ul></li>
+</ul>
+</nav></details>
+<section id="readybasic-disk-sample-modules-0.5-rc2" class="level1">
+<h1>ReadyBASIC disk sample modules — 0.5 RC2</h1>
+<p><code>LDMOD</code> and <code>PAUSE</code> are built in. All former Z-prefixed proof commands are disk-only examples with the prefix removed. A cold ReadyBASIC session has 83 production command descriptors and 45 empty registry slots. Demo worker code is absent from the built-in <code>LOWPACK</code>, slot-1/slot-2 packs and overlays; the built-in <code>SPANPACK</code> has been removed.</p>
+<section id="loading-and-using-examples" class="level2">
+<h2>Loading and using examples</h2>
+<pre class="basic"><code>5 LDMOD(&quot;RBM.SAMPLE1&quot;,M%)
+10 PRINT &quot;COMMANDS&quot;;M%
+20 PRINT &quot;ECHO&quot;;ECHO1()
+30 PRINT &quot;SUM&quot;;ADD16(7,8)</code></pre>
+<p><code>LDMOD(NAME$)</code> or <code>LDMOD(NAME$,N%)</code> streams an RBM SEQ package from device 8 into the assigned REU banks. The returned integer is the descriptor count: 12 for sample1, 7 for sample2, 32 for sample3, or 8 for media. Loader failures return diagnostic values 240–245. Use the disk name without a host <code>.seq</code> suffix, for example <code>RBM.SAMPLE1</code>. Packages and runtime must be rebuilt together because the scalar sample resolves private runtime helper addresses from the matching link's <code>obj/readybasic.labels</code>.</p>
+<p><code>RBTEST1</code> and <code>RBPROC1</code> load sample1 on line 5. Interactive examples and probes must load the package before their first demo command. <code>NEW</code> retains registered modules. A cold ReadyBASIC start restores the production registry.</p>
+<p><code>PAUSE(UNITS)</code> preserves the existing busy-loop behavior: it uses the low byte of the argument (0–255), and elapsed time depends on CPU speed. It does not measure KERNAL jiffies. Graphics and sound samples can use it immediately.</p>
+</section>
+<section id="sample1-scalar-array-temporary-memory-and-two-slots" class="level2">
+<h2>Sample1: scalar, array, temporary memory and two slots</h2>
+<p>Logical module 7 contains submodule 32 in slot 0 and submodule 33 in slot 1. The slot-0 assembly is <code>sample_low.s</code>; its allocator proof carries its own bitmap helpers. Resident code still owns argument parsing and result commit. The disk worker for ECHO1 returns the value; there is no resident ECHO1 precomputation shortcut.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Command</th>
+<th>Form and result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ECHO1</code></td>
+<td><code>ECHO1(P%)</code> or <code>P%=ECHO1()</code> returns 1.</td>
+</tr>
+<tr>
+<td><code>ADD16</code></td>
+<td><code>ADD16(A,B,R%)</code> or <code>R%=ADD16(A,B)</code> returns the 16-bit sum.</td>
+</tr>
+<tr>
+<td><code>HIDDENRAM</code></td>
+<td><code>HIDDENRAM(S$,R%)</code> or <code>R%=HIDDENRAM(S$)</code> sums uppercase-normalized string bytes under BASIC ROM.</td>
+</tr>
+<tr>
+<td><code>SUMNUMARRAY</code></td>
+<td><code>SUMNUMARRAY(A%(0),N,R%)</code> or <code>R%=SUMNUMARRAY(A%(0),N)</code> sums consecutive integer elements.</td>
+</tr>
+<tr>
+<td><code>RANGENUMARRAY</code></td>
+<td><code>RANGENUMARRAY(START,COUNT,A%(0))</code> writes consecutive integers to the output array.</td>
+</tr>
+<tr>
+<td><code>TEMPSCRATCH</code></td>
+<td><code>TEMPSCRATCH(BYTES,R%)</code> or <code>R%=TEMPSCRATCH(BYTES)</code> allocates/frees temporary bitmap pages and returns their count. No persistent handle remains.</td>
+</tr>
+<tr>
+<td><code>FAIL</code></td>
+<td><code>FAIL(CODE,R%)</code> clears R% and deliberately reports the requested runtime error; zero maps to 127.</td>
+</tr>
+<tr>
+<td><code>SLOT0</code></td>
+<td><code>SLOT0()</code> returns 30 from slot 0.</td>
+</tr>
+<tr>
+<td><code>CPYRST</code></td>
+<td><code>CPYRST()</code> clears the byte-sized diagnostic payload-copy counter and returns 0.</td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td><code>COPY()</code> returns the diagnostic counter, including a copy needed to load the counter helper itself.</td>
+</tr>
+<tr>
+<td><code>SLOT1</code></td>
+<td><code>SLOT1()</code> returns 31 from slot 1.</td>
+</tr>
+<tr>
+<td><code>DM1</code></td>
+<td><code>DM1()</code> returns 61 from the same slot-1 payload.</td>
+</tr>
+</tbody>
+</table>
+<p>The no-argument integer examples also accept an explicit output variable, such as <code>SLOT1(R%)</code>. COPY/CPYRST are instrumentation for these controlled examples, not an application-wide performance accounting API. The runtime also uses that scratch byte in graphics paths.</p>
+</section>
+<section id="sample2-slot-2-a-two-slot-span-and-replacement-overlays" class="level2">
+<h2>Sample2: slot 2, a two-slot span and replacement overlays</h2>
+<p>Logical module 8 supplies seven descriptors. Load sample1 and sample2 together to demonstrate all three slots and the copy counter.</p>
+<table>
+<thead>
+<tr>
+<th>Commands</th>
+<th>Submodule / overlay</th>
+<th>Runtime placement</th>
+<th>Return values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SLOT2</code></td>
+<td>34 / 0</td>
+<td>Slot 2</td>
+<td>32</td>
+</tr>
+<tr>
+<td><code>SPAN</code>, <code>DM2S</code></td>
+<td>35 / 0</td>
+<td>Slots 1+2</td>
+<td>40, 74</td>
+</tr>
+<tr>
+<td><code>OVL1</code>, <code>DOV1</code></td>
+<td>36 / 1</td>
+<td>Slot 2</td>
+<td>51, 72</td>
+</tr>
+<tr>
+<td><code>OVL2</code>, <code>DOV2</code></td>
+<td>36 / 2</td>
+<td>Slot 2</td>
+<td>52, 73</td>
+</tr>
+</tbody>
+</table>
+<p>The paired names in each row share one payload image. Calling the other entry in that image tests reuse; switching overlay replaces the slot-2 image.</p>
+</section>
+<section id="sample3-stateful-overlays" class="level2">
+<h2>Sample3: stateful overlays</h2>
+<p>Logical module 9 supplies COPY and CPYRST plus 30 stateful commands. Each name starts with its submodule: <code>S6</code>, <code>S7</code>, or <code>S8</code>; then overlay <code>A</code>–<code>E</code> and entry <code>A</code> or <code>B</code>. This avoids creating the BASIC <code>TAB(</code> token when removing the old prefix. For example, <code>S6AA()</code> and <code>S6AB()</code> are two entrypoints in the same image.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Family</th>
+<th>Commands</th>
+<th>Submodule</th>
+<th>Placement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S6</td>
+<td>S6AA, S6AB, S6BA, S6BB, S6CA, S6CB, S6DA, S6DB, S6EA, S6EB</td>
+<td>6</td>
+<td>Slot 2</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>S7AA, S7AB, S7BA, S7BB, S7CA, S7CB, S7DA, S7DB, S7EA, S7EB</td>
+<td>7</td>
+<td>Slot 2</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>S8AA, S8AB, S8BA, S8BB, S8CA, S8CB, S8DA, S8DB, S8EA, S8EB</td>
+<td>8</td>
+<td>Slots 1+2</td>
+</tr>
+</tbody>
+</table>
+<p>Each overlay has one shared counter byte. Reusing the image increments it; reloading resets it. For example, S6AA returns 4 on first load and S6AB returns 6 when called next without replacement. Replacing the image and calling S6AA again returns 4.</p>
+</section>
+<section id="registry-and-payload-layout" class="level2">
+<h2>Registry and payload layout</h2>
+<p>Sample1 and sample2 coexist. Sample3 replaces their demo entries and brings its own counter commands. Reload sample1/sample2 before returning to their examples. Loading sample1 after sample3 does not unregister the remaining sample3 entries; only the new package's descriptor range is replaced. All these packages preserve the production and media command entries.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Core-bank registry range</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>$1000–$1A3F</code></td>
+<td>82 contiguous built-in commands, UPPER through UMHZ.</td>
+</tr>
+<tr>
+<td><code>$1A40–$1B3F</code></td>
+<td>Eight media descriptors.</td>
+</tr>
+<tr>
+<td><code>$1B40–$1CBF</code></td>
+<td>Twelve sample1 descriptors.</td>
+</tr>
+<tr>
+<td><code>$1CC0–$1D9F</code></td>
+<td>Seven sample2 descriptors.</td>
+</tr>
+<tr>
+<td><code>$1B40–$1F3F</code></td>
+<td>Alternate 32-descriptor sample3 set, replacing sample1/2.</td>
+</tr>
+<tr>
+<td><code>$1F40–$1FDF</code></td>
+<td>Five spare descriptors.</td>
+</tr>
+<tr>
+<td><code>$1FE0–$1FFF</code></td>
+<td>Built-in SCRPUT, retained at slot 128.</td>
+</tr>
+</tbody>
+</table>
+<p>Sample payloads use separate code-bank storage: slot-0 examples at <code>$A000</code>, slot-1 examples at <code>$A800</code>, sample2 images at <code>$B000/$B100/$B200/$B300</code>, and sample3 images at <code>$C000–$CE3C</code>. These are REU offsets, separate from their C64 execution addresses. Production overlays remain at <code>$5000–$7FFF</code> and media at <code>$8000–$8FFF</code>.</p>
+</section>
+<section id="space-recovered" class="level2">
+<h2>Space recovered</h2>
+<p>The built-in slot-0 payload shrinks from 2012 to 1620 bytes (392 bytes). Removing the slot/span/overlay sentinels saves another 105 packed bytes, and removing ECHO1 precomputation saves 35 resident bytes: 532 bytes of production code in total. The hardware-tested decimal-display fix adds 3 helper bytes, so the combined change saves 529 bytes. The fixed padded PRG remains 28674 bytes; BASIC still starts at $2AC1 with 30013 empty free bytes. Fifteen command slots become empty registry capacity for packages rather than increasing the BASIC workspace.</p>
+</section>
+<section id="verification" class="level2">
+<h2>Verification</h2>
+<p>Build through <code>/bin/bash ./run.sh --profile precog-d81 --build-only</code>. <code>verify_readybasic_plugin.py</code>, <code>verify_readybasic_media.py</code> and <code>verify_readybasic_samples.py</code> check the built layout without launching VICE. The sample checker can additionally run the compiled 6502 workers with <code>--workers</code> when Python's <code>py65</code> package is available. That checks worker results and state transitions; it does not replace full ReadyOS runtime tests.</p>
+<p>The ReadyBASIC probe scripts load the required samples and expect the current names/counts. <code>READYBASIC_GENERATE_PLAN_ONLY=1 READYBASIC_SKIP_BUILD=1</code> generates their YAML plans without starting or closing VICE. The physical C64 Ultimate adapter in <code>build_support/run_readybasic_c64u_suites.py</code> runs the same assertions through the Ultimate backend, using normal ReadyOS boot, an exact-path DMA-enabled <code>apps.cfg</code>, and video-only loading-completion gates. VICE is not started or stopped by this adapter.</p>
+<section id="physical-c64-ultimate-results-18-september-2026" class="level3">
+<h3>Physical C64 Ultimate results — 18 September 2026</h3>
+<p>Seven suites passed 225 assertions on a PAL C64 Ultimate at 1 MHz with 16 MB REU and firmware 3.14:</p>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr>
+<th>Suite</th>
+<th style="text-align: right;">Assertions passed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Module/overlay</td>
+<td style="text-align: right;">19</td>
+</tr>
+<tr>
+<td>Plugin commands, including built-in PAUSE before loading samples</td>
+<td style="text-align: right;">61</td>
+</tr>
+<tr>
+<td>Program</td>
+<td style="text-align: right;">18</td>
+</tr>
+<tr>
+<td>RBTEST1</td>
+<td style="text-align: right;">4</td>
+</tr>
+<tr>
+<td>REPEAT/label</td>
+<td style="text-align: right;">15</td>
+</tr>
+<tr>
+<td>Lifecycle</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr>
+<td>Full suite, including RBPROC1</td>
+<td style="text-align: right;">97</td>
+</tr>
+</tbody>
+</table>
+<p>The full suite was verified in two consecutive segments on the same boot. Its setup now loads the disk examples before ECHO1, and its retired-name test rejects ZADD16. After correcting the old test that incorrectly rejected ADD16, the affected scalar fixture was restored to <code>A%=15</code> before resuming. Every current assertion has a retained successful result; this was not a single uninterrupted full-suite run.</p>
+<p>The test image's <code>apps.cfg</code> enabled DMA and named its exact uploaded image: <code>/USB1/automation/readybasic-suites/8ef0343e/RBS8ef0343e.D81</code>. FTP readback matched the local disk image. The launcher's REU status record independently confirmed the same path, DMA-used flags <code>$1F</code>, and error zero. Temporary diagnostic RAM was restored byte-for-byte afterward.</p>
+<p>The stock Ultimate catalog exceeded D81 capacity. This test catalog omitted game2048, deminer and dizzy, retaining all ReadyBASIC packages and samples; these results do not certify the full stock Ultimate image. VICE was left untouched. Raw VICE monitor/hotkey suites were not run, and five CPU-register diagnostic dumps were omitted because the Ultimate backend cannot provide them. All assertions in the seven selected suites were retained.</p>
+<p>The hardware run also exposed a decimal-display bug: internal zeroes in the free-memory count printed as ones. The formatter now prints 30013 correctly; compiled formatter tests cover zero, internal zeroes and the 16-bit limit.</p>
+</section>
+</section>
+</section>
+</body>
+</html>
