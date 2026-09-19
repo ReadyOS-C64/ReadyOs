@@ -10,6 +10,6 @@
 100 q%(8)=175:q%(9)=95
 110 poly(q%(0),5,1)
 120 line(20,175,250,175,1)
-130 zpause(30)
+130 pause(30)
 140 get a$:if a$="" then 130
 150 gfxtext():print "phase3 done 17"

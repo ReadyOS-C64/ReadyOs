@@ -53,16 +53,36 @@ steps:
         - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
         - { label: shim_resident_c600, start: 0xC600, end: 0xC9FF }
 
+  - id: probe_00_builtin_pause
+    type: input.sequence
+    params:
+      keys: [80,65,85,83,69,40,48,41,58,80,65,85,83,69,40,49,41,58,80,82,73,78,84,32,34,80,65,85,83,69,32,79,75,34,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: assert_00_builtin_pause
+    type: assert.screen
+    params:
+      contains: "PAUSE OK"
+  - id: assert_00_pause_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,76,68,77,79,68,40,34,82,66,77,46,83,65,77,80,76,69,49,34,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: probe_01_ping
     type: input.sequence
     params:
-      keys: [90,69,67,72,79,49,40,80,37,41,13,80,82,73,78,84,32,34,90,69,67,72,79,34,59,80,37,13]
+      keys: [69,67,72,79,49,40,80,37,41,13,80,82,73,78,84,32,34,90,69,67,72,79,34,59,80,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_01_ping
     type: screen.capture
     params:
-      label: after_zecho1
+      label: after_echo1
   - id: assert_01_ping
     type: assert.screen
     params:
@@ -75,7 +95,7 @@ steps:
   - id: probe_02_add16
     type: input.sequence
     params:
-      keys: [65,37,61,90,65,68,68,49,54,40,53,44,49,48,41,13,80,82,73,78,84,32,34,65,68,68,34,59,65,37,13]
+      keys: [65,37,61,65,68,68,49,54,40,53,44,49,48,41,13,80,82,73,78,84,32,34,65,68,68,34,59,65,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_02_add16
@@ -86,7 +106,7 @@ steps:
   - id: probe_02a_if_then_direct
     type: input.sequence
     params:
-      keys: [80,37,61,48,13,73,70,32,49,32,84,72,69,78,32,80,37,61,90,65,68,68,49,54,40,48,44,49,41,13,80,82,73,78,84,32,34,73,70,68,73,82,34,59,80,37,13]
+      keys: [80,37,61,48,13,73,70,32,49,32,84,72,69,78,32,80,37,61,65,68,68,49,54,40,48,44,49,41,13,80,82,73,78,84,32,34,73,70,68,73,82,34,59,80,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_02a_if_then_direct
@@ -145,13 +165,13 @@ steps:
   - id: probe_05_hcrc_hidden
     type: input.sequence
     params:
-      keys: [72,37,61,90,72,73,68,68,69,78,82,65,77,40,34,65,66,34,41,13,80,82,73,78,84,32,34,90,72,73,68,68,69,78,82,65,77,34,59,72,37,13]
+      keys: [72,37,61,72,73,68,68,69,78,82,65,77,40,34,65,66,34,41,13,80,82,73,78,84,32,34,72,73,68,68,69,78,82,65,77,34,59,72,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_05_hcrc_hidden
     type: assert.screen
     params:
-      contains: "ZHIDDENRAM 131"
+      contains: "HIDDENRAM 131"
   - id: dump_05_hidden_worker
     type: dump.memory_ranges
     params:
@@ -160,7 +180,7 @@ steps:
   - id: probe_06_sumai
     type: input.sequence
     params:
-      keys: [68,73,77,32,65,37,40,51,41,13,65,37,40,48,41,61,49,58,65,37,40,49,41,61,50,58,65,37,40,50,41,61,51,13,83,37,61,90,83,85,77,78,85,77,65,82,82,65,89,40,65,37,40,48,41,44,51,41,13,80,82,73,78,84,32,34,83,85,77,34,59,83,37,13]
+      keys: [68,73,77,32,65,37,40,51,41,13,65,37,40,48,41,61,49,58,65,37,40,49,41,61,50,58,65,37,40,50,41,61,51,13,83,37,61,83,85,77,78,85,77,65,82,82,65,89,40,65,37,40,48,41,44,51,41,13,80,82,73,78,84,32,34,83,85,77,34,59,83,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_06_sumai
@@ -171,7 +191,7 @@ steps:
   - id: probe_07_rangeai
     type: input.sequence
     params:
-      keys: [68,73,77,32,82,37,40,52,41,13,90,82,65,78,71,69,78,85,77,65,82,82,65,89,40,55,44,52,44,82,37,40,48,41,41,13,80,82,73,78,84,32,34,82,65,78,71,69,34,59,82,37,40,48,41,59,82,37,40,51,41,13]
+      keys: [68,73,77,32,82,37,40,52,41,13,82,65,78,71,69,78,85,77,65,82,82,65,89,40,55,44,52,44,82,37,40,48,41,41,13,80,82,73,78,84,32,34,82,65,78,71,69,34,59,82,37,40,48,41,59,82,37,40,51,41,13]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_07_rangeai
@@ -428,7 +448,7 @@ steps:
   - id: probe_11_tempscratch
     type: input.sequence
     params:
-      keys: [84,37,61,90,84,69,77,80,83,67,82,65,84,67,72,40,53,49,51,41,13,80,82,73,78,84,32,34,84,69,77,80,34,59,84,37,13]
+      keys: [84,37,61,84,69,77,80,83,67,82,65,84,67,72,40,53,49,51,41,13,80,82,73,78,84,32,34,84,69,77,80,34,59,84,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_11_tempscratch
@@ -439,7 +459,7 @@ steps:
   - id: probe_12_fail_clears_output
     type: input.sequence
     params:
-      keys: [88,37,61,57,57,13,90,70,65,73,76,40,55,44,88,37,41,13]
+      keys: [88,37,61,57,57,13,70,65,73,76,40,55,44,88,37,41,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_12_fail_error
@@ -567,7 +587,7 @@ steps:
   - id: probe_13c_first_comma_rejected
     type: input.sequence
     params:
-      keys: [90,65,68,68,49,54,40,44,49,44,50,44,65,37,41,13]
+      keys: [65,68,68,49,54,40,44,49,44,50,44,65,37,41,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_13c_first_comma_rejected
@@ -578,7 +598,7 @@ steps:
   - id: probe_13d_missing_out_marker_rejected
     type: input.sequence
     params:
-      keys: [90,65,68,68,49,54,32,49,44,50,44,65,37,13]
+      keys: [65,68,68,49,54,32,49,44,50,44,65,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_13d_missing_out_marker_rejected
@@ -634,7 +654,7 @@ steps:
   - id: probe_16_registry_after_resume
     type: input.sequence
     params:
-      keys: [80,82,73,78,84,32,34,83,84,65,84,69,34,59,86,37,59,34,58,34,59,86,83,36,13,80,37,61,90,65,68,68,49,54,40,48,44,49,41,13,80,82,73,78,84,32,34,82,69,83,85,77,69,34,59,80,37,13]
+      keys: [80,82,73,78,84,32,34,83,84,65,84,69,34,59,86,37,59,34,58,34,59,86,83,36,13,80,37,61,65,68,68,49,54,40,48,44,49,41,13,80,82,73,78,84,32,34,82,69,83,85,77,69,34,59,80,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_16_registry_after_resume

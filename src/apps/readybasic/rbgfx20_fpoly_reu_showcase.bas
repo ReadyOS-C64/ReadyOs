@@ -12,6 +12,6 @@
 120 fpolyh(g%,5,1)
 130 line(15,182,250,182,1):rect(176,24,252,170,1)
 140 rem demo
-150 zpause(30)
+150 pause(30)
 160 get a$:if a$="" then 150
 170 gfxtext():print "phase3 done 20"

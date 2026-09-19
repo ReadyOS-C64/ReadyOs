@@ -18,15 +18,15 @@
 180 sprrow(0,16,3,255,192):sprrow(0,17,1,255,128)
 190 sprrow(0,18,0,255,0):sprrow(0,19,0,126,0)
 200 sprrow(0,20,0,60,0)
-210 zpause(30)
+210 pause(30)
 220 get a$:if a$="" then 210
 230 sprsize(0,1,1):sprmove(0,134,92)
-240 zpause(30)
+240 pause(30)
 250 get a$:if a$="" then 240
 260 sprmco(5,14)
 270 sprmul(0,1)
 280 sprpri(0,1)
 290 sprcol(0,3)
-300 zpause(30)
+300 pause(30)
 310 get a$:if a$="" then 300
 320 gfxtext():print "phase2 sprites done"

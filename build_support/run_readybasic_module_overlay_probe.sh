@@ -104,10 +104,16 @@ steps:
       text: "readybasic"
       wait_timeout_s: 180
       capture_label: readybasic_module_overlay_prompt
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT LDMOD("RBM.SAMPLE1")\rPRINT LDMOD("RBM.SAMPLE2")\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: builtin_overlay_bank_probe
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rMEMAVL()\rPRINT "SLOTS";ZSLOT0();"/";ZSLOT1();"/";ZSLOT2()\rPRINT "SPAN";ZSPAN()\rPRINT "OVL";ZOVL1();"/";ZOVL2()\rPRINT "CPY";ZCPYRST();"/";ZCOPY()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rMEMAVL()\rPRINT "SLOTS";SLOT0();"/";SLOT1();"/";SLOT2()\rPRINT "SPAN";SPAN()\rPRINT "OVL";OVL1();"/";OVL2()\rPRINT "CPY";CPYRST();"/";COPY()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.5
   - id: capture_builtin_overlay_bank_probe
@@ -129,13 +135,13 @@ steps:
   - id: rbm_sample1_2_probe
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rPRINT "LD1";ZMODLD("RBM.SAMPLE1")\rPRINT "DM1";ZDM1()\rPRINT "LD2";ZMODLD("RBM.SAMPLE2")\rPRINT "DM2";ZDM2S()\rPRINT "DOV";ZDOV1();"/";ZDOV2()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rPRINT "LD1";LDMOD("RBM.SAMPLE1")\rPRINT "DM1";DM1()\rPRINT "LD2";LDMOD("RBM.SAMPLE2")\rPRINT "DM2";DM2S()\rPRINT "DOV";DOV1();"/";DOV2()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.5
   - id: assert_ld1
     type: assert.screen
     params:
-      contains: "LD1 1"
+      contains: "LD1 12"
   - id: assert_dm1
     type: assert.screen
     params:
@@ -143,7 +149,7 @@ steps:
   - id: assert_ld2
     type: assert.screen
     params:
-      contains: "LD2 3"
+      contains: "LD2 7"
   - id: assert_dm2
     type: assert.screen
     params:
@@ -155,7 +161,7 @@ steps:
   - id: rbm_sample3_load
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rPRINT "LD3";ZMODLD("RBM.SAMPLE3")\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rPRINT "LD3";LDMOD("RBM.SAMPLE3")\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.5
   - id: capture_rbm_sample3_load
@@ -165,11 +171,11 @@ steps:
   - id: assert_ld3
     type: assert.screen
     params:
-      contains: "LD3 30"
+      contains: "LD3 32"
   - id: rbm_sample3_probe
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM RBM3 FIRST CALLS: EACH OVERLAY STATE STARTS AT ZERO AFTER LOAD\rPRINT "M3A";ZSAA();"/";ZSEB()\rPRINT "M3B";ZTAA();"/";ZTEB()\rPRINT "M3C";ZUAA();"/";ZUEB()\rMEMAVL()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM RBM3 FIRST CALLS: EACH OVERLAY STATE STARTS AT ZERO AFTER LOAD\rPRINT "M3A";S6AA();"/";S6EB()\rPRINT "M3B";S7AA();"/";S7EB()\rPRINT "M3C";S8AA();"/";S8EB()\rMEMAVL()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 2.0
   - id: capture_rbm_sample3
@@ -191,11 +197,11 @@ steps:
   - id: assert_free_same
     type: assert.screen
     params:
-      contains: "31113"
+      contains: "30013"
   - id: rbm_sample3_copy_same_overlay_probe
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM SAME OVERLAY: ZSAA LOADS, ZSAB REUSES RESIDENT IMAGE\rPRINT "R1";ZCPYRST()\rA=ZSAA()\rB=ZSAB()\rPRINT "S1";A;"/";B\rPRINT "C1";ZCOPY()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM SAME OVERLAY: S6AA LOADS, S6AB REUSES RESIDENT IMAGE\rPRINT "R1";CPYRST()\rA=S6AA()\rB=S6AB()\rPRINT "S1";A;"/";B\rPRINT "C1";COPY()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.5
   - id: capture_rbm_sample3_copy_same_overlay
@@ -213,7 +219,7 @@ steps:
   - id: rbm_sample3_copy_different_overlay_probe
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM DIFFERENT OVERLAY: ZSBA REPLACES ZSAA SLOT IMAGE\rPRINT "R2";ZCPYRST()\rA=ZSAA()\rB=ZSBA()\rC=ZSAA()\rPRINT "S2";A;"/";B;"/";C\rPRINT "C2";ZCOPY()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM DIFFERENT OVERLAY: S6BA REPLACES S6AA SLOT IMAGE\rPRINT "R2";CPYRST()\rA=S6AA()\rB=S6BA()\rC=S6AA()\rPRINT "S2";A;"/";B;"/";C\rPRINT "C2";COPY()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.5
   - id: capture_rbm_sample3_copy_different_overlay
@@ -231,7 +237,7 @@ steps:
   - id: rbm_sample3_copy_different_submodule_probe
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM DIFFERENT SUBMODULE: ZTAA REPLACES ZSAA SLOT IMAGE\rPRINT "R3";ZCPYRST()\rA=ZSAA()\rB=ZTAA()\rC=ZSAA()\rPRINT "S3";A;"/";B;"/";C\rPRINT "C3";ZCOPY()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM DIFFERENT SUBMODULE: S7AA REPLACES S6AA SLOT IMAGE\rPRINT "R3";CPYRST()\rA=S6AA()\rB=S7AA()\rC=S6AA()\rPRINT "S3";A;"/";B;"/";C\rPRINT "C3";COPY()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.5
   - id: capture_rbm_sample3_copy_different_submodule

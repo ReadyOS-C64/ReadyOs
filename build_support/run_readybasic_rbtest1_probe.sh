@@ -121,11 +121,11 @@ steps:
   - id: assert_list_line_10
     type: assert.screen
     params:
-      contains: "10 ZECHO1"
+      contains: "10 ECHO1"
   - id: assert_list_line_30
     type: assert.screen
     params:
-      contains: "40 ZADD16"
+      contains: "40 ADD16"
   - id: run_rbtest1
     type: input.sequence
     params:

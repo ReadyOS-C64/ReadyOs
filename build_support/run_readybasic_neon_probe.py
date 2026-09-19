@@ -52,7 +52,7 @@ def bitmap(name):
     add("monitor.command",name+"_cpu",command="raw: bank cpu")
 
 keys("prelude_program",'NEW\r'
-    '10 ZMODLD("RBM.MEDIA",M%):PRINT "IMAGE READY"\r'
+    '10 LDMOD("RBM.MEDIA",M%):PRINT "IMAGE READY"\r'
     '20 GFXMODE("MBITMAP"):GFXCLEAR(0):MCFILE("RB.NEON")\r'
     '30 H%=GFXSURF("MBITMAP"):GFXTGT(H%):GFXSYNC():GFXTGT(0)\r'
     '40 GET A$:IF A$<>"D" THEN 40\r'

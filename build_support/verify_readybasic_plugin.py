@@ -277,7 +277,7 @@ def main() -> None:
     require(r"^SIG_SCRCAP\s*=\s*14\b", asm, "SCRCAP signature must be registered")
     require(r"^SIG_SCRPUT\s*=\s*15\b", asm, "SCRPUT signature must be registered")
     require(r"^SIG_FADD\s*=\s*16\b", asm, "FADD signature must be registered")
-    require(r"^SIG_ZPAUSE\s*=\s*SIG_BUFFREE\b", asm, "ZPAUSE must reuse the one-integer parser signature")
+    require(r"^SIG_PAUSE\s*=\s*SIG_BUFFREE\b", asm, "PAUSE must reuse the one-integer parser signature")
     require(r"^RB_MODULE_GFX\s*=\s*3\b", asm, "graphics commands must use module id 3")
     require(r"^RB_MODULE_SID\s*=\s*4\b", asm, "sound commands must use module id 4")
     require(r"^RB_SUBMOD_GFXCORE\s*=\s*16\b", asm, "GFXCORE submodule must be registered")
@@ -322,7 +322,7 @@ def main() -> None:
             "FBOX must be the only public filled-rectangle command")
     require(r"CMD_GFXSPR\s+CMD_SPRSET,\s+SIG_SPRSET,\s+cmd_sprset,\s+\"SPRSET\"", asm,
             "SPRSET must be a built-in GFXSPR overlay command")
-    require(r"CMD_INPUTEV\s+CMD_JOY,\s+SIG_ZFAIL,\s+cmd_joy,\s+\"JOY\"", asm,
+    require(r"CMD_INPUTEV\s+CMD_JOY,\s+SIG_FAIL,\s+cmd_joy,\s+\"JOY\"", asm,
             "JOY must be a built-in INPUTEV overlay command")
     require(r"CMD_GFXPOLY\s+CMD_POLY,\s+SIG_POLY,\s+cmd_poly,\s+\"POLY\"", asm,
             "POLY must be a built-in GFXPOLY overlay command")
@@ -375,18 +375,18 @@ def main() -> None:
             + ", ".join(unsafe_names)
         )
     check_command_descriptor_layout(asm)
-    require(r"^CMD_ZMODLOAD\s*=\s*28\b", asm, "ZMODLOAD loader command id must stay stable")
-    require(r"CMD_SLOT1\s+CMD_ZMODLOAD,\s+SIG_ZHIDDENRAM,\s+cmd_zmodload,\s+\"ZMODLD\"", asm, "ZMODLD loader command must live in module 2 slot 1")
-    require(r"^K_OPEN\s*=\s*\$FFC0\b", asm, "ZMODLD must use streamed KERNAL file I/O")
-    require(r"^K_CHRIN\s*=\s*\$FFCF\b", asm, "ZMODLD must stream module bytes with CHRIN")
+    require(r"^CMD_LDMOD\s*=\s*28\b", asm, "LDMOD loader command id must stay stable")
+    require(r"CMD_SLOT1\s+CMD_LDMOD,\s+SIG_HIDDENRAM,\s+cmd_ldmod,\s+\"LDMOD\"", asm, "LDMOD loader command must live in module 2 slot 1")
+    require(r"^K_OPEN\s*=\s*\$FFC0\b", asm, "LDMOD must use streamed KERNAL file I/O")
+    require(r"^K_CHRIN\s*=\s*\$FFCF\b", asm, "LDMOD must stream module bytes with CHRIN")
     if re.search(r"\bjsr\s+K_LOAD\b", asm):
-        fail("ZMODLD must not PRG-load ReadyBASIC modules")
+        fail("LDMOD must not PRG-load ReadyBASIC modules")
     require(r"#define\s+REU_RB_CORE\s+14\b", reu_hdr, "REU_RB_CORE type must stay in sync")
     require(r"#define\s+REU_RB_CODE\s+15\b", reu_hdr, "REU_RB_CODE type must stay in sync")
     if "REU_BANK_RB_CORE" in reu_hdr or "REU_BANK_RB_CODE" in reu_hdr:
         fail("ReadyBASIC core/code banks must not be fixed in reu_mgr.h")
 
-    for name in ("ENTRY", "RESIDENT", "LOWPACK", "SLOTPACK1", "SLOTPACK2", "SPANPACK", "OVL1PACK", "OVL2PACK", "OVL3PACK", "OVL4PACK", "OVL5PACK", "OVL6PACK", "HIDDEN", "BRIDGE", "REGSEED"):
+    for name in ("ENTRY", "RESIDENT", "LOWPACK", "SLOTPACK1", "SLOTPACK2", "OVL1PACK", "OVL2PACK", "OVL3PACK", "OVL4PACK", "OVL5PACK", "OVL6PACK", "HIDDEN", "BRIDGE", "REGSEED"):
         if name not in segments:
             fail(f"map is missing segment {name}")
 
@@ -394,7 +394,6 @@ def main() -> None:
     lowpack = segments["LOWPACK"]
     slotpack1 = segments["SLOTPACK1"]
     slotpack2 = segments["SLOTPACK2"]
-    spanpack = segments["SPANPACK"]
     ovl1pack = segments["OVL1PACK"]
     ovl2pack = segments["OVL2PACK"]
     ovl3pack = segments["OVL3PACK"]
@@ -421,8 +420,6 @@ def main() -> None:
         fail(f"command slot 2 must fit under BASIC ROM at $B800-$BFFF, got ${slotpack2[0]:04X}-${slotpack2[1]:04X}")
     if slotpack2[2] > 0x0800:
         fail(f"command slot 2 grew past 2KB budget, got ${slotpack2[2]:04X}")
-    if spanpack[0] != 0xB000 or spanpack[1] > 0xBFFF or spanpack[2] > 0x1000:
-        fail(f"two-slot payload must fit at $B000-$BFFF, got ${spanpack[0]:04X}-${spanpack[1]:04X} size ${spanpack[2]:04X}")
     if ovl1pack[0] < 0xB800 or ovl1pack[1] > 0xBFFF or ovl1pack[2] > 0x0800:
         fail(f"overlay 1 payload must fit in slot 2, got ${ovl1pack[0]:04X}-${ovl1pack[1]:04X} size ${ovl1pack[2]:04X}")
     if ovl2pack[0] < 0xB800 or ovl2pack[1] > 0xBFFF or ovl2pack[2] > 0x0800:

@@ -22,6 +22,8 @@
         .setcpu "6502"
 
         .export rb_hotkey_pending
+; Disk sample packages resolve these private ABI addresses at build time.
+        .export rb_copy_count, rb_reu_core_bank, rb_reu_fetch, rb_reu_c64_lo, rb_reu_c64_hi, rb_reu_off_lo, rb_reu_off_hi, rb_reu_bank, rb_reu_len_lo, rb_reu_len_hi
 
 ; ---------------------------------------------------------------------------
 ; ROM/KERNAL entry points
@@ -356,23 +358,23 @@ RB_GFX_MODE_STATE    = $C4F4
 RB_DL_MAX_RECORDS    = 31
 RB_DL_REC_SIZE       = 8
 
-SIG_ZECHO1      = 1
-SIG_ZADD16      = 2
+SIG_INT_RESULT = 1
+SIG_ADD16      = 2
 SIG_UPPER       = 3
 SIG_LOWER       = 4
-SIG_ZHIDDENRAM  = 5
-SIG_ZSUMNUMARRAY = 6
-SIG_ZRANGENUMARRAY = 7
+SIG_HIDDENRAM  = 5
+SIG_SUMNUMARRAY = 6
+SIG_RANGENUMARRAY = 7
 SIG_BUFNEW      = 8
 SIG_BUFFILL     = 9
 SIG_BUFFREE     = 10
-SIG_ZTEMPSCRATCH = 11
-SIG_ZFAIL       = 12
+SIG_TEMPSCRATCH = 11
+SIG_FAIL       = 12
 SIG_FREEMEM     = 13
 SIG_SCRCAP      = 14
 SIG_SCRPUT      = 15
 SIG_FADD        = 16
-SIG_ZPAUSE      = SIG_BUFFREE
+SIG_PAUSE       = SIG_BUFFREE
 SIG_ERRCODE     = 17
 SIG_ERRLINE     = 18
 SIG_GFXMODE     = 19
@@ -383,38 +385,19 @@ SIG_SPRSET      = 23
 SIG_KEYNONE     = 24
 SIG_POLY        = 25
 
-CMD_ZECHO1      = 1
-CMD_ZADD16      = 2
 CMD_UPPER       = 3
 CMD_LOWER       = 4
-CMD_ZHIDDENRAM  = 5
-CMD_ZSUMNUMARRAY = 6
-CMD_ZRANGENUMARRAY = 7
 CMD_BUFNEW      = 8
 CMD_BUFFILL     = 9
 CMD_BUFFREE     = 10
-CMD_ZTEMPSCRATCH = 11
-CMD_ZFAIL       = 12
 CMD_FREEMEM     = 13
 CMD_SCRCAP      = 14
 CMD_SCRPUT      = 15
 CMD_FADD        = 16
-CMD_ZPAUSE      = 17
+CMD_PAUSE       = 17
 CMD_ERRCODE     = 18
 CMD_ERRLINE     = 19
-CMD_ZSLOT0      = 20
-CMD_ZSLOT1      = 21
-CMD_ZSLOT2      = 22
-CMD_ZSPAN       = 23
-CMD_ZOVL1       = 24
-CMD_ZOVL2       = 25
-CMD_ZCPYRST     = 26
-CMD_ZCOPY       = 27
-CMD_ZMODLOAD    = 28
-CMD_ZDM1        = 29
-CMD_ZDM2S       = 30
-CMD_ZDOV1       = 31
-CMD_ZDOV2       = 32
+CMD_LDMOD       = 28
 CMD_GFXMODE     = 33
 CMD_GFXTEXT     = 34
 CMD_GFXCLEAR    = 35
@@ -522,7 +505,6 @@ REU_LEN_HI      = $DF08
         .import __LOWPACK_LOAD__, __LOWPACK_RUN__, __LOWPACK_SIZE__
         .import __SLOTPACK1_LOAD__, __SLOTPACK1_RUN__, __SLOTPACK1_SIZE__
         .import __SLOTPACK2_LOAD__, __SLOTPACK2_RUN__, __SLOTPACK2_SIZE__
-        .import __SPANPACK_LOAD__, __SPANPACK_RUN__, __SPANPACK_SIZE__
         .import __OVL1PACK_LOAD__, __OVL1PACK_RUN__, __OVL1PACK_SIZE__
         .import __OVL2PACK_LOAD__, __OVL2PACK_RUN__, __OVL2PACK_SIZE__
         .import __OVL3PACK_LOAD__, __OVL3PACK_RUN__, __OVL3PACK_SIZE__
@@ -2304,18 +2286,18 @@ rb_parse_by_signature:
         jmp BASIC_SYNERR
 
 rb_parse_sig_table:
-        .word parse_sig_zecho1
-        .word parse_sig_zadd16
+        .word rb_parse_out_int_current
+        .word parse_sig_add16
         .word parse_sig_string_out
         .word parse_sig_string_out
-        .word parse_sig_zhiddenram
-        .word parse_sig_zsumnumarray
-        .word parse_sig_zrangenumarray
+        .word parse_sig_hiddenram
+        .word parse_sig_sumnumarray
+        .word parse_sig_rangenumarray
         .word parse_sig_bufnew
         .word parse_sig_buffill
         .word rb_parse_num0
         .word parse_sig_bufnew
-        .word parse_sig_zfail
+        .word parse_sig_fail
         .word parse_sig_no_args
         .word rb_parse_out_int_current
         .word rb_parse_num0
@@ -2330,11 +2312,7 @@ rb_parse_sig_table:
         .word parse_sig_no_args
         .word parse_sig_poly
 
-parse_sig_zecho1:
-        jsr rb_parse_out_int_current
-        jmp rb_precompute_zecho1
-
-parse_sig_zadd16:
+parse_sig_add16:
         jsr rb_parse_num0
         jsr rb_parse_num1
         jmp rb_parse_out_int
@@ -2343,16 +2321,16 @@ parse_sig_string_out:
         jsr rb_parse_string_value
         jmp rb_parse_out_string
 
-parse_sig_zhiddenram:
+parse_sig_hiddenram:
         jsr rb_parse_string_value
         jmp rb_parse_out_int
 
-parse_sig_zsumnumarray:
+parse_sig_sumnumarray:
         jsr rb_parse_int_array_input
         jsr rb_parse_out_int
         jmp rb_resolve_int_array_input_ptr
 
-parse_sig_zrangenumarray:
+parse_sig_rangenumarray:
         jsr rb_parse_num0
         jsr rb_parse_num1
         lda CF_NUM1_LO
@@ -2369,7 +2347,7 @@ parse_sig_buffill:
         jsr rb_parse_num0
         jmp rb_parse_num1
 
-parse_sig_zfail:
+parse_sig_fail:
         jsr rb_parse_num0
         jmp rb_parse_out_int
 
@@ -2530,19 +2508,6 @@ hidden_lookup_command:
         rts
 
         .segment "RESIDENT"
-
-rb_precompute_zecho1:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda #1
-        sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
-        lda #1
-        sta rb_command_precomputed
-        rts
 
 rb_precompute_errcode:
         lda #0
@@ -3603,15 +3568,15 @@ rb_restore_func_formals:
 
 rb_parse_expr_signature:
         lda RB_DESC_BUF+14
-        cmp #SIG_ZECHO1
-        beq parse_expr_zecho1
-        cmp #SIG_ZADD16
-        beq parse_expr_zadd16
+        cmp #SIG_INT_RESULT
+        beq parse_expr_no_args
+        cmp #SIG_ADD16
+        beq parse_expr_add16
         cmp #SIG_UPPER
         beq parse_expr_string_out
         cmp #SIG_LOWER
         beq parse_expr_string_out
-        cmp #SIG_ZHIDDENRAM
+        cmp #SIG_HIDDENRAM
         beq parse_expr_int_string
         cmp #SIG_BUFNEW
         beq parse_expr_num0
@@ -3619,12 +3584,12 @@ rb_parse_expr_signature:
         beq parse_expr_num2
         cmp #SIG_BUFFREE
         beq parse_expr_num0
-        cmp #SIG_ZTEMPSCRATCH
+        cmp #SIG_TEMPSCRATCH
         beq parse_expr_num0
         cmp #SIG_SCRCAP
         beq parse_expr_no_args
-        cmp #SIG_ZSUMNUMARRAY
-        beq parse_expr_zsumnumarray
+        cmp #SIG_SUMNUMARRAY
+        beq parse_expr_sumnumarray
         cmp #SIG_FADD
         beq parse_expr_fadd
         cmp #SIG_ERRCODE
@@ -3642,10 +3607,7 @@ rb_parse_expr_signature:
 parse_expr_no_args:
         rts
 
-parse_expr_zecho1:
-        jmp rb_precompute_zecho1
-
-parse_expr_zadd16:
+parse_expr_add16:
         jsr rb_parse_num0
         jmp rb_parse_num1
 
@@ -3682,7 +3644,7 @@ parse_expr_gfxsurf:
 parse_expr_int_string:
         jmp rb_parse_string_value
 
-parse_expr_zsumnumarray:
+parse_expr_sumnumarray:
         jsr rb_parse_int_array_input
         jmp rb_resolve_int_array_input_ptr
 
@@ -4209,21 +4171,6 @@ rb_reu_header_end:
         .res 16 - .strlen(name), 0
 .endmacro
 
-.macro CMD_HIDDEN id, sig, label, endlabel, name
-        .byte id, RB_MODULE_SYSTEM
-        .word 0
-        .word __LOWPACK_SIZE__
-        .byte RB_SUBMOD_LEGACY_LOW
-        .byte 0
-        .byte RB_SLOT_LEGACY_LOW
-        .byte 1
-        .word 0
-        .word label - __LOWPACK_RUN__
-        .byte sig, .strlen(name)
-        .byte name
-        .res 16 - .strlen(name), 0
-.endmacro
-
 .macro CMD_SLOT1 id, sig, label, name
         .byte id, 2
         .word __SLOTPACK1_LOAD__ - __LOWPACK_LOAD__
@@ -4234,66 +4181,6 @@ rb_reu_header_end:
         .byte 1
         .word 0
         .word label - __SLOTPACK1_RUN__
-        .byte sig, .strlen(name)
-        .byte name
-        .res 16 - .strlen(name), 0
-.endmacro
-
-.macro CMD_SLOT2 id, sig, label, name
-        .byte id, 2
-        .word __SLOTPACK2_LOAD__ - __LOWPACK_LOAD__
-        .word __SLOTPACK2_SIZE__
-        .byte RB_SUBMOD_PROOF_SLOT2
-        .byte 0
-        .byte RB_SLOT_PROOF_2
-        .byte 1
-        .word 0
-        .word label - __SLOTPACK2_RUN__
-        .byte sig, .strlen(name)
-        .byte name
-        .res 16 - .strlen(name), 0
-.endmacro
-
-.macro CMD_SPAN id, sig, label, name
-        .byte id, 2
-        .word __SPANPACK_LOAD__ - __LOWPACK_LOAD__
-        .word __SPANPACK_SIZE__
-        .byte RB_SUBMOD_PROOF_SPAN
-        .byte 0
-        .byte RB_SLOT_PROOF_12
-        .byte 1
-        .word 0
-        .word label - __SPANPACK_RUN__
-        .byte sig, .strlen(name)
-        .byte name
-        .res 16 - .strlen(name), 0
-.endmacro
-
-.macro CMD_OVL1 id, sig, label, name
-        .byte id, 2
-        .word RB_CODE_GFXSPR_OFF
-        .word __OVL1PACK_SIZE__
-        .byte RB_SUBMOD_PROOF_OVERLAY
-        .byte 1
-        .byte RB_SLOT_PROOF_2
-        .byte 1
-        .word 0
-        .word label - __OVL1PACK_RUN__
-        .byte sig, .strlen(name)
-        .byte name
-        .res 16 - .strlen(name), 0
-.endmacro
-
-.macro CMD_OVL2 id, sig, label, name
-        .byte id, 2
-        .word RB_CODE_INPUTEV_OFF
-        .word __OVL2PACK_SIZE__
-        .byte RB_SUBMOD_PROOF_OVERLAY
-        .byte 2
-        .byte RB_SLOT_PROOF_2
-        .byte 1
-        .word 0
-        .word label - __OVL2PACK_RUN__
         .byte sig, .strlen(name)
         .byte name
         .res 16 - .strlen(name), 0
@@ -4424,33 +4311,18 @@ rb_reu_header_end:
 .endmacro
 
 rb_command_descriptors:
-        CMD_LOW_ALL CMD_ZECHO1, SIG_ZECHO1, cmd_zecho1_low, "ZECHO1"
-        CMD_LOW CMD_ZADD16, SIG_ZADD16, cmd_zadd16_low, cmd_zadd16_low_end, "ZADD16"
         CMD_LOW CMD_UPPER, SIG_UPPER, cmd_upper_low, cmd_upper_low_end, "UPPER"
         CMD_LOW CMD_LOWER, SIG_LOWER, cmd_lower_low, cmd_lower_low_end, "LOWER"
-        CMD_HIDDEN CMD_ZHIDDENRAM, SIG_ZHIDDENRAM, cmd_zhiddenram_hidden, cmd_zhiddenram_hidden_end, "ZHIDDENRAM"
-        CMD_LOW CMD_ZSUMNUMARRAY, SIG_ZSUMNUMARRAY, cmd_zsumnumarray_low, cmd_zsumnumarray_low_end, "ZSUMNUMARRAY"
-        CMD_LOW CMD_ZRANGENUMARRAY, SIG_ZRANGENUMARRAY, cmd_zrangenumarray_low, cmd_zrangenumarray_low_end, "ZRANGENUMARRAY"
         CMD_LOW_ALL CMD_BUFNEW, SIG_BUFNEW, cmd_bufnew_low, "BUFMAKE"
         CMD_LOW_ALL CMD_BUFFILL, SIG_BUFFILL, cmd_buffill_low, "BUFFILL"
         CMD_LOW_ALL CMD_BUFFREE, SIG_BUFFREE, cmd_buffree_low, "BUFDROP"
-        CMD_LOW_ALL CMD_ZTEMPSCRATCH, SIG_ZTEMPSCRATCH, cmd_ztempscratch_low, "ZTEMPSCRATCH"
-        CMD_LOW CMD_ZFAIL, SIG_ZFAIL, cmd_zfail_low, cmd_zfail_low_end, "ZFAIL"
         CMD_LOW CMD_FREEMEM, SIG_FREEMEM, cmd_freemem_low, cmd_freemem_low_end, "MEMAVL"
         CMD_LOW_ALL CMD_SCRCAP, SIG_SCRCAP, cmd_scrcap_low, "SCRCAP"
         CMD_LOW CMD_FADD, SIG_FADD, cmd_fadd_low, cmd_fadd_low_end, "FADD"
-        CMD_LOW CMD_ZPAUSE, SIG_ZPAUSE, cmd_zpause_low, cmd_zpause_low_end, "ZPAUSE"
-        CMD_LOW CMD_ERRCODE, SIG_ERRCODE, cmd_zecho1_low, cmd_zecho1_low_end, "ERRCODE"
-        CMD_LOW CMD_ERRLINE, SIG_ERRLINE, cmd_zecho1_low, cmd_zecho1_low_end, "ERRLINE"
-        CMD_LOW CMD_ZSLOT0, SIG_SCRCAP, cmd_zslot0_low, cmd_zslot0_low_end, "ZSLOT0"
-        CMD_SLOT1 CMD_ZSLOT1, SIG_SCRCAP, cmd_zslot1, "ZSLOT1"
-        CMD_SLOT2 CMD_ZSLOT2, SIG_SCRCAP, cmd_zslot2, "ZSLOT2"
-        CMD_SPAN CMD_ZSPAN, SIG_SCRCAP, cmd_zspan, "ZSPAN"
-        CMD_OVL1 CMD_ZOVL1, SIG_SCRCAP, cmd_zovl1, "ZOVL1"
-        CMD_OVL2 CMD_ZOVL2, SIG_SCRCAP, cmd_zovl2, "ZOVL2"
-        CMD_LOW CMD_ZCPYRST, SIG_SCRCAP, cmd_zcpyrst_low, cmd_zcpyrst_low_end, "ZCPYRST"
-        CMD_LOW CMD_ZCOPY, SIG_SCRCAP, cmd_zcopy_low, cmd_zcopy_low_end, "ZCOPY"
-        CMD_SLOT1 CMD_ZMODLOAD, SIG_ZHIDDENRAM, cmd_zmodload, "ZMODLD"
+        CMD_LOW CMD_PAUSE, SIG_PAUSE, cmd_pause_low, cmd_pause_low_end, "PAUSE"
+        CMD_LOW CMD_ERRCODE, SIG_ERRCODE, cmd_fadd_low, cmd_fadd_low_end, "ERRCODE"
+        CMD_LOW CMD_ERRLINE, SIG_ERRLINE, cmd_fadd_low, cmd_fadd_low_end, "ERRLINE"
+        CMD_SLOT1 CMD_LDMOD, SIG_HIDDENRAM, cmd_ldmod, "LDMOD"
         CMD_GFXCORE CMD_GFXMODE, SIG_GFXMODE, cmd_gfxmode, "GFXMODE"
         CMD_GFXCORE CMD_GFXTEXT, SIG_FREEMEM, cmd_gfxtext, "GFXTEXT"
         CMD_GFXCORE CMD_GFXCLEAR, SIG_BUFFREE, cmd_gfxclear, "GFXCLEAR"
@@ -4459,7 +4331,7 @@ rb_command_descriptors:
         CMD_LOW_ALL CMD_GFXBLIT, SIG_BUFFREE, cmd_gfxblit_low, "GFXBLIT"
         CMD_GFXCORE CMD_GFXSYNC, SIG_FREEMEM, cmd_gfxsync, "GFXSYNC"
         CMD_GFXPRIM CMD_PLOT, SIG_PLOT, cmd_plot, "PLOT"
-        CMD_GFXPRIM CMD_PNT, SIG_ZADD16, cmd_point, "PNT"
+        CMD_GFXPRIM CMD_PNT, SIG_ADD16, cmd_point, "PNT"
         CMD_GFXPRIM CMD_LINE, SIG_LINE, cmd_line, "LINE"
         CMD_GFXPRIM CMD_RECT, SIG_LINE, cmd_rect, "RECT"
         CMD_GFXPRIM CMD_FRECT, SIG_LINE, cmd_frect, "FBOX"
@@ -4476,8 +4348,8 @@ rb_command_descriptors:
         CMD_GFXSPR CMD_SPRCOL, SIG_BUFFILL, cmd_sprcolor, "SPRCOL"
         CMD_GFXSPR CMD_SPRMCO, SIG_BUFFILL, cmd_sprmcolor, "SPRMCO"
         CMD_GFXSPR CMD_SPRSCAN, SIG_FREEMEM, cmd_sprscan, "SPRSCAN"
-        CMD_GFXSPR CMD_SPRCOLL, SIG_ZFAIL, cmd_sprcoll, "SPRCOLL"
-        CMD_INPUTEV CMD_JOY, SIG_ZFAIL, cmd_joy, "JOY"
+        CMD_GFXSPR CMD_SPRCOLL, SIG_FAIL, cmd_sprcoll, "SPRCOLL"
+        CMD_INPUTEV CMD_JOY, SIG_FAIL, cmd_joy, "JOY"
         CMD_INPUTEV CMD_KEYP, SIG_SCRCAP, cmd_keyp, "KEYP"
         CMD_INPUTEV CMD_KEYSCAN, SIG_KEYNONE, cmd_keyscan, "KEYSCAN"
         CMD_INPUTEV CMD_KEYLAST, SIG_SCRCAP, cmd_keylast, "KEYLAST"
@@ -4521,7 +4393,7 @@ rb_command_descriptors:
         CMD_GFXCORE CMD_BORDER, SIG_BUFFREE, cmd_border, "BORDER"
         CMD_INPUTEV CMD_USPEED, SIG_BUFFREE, cmd_uspeed, "USPEED", RB_MODULE_SYSTEM
         CMD_INPUTEV CMD_UMHZ, SIG_SCRCAP, cmd_umhz, "UMHZ", RB_MODULE_SYSTEM
-        .res (RB_CMD_DESC_COUNT - 98) * RB_CMD_DESC_SIZE, 0
+        .res (RB_CMD_DESC_COUNT - 83) * RB_CMD_DESC_SIZE, 0
         CMD_LOW_ALL CMD_SCRPUT, SIG_SCRPUT, cmd_scrput_low, "SCRPUT"
 
 ; ---------------------------------------------------------------------------
@@ -4570,6 +4442,9 @@ hidden_print_live_free:
         bne @next
         lda #0
 @print:
+        ; The leading-zero check above may leave rb_digit_seen (1) in A.
+        ; Reload the actual digit so internal zeroes remain zeroes.
+        lda rb_digit_count
         ora #'0'
         jsr K_CHROUT
         lda #1
@@ -5140,9 +5015,9 @@ rb_seed_plugin_reu_hidden:
         sta rb_reu_off_hi
         lda rb_reu_code_bank
         sta rb_reu_bank
-        lda #<((__SPANPACK_LOAD__ - __LOWPACK_LOAD__) + __SPANPACK_SIZE__)
+        lda #<((__SLOTPACK2_LOAD__ - __LOWPACK_LOAD__) + __SLOTPACK2_SIZE__)
         sta rb_reu_len_lo
-        lda #>((__SPANPACK_LOAD__ - __LOWPACK_LOAD__) + __SPANPACK_SIZE__)
+        lda #>((__SLOTPACK2_LOAD__ - __LOWPACK_LOAD__) + __SLOTPACK2_SIZE__)
         sta rb_reu_len_hi
         jsr rb_reu_stash
 
@@ -5799,72 +5674,16 @@ rb_prepare_ready_resume:
 
         .segment "LOWPACK"
 
-cmd_zecho1_low:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda #1
-        sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
-        rts
-cmd_zecho1_low_end:
 
-cmd_zadd16_low:
-        clc
-        lda CF_NUM0_LO
-        adc CF_NUM1_LO
-        sta RF_VAL_LO
-        lda CF_NUM0_HI
-        adc CF_NUM1_HI
-        sta RF_VAL_HI
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        rts
-cmd_zadd16_low_end:
 
-cmd_zslot0_low:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda #30
-        sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
-        rts
-cmd_zslot0_low_end:
 
-cmd_zcpyrst_low:
-        lda #0
-        sta rb_copy_count
-        sta RF_STATUS
-        sta RF_VAL_LO
-        sta RF_VAL_HI
-        lda #RB_VAL_INT
-        sta RF_TAG
-        rts
-cmd_zcpyrst_low_end:
 
-cmd_zcopy_low:
-        lda #0
-        sta RF_STATUS
-        sta RF_VAL_HI
-        lda rb_copy_count
-        sta RF_VAL_LO
-        lda #RB_VAL_INT
-        sta RF_TAG
-        rts
-cmd_zcopy_low_end:
 
 cmd_fadd_low:
         rts
 cmd_fadd_low_end:
 
-cmd_zpause_low:
+cmd_pause_low:
         lda CF_NUM0_LO
         beq @done
         sta RF_COUNT_LO
@@ -5885,7 +5704,7 @@ cmd_zpause_low:
         lda #RB_VAL_NONE
         sta RF_TAG
         rts
-cmd_zpause_low_end:
+cmd_pause_low_end:
 
 cmd_upper_low:
         lda #0
@@ -5955,73 +5774,7 @@ cmd_lower_low:
         rts
 cmd_lower_low_end:
 
-cmd_zsumnumarray_low:
-        lda CF_PTR0_LO
-        sta rb_ptr_lo
-        lda CF_PTR0_HI
-        sta rb_ptr_hi
-        lda #0
-        sta RF_VAL_LO
-        sta RF_VAL_HI
-        ldx CF_COUNT0_LO
-        beq @done
-@loop:
-        ldy #1
-        clc
-        lda RF_VAL_LO
-        adc (rb_ptr_lo),y
-        sta RF_VAL_LO
-        dey
-        lda RF_VAL_HI
-        adc (rb_ptr_lo),y
-        sta RF_VAL_HI
-        clc
-        lda rb_ptr_lo
-        adc #2
-        sta rb_ptr_lo
-        bcc :+
-        inc rb_ptr_hi
-:       dex
-        bne @loop
-@done:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        rts
-cmd_zsumnumarray_low_end:
 
-cmd_zrangenumarray_low:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_ARRAYI
-        sta RF_TAG
-        lda CF_NUM1_LO
-        sta RF_COUNT_LO
-        lda CF_NUM1_HI
-        sta RF_COUNT_HI
-        lda CF_NUM0_LO
-        sta rb_ptr_lo
-        lda CF_NUM0_HI
-        sta rb_ptr_hi
-        ldx CF_NUM1_LO
-        beq @done
-        ldy #0
-@loop:
-        lda rb_ptr_hi
-        sta RF_ARRAY_BUF,y
-        iny
-        lda rb_ptr_lo
-        sta RF_ARRAY_BUF,y
-        iny
-        inc rb_ptr_lo
-        bne :+
-        inc rb_ptr_hi
-:       dex
-        bne @loop
-@done:
-        rts
-cmd_zrangenumarray_low_end:
 
 cmd_bufnew_low:
         jsr rb_handle_alloc
@@ -6038,24 +5791,7 @@ cmd_buffree_low:
         rts
 cmd_buffree_low_end:
 
-cmd_ztempscratch_low:
-        jsr rb_temp_alloc
-        rts
-cmd_ztempscratch_low_end:
 
-cmd_zfail_low:
-        lda CF_NUM0_LO
-        bne :+
-        lda #$7F
-:       sta RF_STATUS
-        sta RF_ERROR
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda #0
-        sta RF_VAL_LO
-        sta RF_VAL_HI
-        rts
-cmd_zfail_low_end:
 
 cmd_freemem_low:
         jsr rb_print_live_free
@@ -6614,26 +6350,6 @@ rb_handle_fill:
         lda #$28
         jmp rb_overlay_fail
 
-rb_temp_alloc:
-        jsr rb_len_to_pages
-        bcs @bad
-        jsr rb_find_pages
-        bcs @bad
-        jsr rb_mark_pages_used
-        jsr rb_mark_pages_free
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda rb_needed_pages
-        sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
-        rts
-@bad:
-        lda #$26
-        jmp rb_overlay_fail
-
 rb_screen_save_text:
         lda #<SCREEN
         sta rb_reu_c64_lo
@@ -6813,61 +6529,9 @@ rb_fetch_pagebuf_from_copy_page:
 ; default command submodule as the other command workers.
 ; ---------------------------------------------------------------------------
 
-cmd_zhiddenram_hidden:
-        lda #0
-        sta RF_VAL_LO
-        sta RF_VAL_HI
-        ldy #0
-@loop:
-        cpy CF_STR_LEN
-        beq @done
-        lda RF_VAL_LO
-        sta rb_ptr_lo
-        lda CF_STR_BUF,y
-        cmp #$C1
-        bcc @ascii_case
-        cmp #$DB
-        bcs @ascii_case
-        sec
-        sbc #$80
-        jmp @sum
-@ascii_case:
-        cmp #'a'
-        bcc @sum
-        cmp #'z' + 1
-        bcs @sum
-        sec
-        sbc #$20
-@sum:
-        clc
-        adc rb_ptr_lo
-        sta RF_VAL_LO
-        lda RF_VAL_HI
-        adc #0
-        sta RF_VAL_HI
-        iny
-        jmp @loop
-@done:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        rts
-cmd_zhiddenram_hidden_end:
 
         .segment "SLOTPACK1"
 
-cmd_zslot1:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda #31
-        sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
-        rts
-cmd_zslot1_end:
         .segment "OVL2PACK"
 ; Page-aligned ceiling; empty heap required, numeric variables/arrays survive.
 ; Same cap is harmless even with strings. No CLR, no relocation, no ROM calls.
@@ -6908,7 +6572,7 @@ cmd_memcap:
 ; C64 Ultimate / U64 Elite-II MHz table (not the older 48-MHz U64 table).
 ; D031 is available only with software-controlled turbo enabled. Unsupported
 ; machines / Manual mode return an error without touching hardware. Kept in
-; built-in INPUTEV so USPEED(1) can precede ZMODLD and all disk traffic.
+; built-in INPUTEV so USPEED(1) can precede LDMOD and all disk traffic.
 cmd_uspeed:
         lda CF_NUM0_HI
         bne @bad
@@ -7408,7 +7072,7 @@ gfx_init_tile_glyphs:
         sta CPU_PORT
         rts
 
-cmd_zmodload:
+cmd_ldmod:
         lda CF_STR_LEN
         bne :+
         lda #240
@@ -7432,7 +7096,7 @@ cmd_zmodload:
         jsr K_CHKIN
         bcs @fail_io_finish
         lda #16
-        jsr rb_zmodload_read_pagebuf_bytes
+        jsr rb_ldmod_read_pagebuf_bytes
         bcc @loaded
 @fail_io_finish:
         lda #241
@@ -7462,9 +7126,9 @@ cmd_zmodload:
         cmp #33
         bcs @fail_count
         sta rb_saved_count_hi
-        jsr rb_zmodload_stash_descriptors
+        jsr rb_ldmod_stash_descriptors
         bcs @fail_bounds
-        jsr rb_zmodload_stash_payloads
+        jsr rb_ldmod_stash_payloads
         bcs @fail_bounds
         jsr rb_clear_slot_residency
         lda rb_saved_count_lo
@@ -7482,7 +7146,7 @@ cmd_zmodload:
         lda #245
 @finish:
         pha
-        jsr rb_zmodload_close
+        jsr rb_ldmod_close
         pla
         jmp @return_int
 @return_int:
@@ -7494,7 +7158,7 @@ cmd_zmodload:
         sta RF_TAG
         rts
 
-rb_zmodload_stash_descriptors:
+rb_ldmod_stash_descriptors:
         lda rb_saved_count_lo
         sta rb_copy_len_lo
         lda #0
@@ -7525,18 +7189,18 @@ rb_zmodload_stash_descriptors:
 @stream:
         lda rb_reu_core_bank
         sta rb_reu_bank
-        jmp rb_zmodload_stream_to_reu
+        jmp rb_ldmod_stream_to_reu
 @bad:
         sec
         rts
 
-rb_zmodload_stash_payloads:
+rb_ldmod_stash_payloads:
         lda rb_saved_count_hi
         sta rb_saved_count_hi
         beq @done
 @loop:
         lda #6
-        jsr rb_zmodload_read_pagebuf_bytes
+        jsr rb_ldmod_read_pagebuf_bytes
         bcs @bad
         lda RB_PAGEBUF+2
         ora RB_PAGEBUF+3
@@ -7557,7 +7221,7 @@ rb_zmodload_stash_payloads:
         bcs @bad
         lda rb_reu_code_bank
         sta rb_reu_bank
-        jsr rb_zmodload_stream_to_reu
+        jsr rb_ldmod_stream_to_reu
         bcs @bad
         dec rb_saved_count_hi
         bne @loop
@@ -7568,12 +7232,12 @@ rb_zmodload_stash_payloads:
         sec
         rts
 
-rb_zmodload_read_pagebuf_bytes:
+rb_ldmod_read_pagebuf_bytes:
         sta rb_copy_chunks
         lda #0
         sta rb_target_off
 @loop:
-        jsr rb_zmodload_read_byte
+        jsr rb_ldmod_read_byte
         bcs @bad
         ldy rb_target_off
         sta RB_PAGEBUF,y
@@ -7586,7 +7250,7 @@ rb_zmodload_read_pagebuf_bytes:
         sec
         rts
 
-rb_zmodload_stream_to_reu:
+rb_ldmod_stream_to_reu:
 @more:
         lda rb_copy_len_lo
         ora rb_copy_len_hi
@@ -7597,7 +7261,7 @@ rb_zmodload_stream_to_reu:
         sta rb_reu_len_lo
         lda #1
         sta rb_reu_len_hi
-        jsr rb_zmodload_read_reu_chunk
+        jsr rb_ldmod_read_reu_chunk
         bcs @bad
         jsr rb_reu_stash
         inc rb_reu_off_hi
@@ -7608,7 +7272,7 @@ rb_zmodload_stream_to_reu:
         sta rb_reu_len_lo
         lda #0
         sta rb_reu_len_hi
-        jsr rb_zmodload_read_reu_chunk
+        jsr rb_ldmod_read_reu_chunk
         bcs @bad
         jsr rb_reu_stash
         lda #0
@@ -7620,7 +7284,7 @@ rb_zmodload_stream_to_reu:
         sec
         rts
 
-rb_zmodload_read_reu_chunk:
+rb_ldmod_read_reu_chunk:
         lda #<RB_PAGEBUF
         sta rb_reu_c64_lo
         lda #>RB_PAGEBUF
@@ -7628,7 +7292,7 @@ rb_zmodload_read_reu_chunk:
         lda #0
         sta rb_target_off
 @loop:
-        jsr rb_zmodload_read_byte
+        jsr rb_ldmod_read_byte
         bcs @bad
         ldy rb_target_off
         sta RB_PAGEBUF,y
@@ -7642,7 +7306,7 @@ rb_zmodload_read_reu_chunk:
         sec
         rts
 
-rb_zmodload_read_byte:
+rb_ldmod_read_byte:
         lda rb_zmod_eof
         bne @bad
         jsr K_CHRIN
@@ -7665,7 +7329,7 @@ rb_zmodload_read_byte:
         sec
         rts
 
-rb_zmodload_close:
+rb_ldmod_close:
         lda rb_saved_msgflg
         pha
         jsr K_CLRCHN
@@ -7674,21 +7338,10 @@ rb_zmodload_close:
         pla
         sta MSGFLG
         rts
-cmd_zmodload_end:
+cmd_ldmod_end:
 
         .segment "SLOTPACK2"
 
-cmd_zslot2:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda #32
-        sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
-        rts
-cmd_zslot2_end:
 
 cmd_plot:
         jsr gfx_plot_current
@@ -8571,33 +8224,10 @@ gfx_mbit_pair_masks:
 gfx_mbit_unmasks:
         .byte $3F,$CF,$F3,$FC
 
-        .segment "SPANPACK"
 
-cmd_zspan:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda #40
-        sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
-        rts
-cmd_zspan_end:
 
         .segment "OVL1PACK"
 
-cmd_zovl1:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda #51
-        sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
-        rts
-cmd_zovl1_end:
 
 cmd_sprset:
         lda CF_NUM0_LO
@@ -8895,17 +8525,6 @@ gfx_sprite_patterns:
 
         .segment "OVL2PACK"
 
-cmd_zovl2:
-        lda #0
-        sta RF_STATUS
-        lda #RB_VAL_INT
-        sta RF_TAG
-        lda #52
-        sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
-        rts
-cmd_zovl2_end:
 
 cmd_joy:
         lda CF_NUM0_LO

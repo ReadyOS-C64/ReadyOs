@@ -49,7 +49,7 @@ Path("obj/rbscrreu.bas").write_text(
 40 scrcap(s%)
 50 print "C1"
 60 scrput(s%)
-70 print "T1 DONE";s%:zpause(1)
+70 print "T1 DONE";s%:pause(1)
 80 print "T2 ARRAY CAP START"
 90 dim h%(4)
 100 print chr$(147);"A1"
@@ -67,30 +67,30 @@ Path("obj/rbscrreu.bas").write_text(
 220 print chr$(147);"A4"
 230 poke1027,68:poke55299,5
 240 scrcap(h%(4))
-250 print "CAP4";h%(4):zpause(1)
+250 print "CAP4";h%(4):pause(1)
 260 print chr$(147);"T3 DIRECT ARRAY PUT"
 270 scrput(h%(1))
 280 print chr$(19);"PUT1";h%(1)
-290 zpause(4)
+290 pause(4)
 300 scrput(h%(2))
 310 print chr$(19);"PUT2";h%(2)
-320 zpause(4)
+320 pause(4)
 330 scrput(h%(3))
 340 print chr$(19);"PUT3";h%(3)
-350 zpause(4)
+350 pause(4)
 360 scrput(h%(4))
 370 print chr$(19);"PUT4";h%(4)
-380 zpause(1)
+380 pause(1)
 390 print chr$(147);"T4 LOOP ARRAY PUT"
 400 for s=1 to 4
 410 print "B4";s;h%(s)
 420 scrput(h%(s))
 430 print chr$(19);"LPUT";s;h%(s)
-440 zpause(4)
+440 pause(4)
 450 next s
-455 print "LPUT DONE":zpause(1)
+455 print "LPUT DONE":pause(1)
 460 print chr$(147);"RBSCRREU DONE"
-470 zpause(1)
+470 pause(1)
 480 end
 """,
 encoding="ascii",
@@ -114,8 +114,11 @@ PREBOOT_REL="$(ls -t Releases/$PUBLIC_VERSION/precog-d81/*-preboot.prg | head -1
 D81="$D81_REL"
 PREBOOT="$PREBOOT_REL"
 
-c1541 "$D81" -delete "rbscrreu" >/dev/null 2>&1 || true
-c1541 "$D81" -write obj/rbscrreu.prg "rbscrreu" >/dev/null
+# Plan generation must not mutate the disk an existing VICE session may use.
+if [ "${READYBASIC_GENERATE_PLAN_ONLY:-0}" != "1" ]; then
+  c1541 "$D81" -delete "rbscrreu" >/dev/null 2>&1 || true
+  c1541 "$D81" -write obj/rbscrreu.prg "rbscrreu" >/dev/null
+fi
 
 cat >"$PLAN" <<YAML
 version: 1

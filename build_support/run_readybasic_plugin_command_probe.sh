@@ -108,16 +108,36 @@ steps:
         - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
         - { label: shim_resident_c600, start: 0xC600, end: 0xC9FF }
 
+  - id: probe_00_builtin_pause
+    type: input.sequence
+    params:
+      keys: [$(keys $'PAUSE(0):PAUSE(1):PRINT "PAUSE OK"\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 1.0
+  - id: assert_00_builtin_pause
+    type: assert.screen
+    params:
+      contains: "PAUSE OK"
+  - id: assert_00_pause_no_error
+    type: assert.screen_not_contains
+    params:
+      not_contains: "?"
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT LDMOD("RBM.SAMPLE1")\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: probe_01_ping
     type: input.sequence
     params:
-      keys: [$(keys $'ZECHO1(P%)\rPRINT "ZECHO";P%\r')]
+      keys: [$(keys $'ECHO1(P%)\rPRINT "ZECHO";P%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_01_ping
     type: screen.capture
     params:
-      label: after_zecho1
+      label: after_echo1
   - id: assert_01_ping
     type: assert.screen
     params:
@@ -130,7 +150,7 @@ steps:
   - id: probe_02_add16
     type: input.sequence
     params:
-      keys: [$(keys $'A%=ZADD16(5,10)\rPRINT "ADD";A%\r')]
+      keys: [$(keys $'A%=ADD16(5,10)\rPRINT "ADD";A%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_02_add16
@@ -141,7 +161,7 @@ steps:
   - id: probe_02a_if_then_direct
     type: input.sequence
     params:
-      keys: [$(keys $'P%=0\rIF 1 THEN P%=ZADD16(0,1)\rPRINT "IFDIR";P%\r')]
+      keys: [$(keys $'P%=0\rIF 1 THEN P%=ADD16(0,1)\rPRINT "IFDIR";P%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_02a_if_then_direct
@@ -200,13 +220,13 @@ steps:
   - id: probe_05_hcrc_hidden
     type: input.sequence
     params:
-      keys: [$(keys $'H%=ZHIDDENRAM("AB")\rPRINT "ZHIDDENRAM";H%\r')]
+      keys: [$(keys $'H%=HIDDENRAM("AB")\rPRINT "HIDDENRAM";H%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_05_hcrc_hidden
     type: assert.screen
     params:
-      contains: "ZHIDDENRAM 131"
+      contains: "HIDDENRAM 131"
   - id: dump_05_hidden_worker
     type: dump.memory_ranges
     params:
@@ -215,7 +235,7 @@ steps:
   - id: probe_06_sumai
     type: input.sequence
     params:
-      keys: [$(keys $'DIM A%(3)\rA%(0)=1:A%(1)=2:A%(2)=3\rS%=ZSUMNUMARRAY(A%(0),3)\rPRINT "SUM";S%\r')]
+      keys: [$(keys $'DIM A%(3)\rA%(0)=1:A%(1)=2:A%(2)=3\rS%=SUMNUMARRAY(A%(0),3)\rPRINT "SUM";S%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_06_sumai
@@ -226,7 +246,7 @@ steps:
   - id: probe_07_rangeai
     type: input.sequence
     params:
-      keys: [$(keys $'DIM R%(4)\rZRANGENUMARRAY(7,4,R%(0))\rPRINT "RANGE";R%(0);R%(3)\r')]
+      keys: [$(keys $'DIM R%(4)\rRANGENUMARRAY(7,4,R%(0))\rPRINT "RANGE";R%(0);R%(3)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_07_rangeai
@@ -483,7 +503,7 @@ steps:
   - id: probe_11_tempscratch
     type: input.sequence
     params:
-      keys: [$(keys $'T%=ZTEMPSCRATCH(513)\rPRINT "TEMP";T%\r')]
+      keys: [$(keys $'T%=TEMPSCRATCH(513)\rPRINT "TEMP";T%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_11_tempscratch
@@ -494,7 +514,7 @@ steps:
   - id: probe_12_fail_clears_output
     type: input.sequence
     params:
-      keys: [$(keys $'X%=99\rZFAIL(7,X%)\r')]
+      keys: [$(keys $'X%=99\rFAIL(7,X%)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_12_fail_error
@@ -622,7 +642,7 @@ steps:
   - id: probe_13c_first_comma_rejected
     type: input.sequence
     params:
-      keys: [$(keys $'ZADD16(,1,2,A%)\r')]
+      keys: [$(keys $'ADD16(,1,2,A%)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_13c_first_comma_rejected
@@ -633,7 +653,7 @@ steps:
   - id: probe_13d_missing_out_marker_rejected
     type: input.sequence
     params:
-      keys: [$(keys $'ZADD16 1,2,A%\r')]
+      keys: [$(keys $'ADD16 1,2,A%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: assert_13d_missing_out_marker_rejected
@@ -689,7 +709,7 @@ steps:
   - id: probe_16_registry_after_resume
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT "STATE";V%;":";VS$\rP%=ZADD16(0,1)\rPRINT "RESUME";P%\r')]
+      keys: [$(keys $'PRINT "STATE";V%;":";VS$\rP%=ADD16(0,1)\rPRINT "RESUME";P%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_16_registry_after_resume

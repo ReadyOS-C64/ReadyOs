@@ -9,6 +9,6 @@
 90 next x
 100 line(0,199,319,0,1)
 110 print "fan lines"
-120 zpause(30)
+120 pause(30)
 130 get a$:if a$="" then 120
 140 gfxtext():print "rbgfx03 complete"

@@ -10,6 +10,6 @@
 100 for x=0 to 159 step 8
 110 plot(x,170,16+(x/8)-int((x/8)/15)*15)
 120 next x
-130 zpause(30)
+130 pause(30)
 140 get a$:if a$="" then 130
 150 gfxtext():print "mbitmap prims done"

@@ -9,6 +9,6 @@
 90 q%(4)=230:q%(5)=150:q%(6)=175:q%(7)=115
 100 fpoly(q%(0),4,1)
 110 rect(18,22,252,176,1)
-120 zpause(30)
+120 pause(30)
 130 get a$:if a$="" then 120
 140 gfxtext():print "phase3 done 18"

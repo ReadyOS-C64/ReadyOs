@@ -5,6 +5,6 @@
 50 fcircle(210,92,26,1)
 60 rect(180,58,240,126,1)
 70 line(20,170,300,170,1)
-80 zpause(30)
+80 pause(30)
 90 get a$:if a$="" then 80
 100 gfxtext():print "phase2 prims done"

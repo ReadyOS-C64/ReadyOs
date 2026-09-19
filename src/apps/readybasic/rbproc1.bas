@@ -1,3 +1,4 @@
+5 ldmod("rbm.sample1",m%)
 10 print "procfunc"
 20 exec show0
 30 exec showi(7)
@@ -16,16 +17,16 @@
 160 t$=greet("expr"):print t$
 170 a%=idi(9):print "ret%";a%
 180 t$=ids("ok"):print "ret$ ";t$
-190 print "cex";abs(zadd16(1,6)-10)
+190 print "cex";abs(add16(1,6)-10)
 200 t$=upper("mix"):print "cs$ ";t$
 210 print "fpex";addi(1,2+4)
-220 a%=zadd16(3,10):print "fcmd";a%
+220 a%=add16(3,10):print "fcmd";a%
 230 t$=funcupper("yo"):print "fs$ ";t$
 240 print "fminus";addi(1,6)-10
 250 print "fnabs";abs(addi(1,6)-10)
 260 t$=left$(greet("ready"),2):print "fnleft ";t$
 270 print "fparen";addi(1,(2+4))
-280 print "cparen";zadd16(1,(2+4))
+280 print "cparen";add16(1,(2+4))
 290 print "dparen";addi((1+2),(3+4))
 300 print "fadd";fadd(1.2,2.3)
 310 f=fadd(1.5,fadd(2.25,3.25)):print "nfadd";f

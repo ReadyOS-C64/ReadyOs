@@ -8,6 +8,6 @@
 80 line(0,0,319,199,1)
 90 line(0,199,319,0,1)
 100 print "outline and filled rects"
-110 zpause(30)
+110 pause(30)
 120 get a$:if a$="" then 110
 130 gfxtext():print "rbgfx04 complete"

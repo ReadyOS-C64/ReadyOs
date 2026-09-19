@@ -284,7 +284,7 @@ steps:
       contains: "READYBASIC"
 YAML
 
-append_load_list_run_text_app "RBTEST1" "rbtest1" "10 ZECHO1" "EXPRSTRREADY" "2.0"
+append_load_list_run_text_app "RBTEST1" "rbtest1" "10 ECHO1" "EXPRSTRREADY" "2.0"
 append_load_list_run_text_app "RBPROC1" "rbproc1" "2220 ENDP" "NGS MIX" "4.0"
 
 append_load_list_run_gfx_app "RBGFX01" "rbgfx01" "RBGFX01 MODES" "2.0"

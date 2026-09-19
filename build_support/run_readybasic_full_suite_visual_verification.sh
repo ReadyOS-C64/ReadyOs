@@ -115,10 +115,16 @@ steps:
         - { label: bridge_c000, start: 0xC000, end: 0xC5FF }
         - { label: shim_resident_c600, start: 0xC600, end: 0xC9FF }
 
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT LDMOD("RBM.SAMPLE1")\rPRINT LDMOD("RBM.SAMPLE2")\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: direct_ping
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-ZECHO HEALTH LOW OVL STATEMENT STORES P%=1 SCREEN D-ZECHO\rZECHO1(P%)\rPRINT "D-ZECHO";P%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-ZECHO HEALTH LOW OVL STATEMENT STORES P%=1 SCREEN D-ZECHO\rECHO1(P%)\rPRINT "D-ZECHO";P%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_ping
@@ -133,7 +139,7 @@ steps:
   - id: direct_add16
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-ADD NUM PARAMS RETURN A%=15 SCREEN D-ADD\rA%=ZADD16(5,10)\rPRINT "D-ADD";A%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-ADD NUM PARAMS RETURN A%=15 SCREEN D-ADD\rA%=ADD16(5,10)\rPRINT "D-ADD";A%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_add16
@@ -144,7 +150,7 @@ steps:
   - id: direct_module_slots
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-SLOTS BUILTIN MODULE SLOT PROOFS\rPRINT "D-S0";ZSLOT0()\rPRINT "D-S1";ZSLOT1()\rPRINT "D-S2";ZSLOT2()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-SLOTS BUILTIN MODULE SLOT PROOFS\rPRINT "D-S0";SLOT0()\rPRINT "D-S1";SLOT1()\rPRINT "D-S2";SLOT2()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_module_slot0
@@ -163,7 +169,7 @@ steps:
   - id: direct_module_span_overlay_copy
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-MOD SPAN OVERLAY COPY PROOFS\rPRINT "D-RST";ZCPYRST()\rPRINT "D-SPAN";ZSPAN()\rPRINT "D-OVL";ZOVL1();"/";ZOVL2()\rPRINT "D-RST";ZCPYRST()\rA=ZSLOT1()\rB=ZSLOT1()\rPRINT "D-COPY";ZCOPY()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-MOD SPAN OVERLAY COPY PROOFS\rPRINT "D-RST";CPYRST()\rPRINT "D-SPAN";SPAN()\rPRINT "D-OVL";OVL1();"/";OVL2()\rPRINT "D-RST";CPYRST()\rA=SLOT1()\rB=SLOT1()\rPRINT "D-COPY";COPY()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_module_span
@@ -182,13 +188,13 @@ steps:
   - id: direct_disk_module_load12
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-DISKMODULE LOAD PROOFS\rPRINT "D-LD1";ZMODLD("RBM.SAMPLE1")\rPRINT "D-DM1";ZDM1()\rPRINT "D-LD2";ZMODLD("RBM.SAMPLE2")\rPRINT "D-DM2";ZDM2S()\rPRINT "D-DOV";ZDOV1();"/";ZDOV2()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-DISKMODULE LOAD PROOFS\rPRINT "D-LD1";LDMOD("RBM.SAMPLE1")\rPRINT "D-DM1";DM1()\rPRINT "D-LD2";LDMOD("RBM.SAMPLE2")\rPRINT "D-DM2";DM2S()\rPRINT "D-DOV";DOV1();"/";DOV2()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_disk_module_load1
     type: assert.screen
     params:
-      contains: "D-LD1 1"
+      contains: "D-LD1 12"
   - id: assert_direct_disk_module_cmd1
     type: assert.screen
     params:
@@ -196,7 +202,7 @@ steps:
   - id: assert_direct_disk_module_load2
     type: assert.screen
     params:
-      contains: "D-LD2 3"
+      contains: "D-LD2 7"
   - id: assert_direct_disk_module_span
     type: assert.screen
     params:
@@ -209,18 +215,24 @@ steps:
   - id: direct_disk_module_load3
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-DISKMODULE RBM3 PROOFS\rPRINT "D-LD3";ZMODLD("RBM.SAMPLE3")\rPRINT "D-M3";ZSAA();"/";ZUEB()\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-DISKMODULE RBM3 PROOFS\rPRINT "D-LD3";LDMOD("RBM.SAMPLE3")\rPRINT "D-M3";S6AA();"/";S8EB()\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_disk_module_load3
     type: assert.screen
     params:
-      contains: "D-LD3 30"
+      contains: "D-LD3 32"
   - id: assert_direct_disk_module_rbm3
     type: assert.screen
     params:
       contains: "D-M3 4 / 113"
 
+  - id: reload_scalar_demo_commands
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT LDMOD("RBM.SAMPLE1")\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: direct_strup_variable
     type: input.sequence
     params:
@@ -268,13 +280,13 @@ steps:
   - id: direct_hcrc_hidden
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-ZHIDDENRAM HIDDEN A000 WORKER RETURN H%=131 SCREEN D-ZHIDDENRAM\rH%=ZHIDDENRAM("AB")\rPRINT "D-ZHIDDENRAM";H%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-HIDDENRAM HIDDEN A000 WORKER RETURN H%=131 SCREEN D-HIDDENRAM\rH%=HIDDENRAM("AB")\rPRINT "D-HIDDENRAM";H%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_hcrc_hidden
     type: assert.screen
     params:
-      contains: "D-ZHIDDENRAM 131"
+      contains: "D-HIDDENRAM 131"
   - id: dump_direct_hidden_worker
     type: dump.memory_ranges
     params:
@@ -283,7 +295,7 @@ steps:
   - id: direct_sumai
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-SUM INT ARRAY PTR COUNT RETURN S%=6 SCREEN D-SUM\rDIM A%(3)\rA%(0)=1:A%(1)=2:A%(2)=3\rS%=ZSUMNUMARRAY(A%(0),3)\rPRINT "D-SUM";S%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-SUM INT ARRAY PTR COUNT RETURN S%=6 SCREEN D-SUM\rDIM A%(3)\rA%(0)=1:A%(1)=2:A%(2)=3\rS%=SUMNUMARRAY(A%(0),3)\rPRINT "D-SUM";S%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_sumai
@@ -294,7 +306,7 @@ steps:
   - id: direct_rangeai
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-RANGE RESULT FRAME TO INT ARRAY SCREEN D-RANGE\rDIM R%(4)\rZRANGENUMARRAY(7,4,R%(0))\rPRINT "D-RANGE";R%(0);R%(3)\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-RANGE RESULT FRAME TO INT ARRAY SCREEN D-RANGE\rDIM R%(4)\rRANGENUMARRAY(7,4,R%(0))\rPRINT "D-RANGE";R%(0);R%(3)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_rangeai
@@ -520,7 +532,7 @@ steps:
   - id: direct_tempscratch
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-TEMP REU TEMP PAGES RETURN T%=3 SCREEN D-TEMP\rT%=ZTEMPSCRATCH(513)\rPRINT "D-TEMP";T%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-TEMP REU TEMP PAGES RETURN T%=3 SCREEN D-TEMP\rT%=TEMPSCRATCH(513)\rPRINT "D-TEMP";T%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_tempscratch
@@ -531,7 +543,7 @@ steps:
   - id: direct_fail_clears_output
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-ZFAIL ERROR PATH CLEARS X% THEN RB ERROR 7\rX%=99\rZFAIL(7,X%)\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-FAIL ERROR PATH CLEARS X% THEN RB ERROR 7\rX%=99\rFAIL(7,X%)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_fail_error
@@ -571,13 +583,13 @@ steps:
     params:
       contains: "ERROR"
 
-  - id: direct_old_add16_rejected
+  - id: direct_old_zadd16_rejected
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-OLD ADD16 HAS NO ALIAS\rADD16(1,2,A%)\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-OLD ZADD16 HAS NO ALIAS\rZADD16(1,2,A%)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
-  - id: assert_direct_old_add16_rejected
+  - id: assert_direct_old_zadd16_rejected
     type: assert.screen
     params:
       contains: "ERROR"
@@ -659,7 +671,7 @@ steps:
   - id: direct_first_comma_rejected
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-FIRST ARG COMMA IS NOT CANONICAL\rZADD16(,1,2,A%)\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-FIRST ARG COMMA IS NOT CANONICAL\rADD16(,1,2,A%)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_first_comma_rejected
@@ -670,7 +682,7 @@ steps:
   - id: direct_missing_out_marker_rejected
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-LEGACY SPACE FORM REJECTED\rZADD16 1,2,A%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-LEGACY SPACE FORM REJECTED\rADD16 1,2,A%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_missing_out_marker_rejected
@@ -723,7 +735,7 @@ steps:
   - id: direct_registry_after_resume
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rREM D-POSTRES BASIC VARS AND REGISTRY STILL ACTIVE\rPRINT "D-STATE";V%;":";VS$\rP%=ZADD16(0,1)\rPRINT "D-RESUME";P%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rREM D-POSTRES BASIC VARS AND REGISTRY STILL ACTIVE\rPRINT "D-STATE";V%;":";VS$\rP%=ADD16(0,1)\rPRINT "D-RESUME";P%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_direct_state_after_resume
@@ -738,13 +750,13 @@ steps:
   - id: program_ping_enter_and_list
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM ZECHO1 HEALTH LOW OVL STATEMENT STORES P%=1 SCREEN P-ZECHO\r20 ZECHO1(P%)\r30 PRINT "P-ZECHO";P%\rLIST\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM ECHO1 HEALTH LOW OVL STATEMENT STORES P%=1 SCREEN P-ZECHO\r20 ECHO1(P%)\r30 PRINT "P-ZECHO";P%\rLIST\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_ping_rem
     type: assert.screen
     params:
-      contains: "REM ZECHO1 HEALTH"
+      contains: "REM ECHO1 HEALTH"
   - id: program_ping_run
     type: input.sequence
     params:
@@ -759,7 +771,7 @@ steps:
   - id: program_chain_enter_and_list
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM ADD NUM PARAMS SAME LINE RETURN A%=3 SCREEN P-CHAIN\r20 A%=ZADD16(1,2):PRINT "P-CHAIN";A%\rLIST\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM ADD NUM PARAMS SAME LINE RETURN A%=3 SCREEN P-CHAIN\r20 A%=ADD16(1,2):PRINT "P-CHAIN";A%\rLIST\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_chain_rem
@@ -780,7 +792,7 @@ steps:
   - id: program_if_true_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM IF TRUE THEN RETURN COMMAND SCREEN P-IFTRUE\r20 P%=0\r30 IF 1 THEN P%=ZADD16(0,1)\r40 PRINT "P-IFTRUE";P%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM IF TRUE THEN RETURN COMMAND SCREEN P-IFTRUE\r20 P%=0\r30 IF 1 THEN P%=ADD16(0,1)\r40 PRINT "P-IFTRUE";P%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_if_true_run
@@ -791,7 +803,7 @@ steps:
   - id: program_if_false_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM IF FALSE SKIPS RETURN COMMAND SCREEN P-IFFALSE\r20 P%=0\r30 IF 0 THEN P%=ZADD16(0,1)\r40 PRINT "P-IFFALSE";P%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM IF FALSE SKIPS RETURN COMMAND SCREEN P-IFFALSE\r20 P%=0\r30 IF 0 THEN P%=ADD16(0,1)\r40 PRINT "P-IFFALSE";P%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_if_false_run
@@ -802,7 +814,7 @@ steps:
   - id: program_for_next_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM FOR NEXT COMMAND RETURN SCREEN P-FOR\r20 FOR I=1 TO 3\r30 A%=ZADD16(I,10)\r40 NEXT\r50 PRINT "P-FOR";A%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM FOR NEXT COMMAND RETURN SCREEN P-FOR\r20 FOR I=1 TO 3\r30 A%=ADD16(I,10)\r40 NEXT\r50 PRINT "P-FOR";A%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_for_next_run
@@ -855,13 +867,13 @@ steps:
   - id: program_hcrc_enter_and_list
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM ZHIDDENRAM HIDDEN A000 WORKER RETURN H%=131 SCREEN P-ZHIDDENRAM\r20 H%=ZHIDDENRAM("AB")\r30 PRINT "P-ZHIDDENRAM";H%\rLIST\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM HIDDENRAM HIDDEN A000 WORKER RETURN H%=131 SCREEN P-HIDDENRAM\r20 H%=HIDDENRAM("AB")\r30 PRINT "P-HIDDENRAM";H%\rLIST\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_hcrc_rem
     type: assert.screen
     params:
-      contains: "REM ZHIDDENRAM HIDDEN"
+      contains: "REM HIDDENRAM HIDDEN"
   - id: program_hcrc_run
     type: input.sequence
     params:
@@ -871,7 +883,7 @@ steps:
   - id: assert_program_hcrc_run
     type: assert.screen
     params:
-      contains: "P-ZHIDDENRAM 131"
+      contains: "P-HIDDENRAM 131"
   - id: dump_program_hidden_worker
     type: dump.memory_ranges
     params:
@@ -880,13 +892,13 @@ steps:
   - id: program_sumai_enter_and_list
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM ZSUMNUMARRAY INT ARRAY PTR COUNT RETURN S%=6 SCREEN P-SUM\r20 DIM A%(3)\r30 A%(0)=1:A%(1)=2:A%(2)=3\r40 S%=ZSUMNUMARRAY(A%(0),3)\r50 PRINT "P-SUM";S%\rLIST\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM SUMNUMARRAY INT ARRAY PTR COUNT RETURN S%=6 SCREEN P-SUM\r20 DIM A%(3)\r30 A%(0)=1:A%(1)=2:A%(2)=3\r40 S%=SUMNUMARRAY(A%(0),3)\r50 PRINT "P-SUM";S%\rLIST\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_sumai_rem
     type: assert.screen
     params:
-      contains: "REM ZSUMNUMARRAY INT ARRAY"
+      contains: "REM SUMNUMARRAY INT ARRAY"
   - id: program_sumai_run
     type: input.sequence
     params:
@@ -901,7 +913,7 @@ steps:
   - id: program_range_enter_and_list
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM RANGE RESULT FRAME TO INT ARRAY SCREEN P-RANGE\r20 DIM R%(4)\r30 ZRANGENUMARRAY(7,4,R%(0))\r40 PRINT "P-RANGE";R%(0);R%(3)\rLIST\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM RANGE RESULT FRAME TO INT ARRAY SCREEN P-RANGE\r20 DIM R%(4)\r30 RANGENUMARRAY(7,4,R%(0))\r40 PRINT "P-RANGE";R%(0);R%(3)\rLIST\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_range_rem
@@ -951,13 +963,13 @@ steps:
   - id: program_fail_enter_and_list
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM ZFAIL ERROR CLEARS X% BEFORE RB ERROR 7 SCREEN P-FCLR\r20 X%=99\r30 ZFAIL(7,X%)\r40 PRINT "P-AFTER";X%\rLIST\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 REM FAIL ERROR CLEARS X% BEFORE RB ERROR 7 SCREEN P-FCLR\r20 X%=99\r30 FAIL(7,X%)\r40 PRINT "P-AFTER";X%\rLIST\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 3.0
   - id: assert_program_fail_rem
     type: assert.screen
     params:
-      contains: "REM ZFAIL ERROR"
+      contains: "REM FAIL ERROR"
   - id: program_fail_run
     type: input.sequence
     params:

@@ -74,7 +74,7 @@ steps:
   - id: assert_list_rbtest1
     type: assert.screen
     params:
-      contains: "10 ZECHO1"
+      contains: "10 ECHO1"
   - id: run_rbtest1
     type: input.sequence
     params:

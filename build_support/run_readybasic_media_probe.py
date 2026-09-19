@@ -138,7 +138,7 @@ keys("occupied_file", 'OPEN 14,8,2,"RB.SUMMER"\rMEMCAP(36864):MUSTUNE("RB.SUMMER
 screen("reject_occupied_file", "?RB ERROR")
 mem("file_not_closed", 0x98, "01")
 keys("close_owned_file", 'CLOSE 14:MEMCAP(40960)\r')
-keys("cache_collision_setup", 'ZMODLD("RBM.SAMPLE2",M%):PRINT ZDOV2()\rMEMCAP(36864)\r')
+keys("cache_collision_setup", 'LDMOD("RBM.SAMPLE2",M%):PRINT DOV2()\rMEMCAP(36864)\r')
 mem("memcap_after_proof_overlay", 0x37, "00 90")
 keys("cache_collision_cleanup", 'MEMCAP(40960):PRINT "MEDIA REGRESSION DONE"\r')
 screen("regression_done", "MEDIA REGRESSION DONE")

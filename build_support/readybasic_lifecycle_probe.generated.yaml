@@ -166,10 +166,16 @@ steps:
     type: dump.memory_ranges
     params:
       ranges: *core_ranges
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,76,68,77,79,68,40,34,82,66,77,46,83,65,77,80,76,69,49,34,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: type_rb_direct_text
     type: input.sequence
     params:
-      keys: [80,37,61,90,65,68,68,49,54,40,48,44,49,41,13,80,82,73,78,84,32,34,76,83,67,65,76,65,82,34,59,80,37,13]
+      keys: [80,37,61,65,68,68,49,54,40,48,44,49,41,13,80,82,73,78,84,32,34,76,83,67,65,76,65,82,34,59,80,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.5
   - id: capture_rb_direct_text
@@ -188,14 +194,14 @@ steps:
   - id: type_rb_direct_add
     type: input.sequence
     params:
-      keys: [65,37,61,90,65,68,68,49,54,40,53,44,49,48,41,13,80,82,73,78,84,32,34,76,65,68,68,34,59,65,37,13]
+      keys: [65,37,61,65,68,68,49,54,40,53,44,49,48,41,13,80,82,73,78,84,32,34,76,65,68,68,34,59,65,37,13]
       inter_key_delay_s: 0.03
       post_delay_s: 0.5
   - id: capture_rb_direct_add
     type: screen.capture
     params:
       label: after_rb_direct_add
-      pitch: after direct ZADD16 statement
+      pitch: after direct ADD16 statement
   - id: dump_rb_direct_add_core
     type: dump.memory_ranges
     params:

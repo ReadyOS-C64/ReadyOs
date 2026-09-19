@@ -82,10 +82,16 @@ steps:
       text: "readybasic"
       wait_timeout_s: 180
       capture_label: readybasic_resume_min_prompt
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT LDMOD("RBM.SAMPLE1")\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: initial_builtin_probe
     type: input.sequence
     params:
-      keys: [$(keys $'A%=ZADD16(5,10)\r')]
+      keys: [$(keys $'A%=ADD16(5,10)\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_initial_add16_probe
@@ -95,7 +101,7 @@ steps:
   - id: initial_ping_probe
     type: input.sequence
     params:
-      keys: [$(keys $'ZECHO1(P%)\rPRINT "PRE";A%;":";P%\r')]
+      keys: [$(keys $'ECHO1(P%)\rPRINT "PRE";A%;":";P%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_initial_builtin_probe
@@ -146,7 +152,7 @@ steps:
   - id: builtin_after_resume_1
     type: input.sequence
     params:
-      keys: [$(keys $'\rPRINT "STATE";V%;":";VS$\rA%=ZADD16(5,10)\rZECHO1(P%)\rPRINT "R1";A%;":";P%\r')]
+      keys: [$(keys $'\rPRINT "STATE";V%;":";VS$\rA%=ADD16(5,10)\rECHO1(P%)\rPRINT "R1";A%;":";P%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_after_resume_1
@@ -184,7 +190,7 @@ steps:
   - id: builtin_after_resume_2
     type: input.sequence
     params:
-      keys: [$(keys $'A%=ZADD16(7,8)\rZECHO1(P%)\rPRINT "R2";A%;":";P%\r')]
+      keys: [$(keys $'A%=ADD16(7,8)\rECHO1(P%)\rPRINT "R2";A%;":";P%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.8
   - id: capture_after_resume_2

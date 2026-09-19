@@ -49,7 +49,7 @@
 1070 endp
 
 1200 proc assets()
-1210   zmodld("rbm.media",m%)
+1210   ldmod("rbm.media",m%)
 1220   print "module commands:";m%
 1250   rem psid player and data at $9200
 1260   mustune("rb.summer")

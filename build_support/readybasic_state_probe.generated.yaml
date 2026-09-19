@@ -279,10 +279,16 @@ steps:
     params:
       contains: "40 X"
 
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [80,82,73,78,84,32,76,68,77,79,68,40,34,82,66,77,46,83,65,77,80,76,69,49,34,41,13]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: new_rb_program
     type: input.sequence
     params:
-      keys: [78,69,87,13,49,48,32,80,82,73,78,84,32,34,65,34,13,50,48,32,65,37,61,90,65,68,68,49,54,40,53,44,49,48,41,13,51,48,32,80,82,73,78,84,32,34,83,65,68,68,34,59,65,37,13,82,85,78,13]
+      keys: [78,69,87,13,49,48,32,80,82,73,78,84,32,34,65,34,13,50,48,32,65,37,61,65,68,68,49,54,40,53,44,49,48,41,13,51,48,32,80,82,73,78,84,32,34,83,65,68,68,34,59,65,37,13,82,85,78,13]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_rb_program_output
@@ -318,7 +324,7 @@ steps:
   - id: assert_rb_line_after_resume
     type: assert.screen
     params:
-      contains: "20 A%=ZADD16"
+      contains: "20 A%=ADD16"
   - id: dump_final_state
     type: dump.memory_ranges
     params:

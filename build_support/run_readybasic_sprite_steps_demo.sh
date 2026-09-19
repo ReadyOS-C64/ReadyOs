@@ -148,7 +148,7 @@ steps:
     type: screen.capture
     params:
       label: readybasic_sprite_steps_stage_2_moved
-      pitch: "Stage 2: sprites moved after ZPAUSE/key gate"
+      pitch: "Stage 2: sprites moved after PAUSE/key gate"
   - id: continue_to_stage_3
     type: input.key
     params:

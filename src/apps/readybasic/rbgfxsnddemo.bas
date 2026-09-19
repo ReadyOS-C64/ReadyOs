@@ -21,7 +21,7 @@
 190 dim s%(511),sy%(335)
 200 dim lx%(1023),ly%(1023),rx%(1023),ry%(1023)
 210 exec prep
-220 zmodld("rbm.media",m%):h%=gfxsurf("mbitmap")
+220 ldmod("rbm.media",m%):h%=gfxsurf("mbitmap")
 222 g%=gfxsurf("mbitmap")
 225 print "orbital show running"
 230 exec scene

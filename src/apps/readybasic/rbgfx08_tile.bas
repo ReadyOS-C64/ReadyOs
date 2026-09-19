@@ -9,6 +9,6 @@
 90 rect(2,2,37,22,5)
 100 pnt(3,3,a%)
 110 print "tile cells use plot";a%
-120 zpause(30)
+120 pause(30)
 130 get a$:if a$="" then 120
 140 gfxtext():print "rbgfx08 complete"

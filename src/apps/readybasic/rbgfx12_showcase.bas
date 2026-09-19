@@ -10,6 +10,6 @@
 100 pnt(160,100,p%)
 110 print "center pnt";p%
 120 print "showcase done"
-130 zpause(30)
+130 pause(30)
 140 get a$:if a$="" then 130
 150 gfxtext():print "rbgfx12 complete"

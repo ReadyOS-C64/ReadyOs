@@ -11,7 +11,7 @@ be16 = lambda data, offset: struct.unpack_from(">H", data, offset)[0]
 def main():
     module = (ROOT / "obj/readybasic_modules/rbm.media.seq").read_bytes()
     assert module[:8] == b"RBM!\x01\x06\x08\x01"
-    assert u16(module, 8) == 0x1c20
+    assert u16(module, 8) == 0x1a40
     names = ["MUSTUNE", "MUSPLAY", "MUSHALT", "MUSDROP", "RSCFILE", "MCFILE", "SPRFILE", "MCLINE"]
     signatures = [19, 10, 24, 24, 19, 19, 19, 22]
     record = 16 + len(names) * 32
@@ -30,10 +30,10 @@ def main():
 
     prg = (ROOT / "bin/readybasic.prg").read_bytes()
     assert u16(prg, 0) == 0x1000 and len(prg) == 28674
-    offset = 2 + 0x5000 - 0x1000 + 16 + 93*32
+    offset = 2 + 0x5000 - 0x1000 + 16 + 78*32
     cap = prg[offset:offset+32]
     assert cap[:2] == bytes([109, 1])
-    # INPUTEV, not proof overlay 5 (which collides with rbm.sample2).
+    # Production INPUTEV; disk demos use separate submodule IDs.
     assert cap[6:9] == bytes([19, 2, 4])
     assert cap[14:22] == b"\x0a\x06MEMCAP"
     border = prg[offset+32:offset+64]

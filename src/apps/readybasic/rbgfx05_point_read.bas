@@ -9,6 +9,6 @@
 90 plot(40,40,0)
 100 pnt(40,40,c%)
 110 print "after clear";c%
-120 zpause(30)
+120 pause(30)
 130 get a$:if a$="" then 120
 140 gfxtext():print "rbgfx05 complete"

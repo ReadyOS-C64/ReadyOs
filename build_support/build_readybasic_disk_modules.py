@@ -334,14 +334,14 @@ def build_module(
 
 def rbm3_payload_commands() -> list[dict[str, int | str | bytes]]:
     commands: list[dict[str, int | str | bytes]] = []
-    command_id = 33
-    reu_offset = 0x3800
+    command_id = 147
+    reu_offset = 0xC000
     for submodule_id, slot_mask in (
         (6, RB_SLOT_PROOF_2),
         (7, RB_SLOT_PROOF_2),
         (8, RB_SLOT_PROOF_12),
     ):
-        submodule_name = {6: "ZS", 7: "ZT", 8: "ZU"}[submodule_id]
+        submodule_name = {6: "S6", 7: "S7", 8: "S8"}[submodule_id]
         for overlay_id in range(1, 6):
             overlay_name = chr(ord("A") + overlay_id - 1)
             name_a = f"{submodule_name}{overlay_name}A"
@@ -406,8 +406,8 @@ def media_module(out_dir: Path) -> bytes:
                ("MUSHALT", "mushalt", 24), ("MUSDROP", "musdrop", 24),
                ("RSCFILE", "rscfile", 19), ("MCFILE", "koaload", 19),
                ("SPRFILE", "sprfile", 19), ("MCLINE", "mcline", 22)]
-    # BORDER=$1BC0, USPEED=$1BE0, UMHZ=$1C00; don't replace built-ins.
-    return build_module(module_id=6, desc_reu_offset=0x1c20, commands=[
+    # 82 contiguous built-ins end at $1A40; SCRPUT stays at $1FE0.
+    return build_module(module_id=6, desc_reu_offset=0x1a40, commands=[
         dict(command_id=(110+i if i < 5 else 111+i), name=name, reu_offset=0x8000,
              submodule_id=24, overlay_id=0, slot_mask=RB_SLOT_PROOF_12,
              payload=payload, payload_size=len(payload),
@@ -415,70 +415,100 @@ def media_module(out_dir: Path) -> bytes:
         for i, (name, symbol, sig) in enumerate(entries)])
 
 
+# The 128-entry registry retains SCRPUT in its last slot. Production commands
+# occupy $1000-$1A3F, media $1A40-$1B3F, and disk demos $1B40-$1F3F.
+# Sample1 + sample2 coexist. Sample3 replaces their demo descriptors and carries
+# its own COPY/CPYRST entries; built-ins and media are preserved in either case.
+SAMPLE_DESC_OFF = 0x1B40
+SAMPLE1_LOW = [
+    ("CPYRST", "cmd_cpyrst_low", 14),
+    ("COPY", "cmd_copy_low", 14),
+    ("ECHO1", "cmd_echo1_low", 14),
+    ("ADD16", "cmd_add16_low", 2),
+    ("HIDDENRAM", "cmd_hiddenram_hidden", 5),
+    ("SUMNUMARRAY", "cmd_sumnumarray_low", 6),
+    ("RANGENUMARRAY", "cmd_rangenumarray_low", 7),
+    ("TEMPSCRATCH", "cmd_tempscratch_low", 11),
+    ("FAIL", "cmd_fail_low", 12),
+    ("SLOT0", "cmd_slot0_low", 14),
+]
+SAMPLE2_GROUPS = [
+    (0xB000, 34, 0, RB_SLOT_PROOF_2, [("SLOT2", 32)]),
+    (0xB100, 35, 0, RB_SLOT_PROOF_12, [("SPAN", 40), ("DM2S", 74)]),
+    (0xB200, 36, 1, RB_SLOT_PROOF_2, [("OVL1", 51), ("DOV1", 72)]),
+    (0xB300, 36, 2, RB_SLOT_PROOF_2, [("OVL2", 52), ("DOV2", 73)]),
+]
+
+
+def sample_inventory() -> dict[str, list[str]]:
+    """Public names without building payloads, used by docs and static checks."""
+    return {
+        "sample1": [n for n, _, _ in SAMPLE1_LOW] + ["SLOT1", "DM1"],
+        "sample2": [n for _, _, _, _, entries in SAMPLE2_GROUPS for n, _ in entries],
+        "sample3": ["CPYRST", "COPY"] + [str(c["name"]) for c in rbm3_commands()],
+    }
+
+
+def sample_low_payload(out_dir: Path) -> tuple[bytes, dict[str, int]]:
+    root = Path(__file__).resolve().parents[1]
+    labels = root / "obj/readybasic.labels"
+    symbols = {line.split()[2].lstrip("."): int(line.split()[1], 16)
+               for line in labels.read_text().splitlines() if line.startswith("al ")}
+    required = ("rb_copy_count", "rb_reu_core_bank", "rb_reu_fetch",
+                "rb_reu_c64_lo", "rb_reu_c64_hi", "rb_reu_off_lo", "rb_reu_off_hi",
+                "rb_reu_bank", "rb_reu_len_lo", "rb_reu_len_hi")
+    (out_dir / "sample_runtime.inc").write_text(
+        "; Generated from the matching ReadyBASIC runtime; rebuild packages together.\n" +
+        "".join(f"{n} = ${symbols[n]:04X}\n" for n in required))
+    obj, binary, label_file = [out_dir / ("sample_low." + ext) for ext in ("o", "bin", "labels")]
+    subprocess.run(["ca65", "-I", str(out_dir), "-o", str(obj),
+                    str(root / "src/apps/readybasic/sample_low.s")], check=True)
+    subprocess.run(["ld65", "-C", str(root / "cfg/readybasic_sample_low.cfg"),
+                    "-o", str(binary), "-Ln", str(label_file), str(obj)], check=True)
+    entries = {line.split()[2].lstrip("."): int(line.split()[1], 16) - 0xA800
+               for line in label_file.read_text().splitlines() if line.startswith("al ")}
+    return binary.read_bytes(), entries
+
+
+def sample_modules(out_dir: Path) -> dict[str, bytes]:
+    payload, entries = sample_low_payload(out_dir)
+    low = [dict(command_id=128+i, name=name, reu_offset=0xA000,
+                submodule_id=32, overlay_id=0, slot_mask=1,
+                payload=payload, payload_size=len(payload),
+                entry_offset=entries[symbol], signature_id=sig)
+           for i, (name, symbol, sig) in enumerate(SAMPLE1_LOW)]
+
+    def group(offset, submodule, overlay, mask, commands, first_id):
+        image = b"".join(int_command_payload(value) for _, value in commands)
+        return [dict(command_id=first_id+i, name=name, reu_offset=offset,
+                     submodule_id=submodule, overlay_id=overlay, slot_mask=mask,
+                     payload=image, payload_size=len(image), entry_offset=21*i,
+                     signature_id=SIG_SCRCAP)
+                for i, (name, _) in enumerate(commands)]
+
+    sample1 = low + group(0xA800, 33, 0, RB_SLOT_PROOF_1,
+                          [("SLOT1", 31), ("DM1", 61)], 138)
+    sample2 = []
+    for offset, submodule, overlay, mask, commands in SAMPLE2_GROUPS:
+        sample2 += group(offset, submodule, overlay, mask, commands, 140+len(sample2))
+    return {
+        "rbm.sample1.seq": build_module(module_id=7, desc_reu_offset=SAMPLE_DESC_OFF,
+                                        commands=sample1),
+        "rbm.sample2.seq": build_module(module_id=8, desc_reu_offset=SAMPLE_DESC_OFF+32*len(sample1),
+                                        commands=sample2),
+        "rbm.sample3.seq": build_module(module_id=9, desc_reu_offset=SAMPLE_DESC_OFF,
+                                        commands=low[:2]+rbm3_commands()),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", required=True, type=Path)
     args = parser.parse_args()
-
     args.out_dir.mkdir(parents=True, exist_ok=True)
     subprocess.run([sys.executable, str(Path(__file__).with_name('pack_readybasic_images.py'))], check=True)
-    modules = {
-        "rb.bad.seq": b"RSID" + bytes(120),
-        "rbm.media.seq": media_module(args.out_dir),
-        "rbm.sample1.seq": build_module(
-            module_id=3,
-            desc_reu_offset=0x1500,
-            commands=[
-                {
-                    "command_id": 29,
-                    "name": "ZDM1",
-                    "return_value": 61,
-                    "reu_offset": 0x3000,
-                    "submodule_id": 1,
-                    "overlay_id": 0,
-                    "slot_mask": RB_SLOT_PROOF_1,
-                }
-            ],
-        ),
-        "rbm.sample2.seq": build_module(
-            module_id=4,
-            desc_reu_offset=0x1600,
-            commands=[
-                {
-                    "command_id": 30,
-                    "name": "ZDM2S",
-                    "return_value": 74,
-                    "reu_offset": 0x3200,
-                    "submodule_id": 2,
-                    "overlay_id": 0,
-                    "slot_mask": RB_SLOT_PROOF_12,
-                },
-                {
-                    "command_id": 31,
-                    "name": "ZDOV1",
-                    "return_value": 72,
-                    "reu_offset": 0x3300,
-                    "submodule_id": 5,
-                    "overlay_id": 1,
-                    "slot_mask": RB_SLOT_PROOF_2,
-                },
-                {
-                    "command_id": 32,
-                    "name": "ZDOV2",
-                    "return_value": 73,
-                    "reu_offset": 0x3400,
-                    "submodule_id": 5,
-                    "overlay_id": 2,
-                    "slot_mask": RB_SLOT_PROOF_2,
-                },
-            ],
-        ),
-        "rbm.sample3.seq": build_module(
-            module_id=5,
-            desc_reu_offset=0x1700,
-            commands=rbm3_commands(),
-        ),
-    }
+    modules = {"rb.bad.seq": b"RSID" + bytes(120),
+               "rbm.media.seq": media_module(args.out_dir), **sample_modules(args.out_dir)}
     for filename, payload in modules.items():
         (args.out_dir / filename).write_bytes(payload)
 

@@ -51,7 +51,7 @@ for item in plan["steps"]:
             item["params"].update(pre_delay_s=180, wait_timeout_s=360)
     if item["type"] == "input.sequence":
         typed = bytes(item["params"]["keys"]).decode("ascii")
-        if any(word in typed for word in ("LOAD ", "MUSTUNE", "RSCFILE", "ZMODLD")):
+        if any(word in typed for word in ("LOAD ", "MUSTUNE", "RSCFILE", "LDMOD")):
             item["params"]["post_delay_s"] = 20
         if item["id"] == "run_demo":
             item["params"]["post_delay_s"] = 30

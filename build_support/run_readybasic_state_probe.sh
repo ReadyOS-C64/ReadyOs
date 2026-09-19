@@ -334,10 +334,16 @@ steps:
     params:
       contains: "40 X"
 
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT LDMOD("RBM.SAMPLE1")\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: new_rb_program
     type: input.sequence
     params:
-      keys: [$(keys $'NEW\r10 PRINT "A"\r20 A%=ZADD16(5,10)\r30 PRINT "SADD";A%\rRUN\r')]
+      keys: [$(keys $'NEW\r10 PRINT "A"\r20 A%=ADD16(5,10)\r30 PRINT "SADD";A%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_rb_program_output
@@ -373,7 +379,7 @@ steps:
   - id: assert_rb_line_after_resume
     type: assert.screen
     params:
-      contains: "20 A%=ZADD16"
+      contains: "20 A%=ADD16"
   - id: dump_final_state
     type: dump.memory_ranges
     params:

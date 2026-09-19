@@ -11,6 +11,6 @@
 110 pbufset(g%,2,190,150)
 120 polyh(g%,3,1)
 130 rem demo
-140 zpause(30)
+140 pause(30)
 150 get a$:if a$="" then 140
 160 gfxtext():print "phase3 done 19"

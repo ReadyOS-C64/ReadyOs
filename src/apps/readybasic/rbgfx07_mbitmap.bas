@@ -8,6 +8,6 @@
 80 plot(x,100,55)
 90 next x
 100 print "multicolor bitmap register path"
-110 zpause(30)
+110 pause(30)
 120 get a$:if a$="" then 110
 130 gfxtext():print "rbgfx07 complete"

@@ -25,12 +25,12 @@
 250 sprrow(1,18,255,255,0):sprrow(1,19,0,0,0)
 260 sprrow(1,20,255,255,0)
 270 sprmove(0,60,70):sprmove(1,190,110)
-280 zpause(30)
+280 pause(30)
 290 get a$:if a$="" then 280
 300 sprmove(0,120,88):sprmove(1,145,110)
-310 zpause(30)
+310 pause(30)
 320 get a$:if a$="" then 310
 330 sprset(0,1,5,0):sprset(1,1,3,0)
-340 zpause(30)
+340 pause(30)
 350 get a$:if a$="" then 340
 360 gfxtext():print "sprite demo done"

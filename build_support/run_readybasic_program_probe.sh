@@ -95,16 +95,22 @@ steps:
       wait_timeout_s: 180
       capture_label: readybasic_program_prompt
 
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT LDMOD("RBM.SAMPLE1")\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: program_ping_enter_and_list
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 ZECHO1(P%)\r20 PRINT "PRSCALAR";P%\rLIST\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 ECHO1(P%)\r20 PRINT "PRSCALAR";P%\rLIST\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_program_ping_lists
     type: assert.screen
     params:
-      contains: "10 ZECHO1"
+      contains: "10 ECHO1"
   - id: program_ping_run
     type: input.sequence
     params:
@@ -119,7 +125,7 @@ steps:
   - id: program_chain_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 A%=ZADD16(1,2):PRINT "PRCHAIN";A%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 A%=ADD16(1,2):PRINT "PRCHAIN";A%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_program_chain_run
@@ -130,7 +136,7 @@ steps:
   - id: program_if_true_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 P%=0\r20 IF 1 THEN P%=ZADD16(0,1)\r30 PRINT "PRIFTRUE";P%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 P%=0\r20 IF 1 THEN P%=ADD16(0,1)\r30 PRINT "PRIFTRUE";P%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_program_if_true_run
@@ -141,7 +147,7 @@ steps:
   - id: program_if_false_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 P%=0\r20 IF 0 THEN P%=ZADD16(0,1)\r30 PRINT "PRIFFALSE";P%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 P%=0\r20 IF 0 THEN P%=ADD16(0,1)\r30 PRINT "PRIFFALSE";P%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_program_if_false_run
@@ -171,7 +177,7 @@ steps:
   - id: program_for_next_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 3\r20 A%=ZADD16(I,10)\r30 NEXT\r40 PRINT "PRFOR";A%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FOR I=1 TO 3\r20 A%=ADD16(I,10)\r30 NEXT\r40 PRINT "PRFOR";A%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.2
   - id: assert_program_for_next_run
@@ -204,7 +210,7 @@ steps:
   - id: program_hidden_hcrc_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 H%=ZHIDDENRAM("AB")\r20 PRINT "PRHCRC";H%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 H%=HIDDENRAM("AB")\r20 PRINT "PRHCRC";H%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_program_hidden_hcrc_run
@@ -215,7 +221,7 @@ steps:
   - id: program_array_sum_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 DIM A%(3)\r20 A%(0)=1:A%(1)=2:A%(2)=3\r30 S%=ZSUMNUMARRAY(A%(0),3)\r40 PRINT "PRSUM";S%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 DIM A%(3)\r20 A%(0)=1:A%(1)=2:A%(2)=3\r30 S%=SUMNUMARRAY(A%(0),3)\r40 PRINT "PRSUM";S%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.3
   - id: assert_program_array_sum_run
@@ -226,7 +232,7 @@ steps:
   - id: program_array_range_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 DIM R%(4)\r20 ZRANGENUMARRAY(7,4,R%(0))\r30 PRINT "PRRANGE";R%(0);R%(3)\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 DIM R%(4)\r20 RANGENUMARRAY(7,4,R%(0))\r30 PRINT "PRRANGE";R%(0);R%(3)\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.3
   - id: assert_program_array_range_run
@@ -252,7 +258,7 @@ steps:
   - id: program_fail_run
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 X%=99\r20 ZFAIL(7,X%)\r30 PRINT "PRAFTER";X%\rRUN\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 X%=99\r20 FAIL(7,X%)\r30 PRINT "PRAFTER";X%\rRUN\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.0
   - id: assert_program_fail_error

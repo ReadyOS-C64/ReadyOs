@@ -219,10 +219,16 @@ steps:
     params:
       not_contains: "BAD"
 
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT LDMOD("RBM.SAMPLE1")\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: err_status_after_error
     type: input.sequence
     params:
-      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 ZFAIL(6,X%)\rRUN\rPRINT "ERX";ERRCODE();ERRLINE()\rERRCODE(E%):ERRLINE(L%):PRINT "ERS";E%;L%\r')]
+      keys: [$(keys $'PRINT CHR$(147)\rNEW\r10 FAIL(6,X%)\rRUN\rPRINT "ERX";ERRCODE();ERRLINE()\rERRCODE(E%):ERRLINE(L%):PRINT "ERS";E%;L%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 1.4
   - id: assert_err_error

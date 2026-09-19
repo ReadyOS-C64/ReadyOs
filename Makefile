@@ -885,10 +885,11 @@ $(READYIRC): $(APPS_DIR)/readyirc/readyirc.c $(APPS_DIR)/readyirc/readyirc_uci.c
 $(READYBASIC): $(APPS_DIR)/readybasic/readybasic.s $(CFG_DIR)/ready_app_readybasic.cfg
 	@mkdir -p "$(OBJ_DIR)"
 	$(AS) -o $(OBJ_DIR)/readybasic.o $(APPS_DIR)/readybasic/readybasic.s
-	$(LD) -C $(CFG_DIR)/ready_app_readybasic.cfg -m $(OBJ_DIR)/readybasic.map -o $@ $(OBJ_DIR)/readybasic.o
+	$(LD) -C $(CFG_DIR)/ready_app_readybasic.cfg -m $(OBJ_DIR)/readybasic.map -Ln $(OBJ_DIR)/readybasic.labels -o $@ $(OBJ_DIR)/readybasic.o
 
-readybasic-plugin-static-check: $(READYBASIC) $(BUILD_SUPPORT_DIR)/verify_readybasic_plugin.py
+readybasic-plugin-static-check: $(READYBASIC_MODULES) $(READYBASIC) $(BUILD_SUPPORT_DIR)/verify_readybasic_plugin.py
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_readybasic_plugin.py
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_readybasic_samples.py
 
 readybasic-repeat-label-vice: $(BUILD_SUPPORT_DIR)/vice_readybasic_repeat_label_probe.sh
 	$(BUILD_SUPPORT_DIR)/vice_readybasic_repeat_label_probe.sh
@@ -1023,7 +1024,7 @@ READYBASIC_PACKED_IMAGES = $(OBJ_DIR)/readybasic_images/rb.neon.rkc $(OBJ_DIR)/r
 $(READYBASIC_PACKED_IMAGES): $(BUILD_SUPPORT_DIR)/pack_readybasic_images.py assets/readybasic/neon/rb.neon.koa assets/readybasic/warped-city/rb.warp.koa
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/pack_readybasic_images.py
 
-$(READYBASIC_MODULES): $(READYBASIC_PACKED_IMAGES) $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py $(APPS_DIR)/readybasic/media.s $(APPS_DIR)/readybasic/media_graphics.s $(APPS_DIR)/readybasic/media_driver.s $(CFG_DIR)/readybasic_media.cfg
+$(READYBASIC_MODULES): $(READYBASIC) $(APPS_DIR)/readybasic/sample_low.s $(CFG_DIR)/readybasic_sample_low.cfg $(READYBASIC_PACKED_IMAGES) $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py $(APPS_DIR)/readybasic/media.s $(APPS_DIR)/readybasic/media_graphics.s $(APPS_DIR)/readybasic/media_driver.s $(CFG_DIR)/readybasic_media.cfg
 	@mkdir -p "$(READYBASIC_MODULE_DIR)"
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/build_readybasic_disk_modules.py --out-dir "$(READYBASIC_MODULE_DIR)"
 	@test -f $@

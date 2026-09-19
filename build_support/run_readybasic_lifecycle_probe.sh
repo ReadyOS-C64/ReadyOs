@@ -221,10 +221,16 @@ steps:
     type: dump.memory_ranges
     params:
       ranges: *core_ranges
+  - id: load_disk_demo_commands
+    type: input.sequence
+    params:
+      keys: [$(keys $'PRINT LDMOD("RBM.SAMPLE1")\r')]
+      inter_key_delay_s: 0.03
+      post_delay_s: 2.0
   - id: type_rb_direct_text
     type: input.sequence
     params:
-      keys: [$(keys $'P%=ZADD16(0,1)\rPRINT "LSCALAR";P%\r')]
+      keys: [$(keys $'P%=ADD16(0,1)\rPRINT "LSCALAR";P%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.5
   - id: capture_rb_direct_text
@@ -243,14 +249,14 @@ steps:
   - id: type_rb_direct_add
     type: input.sequence
     params:
-      keys: [$(keys $'A%=ZADD16(5,10)\rPRINT "LADD";A%\r')]
+      keys: [$(keys $'A%=ADD16(5,10)\rPRINT "LADD";A%\r')]
       inter_key_delay_s: 0.03
       post_delay_s: 0.5
   - id: capture_rb_direct_add
     type: screen.capture
     params:
       label: after_rb_direct_add
-      pitch: after direct ZADD16 statement
+      pitch: after direct ADD16 statement
   - id: dump_rb_direct_add_core
     type: dump.memory_ranges
     params:

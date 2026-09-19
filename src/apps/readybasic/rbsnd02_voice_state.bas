@@ -6,9 +6,9 @@
 60 sidrst():vol(15)
 70 print:print "wide pulse, soft release"
 80 adsr(1,0,9,12,6):pulse(1,3072):frq(1,4455)
-90 wave(1,64):gate(1,1):zpause(70):gate(1,0):zpause(50)
+90 wave(1,64):gate(1,1):pause(70):gate(1,0):pause(50)
 100 print "narrow pulse, snappier release"
 110 adsr(1,0,3,15,2):pulse(1,512):frq(1,5612)
-120 wave(1,64):gate(1,1):zpause(70):gate(1,0):zpause(50)
+120 wave(1,64):gate(1,1):pause(70):gate(1,0):pause(50)
 130 sidoff()
 140 print:print "rbsnd02 done"

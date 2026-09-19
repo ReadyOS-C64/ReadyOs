@@ -17,6 +17,7 @@
       "vice_drive_type": "1541",
       "true_drive": true,
       "contents": [
+        { "artifact": "obj/readybasic_modules/rbm.sample1.seq", "name": "rbm.sample1", "type": "seq" },
         { "artifact": "preboot.prg", "name": "preboot", "type": "prg" },
         { "artifact": "boot.prg", "name": "boot", "type": "prg" },
         { "artifact": "launcher.prg", "name": "launcher", "type": "prg" },

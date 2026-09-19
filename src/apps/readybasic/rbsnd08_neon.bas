@@ -16,7 +16,7 @@
 150 print "summer vacation: shiru / cc by 3.0"
 160 print "preparing picture, sprites and music"
 170 print "q quits / image renews every 30 sec"
-180 zmodld("rbm.media",m%)
+180 ldmod("rbm.media",m%)
 190 dim s%(255)
 200 for i=0 to 255
 210 s%(i)=int(100*sin(i*0.0245436926))

@@ -39,6 +39,7 @@
       "vice_drive_type": "1571",
       "true_drive": true,
       "contents": [
+        { "artifact": "obj/readybasic_modules/rbm.sample1.seq", "name": "rbm.sample1", "type": "seq" },
         { "artifact": "preboot.prg", "name": "preboot", "type": "prg" },
         { "artifact": "setd71.prg", "name": "setd71", "type": "prg" },
         { "artifact": "showcfg.prg", "name": "showcfg", "type": "prg" },
