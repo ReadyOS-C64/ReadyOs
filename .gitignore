@@ -29,3 +29,7 @@ logs/
 *.vsf
 *.pid
 artifacts/dev_harness/
+
+# Physical ReadyBASIC suite artifacts and video helper build output.
+build/readybasic-c64u-suites/
+build_support/readybasic_c64u_video/bin/
