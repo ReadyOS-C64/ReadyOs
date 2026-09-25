@@ -1356,7 +1356,7 @@ profile: uci-protocol-check setup-contract-check setup-host-tests programs uzip-
 		$(if $(strip $(READYOS_CONFIG_RUN_FIRST)),--override-run-first "$(READYOS_CONFIG_RUN_FIRST)",)
 
 release-all: prepare-version
-	@VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
+	@set -e; VERSION_TEXT=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --current); \
 	for profile in precog-d81 $$($(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py list-ids | grep -v '^precog-d81$$'); do \
 		RS_PARSE_TRACE_DEBUG=$$($(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py readyshell-parse-trace-debug --profile "$$profile"); \
 		echo "==> $$profile ($$VERSION_TEXT, READYSHELL_PARSE_TRACE_DEBUG=$$RS_PARSE_TRACE_DEBUG)"; \
