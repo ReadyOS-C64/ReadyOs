@@ -188,6 +188,7 @@ HEXVIEW = $(BIN_DIR)/hexview.prg
 CLIPMGR = $(BIN_DIR)/clipmgr.prg
 REUVIEWER = $(BIN_DIR)/reuviewer.prg
 SYSINFO = $(BIN_DIR)/sysinfo.prg
+C64OS_BRIDGE = $(BIN_DIR)/c64os.prg
 TASKLIST = $(BIN_DIR)/tasklist.prg
 SIMPLEFILES = $(BIN_DIR)/simplefiles.prg
 SIMPLECELLS = $(BIN_DIR)/simplecells.prg
@@ -1341,7 +1342,14 @@ else
 	@$(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --write "$(READYOS_VERSION_TEXT)" >/dev/null
 endif
 
-programs: prepare-version $(PROGRAMS)
+programs: prepare-version $(PROGRAMS) $(C64OS_BRIDGE)
+
+$(OBJ_DIR)/c64os_bridge_core.bin: experiments/c64os/bridge_core.s experiments/c64os/bridge_core.cfg
+	$(AS) -o $(OBJ_DIR)/c64os_bridge_core.o $<
+	$(LD) -C experiments/c64os/bridge_core.cfg -o $@ $(OBJ_DIR)/c64os_bridge_core.o
+
+$(C64OS_BRIDGE): $(APPS_DIR)/c64os/c64os.c $(APPS_DIR)/c64os/bridge.s $(LIB_DIR)/reu_mgr_dma.c $(OBJ_DIR)/c64os_bridge_core.bin
+	$(CC) $(APP_CFLAGS) -Os -m $(OBJ_DIR)/c64os.map -o $@ $(APPS_DIR)/c64os/c64os.c $(APPS_DIR)/c64os/bridge.s $(LIB_DIR)/reu_mgr_dma.c
 
 profiles:
 	@$(PYTHON) $(BUILD_SUPPORT_DIR)/readyos_profiles.py list-ids

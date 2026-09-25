@@ -21,6 +21,7 @@
         { "artifact": "showcfg.prg", "name": "showcfg", "type": "prg" },
         { "artifact": "boot.prg", "name": "boot", "type": "prg" },
         { "artifact": "launcher.prg", "name": "launcher", "type": "prg" },
+        { "artifact": "c64os.prg", "name": "c64os", "type": "prg" },
         { "artifact": "editor.prg", "name": "editor", "type": "prg" },
         { "artifact": "quicknotes.prg", "name": "quicknotes", "type": "prg" },
         { "artifact": "calcplus.prg", "name": "calcplus", "type": "prg" },
