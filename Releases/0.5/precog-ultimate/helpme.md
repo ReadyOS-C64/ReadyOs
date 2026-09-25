@@ -1,4 +1,4 @@
-# precog ultimate (d81)
+# precog ultimate (dual d81)
 
 - Release Line: `0.5`
 - Artifact Build: `0.5`
@@ -6,7 +6,7 @@
 
 ## Why This Variant Exists
 
-- C64 Ultimate D81 with DMA loading enabled in apps.cfg and a standalone SETUP browser for locating and validating the image through Ultimate DOS.
+- C64 Ultimate D81 pair: drive 8 holds all apps, REL data, modules and media; drive 9 holds ReadyBASIC examples. DMA loading is enabled, with standalone SETUP for the drive-8 image path.
 
 ## Before You Boot
 
@@ -14,7 +14,8 @@ ReadyOS cannot discover which Ultimate host folder/image it was booted from: the
 
 ## Artifacts
 
-- Boot-time drive 8: `readyos-v0.5-ultimate.d81`
+- Boot-time drive 8: `readyos-v0.5-ultimate_1.d81`
+- Boot-time drive 9: `readyos-v0.5-ultimate_2.d81`
 - Host-Side Boot PRG: `readyos-v0.5-ultimate-preboot.prg`
 - Host-Side Boot PRG: `readyos-v0.5-ultimate-boot.prg`
 
@@ -48,7 +49,7 @@ All ReadyOS apps require the system REU for snapshots. The labels above distingu
 
 This profile defines 44 BASIC example/test PRGs and 4 disk module packages: `rbm.sample1`, `rbm.sample2`, `rbm.sample3`, `rbm.media`.
 Built-in graphics, immediate SID sound, MEMCAP and BORDER need no disk-module load. USPEED/UMHZ are built-in but require compatible Ultimate software turbo registers.
-The new set includes RBSND07, RBGFXSNDDEMO and RBUGFXSNDDEMO. Use `ZMODLD("RBM.MEDIA",M%)` for eight on-demand music/image/sprite commands. Reserve with `MEMCAP(36864)` before strings/music; load images before starting music. The vetted PSID player is PAL-only. The standard demo avoids Ultimate speed calls; the Ultimate demo requires C64U Turbo Registers and uses 1 MHz during disk I/O.
+The new set includes RBSND07, RBGFXSNDDEMO and RBUGFXSNDDEMO. Use `LDMOD("RBM.MEDIA",M%)` for eight on-demand music/image/sprite commands. Reserve with `MEMCAP(36864)` before strings/music; load images before starting music. The vetted PSID player is PAL-only. The standard demo avoids Ultimate speed calls; the Ultimate demo requires C64U Turbo Registers and uses 1 MHz during disk I/O.
 In Orbital Echoes, Space restores the cached background, Q stops/releases music, and M keeps music playing at the text prompt. After M use `MUSDROP():CLR:MEMCAP(40960)` to release it.
 The new disk-module/resource loaders read drive 8; they do not take a device argument. See the repository's `docs/readybasic_reference.md` (and HTML counterpart) for every example, command contracts and exact per-profile availability.
 
@@ -68,7 +69,7 @@ The new disk-module/resource loaders read drive 8; they do not take a device arg
 
 - This profile uses the direct boot chain `PREBOOT -> BOOT`.
 - There is no `SETD71` stage for this variant.
-- Attach the single disk on drive `8`, then autostart `readyos-v0.5-ultimate-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
+- Attach all listed disks before boot, then autostart `readyos-v0.5-ultimate-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
 
 ## C64 Ultimate
 
@@ -77,11 +78,13 @@ The new disk-module/resource loaders read drive 8; they do not take a device arg
 - The host-side boot PRGs are optional convenience files for emulator launching; the disk-side `PREBOOT` entry is the standard hardware boot path.
 - ReadyOS cannot discover which Ultimate host folder/image it was booted from: the mounted C64 drive does not provide the enclosing D81 host pathname. Ultimate DOS fast loading therefore needs the D81's absolute host path in `[launcher] c64u_image_path` in `apps.cfg`, together with `dma_loading=1`. SETUP browses Ultimate storage, validates the selected D81, and safely saves those settings inside it. Run SETUP again after moving or renaming the image. The normal disk loader remains the fallback.
 - This SKU compiles the regular launcher with Ultimate DOS DMA support and ships `apps.cfg` with `dma_loading=1`; disk fallback remains active whenever DMA is unavailable.
-- Before the first ReadyOS boot, mount the D81 on drive `8`, run `LOAD"SETUP",8,1`, then `RUN`.
+- Mount the first D81 on drive `8` and the examples D81 on drive `9`. All apps, games, REL data, RBM packages and media assets remain on drive 8.
+- Before the first ReadyOS boot, run `LOAD"SETUP",8,1`, then `RUN`, and configure the first (drive-8) D81 path.
+- In ReadyBASIC, load examples from drive 9, for example `LOAD"RBUGFXSNDDEMO",9` then `RUN`. LDMOD and media commands continue reading their files from drive 8.
 - SETUP is a standalone utility built from focused ReadyOS TUI micromodules. It checks REU, UCI, and Ultimate DOS, browses active Ultimate storage volumes/folders for D81 images, mounts the selection, validates its `apps.cfg`, and stages the exact host path into that image.
 - SETUP uses F1/F3 for pages, cursor keys for selection, RETURN to enter/select, LEFT or DELETE to go to the parent, F5 to retest prerequisites, and F7 to apply a saved path or enter an absolute D81 path when none is available.
 - After SETUP reports `CONFIGURED`, exit with RUN/STOP and reset or boot `PREBOOT`. Do not rename or move the D81 afterward without running SETUP again.
-- Attach the single disk image on drive `8`, then boot with `LOAD "PREBOOT",8` and `RUN`.
+- Attach all listed disk images to their matching drives before boot, then run `LOAD "PREBOOT",8` and `RUN`.
 - This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.
 
 ## After PRECOG

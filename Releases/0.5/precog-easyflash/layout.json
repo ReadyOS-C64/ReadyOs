@@ -1,17 +1,17 @@
 {
-  "reu_bank_skip": 32,
+  "reu_bank_skip": 0,
   "launcher": {
     "artifact": "bin/launcher_easyflash.prg",
     "start_bank": 1,
     "bank_span": 2,
     "load_addr": 4096,
     "payload_len": 27094,
-    "checksum16": 47708
+    "checksum16": 46588
   },
   "apps": [
     {
       "bank": 1,
-      "reu_bank": 33,
+      "reu_bank": 1,
       "prg": "editor",
       "label": "editor",
       "artifact": "bin/editor.prg",
@@ -25,7 +25,7 @@
     },
     {
       "bank": 2,
-      "reu_bank": 34,
+      "reu_bank": 2,
       "prg": "readyshell",
       "label": "readyshell (beta)",
       "artifact": "bin/readyshell_easyflash.prg",
@@ -39,7 +39,7 @@
     },
     {
       "bank": 3,
-      "reu_bank": 35,
+      "reu_bank": 3,
       "prg": "simplefiles",
       "label": "simple files",
       "artifact": "bin/simplefiles.prg",
@@ -53,7 +53,7 @@
     },
     {
       "bank": 4,
-      "reu_bank": 36,
+      "reu_bank": 4,
       "prg": "clipmgr",
       "label": "clipboard",
       "artifact": "bin/clipmgr.prg",
@@ -67,7 +67,7 @@
     },
     {
       "bank": 5,
-      "reu_bank": 37,
+      "reu_bank": 5,
       "prg": "readybasic",
       "label": "ready basic (beta)",
       "artifact": "bin/readybasic.prg",
@@ -75,13 +75,13 @@
       "bank_span": 2,
       "load_addr": 4096,
       "payload_len": 28672,
-      "checksum16": 1566,
+      "checksum16": 58468,
       "default_slot": 3,
       "resource_set": 2
     },
     {
       "bank": 6,
-      "reu_bank": 38,
+      "reu_bank": 6,
       "prg": "cal26",
       "label": "calendar 26",
       "artifact": "bin/cal26.prg",
@@ -89,13 +89,13 @@
       "bank_span": 2,
       "load_addr": 4096,
       "payload_len": 32616,
-      "checksum16": 9723,
+      "checksum16": 9720,
       "default_slot": 0,
       "resource_set": 0
     },
     {
       "bank": 7,
-      "reu_bank": 39,
+      "reu_bank": 7,
       "prg": "tasklist",
       "label": "task list",
       "artifact": "bin/tasklist.prg",
@@ -109,7 +109,7 @@
     },
     {
       "bank": 8,
-      "reu_bank": 40,
+      "reu_bank": 8,
       "prg": "reuviewer",
       "label": "reu viewer",
       "artifact": "bin/reuviewer.prg",
@@ -123,7 +123,7 @@
     },
     {
       "bank": 9,
-      "reu_bank": 41,
+      "reu_bank": 9,
       "prg": "sysinfo",
       "label": "system info",
       "artifact": "bin/sysinfo.prg",
@@ -137,7 +137,7 @@
     },
     {
       "bank": 10,
-      "reu_bank": 42,
+      "reu_bank": 10,
       "prg": "quicknotes",
       "label": "quicknotes",
       "artifact": "bin/quicknotes.prg",
@@ -151,7 +151,7 @@
     },
     {
       "bank": 11,
-      "reu_bank": 43,
+      "reu_bank": 11,
       "prg": "calcplus",
       "label": "calc plus",
       "artifact": "bin/calcplus.prg",
@@ -165,7 +165,7 @@
     },
     {
       "bank": 12,
-      "reu_bank": 44,
+      "reu_bank": 12,
       "prg": "hexview",
       "label": "hex viewer",
       "artifact": "bin/hexview.prg",
@@ -179,7 +179,7 @@
     },
     {
       "bank": 13,
-      "reu_bank": 45,
+      "reu_bank": 13,
       "prg": "simplecells",
       "label": "simple cells (alpha)",
       "artifact": "bin/simplecells.prg",
@@ -193,7 +193,7 @@
     },
     {
       "bank": 14,
-      "reu_bank": 46,
+      "reu_bank": 14,
       "prg": "game2048",
       "label": "2048 game",
       "artifact": "bin/game2048.prg",
@@ -207,7 +207,7 @@
     },
     {
       "bank": 15,
-      "reu_bank": 47,
+      "reu_bank": 15,
       "prg": "sidetris",
       "label": "sidetris",
       "artifact": "bin/sidetris.prg",
@@ -221,7 +221,7 @@
     },
     {
       "bank": 16,
-      "reu_bank": 48,
+      "reu_bank": 16,
       "prg": "deminer",
       "label": "deminer",
       "artifact": "bin/deminer.prg",
@@ -235,7 +235,7 @@
     },
     {
       "bank": 17,
-      "reu_bank": 49,
+      "reu_bank": 17,
       "prg": "dizzy",
       "label": "dizzy kanban",
       "artifact": "bin/dizzy.prg",
@@ -243,13 +243,13 @@
       "bank_span": 3,
       "load_addr": 4096,
       "payload_len": 38685,
-      "checksum16": 45056,
+      "checksum16": 45053,
       "default_slot": 0,
       "resource_set": 0
     },
     {
       "bank": 18,
-      "reu_bank": 50,
+      "reu_bank": 18,
       "prg": "readyirc",
       "label": "readyirc",
       "artifact": "bin/readyirc.prg",
@@ -263,7 +263,7 @@
     },
     {
       "bank": 19,
-      "reu_bank": 51,
+      "reu_bank": 19,
       "prg": "ucitest",
       "label": "uci tester",
       "artifact": "bin/ucitest.prg",
@@ -277,15 +277,15 @@
     },
     {
       "bank": 20,
-      "reu_bank": 52,
+      "reu_bank": 20,
       "prg": "readme",
       "label": "read.me",
       "artifact": "bin/readme.prg",
       "start_bank": 41,
       "bank_span": 2,
       "load_addr": 4096,
-      "payload_len": 26867,
-      "checksum16": 1708,
+      "payload_len": 26864,
+      "checksum16": 5621,
       "default_slot": 0,
       "resource_set": 0
     }
@@ -299,7 +299,7 @@
       "load_addr": 36352,
       "payload_len": 13005,
       "checksum16": 24021,
-      "reu_bank": 53,
+      "reu_bank": 21,
       "reu_off": 0,
       "valid_bit": 1
     },
@@ -311,7 +311,7 @@
       "load_addr": 36352,
       "payload_len": 14028,
       "checksum16": 19620,
-      "reu_bank": 53,
+      "reu_bank": 21,
       "reu_off": 14336,
       "valid_bit": 2
     },
@@ -323,7 +323,7 @@
       "load_addr": 36352,
       "payload_len": 11258,
       "checksum16": 52473,
-      "reu_bank": 53,
+      "reu_bank": 21,
       "reu_off": 28672,
       "valid_bit": 4
     },
@@ -335,7 +335,7 @@
       "load_addr": 36352,
       "payload_len": 11894,
       "checksum16": 62081,
-      "reu_bank": 54,
+      "reu_bank": 22,
       "reu_off": 0,
       "valid_bit": 8
     },
@@ -347,7 +347,7 @@
       "load_addr": 36352,
       "payload_len": 10249,
       "checksum16": 23078,
-      "reu_bank": 53,
+      "reu_bank": 21,
       "reu_off": 43008,
       "valid_bit": 16
     },
@@ -359,7 +359,7 @@
       "load_addr": 36352,
       "payload_len": 14325,
       "checksum16": 20202,
-      "reu_bank": 54,
+      "reu_bank": 22,
       "reu_off": 14336,
       "valid_bit": 32
     },
@@ -371,7 +371,7 @@
       "load_addr": 36352,
       "payload_len": 8081,
       "checksum16": 28204,
-      "reu_bank": 54,
+      "reu_bank": 22,
       "reu_off": 28672,
       "valid_bit": 64
     },
@@ -383,7 +383,7 @@
       "load_addr": 36352,
       "payload_len": 6599,
       "checksum16": 43284,
-      "reu_bank": 54,
+      "reu_bank": 22,
       "reu_off": 43008,
       "valid_bit": 128
     },
@@ -395,20 +395,20 @@
       "load_addr": 36352,
       "payload_len": 2002,
       "checksum16": 13,
-      "reu_bank": 55,
+      "reu_bank": 23,
       "reu_off": 0,
       "valid_bit": 256
     }
   ],
   "readyshell_cache_banks": [
-    53,
-    54,
-    55
+    21,
+    22,
+    23
   ],
-  "readyshell_state_bank": 56,
+  "readyshell_state_bank": 24,
   "readybasic_banks": [
-    57,
-    58
+    25,
+    26
   ],
   "last_used_bank": 51
 }

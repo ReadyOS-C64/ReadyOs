@@ -75,7 +75,7 @@ x64sc -reu -reusize 1024 -drive8type 1581 -devicebackend8 0 +busdevice8 -8 ready
 ## 1MB REU Budget
 
 - This SKU is intentionally limited to `1MB` REU, which is `16` physical `64KB` REU banks.
-- It uses `reu_bank_skip=0`, so ReadyOS can use all 16 physical banks instead of skipping the lower bank range used by the normal test profiles.
+- Like every current SKU, it uses `reu_bank_skip=0`: bank 0 holds ReadyOS, and banks 1 through 15 are available for app snapshots and resources.
 - Fresh launcher state uses `1` bank by default: bank `0` is the combined ReadyOS bank, holding both the launcher snapshot and schema-v5 system state. That leaves `15` banks for suspended apps and app resources.
 - Each suspended app normally costs `1` additional bank.
 - ReadyShell costs `5` additional banks when loaded: `1` app snapshot bank, `3` overlay cache banks, and `1` state/scratch bank. With only ReadyShell loaded, expect about `6/16` banks in use including the ReadyOS bank.

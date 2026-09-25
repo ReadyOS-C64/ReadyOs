@@ -178,7 +178,7 @@
     "bank_span": 2,
     "load_addr": 4096,
     "payload_len": 27094,
-    "checksum16": 47708
+    "checksum16": 46588
   },
   "overlays": [
     {
@@ -189,7 +189,7 @@
       "load_addr": 36352,
       "payload_len": 13005,
       "checksum16": 24021,
-      "reu_bank": 53,
+      "reu_bank": 21,
       "reu_off": 0,
       "valid_bit": 1
     },
@@ -201,7 +201,7 @@
       "load_addr": 36352,
       "payload_len": 14028,
       "checksum16": 19620,
-      "reu_bank": 53,
+      "reu_bank": 21,
       "reu_off": 14336,
       "valid_bit": 2
     },
@@ -213,7 +213,7 @@
       "load_addr": 36352,
       "payload_len": 11258,
       "checksum16": 52473,
-      "reu_bank": 53,
+      "reu_bank": 21,
       "reu_off": 28672,
       "valid_bit": 4
     },
@@ -225,7 +225,7 @@
       "load_addr": 36352,
       "payload_len": 11894,
       "checksum16": 62081,
-      "reu_bank": 54,
+      "reu_bank": 22,
       "reu_off": 0,
       "valid_bit": 8
     },
@@ -237,7 +237,7 @@
       "load_addr": 36352,
       "payload_len": 10249,
       "checksum16": 23078,
-      "reu_bank": 53,
+      "reu_bank": 21,
       "reu_off": 43008,
       "valid_bit": 16
     },
@@ -249,7 +249,7 @@
       "load_addr": 36352,
       "payload_len": 14325,
       "checksum16": 20202,
-      "reu_bank": 54,
+      "reu_bank": 22,
       "reu_off": 14336,
       "valid_bit": 32
     },
@@ -261,7 +261,7 @@
       "load_addr": 36352,
       "payload_len": 8081,
       "checksum16": 28204,
-      "reu_bank": 54,
+      "reu_bank": 22,
       "reu_off": 28672,
       "valid_bit": 64
     },
@@ -273,7 +273,7 @@
       "load_addr": 36352,
       "payload_len": 6599,
       "checksum16": 43284,
-      "reu_bank": 54,
+      "reu_bank": 22,
       "reu_off": 43008,
       "valid_bit": 128
     },
@@ -285,7 +285,7 @@
       "load_addr": 36352,
       "payload_len": 2002,
       "checksum16": 13,
-      "reu_bank": 55,
+      "reu_bank": 23,
       "reu_off": 0,
       "valid_bit": 256
     }

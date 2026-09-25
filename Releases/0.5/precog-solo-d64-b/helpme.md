@@ -24,7 +24,7 @@ All ReadyOS apps require the system REU for snapshots. The labels above distingu
 
 ## ReadyBASIC examples and modules
 
-This profile defines 1 BASIC example/test PRGs and 0 disk module packages: .
+This profile defines 1 BASIC example/test PRGs and 1 disk module packages: `rbm.sample1`.
 Built-in graphics, immediate SID sound, MEMCAP and BORDER need no disk-module load. USPEED/UMHZ are built-in but require compatible Ultimate software turbo registers.
 The example count above is this profile's actual configured subset. The new `rbm.media` package, tune/images and combined demos are currently packaged in regular D81 and Ultimate D81 only. They are not implied by having the ReadyBASIC runtime.
 The new disk-module/resource loaders read drive 8; they do not take a device argument. See the repository's `docs/readybasic_reference.md` (and HTML counterpart) for every example, command contracts and exact per-profile availability.

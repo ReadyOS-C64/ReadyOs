@@ -3,24 +3,24 @@
 #define READYOS_EASYFLASH_VARIANT_NAME "precog easyflash"
 #define READYOS_EASYFLASH_VARIANT_BOOT_NAME "precog cartridge (beta)"
 #define READYOS_EASYFLASH_RUNAPPFIRST ""
-#define READYOS_EASYFLASH_REU_BANK_SKIP 32
+#define READYOS_EASYFLASH_REU_BANK_SKIP 0
 #define READYOS_EASYFLASH_APP_COUNT 20
 #define READYOS_EASYFLASH_RESOURCE_NONE 0
 #define READYOS_EASYFLASH_RESOURCE_READYSHELL_OVL 1
 #define READYOS_EASYFLASH_RESOURCE_READYBASIC_CORE 2
-#define READYOS_EASYFLASH_RS_CACHE_BANK1 53
-#define READYOS_EASYFLASH_RS_CACHE_BANK2 54
-#define READYOS_EASYFLASH_RS_CACHE_BANK3 55
-#define READYOS_EASYFLASH_RS_STATE_BANK 56
-#define READYOS_EASYFLASH_RB_CORE_BANK 57
-#define READYOS_EASYFLASH_RB_CODE_BANK 58
+#define READYOS_EASYFLASH_RS_CACHE_BANK1 21
+#define READYOS_EASYFLASH_RS_CACHE_BANK2 22
+#define READYOS_EASYFLASH_RS_CACHE_BANK3 23
+#define READYOS_EASYFLASH_RS_STATE_BANK 24
+#define READYOS_EASYFLASH_RB_CORE_BANK 25
+#define READYOS_EASYFLASH_RB_CODE_BANK 26
 
 static const unsigned char readyos_easyflash_app_banks[READYOS_EASYFLASH_APP_COUNT] = {
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 };
 
 static const unsigned char readyos_easyflash_app_physical_banks[READYOS_EASYFLASH_APP_COUNT] = {
-    33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 };
 
 static const unsigned char readyos_easyflash_default_slots[READYOS_EASYFLASH_APP_COUNT] = {
@@ -33,7 +33,7 @@ static const unsigned char readyos_easyflash_resource_sets[READYOS_EASYFLASH_APP
 
 #define READYOS_EASYFLASH_RS_OVERLAY_COUNT 9
 static const unsigned char readyos_easyflash_rs_overlay_banks[READYOS_EASYFLASH_RS_OVERLAY_COUNT] = {
-    53, 53, 53, 54, 53, 54, 54, 54, 55
+    21, 21, 21, 22, 21, 22, 22, 22, 23
 };
 
 static const unsigned int readyos_easyflash_rs_overlay_offsets[READYOS_EASYFLASH_RS_OVERLAY_COUNT] = {

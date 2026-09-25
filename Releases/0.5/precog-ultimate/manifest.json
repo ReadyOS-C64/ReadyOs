@@ -1,6 +1,6 @@
 {
   "id": "precog-ultimate",
-  "display_name": "precog ultimate (d81)",
+  "display_name": "precog ultimate (dual d81)",
   "kind": "ultimate",
   "variant_boot_name": "precog ultimate",
   "version_text": "0.5",
@@ -18,8 +18,19 @@
       "true_drive": true,
       "mount_on_boot": true,
       "role": "boot",
-      "description": "",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5-ultimate.d81"
+      "description": "Boot, all apps and games, REL data, ReadyBASIC modules and media assets.",
+      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5-ultimate_1.d81"
+    },
+    {
+      "index": 2,
+      "drive": 9,
+      "image_type": "d81",
+      "vice_drive_type": "1581",
+      "true_drive": true,
+      "mount_on_boot": true,
+      "role": "examples",
+      "description": "ReadyBASIC demo and test programs; their modules and media assets remain on drive 8.",
+      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate/readyos-v0.5-ultimate_2.d81"
     }
   ],
   "boot_prgs": [

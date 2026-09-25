@@ -23,10 +23,12 @@ Release `0.5` also begins the explicit new-Commodore-64-Ultimate
 path through a dedicated SKU, while retaining portable disk-based variants for
 other environments.
 
-The dedicated `precog-ultimate` D81 compiles and enables the C64 Ultimate DOS
+The dedicated `precog-ultimate` D81 pair compiles and enables the C64 Ultimate DOS
 DMA launcher and includes a standalone first-run SETUP utility. Other public
 profiles use the portable disk path. The Ultimate path always retains normal
-disk fallback when UCI, the image, or a transfer is unavailable.
+disk fallback when UCI, the image, or a transfer is unavailable. Drive 8 holds
+all apps, games, REL data, modules and media assets; drive 9 holds the 44
+ReadyBASIC examples. Load demos with device 9; their resource loaders use 8.
 
 ReadyOS cannot discover the Ultimate host location of its boot image. For DMA,
 `[launcher]` in `apps.cfg` needs `dma_loading=1` and `c64u_image_path` set to
@@ -89,6 +91,9 @@ the exact app mix depending on the variant you choose.
   shim owns `$C600-$C9FF`; its public ABI remains at `$C800-$C9FF`.
 - Physical REU bank `Skip` is the **ReadyOS bank** and is never allocated to an
   app/resource. Physical `Skip+1` is the first dynamic bank.
+- All current SKUs set `reu_bank_skip=0`: bank 0 holds ReadyOS, bank 1 starts
+  the dynamic pool, and no lower banks are skipped. This setting is compiled
+  into the boot/shim image; changing the disk's `apps.cfg` alone has no effect.
 - The ReadyOS bank contains the launcher snapshot at `$0000-$B5FF` and
   schema-v5 mappings, status, clipboard, hotkeys, registry/catalog, audit, and
   launcher runtime state at `$B600-$FFFF`.
@@ -158,7 +163,7 @@ This release line currently has `12` public variants.
 | --- | --- | --- | --- | --- |
 | `precog-d81` | 1x `D81` on drive `8` | C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU. | Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples. | `PREBOOT -> BOOT` |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | Full catalog cartridge preload plus the required companion data disk. | `cartridge reset` |
-| `precog-ultimate` | 1x `D81` on drive `8` | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | C64 Ultimate D81 with DMA loading enabled in apps.cfg and a standalone SETUP browser for locating and validating the image through Ultimate DOS. | `PREBOOT -> BOOT` |
+| `precog-ultimate` | 2x `D81` on drives `8` and `9` | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | C64 Ultimate D81 pair: drive 8 holds all apps, REL data, modules and media; drive 9 holds ReadyBASIC examples. DMA loading is enabled, with standalone SETUP for the drive-8 image path. | `PREBOOT -> BOOT` |
 | `precog-dual-d71` | 2x `D71` boot set on drives `8` and `9`; 1x optional `D71` drive-9 swap | C64 Ultimate, Ultimate 64, or VICE setups using two 1571-class drives, with optional drive-9 disk swapping. | Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and the original 41 ReadyBASIC examples. | `PREBOOT -> SETD71 -> BOOT` |
 | `precog-kung-fu-flash-2-d81` | 1x `D81` on drive `8` | Kung Fu Flash 2 users who want one full-content D81 and the cartridge's 1MB REU mode instead of CRT cartridge mode. | Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks. | `PREBOOT -> BOOT` |
 | `precog-dual-d64` | 2x `D64` on drives `8` and `9` | Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media. | Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media. | `PREBOOT -> BOOT` |
