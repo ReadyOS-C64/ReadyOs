@@ -1,0 +1,99 @@
+{
+  "date": "2026-09-25",
+  "build": "v0.5l",
+  "bridge_abi": 3,
+  "control_record": {
+    "bank": 39,
+    "offset": "$FD40",
+    "bytes": 8
+  },
+  "evidence_root": "../c64os-readyos-experiment",
+  "roundtrip-ui": {
+    "pass": true,
+    "scope": "quiet text mode, IDE64 v4.1, fixed 16MB REU",
+    "native_input": "C64 OS event queues dispatched by its normal UI",
+    "screenshots": [
+      "roundtrip-failed-boot-recovered.png",
+      "roundtrip-cold-desktop.png",
+      "roundtrip-c64os-reads-d81.png",
+      "roundtrip-native-readyos-menu.png",
+      "roundtrip-editor-disk-readback.png",
+      "roundtrip-final-readyos.png"
+    ],
+    "destructive_ram_proof_cycles": 3,
+    "missing_boot_file_recovers_with_kernal_error": 4,
+    "cold_round_trips": 1,
+    "warm_round_trips_before_workload": 3,
+    "c64os_reu_bytes_preserved_during_readyos_work": 2097152,
+    "readyos_reu_bytes_preserved_during_c64os_work": 14221312,
+    "unsaved_editor_text_preserved": true,
+    "native_d81_save_and_reopen_verified": true,
+    "native_file_manager_location_and_view_preserved": true,
+    "failed_cold_probe_preserves_existing_warm_context": true,
+    "warm_round_trips_total": 6,
+    "source_hashes": {
+      "bin/c64os.prg": "74347df7c8092b0aec3c85383bfd3db0a30ece187295616db6fdcd091520fed9",
+      "bin/c64os-readyos-utility.prg": "749358d4cd2679be07185f345b49f2d38b2de1c0f5cba4ad2f27b4aca2aa7cc7"
+    }
+  },
+  "utility-guard": {
+    "pass": true,
+    "missing_snapshot_rejected": true,
+    "native_utility_loaded_and_returned_closed": true,
+    "reu_bytes_unchanged_outside_native_partition": 14680064,
+    "screenshot": "guard-rejected-missing-snapshot.png"
+  },
+  "rejected-4mb": {
+    "pass": true,
+    "unsupported_reu_mb": 4,
+    "returned_to_launcher": true,
+    "screenshot": "rejected-4mb.png"
+  },
+  "final-original-integrity": {
+    "pass": true,
+    "files_verified_per_tree": 7230,
+    "trees": [
+      "original",
+      "baseline"
+    ],
+    "changed": []
+  },
+  "flushed_d81_host_readback": {
+    "pass": true,
+    "image": "roundtrip-final.d81",
+    "file": "brg25test,s",
+    "bytes": [
+      66,
+      82,
+      73,
+      68,
+      71,
+      69,
+      32,
+      83,
+      84,
+      65,
+      84,
+      69,
+      32,
+      83,
+      69,
+      80,
+      84,
+      69,
+      77,
+      66,
+      69,
+      82,
+      32,
+      50,
+      53,
+      13
+    ]
+  },
+  "limitations": [
+    "Quiet text mode and completed foreground file I/O only",
+    "SID is silenced, not restored",
+    "Custom IRQ/CIA/SID workloads and physical hardware unverified"
+  ]
+}

@@ -1,37 +1,82 @@
-; Common full-RAM transfer trampoline. Both OS images must contain these exact
-; bytes at $0400 while suspended. Native resume code replaces the displaced
-; screen/input bytes only after execution has left the trampoline.
-;
-; Initial executable gate: same-context destructive round trip. The incoming
-; wrapper has saved P/A/X/Y/$01/$00 on the CPU stack and copied color RAM and
-; displaced $0400-$07ff bytes into its own snapshot-resident storage.
+; Shared trampoline: full C64 RAM and IDE64's 28KB DOS RAM. No KERNAL calls
+; while a context is half-restored. Native wrappers restore displaced low RAM.
+.include "experiments/c64os/bridge_abi.inc"
 .segment "CODE"
-current_bank = $0700
-target_bank  = $0701
-resume_pc    = $0702
-saved_sp     = $0704
-proof_mode   = $0705
 core_start:
-
+        jmp start               ; $0400 entry
+        jmp failed              ; $0403 cold-load failure recovery
+        rti                     ; $0406 guarded NMI vector
+start:
         sei
         jsr setup
-        lda current_bank
+        lda BRIDGE_CURRENT
         sta $df06
-        lda #$80                ; delayed C64 -> REU, 64 KB
+        lda #$80
         sta $df01
-        lda #$30                ; RAM beneath BASIC, KERNAL and I/O
+        lda #$30
         sta $01
-        sta $ff00               ; trigger transfer (native wrapper saves FF00)
+        sta $ff00
         lda #$35
         sta $01
-
-        lda proof_mode
-        beq restore
-        ; Deliberately destroy runtime ZP, CPU stack and the full shim. The
-        ; fetch below must restore these before any JSR/RTS or C code executes.
+        lda #0
+        sta BRIDGE_DIRECTION
+        jsr ide_context
+        lda BRIDGE_PROOF
+        bne proof
+        ; Publish validity only after BOTH RAM images are complete.
+        jsr setup
+        lda #1
+        sta BRIDGE_VALID
+        sta $df07
+        lda #<BRIDGE_VALID
+        sta $df02
+        lda #>BRIDGE_VALID
+        sta $df03
+        lda #BRIDGE_CONTROL_BANK
+        sta $df06
+        lda #>BRIDGE_CONTROL_OFF
+        sta $df05
+        lda BRIDGE_CURRENT
+        lsr
+        sec
+        sbc #16
+        clc
+        adc #<(BRIDGE_CONTROL_OFF+5)
+        sta $df04
+        lda #$90
+        sta $df01
+        lda BRIDGE_TARGET
+        cmp #$ff
+        bne restore
         ldx #0
+copy_cold:
+        lda cold,x
+        sta $cf00,x
+        inx
+        bne copy_cold
+        jmp $cf00
+failed:
+        ; Publish the KERNAL error outside the image we are about to restore.
+        jsr setup
+        lda #<BRIDGE_LAST_ERROR
+        sta $df02
+        lda #>BRIDGE_LAST_ERROR
+        sta $df03
+        lda #<(BRIDGE_CONTROL_OFF+7)
+        sta $df04
+        lda #>BRIDGE_CONTROL_OFF
+        sta $df05
+        lda #BRIDGE_CONTROL_BANK
+        sta $df06
+        lda #1
+        sta $df07
+        lda #$90
+        sta $df01
+        jmp restore
+proof: ldx #0
         lda #$a5
-damage: sta $c600,x
+ damage:
+        sta $c600,x
         sta $c700,x
         sta $c800,x
         sta $c900,x
@@ -39,13 +84,12 @@ damage: sta $c600,x
         inx
         bne damage
         ldx #2
-damage_zp:
+ damage_zp:
         sta $00,x
         inx
         bne damage_zp
-
 restore:
-        ; No JSR here: the proof intentionally destroyed the stack.
+        ; No JSR until the target stack has been restored.
         lda #0
         sta $df02
         sta $df03
@@ -55,20 +99,21 @@ restore:
         sta $df08
         sta $df09
         sta $df0a
-        lda target_bank
+        lda BRIDGE_TARGET
         sta $df06
-        lda #$81                ; delayed REU -> C64, 64 KB
+        lda #$81
         sta $df01
         lda #$30
         sta $01
         sta $ff00
-        ; CPU resumes here using the destination's copy of this trampoline.
         lda #$35
         sta $01
-        ldx saved_sp
+        ldx BRIDGE_SP
         txs
-        jmp (resume_pc)
-
+        lda #1
+        sta BRIDGE_DIRECTION
+        jsr ide_context
+        jmp (BRIDGE_RESUME)
 setup: lda #0
         sta $df02
         sta $df03
@@ -79,8 +124,68 @@ setup: lda #0
         sta $df09
         sta $df0a
         rts
+ide_context:
+        ; OPEN maps external RAM $1000-$7fff: execute below $1000 and stage
+        ; through $0800. Do not assume REU DMA can see cartridge SRAM.
+        lda BRIDGE_IDE_ROM
+        lsr
+        lsr
+        and #7
+        tax
+        sta $de60,x
+        sta $defe
+        lda #$10
+        sta BRIDGE_WORK_PAGE
+page:
+        lda BRIDGE_WORK_PAGE
+        sta load_ide+2
+        sta store_ide+2
+        lda BRIDGE_DIRECTION
+        bne fetch_page
+        ldx #0
+load_ide:
+        lda $1000,x
+        sta $0800,x
+        inx
+        bne load_ide
+        jsr page_setup
+        lda #$90
+        sta $df01
+        jmp next_page
+fetch_page:
+        jsr page_setup
+        lda #$91
+        sta $df01
+        ldx #0
+copy_page:
+        lda $0800,x
+store_ide:
+        sta $1000,x
+        inx
+        bne copy_page
+next_page:
+        inc BRIDGE_WORK_PAGE
+        lda BRIDGE_WORK_PAGE
+        cmp #$80
+        bne page
+        sta $deff
+        rts
+page_setup:
+        jsr setup
+        lda #8
+        sta $df03
+        lda BRIDGE_WORK_PAGE
+        sta $df05
+        lda BRIDGE_CURRENT
+        clc
+        adc #1
+        sta $df06
+        lda #1
+        sta $df08
+        rts
+cold:   .incbin "obj/c64os_cold_boot.bin"
         .assert *-core_start <= $0300, error, "bridge core overlaps context fields"
         .res $0300-(*-core_start), 0
-        .byte 32,32             ; current and target RAM image banks
-        .word 0                 ; destination native resume routine
-        .byte 0,1               ; SP, destructive proof enabled
+        .byte 32,32
+        .word 0
+        .byte 0,1,0,0,0,0,0,0

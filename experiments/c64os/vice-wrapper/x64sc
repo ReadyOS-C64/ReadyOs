@@ -4,8 +4,18 @@ import os
 from pathlib import Path
 import shutil
 import sys
+import time
 
 env = Path(os.environ["READYOS_BRIDGE_ENV"]).resolve()
+pidfile = env / "readyos/vice.pid"
+if pidfile.exists():
+    previous_pid = int(pidfile.read_text())
+    try:
+        os.kill(previous_pid, 0)
+    except ProcessLookupError:
+        pass
+    else:
+        raise SystemExit(f"Experiment process {previous_pid} is still running; close it before reopening its HDD")
 support = env / "runtime/vice support"
 args = sys.argv[1:]
 # VICE's PRG autostart aborts when IDEDOS enters cartridge code, and can
@@ -21,6 +31,10 @@ for flag in ("-8", "-logfile"):
         stamp = target.with_suffix(".source")
         identity = f"{source}\n{source.stat().st_mtime_ns}\n{source.stat().st_size}\n"
         if not stamp.exists() or stamp.read_text() != identity:
+            if target.exists():
+                backups = target.parent / "runtime-backups"
+                backups.mkdir(exist_ok=True)
+                shutil.copy2(target, backups / f"readyos-{time.time_ns()}.d81")
             shutil.copy2(source, target)
             stamp.write_text(identity)
         args[index] = str(target)
@@ -36,4 +50,7 @@ extra = ["-cartcrt", str(support / "idedos20190819-c64.crt"),
          "-warp", "-drive8truedrive", "+trapdevice8",
          "+saveres", "+confirmonexit", "+sound"]
 vice = os.environ["READYOS_BRIDGE_VICE"]
+if os.environ.get("READYOS_BRIDGE_CONSOLE") == "1":
+    extra += ["-console"]
+pidfile.write_text(str(os.getpid()) + "\n")
 os.execv(vice, [vice, "-default", *args, *extra])

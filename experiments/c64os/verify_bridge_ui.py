@@ -65,7 +65,7 @@ def main():
         if "C64 OS BRIDGE - EXPERIMENTAL" not in text:
             wait_screen(mon, "APPLICATIONS")
             feed(mon, [19,17,17,13])
-        text = wait_screen(mon, "WHOLE-MACHINE TRANSFER PROOF")
+        text = wait_screen(mon, "C: START OR RESUME C64 OS")
         assert "REQUIRES SKIP" not in text
         previous = [int(n) for n in re.findall(r"RESTORED ZP/STACK/SHIM: (\d+)", text)]
         count = max(previous, default=0)
