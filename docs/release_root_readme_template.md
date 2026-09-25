@@ -23,10 +23,12 @@ Release `{{PUBLIC_VERSION}}` also begins the explicit new-Commodore-64-Ultimate
 path through a dedicated SKU, while retaining portable disk-based variants for
 other environments.
 
-The dedicated `precog-ultimate` D81 compiles and enables the C64 Ultimate DOS
+The dedicated `precog-ultimate` D81 pair compiles and enables the C64 Ultimate DOS
 DMA launcher and includes a standalone first-run SETUP utility. Other public
 profiles use the portable disk path. The Ultimate path always retains normal
-disk fallback when UCI, the image, or a transfer is unavailable.
+disk fallback when UCI, the image, or a transfer is unavailable. Drive 8 holds
+all apps, games, REL data, modules and media assets; drive 9 holds the 44
+ReadyBASIC examples. Load demos with device 9; their resource loaders use 8.
 
 ReadyOS cannot discover the Ultimate host location of its boot image. For DMA,
 `[launcher]` in `apps.cfg` needs `dma_loading=1` and `c64u_image_path` set to
@@ -89,6 +91,9 @@ the exact app mix depending on the variant you choose.
   shim owns `$C600-$C9FF`; its public ABI remains at `$C800-$C9FF`.
 - Physical REU bank `Skip` is the **ReadyOS bank** and is never allocated to an
   app/resource. Physical `Skip+1` is the first dynamic bank.
+- All current SKUs set `reu_bank_skip=0`: bank 0 holds ReadyOS, bank 1 starts
+  the dynamic pool, and no lower banks are skipped. This setting is compiled
+  into the boot/shim image; changing the disk's `apps.cfg` alone has no effect.
 - The ReadyOS bank contains the launcher snapshot at `$0000-$B5FF` and
   schema-v5 mappings, status, clipboard, hotkeys, registry/catalog, audit, and
   launcher runtime state at `$B600-$FFFF`.

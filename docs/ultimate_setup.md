@@ -1,6 +1,6 @@
 # Ultimate D81 SETUP
 
-`precog-ultimate` is the C64 Ultimate-first full-content D81 SKU. Its launcher
+`precog-ultimate` is the C64 Ultimate-first full-content two-D81 SKU. Its launcher
 is compiled with Ultimate DOS DMA support, and its generated `apps.cfg` begins
 with `dma_loading=1` and an empty `c64u_image_path`. The image also contains
 `SETUP`, a standalone first-run utility that records the exact Ultimate host
@@ -21,18 +21,24 @@ the proven Ultimate DOS command spellings and resilient UCI state machine.
 
 ## First Run
 
-1. Copy the Ultimate SKU D81 into a permanent folder on `usb1` or the SD card.
-2. Mount that same D81 on emulated drive `8`.
+1. Copy both Ultimate SKU D81 files into a permanent folder on `usb1` or the SD card.
+2. Mount the first (`ultimate_1.d81`) on drive `8` and the examples image
+   (`ultimate_2.d81`) on drive `9`. All apps, games, REL data, modules and media
+   assets remain on drive 8.
 3. From BASIC, run `LOAD"SETUP",8,1`, then `RUN`.
 4. Resolve any prerequisite marked `MISSING` or `OFF/ERROR`, then press `F5`.
 5. Browse from `/` through the active Ultimate storage volumes and folders.
    SETUP displays folders and D81 files only.
-6. Select the ReadyOS D81 and confirm the update.
+6. Select the first, drive-8 ReadyOS D81 and confirm the update.
 7. After `CONFIGURED - READYOS DMA IS READY`, exit with RUN/STOP and reset or
    boot `PREBOOT` normally.
 
 Do not move or rename the D81 after setup. If its host path changes, mount it on
 drive `8` and run SETUP again.
+
+ReadyBASIC examples load from drive 9, for example `LOAD"RBUGFXSNDDEMO",9`
+then `RUN`. Their `LDMOD` and media commands continue reading drive 8. The
+examples disk needs no separate DMA-path setup.
 
 ## Controls
 

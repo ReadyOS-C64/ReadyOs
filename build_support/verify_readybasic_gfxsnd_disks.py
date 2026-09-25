@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+import readyos_profiles
 
 ROOT = Path(__file__).resolve().parents[1]
 files = {
@@ -23,20 +24,25 @@ parser.add_argument('--profile', action='append', choices=('precog-d81', 'precog
 args = parser.parse_args()
 for profile in (args.profile or ('precog-d81', 'precog-ultimate')):
     manifest=json.loads((ROOT/f'Releases/0.5/{profile}/manifest.json').read_text())
-    disk=manifest['disks'][0]['path']
+    disks={d['index']: d['path'] for d in manifest['disks']}
+    file_disks={e['name']: disks[d['index']]
+                for d in readyos_profiles.load_profile(profile)['disks'] for e in d['contents']}
     with tempfile.TemporaryDirectory(prefix='readybasic-disk-check-') as temporary:
         for name, source in files.items():
+            disk=file_disks[name.split(',')[0]]
             target=Path(temporary)/name
             subprocess.run(['c1541', disk, '-read', name, str(target)],
                 check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             assert target.read_bytes()==(ROOT/source).read_bytes(), (profile, name)
         if profile=='precog-ultimate':
+            disk=next(d['path'] for d in manifest['disks'] if d['drive']==8)
             target=Path(temporary)/'apps.cfg'
             subprocess.run(['c1541', disk, '-read', 'apps.cfg,s', str(target)],
                 check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             cfg=target.read_bytes().decode('ascii').lower()
-            deploy=json.loads((ROOT/'build/readybasic-media-tools/neon-deployment.json').read_text())
-            assert disk==deploy['disk']
-            assert 'c64u_image_path='+deploy['remote'].lower()+'\r' in cfg
             assert 'dma_loading=1\r' in cfg
-    print('EXACT D81 CONTENT VERIFIED:', disk)
+            # Release images intentionally have no deployment path. A custom
+            # test catalog carries one; compare it to that manifest's source.
+            _, launcher, _ = readyos_profiles.apps_catalog.parse_source(manifest['catalog_source'])
+            assert 'c64u_image_path='+launcher['c64u_image_path'].lower()+'\r' in cfg
+    print('EXACT D81 CONTENT VERIFIED:', profile, *disks.values())

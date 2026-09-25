@@ -26,12 +26,19 @@ Install PyYAML in a temporary Python environment and build this video helper:
 ```sh
 dotnet build build_support/readybasic_c64u_video/Video.csproj
 python build_support/run_readybasic_c64u_suites.py \
-  --disk /absolute/path/to/test.d81 \
+  --disk /absolute/path/to/test-boot.d81 \
+  --examples-disk /absolute/path/to/test-examples.d81 \
   --remote-image /USB1/automation/readybasic-suites/unique/TEST.D81 \
   --video-helper build_support/readybasic_c64u_video/bin/Debug/net8.0/Video.dll \
   --out build/readybasic-c64u-suites/unique-run \
   build_support/readybasic_module_overlay_probe.generated.yaml
 ```
+
+For the Ultimate D81 pair, `--disk` is the drive-8 boot image and
+`--examples-disk` is the drive-9 demo image. The adapter uploads the companion
+as `EXAMPLES.D81` in the same fresh folder, verifies both images, mounts both
+drives, and routes only named demo LOAD commands to device 9. LDMOD/media
+loads stay on device 8. Omit `--examples-disk` for older single-image fixtures.
 
 The sibling `agenticdevharness` checkout supplies the .NET source. The adapter
 builds an isolated copy inside the run directory, enables its existing

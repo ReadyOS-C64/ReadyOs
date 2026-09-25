@@ -81,8 +81,22 @@ def main() -> int:
          "resolve", "--profile", "precog-ultimate", "--version", "0.5"],
         cwd=ROOT, text=True,
     ))
-    if resolved["kind"] != "ultimate" or resolved["disks"][0]["image_type"] != "d81":
-        fail("precog-ultimate must resolve as one D81 Ultimate SKU")
+    if (resolved["kind"] != "ultimate" or len(resolved["disks"]) != 2 or
+            [d["drive"] for d in resolved["disks"]] != [8, 9] or
+            any(d["image_type"] != "d81" for d in resolved["disks"])):
+        fail("precog-ultimate must resolve as a D81 pair on drives 8 and 9")
+    import readyos_profiles
+    disks = readyos_profiles.load_profile("precog-ultimate")["disks"]
+    boot_names = {e["name"] for e in disks[0]["contents"]}
+    if not {"readybasic", "game2048", "deminer", "dizzy", "cal26", "rbm.sample1", "rbm.media", "setup"} <= boot_names:
+        fail("Ultimate apps, games, REL-backed apps and module packages must stay on drive 8")
+    demos = disks[1]["contents"]
+    if len(demos) != 44 or any(readyos_profiles.disk_directory_group(
+            e["name"], e["type"], e.get("directory_group")) != "readybasic_example" for e in demos):
+        fail("Ultimate drive 9 must contain all 44 ReadyBASIC examples and no app/REL payloads")
+    if any(readyos_profiles.disk_directory_group(e["name"], e["type"], e.get("directory_group")) ==
+           "readybasic_example" for e in disks[0]["contents"]):
+        fail("Ultimate BASIC examples must be on drive 9")
 
     map_path = ROOT / "obj/setup.map"
     if map_path.exists():

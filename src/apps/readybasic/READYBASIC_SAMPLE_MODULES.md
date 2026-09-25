@@ -95,7 +95,7 @@ again returns 4.
 ## Registry and payload layout
 
 Sample1 and sample2 coexist. Sample3 replaces their demo entries and brings
-its own counter commands. Reload sample1/sample2 before returning to their
+its own compact 40-byte counter payload. Reload sample1/sample2 before returning to their
 examples. Loading sample1 after sample3 does not unregister the remaining
 sample3 entries; only the new package's descriptor range is replaced.
 All these packages preserve the production and media command entries.
@@ -112,7 +112,7 @@ All these packages preserve the production and media command entries.
 
 Sample payloads use separate code-bank storage: slot-0 examples at `$A000`,
 slot-1 examples at `$A800`, sample2 images at `$B000/$B100/$B200/$B300`, and
-sample3 images at `$C000–$CE3C`. These are REU offsets, separate from their
+sample3 images at `$C000–$CE26`. These are REU offsets, separate from their
 C64 execution addresses. Production overlays remain at `$5000–$7FFF` and
 media at `$8000–$8FFF`.
 
@@ -181,3 +181,21 @@ them. All assertions in the seven selected suites were retained.
 The hardware run also exposed a decimal-display bug: internal zeroes in the
 free-memory count printed as ones. The formatter now prints 30013 correctly;
 compiled formatter tests cover zero, internal zeroes and the 16-bit limit.
+
+### Release packaging follow-up
+
+The committed Ultimate D81 had four free blocks. Moving demos into external
+packages initially added eight blocks and exceeded that budget. Sample3 now
+carries only the COPY/CPYRST workers it uses, and each pair of stateful overlay
+entries shares result-writing code. Sample1's ECHO1 worker also avoids repeated
+immediate loads. Names, descriptor counts, return values, overlay state and
+package format are unchanged.
+
+The packages now occupy 4, 2 and 7 disk blocks respectively (1014, 411 and 1761
+bytes). This first recovered enough space for a single Ultimate D81 with one free
+block. The release now uses two D81s: all apps, games, REL data, modules and
+media assets on drive 8, and all 44 BASIC examples on drive 9. Load examples
+with device 9; LDMOD and media commands continue using drive 8. Compiled worker checks cover all entries, 16-bit carry and counter
+wraparound; the earlier 225 hardware assertions predate this size optimization.
+All release SKUs now set `reu_bank_skip=0`; their boot/shim images use bank 0
+for ReadyOS and start the dynamic pool at bank 1.

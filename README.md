@@ -193,7 +193,7 @@ target drive types, disk capacities, and cartridge support are different.
 | Profile | Media | Why It Exists | Boot Flow | App Set |
 | --- | --- | --- | --- | --- |
 | `precog-d81` | one `D81` image on drive `8` | recommended main ReadyOS SKU and default build/run target | `PREBOOT -> BOOT` | 19 launcher apps plus ReadyBASIC modules and the complete example set; `sidetris` is also present through `app.sidetris` |
-| `precog-ultimate` | one `D81` image on drive `8` | C64 Ultimate-first SKU with DMA loading and guided image-path setup | run standalone `SETUP` once, then `PREBOOT -> BOOT` | D81 media examples plus Ultimate Zip and non-catalog `SETUP`; app selection follows its own catalog |
+| `precog-ultimate` | two `D81` images on drives `8` and `9` | C64 Ultimate-first SKU with DMA loading and guided image-path setup | run standalone `SETUP` once, then `PREBOOT -> BOOT` | All apps, games, REL data and modules on drive 8; ReadyBASIC examples on drive 9; includes Ultimate Zip and standalone `SETUP` |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | full cartridge cold-boot path for VICE and Ultimate-family setups that can keep a disk mounted | reset into cartridge boot | full current app catalog |
 | `precog-dual-d71` | two boot-time `D71` images on drives `8` and `9`, plus an optional third `D71` swapped into drive `9` | full core `1571` profile with capacity for optional apps and examples without crowding the boot pair | `PREBOOT -> SETD71 -> BOOT` | 16 core launcher apps; optional disk adds app-config versions of `sidetris`, `deminer`, `ucitest`, and `readme`, followed by the original 41 ReadyBASIC examples |
 | `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | broad Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | same 19-app set as `precog-d81` |
@@ -214,9 +214,12 @@ Those cartridge-preloaded app snapshots are a cold-boot preload only. If one is
 unloaded from REU, ReadyOS cannot load it again from the cartridge until you
 restart ReadyOS.
 
-The Ultimate D81 is deliberately separate from the portable main D81. Copy it
-to Ultimate storage, mount it on drive `8`, and run
-`LOAD"SETUP",8,1` followed by `RUN` before the first ReadyOS boot. SETUP checks
+The Ultimate D81 pair is separate from the portable main D81. Copy both images
+to Ultimate storage. Mount the first on drive `8` and the examples disk on
+drive `9`, then run
+`LOAD"SETUP",8,1` followed by `RUN` before the first ReadyOS boot. Configure
+the first image's path. Load ReadyBASIC demos with `LOAD"RBUGFXSNDDEMO",9`;
+modules and media still load from drive 8. SETUP checks
 the REU, UCI, and Ultimate DOS; browses active storage volumes, folders, and
 D81 files; mounts and validates the selected image; and updates that image's
 `apps.cfg` with `dma_loading=1` and its exact host path. It uses staged
@@ -236,8 +239,7 @@ to BASIC cold start instead of trying to continue.
 The Kung Fu Flash 2 D81 SKU is intentionally separate from the EasyFlash CRT
 SKU. It is a disk-image path for KFF2 setups where CRT cartridge mode would
 disable KFF2 REU emulation. It targets KFF2's `1MB` REU mode and starts at
-physical REU bank `0` instead of skipping the lower bank range used by the
-normal test profiles. If the 1MB REU fills up, launching another app may simply
+physical REU bank `0`, as do all current SKUs. If the 1MB REU fills up, launching another app may simply
 do nothing instead of showing an error. Unload one or more apps to free REU
 banks, then launch the app again.
 
@@ -341,6 +343,8 @@ How it works:
   number of physical 64K REU banks skipped before ReadyOS starts using REU
   space. The generated `apps.cfg` still records the profile source value for
   auditability, but the runtime launcher does not read it as configuration.
+  All current SKUs set it to `0`: bank 0 holds ReadyOS and bank 1 starts the
+  dynamic app/resource pool.
 - `load_all_to_reu` controls whether the launcher tries to preload all app
   payloads into the REU at startup.
 - `runappfirst` optionally names an app token to auto-launch after boot.

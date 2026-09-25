@@ -58,7 +58,7 @@ run env UZIP_DIAGNOSTIC=1 /bin/bash ./run.sh --profile precog-ultimate \
 
 public_version="$(python3 build_support/update_build_version.py --current)"
 public_version="${public_version%[A-Za-z]}"
-d81="$(ls -t "Releases/$public_version/precog-ultimate/"*.d81 | head -1)"
+d81="$(python3 build_support/readyos_profiles.py latest-disk --profile precog-ultimate --drive 8)"
 if [ -z "$d81" ] || [ ! -f "$d81" ]; then
   echo "diagnostic Ultimate D81 not found" >> "$log"; exit 1
 fi

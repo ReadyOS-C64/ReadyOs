@@ -56,7 +56,7 @@ screen('speed64_ok', 'SPEED64 15')
 keys('speed1', 'USPEED(1):PRINT "SPEED1";(PEEK(53297)AND15)\r')
 screen('speed1_ok', 'SPEED1 0')
 keys('colors', 'BORDER(4):MCBG(6):POKE646,14\r')
-keys('load', 'LOAD "RBUGFXSNDDEMO",8\r', 20)
+keys('load', 'LOAD "RBUGFXSNDDEMO",' + ('9' if deployment.get('examples_disk') else '8') + '\r', 20)
 # Program is already loaded: prove its first command downshifts from turbo.
 keys('turbo_before_run', 'USPEED(16)\r')
 keys('run', 'RUN\r')  # Boundary marker only; replaced by run_then_video below.

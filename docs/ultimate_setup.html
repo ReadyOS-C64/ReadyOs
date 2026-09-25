@@ -110,21 +110,22 @@
 </nav></details>
 <section id="ultimate-d81-setup" class="level1">
 <h1>Ultimate D81 SETUP</h1>
-<p><code>precog-ultimate</code> is the C64 Ultimate-first full-content D81 SKU. Its launcher is compiled with Ultimate DOS DMA support, and its generated <code>apps.cfg</code> begins with <code>dma_loading=1</code> and an empty <code>c64u_image_path</code>. The image also contains <code>SETUP</code>, a standalone first-run utility that records the exact Ultimate host path of that D81 before ReadyOS boots.</p>
+<p><code>precog-ultimate</code> is the C64 Ultimate-first full-content two-D81 SKU. Its launcher is compiled with Ultimate DOS DMA support, and its generated <code>apps.cfg</code> begins with <code>dma_loading=1</code> and an empty <code>c64u_image_path</code>. The image also contains <code>SETUP</code>, a standalone first-run utility that records the exact Ultimate host path of that D81 before ReadyOS boots.</p>
 <p>The path is necessary because a C64 program cannot discover the host location of the disk image it is running from. Drive 8 and the disk directory identify files <em>inside</em> a D81, not that D81's USB/SD pathname. SETUP bridges this gap by letting you choose the image, then writing <code>c64u_image_path</code> and <code>dma_loading=1</code> in the <code>[launcher]</code> section of its <code>apps.cfg</code>. This configures today's image-based fast loader; it is not the full folder-based installer planned for ReadyOS Ultimate.</p>
 <p>SETUP is deliberately not a ReadyOS launcher app. It is a normal <code>$0801</code> C64 program that links only the focused ReadyOS TUI micromodules needed for its screen, window, menu, and small UI helpers. It has no ReadyOS shim, ReadyFS architecture, or overlay dependency. ReadyFS was used only as a reference for the proven Ultimate DOS command spellings and resilient UCI state machine.</p>
 <section id="first-run" class="level2">
 <h2>First Run</h2>
 <ol type="1">
-<li>Copy the Ultimate SKU D81 into a permanent folder on <code>usb1</code> or the SD card.</li>
-<li>Mount that same D81 on emulated drive <code>8</code>.</li>
+<li>Copy both Ultimate SKU D81 files into a permanent folder on <code>usb1</code> or the SD card.</li>
+<li>Mount the first (<code>ultimate_1.d81</code>) on drive <code>8</code> and the examples image (<code>ultimate_2.d81</code>) on drive <code>9</code>. All apps, games, REL data, modules and media assets remain on drive 8.</li>
 <li>From BASIC, run <code>LOAD"SETUP",8,1</code>, then <code>RUN</code>.</li>
 <li>Resolve any prerequisite marked <code>MISSING</code> or <code>OFF/ERROR</code>, then press <code>F5</code>.</li>
 <li>Browse from <code>/</code> through the active Ultimate storage volumes and folders. SETUP displays folders and D81 files only.</li>
-<li>Select the ReadyOS D81 and confirm the update.</li>
+<li>Select the first, drive-8 ReadyOS D81 and confirm the update.</li>
 <li>After <code>CONFIGURED - READYOS DMA IS READY</code>, exit with RUN/STOP and reset or boot <code>PREBOOT</code> normally.</li>
 </ol>
 <p>Do not move or rename the D81 after setup. If its host path changes, mount it on drive <code>8</code> and run SETUP again.</p>
+<p>ReadyBASIC examples load from drive 9, for example <code>LOAD"RBUGFXSNDDEMO",9</code> then <code>RUN</code>. Their <code>LDMOD</code> and media commands continue reading drive 8. The examples disk needs no separate DMA-path setup.</p>
 </section>
 <section id="controls" class="level2">
 <h2>Controls</h2>

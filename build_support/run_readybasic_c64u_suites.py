@@ -28,6 +28,13 @@ ROOT = Path(__file__).resolve().parents[1]
 HOST = os.environ.get('C64U_HOST', '10.0.0.79')
 
 
+def route_example_loads(keys, names):
+    """Keep modules/media on 8; route only named companion BASIC PRGs to 9."""
+    def replace(match):
+        return match[1] + (b'9' if match[2].decode('ascii').lower() in names else b'8')
+    return re.sub(rb'(\bLOAD\s*"([^"]+)"\s*,\s*)8\b', replace, keys, flags=re.I)
+
+
 def prepare_runner(out):
     """Build an isolated Ultimate runner; never replace a shared VICE binary."""
     if os.environ.get('VICE_TASKS_BINARY'):
@@ -68,6 +75,8 @@ def prepare_runner(out):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--disk', type=Path, required=True)
+    parser.add_argument('--examples-disk', type=Path,
+                        help='Optional Ultimate drive-9 D81; named demo LOADs are routed to 9')
     parser.add_argument('--video-helper', type=Path, required=True)
     parser.add_argument('--remote-image', required=True,
                         help='Exact fresh Ultimate path already encoded in the disk apps.cfg')
@@ -78,6 +87,11 @@ def main():
     parser.add_argument('--resume-command', help='Explicit BASIC fixture repair before resuming (recorded in results)')
     parser.add_argument('plans', nargs='+', type=Path)
     args = parser.parse_args()
+    example_names = set()
+    if args.examples_disk:
+        listing = subprocess.check_output(['c1541', str(args.examples_disk.resolve()), '-list'], text=True)
+        example_names = {m[1].lower() for m in re.finditer(r'^\s*\d+\s+"([^"]+)"\s+prg\b', listing, re.M | re.I)}
+        assert example_names, 'Examples disk contains no PRGs'
     assert not args.resume_from or len(args.plans) == 1, 'Resume accepts one plan'
     assert not args.resume_command or args.resume_from, 'Fixture repair requires resume'
     out = args.out.resolve()
@@ -121,7 +135,8 @@ def main():
                     timeouts=dict(launch_s=90, step_s=240, read_s=20),
                     artifact_policy=dict(capture_screen=True, capture_state=True, capture_dump=False),
                     ultimate=dict(host=HOST, disk8='', disk9='', drive_a_enabled=True,
-                                  drive_a_bus_id=8, drive_a_type='1581', drive_b_enabled=False,
+                                  drive_a_bus_id=8, drive_a_type='1581', drive_b_enabled=bool(args.examples_disk),
+                                  drive_b_bus_id=9, drive_b_type='1581',
                                   capture_video_stream=True, stream_port=11005, stream_timeout_s=8))
     attach = dict(id='attach_idle_ultimate', type='ultimate.launch', params=dict(boot_mode='none'))
 
@@ -168,6 +183,8 @@ def main():
 
     remote = '/' + args.remote_image.lstrip('/')
     assert remote.startswith('/USB1/automation/readybasic-suites/'), remote
+    remote_examples = remote.rsplit('/', 1)[0] + '/EXAMPLES.D81' if args.examples_disk else None
+    assert remote_examples is None or remote_examples.casefold() != remote.casefold()
     embedded_config = out / 'embedded-apps.cfg'
     subprocess.run(['c1541', str(args.disk.resolve()), '-read', 'apps.cfg,s', str(embedded_config)], check=True)
     config = dict(line.split('=', 1) for line in embedded_config.read_bytes().decode('latin1').split('\r') if '=' in line)
@@ -175,6 +192,9 @@ def main():
     assert config['RUNAPPFIRST'] == 'READYBASIC', 'Test disk must start ReadyBASIC through launcher'
     assert config['C64U_IMAGE_PATH'].casefold() == remote.casefold(), 'apps.cfg DMA path differs from upload path'
     records.append(dict(disk=str(args.disk.resolve()), remote=remote, dma_config_verified=True))
+    if args.examples_disk:
+        records.append(dict(examples_disk=str(args.examples_disk.resolve()), remote_examples=remote_examples,
+                            routed_example_names=sorted(example_names)))
     for suite_index, source in enumerate(args.plans):
         source = source.resolve()
         plan = yaml.safe_load(source.read_text())
@@ -188,6 +208,10 @@ def main():
             drive = next(d['a'] for d in drives if 'a' in d)
             mounted = drive['image_path'].rstrip('/') + '/' + drive['image_file']
             assert mounted.casefold() == remote.casefold(), 'Resume image differs from expected fixture'
+            if remote_examples:
+                drive_b = next(d['b'] for d in drives if 'b' in d)
+                mounted_b = drive_b['image_path'].rstrip('/') + '/' + drive_b['image_file']
+                assert mounted_b.casefold() == remote_examples.casefold(), 'Resume examples image differs'
             records.append(dict(suite=suite, resume_from=args.resume_from, resume_command=args.resume_command))
             if args.resume_command:
                 assert not any(c in args.resume_command for c in '\r\n')
@@ -218,10 +242,20 @@ def main():
                 readback = io.BytesIO()
                 ftp.retrbinary('RETR ' + filename, readback.write)
                 assert readback.getvalue() == data, 'FTP readback mismatch'
+                if args.examples_disk:
+                    examples = args.examples_disk.read_bytes()
+                    if suite_index == 0 and not args.reuse_verified_image:
+                        ftp.storbinary('STOR EXAMPLES.D81', io.BytesIO(examples))
+                    example_readback = io.BytesIO()
+                    ftp.retrbinary('RETR EXAMPLES.D81', example_readback.write)
+                    assert example_readback.getvalue() == examples, 'Examples FTP readback mismatch'
             api('machine:reset', 'PUT')
             api('configs', 'POST', {'Drive A Settings': {'Drive': 'Enabled', 'Drive Type': '1581', 'Drive Bus ID': 8},
                                   'U64 Specific Settings': {'Turbo Control': 'Off', 'CPU Speed': ' 1'}})
             api('drives/a:mount?' + urlencode(dict(image=remote, type='d81', mode='unlinked')), 'PUT')
+            if remote_examples:
+                api('configs', 'POST', {'Drive B Settings': {'Drive': 'Enabled', 'Drive Type': '1581', 'Drive Bus ID': 9}})
+                api('drives/b:mount?' + urlencode(dict(image=remote_examples, type='d81', mode='unlinked')), 'PUT')
             video_gate('stock_prompt_after_reset')
             block([dict(id='clear_stale_reu', type='ultimate.clear_reu',
                         params=dict(banks=256, clear_wait_s=20, reset_after=True))])
@@ -255,7 +289,8 @@ def main():
                 write(params.get('address', params.get('start')), bytes.fromhex(params.get('bytes_hex', params.get('hex', ''))))
                 continue
             if kind == 'input.sequence':
-                keys = bytes(step['params']['keys'])
+                keys = route_example_loads(bytes(step['params']['keys']), example_names)
+                step['params']['keys'] = list(keys)
                 lines = re.findall(rb'[^\r]*\r|[^\r]+$', keys)
                 if any(loading_line(line) for line in lines):
                     block(pending)

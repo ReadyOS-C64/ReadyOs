@@ -25,12 +25,17 @@ subprocess.run(["python3", str(ROOT / "build_support/run_readybasic_media_probe.
                env={**os.environ, "READYBASIC_GENERATE_PLAN_ONLY": "1"}, check=True)
 plan = json.loads((OUT / "probe.yaml").read_text())
 release = ROOT / "Releases/0.5/precog-ultimate"
-disk = max(release.glob("*.d81"), key=lambda p: p.stat().st_mtime)
+manifest = json.loads((release / "manifest.json").read_text())
+disk = next(Path(d['path']) for d in manifest['disks'] if d['drive'] == 8)
+examples = next(Path(d['path']) for d in manifest['disks'] if d['drive'] == 9)
+remote_examples = remote.rsplit('/', 1)[0] + '/EXAMPLES.D81'
 steps = [dict(id="boot_ultimate_readyos", type="ultimate.launch", params=dict(
     boot_mode="disk", reset_before_boot=True, post_reset_delay_s=3,
     boot_command='LOAD "*",8,1\nRUN\n', boot_drive=8,
     drives=[dict(slot="a", bus_id=8, drive_type="1581", enabled=True,
-                 disk=str(disk), remote_disk=remote, mount_mode="unlinked")]))]
+                 disk=str(disk), remote_disk=remote, mount_mode="unlinked"),
+            dict(slot="b", bus_id=9, drive_type="1581", enabled=True,
+                 disk=str(examples), remote_disk=remote_examples, mount_mode="unlinked")]))]
 skip = {"boot_readyos", "stock_prompt", "load_preboot_from_disk", "run_preboot",
         "clear_launcher_keyboard", "playing_state", "reserved_ceiling"}
 for item in plan["steps"]:
@@ -50,6 +55,7 @@ for item in plan["steps"]:
             # KERNAL IEC LOAD. Let the complete ReadyOS boot run quietly first.
             item["params"].update(pre_delay_s=180, wait_timeout_s=360)
     if item["type"] == "input.sequence":
+        item["params"]["keys"] = list(bytes(item["params"]["keys"]).replace(b'LOAD "RBSND07",8', b'LOAD "RBSND07",9'))
         typed = bytes(item["params"]["keys"]).decode("ascii")
         if any(word in typed for word in ("LOAD ", "MUSTUNE", "RSCFILE", "LDMOD")):
             item["params"]["post_delay_s"] = 20

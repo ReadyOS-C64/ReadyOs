@@ -155,8 +155,8 @@ Disk layout:
 - The main release variants are:
   - `precog-d81`: recommended main SKU; 19 catalog apps plus Sidetris
     on demand, four modules and 44 BASIC examples on one `1581` disk
-  - `precog-ultimate`: the full D81 plus standalone `SETUP`; DMA loading
-    is compiled and enabled, while normal disk fallback remains available
+  - `precog-ultimate`: two D81s plus standalone `SETUP`; all apps and REL
+    data on drive 8, BASIC examples on drive 9; DMA with disk fallback
   - `precog-dual-d71`: 16 core apps on two boot-time `1571` disks;
     a third optional drive-9 swap adds four apps and the original 41 examples
   - `precog-kung-fu-flash-2-d81`: the D81 set adapted for 1MB-REU KFF2

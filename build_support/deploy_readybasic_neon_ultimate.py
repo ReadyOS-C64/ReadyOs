@@ -24,10 +24,12 @@ assert remote.startswith("/USB1/automation/readybasic-media/neon-")
 host = os.environ.get("C64U_HOST", "10.0.0.79")
 
 
-def api(path, method="GET"):
-    with urlopen(Request(f"http://{host}/v1/{path}", method=method), timeout=30) as response:
+def api(path, method="GET", data=None):
+    body = None if data is None else json.dumps(data).encode()
+    with urlopen(Request(f"http://{host}/v1/{path}", method=method, data=body,
+                         headers={"Content-Type": "application/json"}), timeout=30) as response:
         result = response.read()
-    if method == "PUT":
+    if method in ("PUT", "POST"):
         parsed = json.loads(result)
         assert not parsed.get("errors"), parsed
     return result
@@ -49,9 +51,20 @@ with FTP(host, timeout=90) as ftp:
     readback = io.BytesIO()
     ftp.retrbinary("RETR " + filename, readback.write)
     assert readback.getvalue() == data, "uploaded D81 readback mismatch"
+    if deployment.get("examples_disk"):
+        examples = Path(deployment["examples_disk"]).read_bytes()
+        assert deployment["remote_examples"] == parent + "/EXAMPLES.D81"
+        if os.environ.get('READYBASIC_REUSE_VERIFIED_IMAGE') != '1':
+            ftp.storbinary("STOR EXAMPLES.D81", io.BytesIO(examples))
+        example_readback = io.BytesIO()
+        ftp.retrbinary("RETR EXAMPLES.D81", example_readback.write)
+        assert example_readback.getvalue() == examples, "examples D81 readback mismatch"
 action = 'Verified existing image:' if os.environ.get('READYBASIC_REUSE_VERIFIED_IMAGE') == '1' else 'Uploaded and verified:'
 print(action, remote, hashlib.sha256(data).hexdigest(), flush=True)
 api("drives/a:mount?" + urlencode(dict(image=remote, type="d81", mode="unlinked")), "PUT")
+if deployment.get("remote_examples"):
+    api("configs", "POST", {"Drive B Settings": {"Drive": "Enabled", "Drive Type": "1581", "Drive Bus ID": 9}})
+    api("drives/b:mount?" + urlencode(dict(image=deployment["remote_examples"], type="d81", mode="unlinked")), "PUT")
 api("machine:reset", "PUT")
 time.sleep(4)
 

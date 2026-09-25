@@ -231,7 +231,10 @@ def main():
             lines.append(f"| `{pid}` | {len(examples)} | {', '.join('`'+x+'`' for x in packages)} |")
         for c in examples:
             availability[Path(c['artifact']).stem].append((pid, c['name']))
-    lines += ["", "EasyFlash preloads the runtime from CRT, but its companion data disk does",
+    lines += ["", "The Ultimate SKU is a D81 pair: all 44 BASIC examples are on drive 9;",
+              "ReadyBASIC itself, RBM packages and media assets remain on drive 8.",
+              "For example, use `LOAD\"RBUGFXSNDDEMO\",9` then `RUN`.",
+              "", "EasyFlash preloads the runtime from CRT, but its companion data disk does",
               "not currently package this BASIC example/media collection. Supplying the",
               "runtime on cartridge is different from supplying the disk-loadable assets.", "",
               "## Every example at a glance", "",

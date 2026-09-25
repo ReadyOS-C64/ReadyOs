@@ -6,7 +6,7 @@ HARNESS="${VICE_TASKS_ROOT:-$READYOS_ROOT/../agenticdevharness/tools/vice_tasks_
 HOST="${C64U_HOST:-10.0.0.79}"
 SPEEDS="${SETUP_C64U_SPEEDS:-1 16 64}"
 STREAM_PORT="${SETUP_C64U_STREAM_PORT:-12000}"
-SOURCE="${SETUP_C64U_D81:-$READYOS_ROOT/Releases/0.5/precog-ultimate/readyos-v0.5-ultimate.d81}"
+SOURCE="${SETUP_C64U_D81:-$READYOS_ROOT/Releases/0.5/precog-ultimate/readyos-v0.5-ultimate_1.d81}"
 OUT="${SETUP_C64U_OUT_DIR:-$READYOS_ROOT/logs/setup_c64u_matrix}"
 RUN_TAG="$(date +%Y%m%d-%H%M%S)-$$"
 

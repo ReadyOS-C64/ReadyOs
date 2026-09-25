@@ -126,6 +126,7 @@ def main() -> None:
         "src/apps/readybasic/readybasic_current_design.html",
         "src/apps/readybasic/readybasic_lifecycle_visual_guide.html",
         "src/apps/readybasic/readybasic_making_command_guide.html",
+        "src/apps/readybasic/readybasic_sample_modules.html",
     })
     missing = sorted(actual - classified)
     extra = sorted(classified - actual)
