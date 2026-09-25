@@ -27,19 +27,20 @@ static void show_status(const char *text, unsigned char color) {
     tui_puts_n(0, 24, text, 40, color);
 }
 
+#define CENTER_X(text) ((TUI_SCREEN_WIDTH - (sizeof(text) - 1u)) / 2u)
+
 static void draw(void) {
     tui_clear(TUI_THEME_BG);
     tui_window_title(&title, "C64 OS BRIDGE", TUI_THEME_BORDER, TUI_THEME_TITLE);
-    tui_puts(1, 1, "READYOS / C64 OS", TUI_COLOR_CYAN);
+    tui_puts(CENTER_X("READYOS / C64 OS"), 1, "READYOS / C64 OS", TUI_COLOR_CYAN);
     tui_menu_draw(&menu);
-    tui_puts(1, 10, "Switch back using the ReadyOS utility", TUI_COLOR_GRAY3);
-    tui_puts(1, 11, "in the C64 OS menu.", TUI_COLOR_GRAY3);
+    tui_puts(CENTER_X("Switch back using the ReadyOS utility"), 10, "Switch back using the ReadyOS utility", TUI_COLOR_GRAY3);
+    tui_puts(CENTER_X("in the C64 OS menu."), 11, "in the C64 OS menu.", TUI_COLOR_GRAY3);
     tui_puts(1, 15, "REU 0-31: C64 OS", TUI_COLOR_LIGHTBLUE);
     tui_puts(1, 16, "REU 32-38: bridge snapshots / reserve", TUI_COLOR_LIGHTBLUE);
     tui_puts(1, 17, "REU 39+: ReadyOS", TUI_COLOR_LIGHTBLUE);
-    tui_puts(1, 22, "UP/DOWN:SELECT  RETURN:OPEN", TUI_COLOR_GRAY3);
-    tui_puts(1, 23, "F2:NEXT APP  F4:PREV APP  CTRL+B:HOME", TUI_COLOR_GRAY3);
-    show_status("Choose an action", TUI_COLOR_CYAN);
+    tui_puts(CENTER_X("UP/DOWN:SELECT  RETURN:OPEN"), 22, "UP/DOWN:SELECT  RETURN:OPEN", TUI_COLOR_GRAY3);
+    tui_puts(CENTER_X("F2:NEXT APP  F4:PREV APP  CTRL+B:HOME"), 23, "F2:NEXT APP  F4:PREV APP  CTRL+B:HOME", TUI_COLOR_GRAY3);
 }
 
 static unsigned char supported(void) {

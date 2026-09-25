@@ -209,3 +209,14 @@ The completed 107.2-second demo shows both round trips, task completion and
 note persistence, plus the REU tour. Twenty-two screenshots accompany it.
 Block By Block is added with a short fade-in and four-second fade-out.
 See tui-verification.json for the final app hash and checks.
+
+
+## Centered bridge layout (2026-09-25)
+
+Centered the subtitle, return instructions and both gray footer help lines
+using compile-time text widths. Removed the initial Choose an action prompt;
+real restore/error status messages still use the bottom row. Normal wrapper
+build v0.5p and release directory ordering pass. Native screen assertions
+verify centered rows 1,10,11,22,23 and an initially blank row24. A cold round
+trip passed while preparing the fresh demo; Editor and REU Viewer were
+preloaded before recording.
