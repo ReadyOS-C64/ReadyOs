@@ -31,17 +31,16 @@ RF_ARRAY_BUF = RB_RF+$80
 RB_VAL_INT = 1
 RB_VAL_ARRAYI = 3
 
+.export cmd_copy_low_end
 .export cmd_echo1_low, cmd_add16_low, cmd_hiddenram_hidden, cmd_sumnumarray_low, cmd_rangenumarray_low, cmd_tempscratch_low, cmd_fail_low, cmd_slot0_low, cmd_cpyrst_low, cmd_copy_low
 
 cmd_echo1_low:
         lda #0
         sta RF_STATUS
+        sta RF_VAL_HI
         lda #RB_VAL_INT
         sta RF_TAG
-        lda #1
         sta RF_VAL_LO
-        lda #0
-        sta RF_VAL_HI
         rts
 cmd_echo1_low_end:
 

@@ -815,7 +815,7 @@ reads the actual link map and RBM packages for exact sizes.
 | `$A000` | Disk sample slot-0 workers, including COPY/CPYRST. |
 | `$A800` | Sample1 SLOT1/DM1 payload. |
 | `$B000`, `$B100`, `$B200`, `$B300` | Sample2 slot-2, span and two overlay images. |
-| `$C000-$CE3C` | Sample3 stateful overlay images on `$100` strides. |
+| `$C000-$CE26` | Sample3 stateful overlay images on `$100` strides. |
 
 
 ## Cold Boot Lifecycle

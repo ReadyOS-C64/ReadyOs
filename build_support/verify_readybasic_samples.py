@@ -83,6 +83,11 @@ def check_packages():
     active_names = {command_name(active[i:i + 32]) for i in range(0, 4096, 32) if active[i + 15]}
     assert names <= active_names
     assert not (set(sample_inventory()["sample1"] + sample_inventory()["sample2"]) - {"COPY", "CPYRST"}) & active_names
+    # Keep the compact 13-block sample budget after removing duplicate workers,
+    # without removing descriptors or overlay examples.
+    sample_blocks = sum(((MODULES / f"rbm.{name}.seq").stat().st_size + 253) // 254
+                        for name in sample_inventory())
+    assert sample_blocks <= 13, ("Ultimate sample disk budget", sample_blocks)
     for profile_id in readyos_profiles.list_profile_ids():
         disks = readyos_profiles.load_profile(profile_id)["disks"]
         if any(e["name"] in ("rbtest1", "rbproc1") for d in disks for e in d["contents"]):
@@ -170,6 +175,11 @@ def check_workers(packages):
             assert call(a) == base + index * 2 + 2
             assert call(b, reload=False) == base + index * 2 + 4
             assert call(a) == base + index * 2 + 2
+            for count in range(2, 261):
+                name = b if count % 2 == 0 else a
+                expected_base = base + index * 2 + (2 if name == b else 1)
+                assert call(name, reload=False) == expected_base + (count & 255), (name, count)
+                assert memory[0xC300] == 0 and memory[0xC302] == 1
     print("6502 worker checks OK: arithmetic, strings, arrays, scratch success/failure, error codes, every slot/overlay and shared state")
 
 

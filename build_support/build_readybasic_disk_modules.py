@@ -48,53 +48,30 @@ def int_command_payload(value: int) -> bytes:
     )
 
 
-def stateful_int_entry(value: int, state_addr: int) -> bytes:
-    """Return one entrypoint that increments overlay-local state before returning."""
-    return bytes(
-        [
-            0xEE,
-            state_addr & 0xFF,
-            state_addr >> 8,  # inc state
-            0xA9,
-            0x00,
-            0x8D,
-            0x00,
-            0xC3,  # RF_STATUS = 0
-            0xA9,
-            0x01,
-            0x8D,
-            0x02,
-            0xC3,  # RF_TAG = RB_VAL_INT
-            0xA9,
-            value & 0xFF,
-            0x18,
-            0x6D,
-            state_addr & 0xFF,
-            state_addr >> 8,  # value + state
-            0x8D,
-            0x03,
-            0xC3,
-            0xA9,
-            value >> 8,
-            0x69,
-            0x00,
-            0x8D,
-            0x04,
-            0xC3,
-            0x60,
-        ]
-    )
-
-
 def stateful_overlay_payload(value_a: int, value_b: int, runtime_base: int) -> tuple[bytes, int]:
-    """Return two entrypoints plus one shared byte of overlay-local state."""
-    entry_len = 30
-    state_addr = runtime_base + (entry_len * 2)
-    payload_a = stateful_int_entry(value_a, state_addr)
-    payload_b = stateful_int_entry(value_b, state_addr)
-    if len(payload_a) != entry_len or len(payload_b) != entry_len:
-        raise ValueError("stateful payload entry length changed")
-    return payload_a + payload_b + b"\x00", len(payload_a)
+    """Two entrypoints share result code and one overlay-local counter byte.
+
+    Each entry supplies a 16-bit base in A/X. The common tail increments the
+    byte counter, adds it with carry, and writes the standard integer result.
+    """
+    common_addr = runtime_base + 11
+    state_addr = runtime_base + 38
+    payload = bytes([
+        0xA9, value_a & 0xFF, 0xA2, value_a >> 8,
+        0x4C, common_addr & 0xFF, common_addr >> 8,
+        0xA9, value_b & 0xFF, 0xA2, value_b >> 8,
+        0xEE, state_addr & 0xFF, state_addr >> 8,  # INC state
+        0x18,                                            # CLC
+        0x6D, state_addr & 0xFF, state_addr >> 8,  # ADC state
+        0x8D, 0x03, 0xC3,                        # STA RF_VAL_LO
+        0x8A, 0x69, 0x00,                       # TXA / ADC #0
+        0x8D, 0x04, 0xC3,                       # STA RF_VAL_HI
+        0xA9, 0x00, 0x8D, 0x00, 0xC3,           # RF_STATUS = 0
+        0xA9, 0x01, 0x8D, 0x02, 0xC3,           # RF_TAG = integer
+        0x60, 0x00,                              # RTS / state byte
+    ])
+    assert len(payload) == 39
+    return payload, 7
 
 
 def num_string_payload(name: str) -> bytes:
@@ -491,13 +468,22 @@ def sample_modules(out_dir: Path) -> dict[str, bytes]:
     sample2 = []
     for offset, submodule, overlay, mask, commands in SAMPLE2_GROUPS:
         sample2 += group(offset, submodule, overlay, mask, commands, 140+len(sample2))
+    # Sample3 only needs these two position-independent counter workers.
+    # Do not duplicate sample1's scalar/array/allocator workers on disk.
+    counter_start = entries["cmd_cpyrst_low"]
+    counter_end = entries["cmd_copy_low_end"]
+    counter_payload = payload[counter_start:counter_end]
+    counters = [dict(command, payload=counter_payload,
+                     payload_size=len(counter_payload),
+                     entry_offset=int(command["entry_offset"])-counter_start)
+                for command in low[:2]]
     return {
         "rbm.sample1.seq": build_module(module_id=7, desc_reu_offset=SAMPLE_DESC_OFF,
                                         commands=sample1),
         "rbm.sample2.seq": build_module(module_id=8, desc_reu_offset=SAMPLE_DESC_OFF+32*len(sample1),
                                         commands=sample2),
         "rbm.sample3.seq": build_module(module_id=9, desc_reu_offset=SAMPLE_DESC_OFF,
-                                        commands=low[:2]+rbm3_commands()),
+                                        commands=counters+rbm3_commands()),
     }
 
 

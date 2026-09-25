@@ -309,7 +309,7 @@ def disk_module_blocks() -> list[Block]:
             slots = {1: "slot 0", 2: "slot 1", 4: "slot 2", 6: "slots 1+2"}[desc[8]]
             detail = f"Disk-only demo, submodule {desc[6]}, overlay {desc[7]}, {slots}."
             if offset == 0xA000:
-                detail += " Sample3 also carries this payload for COPY/CPYRST."
+                detail += " Sample3 replaces this with a compact 40-byte COPY/CPYRST-only payload at the same offset."
             blocks.append(Block(f"rbm.{name}: {names[0]}", offset, size,
                                 "span" if desc[8] == 6 else "module-a", detail, names))
     return blocks

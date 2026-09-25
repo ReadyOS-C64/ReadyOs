@@ -348,7 +348,7 @@ byte buffer, and type `2` is a screen text+color buffer.
 Production base payloads occupy code-bank `$0000` onward; replacement
 GFXSPR/INPUTEV/GFXPOLY/GFXDL/GFXTILE/SIDCORE images use `$5000/$5800/$6000/$6800/$7000/$7800`.
 Media uses `$8000-$8FFF`. Disk-only scalar examples use `$A000`, slot-1 examples
-`$A800`, sample2 `$B000/$B100/$B200/$B300`, and sample3 `$C000-$CE3C`.
+`$A800`, sample2 `$B000/$B100/$B200/$B300`, and sample3 `$C000-$CE26`.
 There is no built-in span proof payload.
 
 Descriptors are in the **core bank**: media `$1A40-$1B3F`, sample1
