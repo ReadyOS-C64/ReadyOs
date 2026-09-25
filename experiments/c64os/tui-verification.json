@@ -1,0 +1,32 @@
+{
+  "pass": true,
+  "menu_return_ram_proof": true,
+  "menu_return_error_recovery": true,
+  "shortcut_cold_round_trip": true,
+  "f2_f4_app_tokens": [
+    1,
+    2,
+    3,
+    2,
+    1,
+    3
+  ],
+  "ctrl_b": true,
+  "editor_reuviewer_preloaded": true,
+  "build": "v0.5o",
+  "app_sha256": "0eeed3f8f352420dc30e139e4e606410721dc7a00330f70614b5459dfd470385",
+  "demo": {
+    "duration_seconds": 107.2,
+    "screenshots": 22,
+    "round_trips": 2,
+    "soundtrack": "Block By Block",
+    "editor_and_reuviewer_preloaded": true,
+    "note_survives_round_trip": true,
+    "skipped_range": [
+      0,
+      38
+    ],
+    "control_bank": 39,
+    "bridge_app_physical_bank": 42
+  }
+}

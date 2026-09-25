@@ -62,10 +62,10 @@ def main():
         mon = Monitor(sock)
         text = screen(mon)
         mon.command(0xAA)
-        if "C64 OS BRIDGE - EXPERIMENTAL" not in text:
+        if "START / RESUME C64 OS (C)" not in text:
             wait_screen(mon, "APPLICATIONS")
             feed(mon, [19,17,17,13])
-        text = wait_screen(mon, "C: START OR RESUME C64 OS")
+        text = wait_screen(mon, "START / RESUME C64 OS (C)")
         assert "REQUIRES SKIP" not in text
         previous = [int(n) for n in re.findall(r"RESTORED ZP/STACK/SHIM: (\d+)", text)]
         count = max(previous, default=0)

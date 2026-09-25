@@ -95,7 +95,7 @@ def main():
         sock.settimeout(10)
         mon=Monitor(sock)
         launcher_app(mon,0)
-        wait_screen(mon,'X: TEST MISSING BOOT FILE RECOVERY')
+        wait_screen(mon,'TEST BOOT FAILURE RECOVERY (X)')
         shim=mon.read(0xc600,1024)
         assert shim[0x23b]==39
         mon.command(0xaa)
@@ -134,7 +134,7 @@ def main():
         wait_screen(mon,TEXT.decode())
         feed(mon,[2])
         launcher_app(mon,0)
-        wait_screen(mon,'X: TEST MISSING BOOT FILE RECOVERY')
+        wait_screen(mon,'TEST BOOT FAILURE RECOVERY (X)')
         before_native=snapshot('roundtrip-before-c64os-work')
         assert before_native[:32*65536]==low_before,'ReadyOS changed C64 OS REU banks'
         report['c64os_reu_bytes_preserved_during_readyos_work']=len(low_before)
@@ -182,7 +182,7 @@ def main():
         assert low_after_disk==after_native[:32*65536]
         feed(mon,[2])
         launcher_app(mon,0)
-        wait_screen(mon,'X: TEST MISSING BOOT FILE RECOVERY')
+        wait_screen(mon,'TEST BOOT FAILURE RECOVERY (X)')
         feed(mon,b'C')
         wait_screen(mon,'DEVICES')
         assert d81_view(mon)==native_view,'Native File Manager view changed'

@@ -182,3 +182,30 @@ IDE64 v4.1, 16 MB REU. SID is silenced rather than restored; arbitrary custom
 IRQ/CIA/SID drivers and active transfers are not certified. Device-8 mouse
 activation uses the complete normal select/double-click sequence [1,3,4,1,3,5],
 superseding the earlier incomplete kind-5-only note.
+
+
+## TUI and expanded demo (2026-09-25)
+
+The bridge now links the focused TUI core/window/menu/navigation/hotkey modules.
+It has the normal framed header, arrow selector, Return activation, (c)/(s)/(x)
+labels, and F2/F4/Ctrl+B footer. The existing F1 launcher alias remains. The
+legacy status-bar declaration has no active micromodule implementation, so the
+footer status line uses tui_puts_n, like the other current apps. No bridge RAM,
+IDE64 transport or native C64 OS utility code changed; the native utility hash
+remains 749358d4cd2679be07185f345b49f2d38b2de1c0f5cba4ad2f27b4aca2aa7cc7.
+
+Normal build v0.5o and release directory ordering pass. verify_tui_ui.py passes
+arrow/Return RAM proof, arrow/Return missing-boot recovery, C cold round trip,
+F2/F4 cycles over Editor/REU Viewer/bridge (tokens 1,2,3), and Ctrl+B. The updated
+verify_bridge_ui.py passes three destructive proofs and full 1KB shim equality.
+The banner detection now checks the action text, so the launcher's app name is
+not mistaken for the running bridge UI.
+
+Editor and REU Viewer are preloaded before capture. The REU tour identifies
+0-38 as skipped, 39 as the control bank, and physical bank42 / logical token3
+as C64OS app state in this run. The demo uses normal native input events only.
+
+The completed 107.2-second demo shows both round trips, task completion and
+note persistence, plus the REU tour. Twenty-two screenshots accompany it.
+Block By Block is added with a short fade-in and four-second fade-out.
+See tui-verification.json for the final app hash and checks.

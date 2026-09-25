@@ -31,12 +31,15 @@ monitor ports are 6511 (binary) and 6611 (text). A changed build refreshes the
 runtime D81 after backing up its previous contents under `readyos/runtime-backups`.
 An unchanged build retains the writable runtime disk.
 
-Select **C64 OS bridge** in the ReadyOS launcher:
+Select **C64 OS bridge** in the ReadyOS launcher. The app uses the shared TUI
+header, arrow selector and footer. Up/Down select an action; Return runs it.
+The letter shortcuts shown at the end of each item work too:
 
 - **C** starts C64 OS or resumes its saved context.
 - **S** runs the destructive ZP/stack/shim save-and-restore proof.
 - **X** attempts to load missing `!OOTER`, testing recovery to ReadyOS.
-- **F1** returns to the ReadyOS launcher.
+- **Ctrl+B** returns to the ReadyOS launcher (F1 remains an alias).
+- **F2/F4** switch to the next/previous preloaded ReadyOS app.
 
 In C64 OS, select **ReadyOS** from the hamburger menu, or use the installed
 Control+Commodore+Shift+R shortcut. A missing/invalid ReadyOS snapshot is rejected.
@@ -103,6 +106,8 @@ KERNAL/BASIC workspace while retaining IDEDOS's patched I/O vectors.
 With a fresh normal wrapper boot and the current native utility installed:
 
 ```sh
+python3 experiments/c64os/verify_tui_ui.py  # fresh boot; also preloads demo apps
+# Use another fresh boot for the full disk/partition regression:
 python3 experiments/c64os/verify_roundtrip_ui.py
 python3 build_support/verify_release_directory_order.py --profile precog-d81
 ```

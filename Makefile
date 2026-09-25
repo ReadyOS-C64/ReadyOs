@@ -1352,8 +1352,8 @@ $(OBJ_DIR)/c64os_bridge_core.bin: experiments/c64os/bridge_core.s experiments/c6
 	$(AS) -I . -o $(OBJ_DIR)/c64os_bridge_core.o $<
 	$(LD) -C experiments/c64os/bridge_core.cfg -o $@ $(OBJ_DIR)/c64os_bridge_core.o
 
-$(C64OS_BRIDGE): $(APPS_DIR)/c64os/c64os.c $(APPS_DIR)/c64os/bridge.s experiments/c64os/native_context.inc $(LIB_DIR)/reu_mgr_dma.c $(OBJ_DIR)/c64os_bridge_core.bin
-	$(CC) $(APP_CFLAGS) --asm-include-dir . -Os -m $(OBJ_DIR)/c64os.map -o $@ $(APPS_DIR)/c64os/c64os.c $(APPS_DIR)/c64os/bridge.s $(LIB_DIR)/reu_mgr_dma.c
+$(C64OS_BRIDGE): $(APPS_DIR)/c64os/c64os.c $(APPS_DIR)/c64os/bridge.s experiments/c64os/native_context.inc $(LIB_DIR)/reu_mgr_dma.c $(TUI_BASE_MENU) $(TUI_NAV_SRC) $(TUI_HOTKEY_SRC) $(OBJ_DIR)/c64os_bridge_core.bin
+	$(CC) $(APP_CFLAGS) --asm-include-dir . -Os -m $(OBJ_DIR)/c64os.map -o $@ $(APPS_DIR)/c64os/c64os.c $(APPS_DIR)/c64os/bridge.s $(LIB_DIR)/reu_mgr_dma.c $(TUI_BASE_MENU) $(TUI_NAV_SRC) $(TUI_HOTKEY_SRC)
 
 $(BIN_DIR)/c64os-readyos-utility.prg: experiments/c64os/readyos_utility.s experiments/c64os/readyos_utility.cfg experiments/c64os/native_context.inc $(OBJ_DIR)/c64os_bridge_core.bin
 	$(AS) -I . -o $(OBJ_DIR)/c64os_readyos_utility.o $<

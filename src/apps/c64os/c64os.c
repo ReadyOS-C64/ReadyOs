@@ -1,5 +1,6 @@
 /* Experimental bridge for the fixed 16MB REU + IDE64 v4.1 environment. */
-#include <conio.h>
+#include <stdio.h>
+#include "../../lib/tui.h"
 #include "../../lib/reu_control_bank.h"
 
 extern void bridge_enter(void);
@@ -11,6 +12,35 @@ static unsigned char shim[1024];
 static unsigned int cycles;
 static unsigned int i;
 static unsigned char key;
+static unsigned char action;
+static unsigned char nav_action;
+static TuiMenu menu;
+static const TuiRect title = {0, 0, 40, 3};
+static const char *items[] = {
+    "Start / resume C64 OS (c)",
+    "Test RAM save / restore (s)",
+    "Test boot failure recovery (x)"
+};
+static char status[40];
+
+static void show_status(const char *text, unsigned char color) {
+    tui_puts_n(0, 24, text, 40, color);
+}
+
+static void draw(void) {
+    tui_clear(TUI_THEME_BG);
+    tui_window_title(&title, "C64 OS BRIDGE", TUI_THEME_BORDER, TUI_THEME_TITLE);
+    tui_puts(1, 1, "READYOS / C64 OS", TUI_COLOR_CYAN);
+    tui_menu_draw(&menu);
+    tui_puts(1, 10, "Switch back using the ReadyOS utility", TUI_COLOR_GRAY3);
+    tui_puts(1, 11, "in the C64 OS menu.", TUI_COLOR_GRAY3);
+    tui_puts(1, 15, "REU 0-31: C64 OS", TUI_COLOR_LIGHTBLUE);
+    tui_puts(1, 16, "REU 32-38: bridge snapshots / reserve", TUI_COLOR_LIGHTBLUE);
+    tui_puts(1, 17, "REU 39+: ReadyOS", TUI_COLOR_LIGHTBLUE);
+    tui_puts(1, 22, "UP/DOWN:SELECT  RETURN:OPEN", TUI_COLOR_GRAY3);
+    tui_puts(1, 23, "F2:NEXT APP  F4:PREV APP  CTRL+B:HOME", TUI_COLOR_GRAY3);
+    show_status("Choose an action", TUI_COLOR_CYAN);
+}
 
 static unsigned char supported(void) {
     if (*SHIM_READYOS_BANK != 39u) return 0;
@@ -25,16 +55,13 @@ static unsigned char supported(void) {
 }
 
 int main(void) {
-    clrscr();
-    cputs("c64 os bridge - experimental\r\n\r\n");
-    cputs("c: start or resume c64 os\r\n");
-    cputs("s: save, damage zp/stack/shim, restore\r\n");
-    cputs("x: test missing boot file recovery\r\n");
-    cputs("f1: readyos launcher\r\n\r\n");
+    tui_init();
+    tui_menu_init(&menu, 1, 5, 38, 3, items, 3);
+    draw();
     if (!supported()) {
-        cputs("requires skip 39, 16mb reu, ide64 v4.1");
-        cgetc();
-        __asm__("jmp $c80c");
+        show_status("requires skip 39, 16mb reu, ide64 v4.1", TUI_COLOR_LIGHTRED);
+        tui_getkey();
+        tui_return_to_launcher();
     }
     readyos_bank_read(REUCB_RESERVED_OFF, record, sizeof(record));
     for (i = 0; i < sizeof(signature); ++i) {
@@ -46,11 +73,28 @@ int main(void) {
         readyos_bank_write(REUCB_RESERVED_OFF, record, sizeof(record));
     }
     for (;;) {
-        key = cgetc();
-        if (key == 133u) __asm__("jmp $c80c");
-        if (key != 's' && key != 'c' && key != 'x') continue;
-        bridge_proof = key == 's';
-        bridge_failprobe = key == 'x';
+        key = tui_getkey();
+        nav_action = tui_handle_global_hotkey(key, *(unsigned char*)0xc834, 1);
+        if (nav_action == TUI_HOTKEY_LAUNCHER || key == TUI_KEY_F1) {
+            tui_return_to_launcher();
+        }
+        if (nav_action >= TUI_APP_BANK_MIN && nav_action <= TUI_APP_BANK_MAX) {
+            tui_switch_to_app(nav_action);
+            continue;
+        }
+        if (nav_action == TUI_HOTKEY_BIND_ONLY) continue;
+        action = tui_menu_input(&menu, key);
+        if (key == 'c') action = 0;
+        if (key == 's') action = 1;
+        if (key == 'x') action = 2;
+        if (action == 255) {
+            tui_menu_draw(&menu);
+            continue;
+        }
+        menu.selected = action;
+        tui_menu_draw(&menu);
+        bridge_proof = action == 1;
+        bridge_failprobe = action == 2;
         bridge_target = 32;
         if (!bridge_proof) {
             readyos_bank_read(REUCB_RESERVED_OFF, record, sizeof(record));
@@ -66,18 +110,20 @@ int main(void) {
         bridge_enter();
         for (i = 0; i < sizeof(shim); ++i) {
             if (shim[i] != ((volatile unsigned char*)0xc600)[i]) {
-                cputs("\r\nshim mismatch - stop");
+                show_status("Shim mismatch - stop", TUI_COLOR_LIGHTRED);
                 for (;;) {}
             }
         }
         readyos_bank_read(REUCB_RESERVED_OFF + 7, &record[7], 1);
         key = record[7];
         if (key) {
-            cprintf("\r\ncold boot failed: %u; readyos restored", key);
+            sprintf(status, "Cold boot failed: %u; ReadyOS restored", key);
+            show_status(status, TUI_COLOR_LIGHTRED);
             continue;
         }
         ++cycles;
-        cprintf("\r\nrestored zp/stack/shim: %u", cycles);
+        sprintf(status, "Restored ZP/stack/shim: %u", cycles);
+        show_status(status, TUI_COLOR_LIGHTGREEN);
     }
     return 0;
 }
