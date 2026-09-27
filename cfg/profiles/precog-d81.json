@@ -4,6 +4,10 @@
   "kind": "d81",
   "default_run": true,
   "catalog_source": "cfg/profiles/precog-d81.ini",
+  "app_manifests": [
+    { "source": "cfg/app_sidetris.txt", "output": "obj/app_sidetris.seq", "disk_name": "app.sidetris" },
+    { "source": "cfg/app_c64os.txt", "output": "obj/app_c64os.seq", "disk_name": "app.c64os" }
+  ],
   "boot": {
     "preboot_mode": "boot",
     "autostart_prg": "preboot.prg"
@@ -21,7 +25,7 @@
         { "artifact": "showcfg.prg", "name": "showcfg", "type": "prg" },
         { "artifact": "boot.prg", "name": "boot", "type": "prg" },
         { "artifact": "launcher.prg", "name": "launcher", "type": "prg" },
-        { "artifact": "c64os.prg", "name": "c64os", "type": "prg" },
+        { "artifact": "c64os.prg", "name": "c64os", "type": "prg", "include_even_if_not_catalog": true },
         { "artifact": "editor.prg", "name": "editor", "type": "prg" },
         { "artifact": "quicknotes.prg", "name": "quicknotes", "type": "prg" },
         { "artifact": "calcplus.prg", "name": "calcplus", "type": "prg" },
@@ -105,7 +109,8 @@
         { "artifact": "obj/rbgfxsnddemo.prg", "name": "rbgfxsnddemo", "type": "prg", "directory_group": "readybasic_example" },
         { "artifact": "obj/rbugfxsnddemo.prg", "name": "rbugfxsnddemo", "type": "prg", "directory_group": "readybasic_example" },
         { "artifact": "obj/apps_cfg_petscii.seq", "name": "apps.cfg", "type": "seq" },
-        { "artifact": "obj/app_sidetris.seq", "name": "app.sidetris", "type": "seq" }
+        { "artifact": "obj/app_sidetris.seq", "name": "app.sidetris", "type": "seq" },
+        { "artifact": "obj/app_c64os.seq", "name": "app.c64os", "type": "seq" }
       ],
       "post_build": [
         { "type": "seed_cal26_rel" }

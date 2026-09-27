@@ -2,10 +2,11 @@
 
 Branch: `experiment/c64os-readyos-bridge` (based on `f505038`).
 
-The ReadyOS bridge app cold-boots C64 OS from the copied IDE64 HDD, then switches
+The ReadyOS bridge app cold-boots C64 OS from its boot device, then switches
 between saved machine contexts. The native C64 OS **ReadyOS** utility returns
 through its regular menu and utility lifecycle. This is a prototype for the
-fixed environment below, not a general C64 task switcher.
+REU layout below, not a general C64 task switcher. IDE64 handling is conditional;
+plain IEC uses ordinary KERNAL loading without cartridge operations.
 
 ## Environment and launch
 
@@ -31,13 +32,13 @@ monitor ports are 6511 (binary) and 6611 (text). A changed build refreshes the
 runtime D81 after backing up its previous contents under `readyos/runtime-backups`.
 An unchanged build retains the writable runtime disk.
 
-Select **C64 OS bridge** in the ReadyOS launcher. The app uses the shared TUI
+Select **c64os bridge** in the ReadyOS launcher. The app uses the shared TUI
 header, arrow selector and footer. Up/Down select an action; Return runs it.
 The letter shortcuts shown at the end of each item work too:
 
 - **C** starts C64 OS or resumes its saved context.
 - **S** runs the destructive ZP/stack/shim save-and-restore proof.
-- **X** attempts to load missing `!OOTER`, testing recovery to ReadyOS.
+- **X** attempts to load missing `COOTER`, testing recovery to ReadyOS.
 - **Ctrl+B** returns to the ReadyOS launcher (F1 remains an alias).
 - **F2/F4** switch to the next/previous preloaded ReadyOS app.
 
@@ -46,28 +47,24 @@ Control+Commodore+Shift+R shortcut. A missing/invalid ReadyOS snapshot is reject
 The utility uses a normal one-shot timer so its loader has returned before the
 switch. When C64 OS resumes, the utility closes itself normally and can reopen.
 
-## Native utility installation
+## Installation
 
-The copied HDD already has the utility, corrected menu and 32-bank REU cap.
-After rebuilding changed utility code, close any other experiment VICE, launch
-the wrapper above, then run:
+The supported packaging path is now the D81 companion `bridge.car`. It installs
+native **Bridge Setup** and the **ReadyOS** return utility through C64OS Installer.
+Setup checks C64OS 1.09 and the complete REU library before applying/updating a
+limit or undoing it. Read [the user installation guide](../../docs/c64os/bridge.md)
+for matched settings, restart requirements and recovery.
 
-```sh
-python3 experiments/c64os/install_native_utility.py --reset
-```
+The normal D81 ships the optional `app.c64os` manifest but still skips zero banks;
+it refuses to switch. This experiment's separate `apps.ini` uses skip 39 and
+lists the bridge by default for tests. Bridge Setup source/build lives in the
+sibling `c64os-bridge`; the D81 packager imports its CAR and verifies the native
+return utility matches this repository's shared core.
 
-This explicitly resets the verified owned emulator to BASIC, installs only the
-experimental utility and menu on its copied HDD using native IDEDOS file I/O,
-and reads both back. It validates the menu's encoded child counts. It leaves
-VICE at BASIC; close that instance and launch the wrapper again. Do not install
-into the original HDD. The installer is preparation tooling, not a dependency
-of a running switch: neither direction uses host snapshots or monitor execution.
-
-`cap_native_reu.py` originally installed the local capacity override in the HDD's
-`rec.lib.o`. The presence check remains; capacity detection reports 32 banks
-without probing the ReadyOS range. It is deliberately specific to this 16 MB
-experiment. The original 215-byte detector was verified by native LOAD before
-patching, and the patched file was reloaded and compared afterward.
+`install_native_utility.py --reset` and `cap_native_reu.py` remain legacy private
+preparation/debugging tools. They require the owned HDD and are not needed by a
+user installing the CAR. The former replaces the test environment's Utilities
+menu from its baseline; the CAR deliberately preserves the user's menu.
 
 ## Memory ownership
 
@@ -83,9 +80,9 @@ patching, and the patched file was reloaded and compared afterward.
 | 40–255 | ReadyOS apps and resources |
 
 The bridge owns just **eight bytes at bank 39, `$FD40–$FD47`**, inside the existing
-704-byte reserved tail. They hold ASCII `RBG3`, version 3, ReadyOS-valid,
+704-byte reserved tail. They hold ASCII `RBG4`, version 4, ReadyOS-valid,
 C64-OS-valid, and the last cold-load error. Validity is published only after both
-main RAM and IDE64 RAM are saved. ABI changes require updating both native sides
+main RAM and any required IDE64 RAM are saved. ABI changes require updating both native sides
 and the record version; do not combine old saved contexts with changed cores.
 
 The entire `$C600–$C9FF` shim lives in the ReadyOS RAM image. The common trampoline
@@ -163,7 +160,7 @@ suspended safely by a RAM snapshot alone.
 
 CIA interrupt masks and timer reload latches, VIC raster compare, and SID
 registers cannot all be read back. This prototype uses explicit standard-mode
-contracts: ReadyOS KERNAL timer-A IRQ, C64 OS VIC IRQ at raster zero, no active
+contracts: ReadyOS KERNAL timer-A IRQ, C64 OS VIC IRQ at raster one, no active
 CIA2 timer/serial workload. Timers restart; it is not cycle-exact emulation.
 CIA time-of-day continues. SID is silenced, not restored: music playback and
 applications owning custom IRQ/CIA/SID drivers remain unverified. Physical
@@ -182,3 +179,74 @@ Ultimate hardware, other IDE64 revisions and other REU sizes are not certified.
 The installed native binaries/headers are authoritative where older web docs
 conflict, notably the six-vector utility ABI. See `PROGRESS.md` for failed
 experiments and the evidence that supersedes them.
+
+## Startup-state fixes and isolated testing
+
+Build v0.5s restores the cold KERNAL keyboard capacity/repeat defaults and its
+temporary translation vector, preserves PAL/NTSC across RAMTAS, and uses the
+ROM's matching timer setup. Native C64OS warm resume uses raster line 1.
+Cold scratch at `$0710–$072A` is inside the already saved/displaced low page;
+there are no new shim fields or persistent REU control fields.
+
+The normal round-trip suite now checks native timing and keyboard defaults.
+`verify_startup_state.py` additionally uses test-only `py65`, local stock ROMs,
+and the licensed keyboard driver to check actual scanning through a simulated
+CIA key matrix. Disk calls are stubbed in that focused CPU test; the separate
+VICE suite performs real loading and disk work. It is not a host-key UI test.
+
+For an isolated copied HDD, launcher and primary verification/installation
+tools accept `READYOS_BRIDGE_ENV`, `READYOS_BRIDGE_BINARY_PORT`, and
+`READYOS_BRIDGE_TEXT_PORT`. Defaults remain the original environment and ports.
+Use a separate writable HDD and D81; never run two instances against one HDD.
+The environment needs the existing installation manifests, ROM/HDD support
+files, and baseline menu/driver files. The utility installer verifies the
+mounted HDD path before resetting or writing anything.
+
+The updated return utility must be installed with the documented native
+installer after a rebuild; merely refreshing the ReadyOS D81 does not update
+the HDD's utility. Current live contexts retain their old code until a fresh
+boot. See STATE_AUDIT.md for remaining quiet-I/O and hardware-state limits.
+
+## Conditional IDE64 handling (v0.5u, ABI 4)
+
+Both native sides use the documented stable `IDE` signature at `$DE60–$DE62`,
+then validate v4.1 STD mapping at `$DE32`. The probe does not write cartridge
+registers. A signature with unsupported revision/mapping is rejected. Without
+the signature, context byte `$0706` is zero, and both save and restore bypass
+the entire IDE64 SRAM/mapping routine. Banks 33/35 remain reserved but untouched.
+Cold entry restores saved IDEDOS vectors only for IDE64; plain IEC keeps the
+ROM vectors installed by KERNAL RESTOR. Shim code and REU partitioning are unchanged.
+
+Boot-location defaults (editable with **L** in the bridge):
+
+| Detected environment | Device | Preparation | File |
+|---|---|---|---|
+| IDE64 v4.1 | 12 | `CP1`, then `CD//OS` | `BOOTER` |
+| No IDE64 | 8 | None; device must already be in the C64OS boot directory | `BOOTER` |
+
+The device, partition, directory and filename are editable and saved to device
+8 as `c64os.cfg`. Defaults are implemented in `src/apps/c64os/config.c`.
+The native wrapper stages 117 bytes at `$0730–$07A4`, inside the displaced low
+page, and the cold loader uses those values after RAMTAS. No new shim or REU
+control fields are used. Saved contexts retain their old boot location until a
+fresh cold boot. The app manifest `app.c64os` is separate from these settings.
+
+Bridge Setup replaces the host-only REU patch procedure for users. It retains
+presence detection, bypasses the capacity probe, and reports the selected 8–32
+banks. Undo restores the original six bytes. For every selection the bridge
+snapshots remain at 32–38 and ReadyOS skip remains **39**. Normal release builds
+use skip **0** and show a setup-required screen instead of switching.
+
+Every alternate C64OS installation must have the REU cap and new native return
+utility prepared before bridge boot; an unpatched detector can overwrite the
+ReadyOS REU region. ABI 4 makes older return utilities reject new bridge records
+rather than silently mix the two implementations. Install both sides together
+and use a fresh boot.
+
+The standard VICE IDE64 regression passes cold plus six warm round trips. With
+`READYOS_BRIDGE_IDE64=0`, the normal wrapper can run a separate no-cartridge
+instance: `verify_noide_ui.py` passes three destructive RAM proofs and missing
+BOOTER/probe recovery through ordinary device-8 I/O, checking all shim bytes
+and untouched IDE64 snapshot banks. The CPU startup suite checks both routes,
+seven detector cases, and both PAL/NTSC. This does not certify a complete C64OS
+boot on physical SD2IEC/CMD hardware or custom ROMs we do not have.

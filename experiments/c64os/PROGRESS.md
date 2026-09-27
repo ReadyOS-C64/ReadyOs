@@ -327,3 +327,62 @@ distribution and baseline are untouched. The REU-cap patch itself was not
 changed: it remains a separate six-byte, version-specific disk-library patch
 applied/read back by cap_native_reu.py, not cartridge content or a boot-time
 bridge patch. Its installation transport is still IDE64-specific.
+
+## Native Bridge Setup CAR, optional D81 packaging and boot location (2026-09-26)
+
+The sibling `../c64os-bridge` project now builds a native Toolkit application
+and an install-type CAR v3 containing Bridge Setup plus the matching ReadyOS
+return utility. The native cycle button selects every integer limit from 8 to
+32 banks, showing exact binary MB. Apply/update/undo validate exact 1.09 version
+text and the complete known library, save an original backup, write and read
+back the change, and require restart. Failed writes attempt rollback. The app
+never changes the live allocator. Installer does not replace Utilities menus.
+
+ReadyOS's bridge now has editable device/partition/directory/filename settings,
+saved and verified as `c64os.cfg` on device 8. The cold loader consumes the
+staged config; warm resume retains its original installation. Numeric CR output
+and CR/LF input avoid cc65's character-map newline translation. No shim ABI or
+control-bank schema was added. The bridge's existing fixed snapshot layout and
+ABI 4 remain in use; caps 8–32 all require ReadyOS skip 39 and a 16 MB REU.
+
+Only `precog-d81` ships `c64os`, optional `app.c64os`, and the companion
+`bridge.car`/provenance JSON. The default catalog still omits the bridge and
+compiles skip **0**. A stock launch explains and blocks the unsafe transition,
+but permits editing the boot location. The existing config directory group
+places `app.c64os` seventh on disk and third in the first browse page; no
+post-build reordering is involved. Ultimate overrides its inherited manifest
+list to keep only its prior Sidetris manifest. All other profiles exclude the
+bridge. Main and generated D81 READMEs describe installation and matched settings.
+
+Validation (private owned `bridge-setup-test-20260926` VICE environment):
+
+- `tools/test_patch.py` in the sibling project: assembled 6502 tests pass all
+  25 caps, original/undo, invalid caps/lengths, every single-byte corruption,
+  wrong versions with no writes, and failed-write rollback. The OS `getsfref`
+  destination-page contract is explicitly checked.
+- Native Installer installed the final CAR; native UI applied 8, updated to 9,
+  undid, then restored 32 banks. Reopening via Fast App Switching revalidated
+  the library. Live allocator stayed unchanged. Independent native LOAD then
+  verified the full capped library and original backup. Screenshot:
+  `bridge-setup-final.png` in the private test environment.
+- `verify_boot_config_ui.py`: changed/saved filename affected the real cold
+  loader; missing filename recovered ReadyOS; valid target restored. Full
+  emulator restart independently loaded the saved location.
+- `verify_roundtrip_ui.py`: one cold + six warm round trips, three destructive
+  RAM proofs, failed-load recovery before/after native context, unsaved Editor
+  preservation, disk save/reopen, and full REU partition comparisons passed.
+- Startup CPU suite passed PAL/NTSC and IDE64/plain IEC keyboard/timing paths.
+  No-IDE VICE suite passed three RAM proofs and ordinary device-8 failure
+  recovery without touching IDE snapshot banks. Physical CMD/SD2IEC untested.
+- Stock D81 built via `/bin/bash ./run.sh --profile precog-d81 --build-only`.
+  Real launcher F5 showed the manifest on the first page; loading and launching
+  it blocked skip zero, while allowing the location UI. The equivalent reusable
+  sequence is `verify_stock_d81_ui.py`.
+- Final release v0.5A: directory-order verifier passes; CAR CRC32, payloads,
+  utility provenance, release copy, normal catalog skip zero, all other resolved
+  profiles and existing Ultimate disk exclusion checked. Final package report:
+  `release-package.json` in the private test environment. Test VICE closed.
+
+After the complete round-trip run, the only bridge app change was its on-screen
+instruction for opening the return utility; core and cold-loader bytes are unchanged. User-owned
+original licensed media and the baseline remain untouched.

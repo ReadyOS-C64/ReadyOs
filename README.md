@@ -721,3 +721,14 @@ Rendered documentation exports in `docs/` currently include:
 
 ReadyOS is licensed under the MIT License. See `LICENSE` for the full text.
 Copyright (c) 2026 Karl Prosser.
+
+## Experimental C64OS bridge (regular D81 only)
+
+The D81 includes an optional `app.c64os` launcher manifest and a companion
+`bridge.car` containing native C64OS **Bridge Setup** and **ReadyOS** return utility.
+The normal D81 keeps `reu_bank_skip=0`, so switching is disabled until you build
+a matching configuration: **16 MB REU, ReadyOS skip 39, C64OS 1.09 capped at
+8–32 banks (0.5–2 MB)**. Setup can apply, update or undo the patch; each change
+requires a restart. Boot location is editable in the bridge and saved to device
+8 as `c64os.cfg`. Read the [installation, matched settings and undo instructions](docs/c64os/bridge.md)
+before using it.

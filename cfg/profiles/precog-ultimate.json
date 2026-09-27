@@ -5,6 +5,9 @@
   "kind": "ultimate",
   "default_run": false,
   "catalog_source": "cfg/profiles/precog-ultimate.ini",
+  "app_manifests": [
+    {"source": "cfg/app_sidetris.txt", "output": "obj/app_sidetris.seq", "disk_name": "app.sidetris"}
+  ],
   "launcher_dma_load": 1,
   "disks": [
     {

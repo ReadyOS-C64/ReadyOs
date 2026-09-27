@@ -218,6 +218,7 @@ READYSHELL_OVERLAY_NAMES = {
 }
 READYBASIC_EXAMPLE_RE = re.compile(r"^(?:rbtest\d+|rbproc(?:\d+|err)|rbgfx\d+|rbsnd\d+)$")
 KNOWN_APP_NAMES = {
+    "c64os",
     "editor",
     "quicknotes",
     "calcplus",
@@ -1698,6 +1699,12 @@ def build_release(profile_id: str,
         shutil.copyfile(source, target)
 
     help_text = build_help_text(profile, resolved, entries).rstrip() + "\n"
+    if profile_id == "precog-d81":
+        bridge_help = (ROOT / "docs/c64os/bridge.md").read_text(encoding="utf-8")
+        help_text += "\n" + bridge_help
+        shutil.copyfile(ROOT / "assets/c64os/bridge.car", output_dir / "bridge.car")
+        shutil.copyfile(ROOT / "assets/c64os/bridge.json", output_dir / "bridge.json")
+
     (output_dir / "helpme.md").write_text(help_text, encoding="utf-8")
     (output_dir / "help.md").write_text(help_text, encoding="utf-8")
     if readyshell_parse_trace_debug(profile) == 0 or bool(profile.get("write_readme", False)):

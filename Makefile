@@ -1342,7 +1342,10 @@ else
 	@$(PYTHON) $(BUILD_SUPPORT_DIR)/update_build_version.py --write "$(READYOS_VERSION_TEXT)" >/dev/null
 endif
 
-programs: prepare-version $(PROGRAMS) $(C64OS_BRIDGE) $(BIN_DIR)/c64os-readyos-utility.prg
+ifeq ($(PROFILE),precog-d81)
+BRIDGE_PROGRAMS = $(C64OS_BRIDGE) c64os-car
+endif
+programs: prepare-version $(PROGRAMS) $(BRIDGE_PROGRAMS)
 
 $(OBJ_DIR)/c64os_cold_boot.bin: experiments/c64os/cold_boot.s experiments/c64os/cold_boot.cfg
 	$(AS) -o $(OBJ_DIR)/c64os_cold_boot.o $<
@@ -1732,3 +1735,7 @@ launcher-verbose:
 
 .PHONY: all clean verify verify-resume shim-verify fullcheck help run run-test seed-cal26 probe-rel launcher-verbose readybasic-plugin-static-check launcher-reu-state-vice quicknotes-owned-reu-vice readyshell-cross-app-resume-vice readyshell-cross-app-resume-c64u readybasic-demo-vice readybasic-repeat-label-vice readybasic-full-vice readybasic-hotkey-vice readybasic-keyboard-regression-vice readybasic-reuviewer-f2-chain-vice readybasic-cross-app-resume-vice readybasic-large-vars-vice readybasic-lifecycle-vice readybasic-module-overlay-vice readybasic-plugin-command-vice readybasic-gfx-phase1-vice readybasic-gfx-phase2-vice readybasic-gfx-phase3-vice readybasic-gfx-phase4-vice readybasic-gfx-phase5-vice readybasic-gfx-mbitmap-vice readybasic-sound-phase1-vice readybasic-sprite-steps-vice readybasic-readyos-loaded-apps-vice readybasic-program-vice readybasic-rbtest1-vice readybasic-second-entry-editor-vice readybasic-state-vice readybasic-vice-plans readybasic-vice-suites readybasic-memory-report readyshell-host-tests readyshell-parse-smoke-host readyshell-vm-smoke-host readyshell-reu-tests-host editor-smoke-host tasklist-smoke-host programs prepare-version profile profiles release-all easyflash easyflash-verify easyflash-smoke easyflash-smoke-long easyflash-preload-verify easyflash-clean FORCE
 EASYFLASH_LAUNCHER_CPPFLAGS ?=
+
+.PHONY: c64os-car
+c64os-car: $(BIN_DIR)/c64os-readyos-utility.prg
+	$(PYTHON) build_support/build_c64os_car.py
