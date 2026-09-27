@@ -125,6 +125,12 @@ setup: lda #0
         sta $df0a
         rts
 ide_context:
+        ; Both save and restore are no-ops without the detected cartridge.
+        ; In particular, never write IDE64 mapping registers on plain IEC.
+        lda BRIDGE_IDE_ROM
+        bne :+
+        rts
+:
         ; OPEN maps external RAM $1000-$7fff: execute below $1000 and stage
         ; through $0800. Do not assume REU DMA can see cartridge SRAM.
         lda BRIDGE_IDE_ROM

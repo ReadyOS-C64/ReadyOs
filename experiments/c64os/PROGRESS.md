@@ -220,3 +220,110 @@ build v0.5p and release directory ordering pass. Native screen assertions
 verify centered rows 1,10,11,22,23 and an initially blank row24. A cold round
 trip passed while preparing the fresh demo; Editor and REU Viewer were
 preloaded before recording.
+
+
+## Physical keyboard cold-start fix (2026-09-25)
+
+Manual testing exposed printable-key failure in C64OS while command shortcuts
+and mouse input still worked. The running session had $0289=0 (KERNAL maximum
+keyboard-buffer length). RAMTAS in the cold loader clears that location; normal
+CINT initialization sets it to 10, but this loader deliberately does not run
+CINT over the live $0400 trampoline. The ROM enqueue path compares $C6 against
+$0289 and discards all printable keys when the capacity is zero.
+
+Restoring $0289 to 10 in the live session immediately restored typing, confirmed
+by the user. Turning warp off and closing Switcher alone did not fix it. The
+recording's direct event/buffer injection bypassed the failing path.
+
+The cold loader now initializes only the missing buffer capacity. The existing
+round-trip integration harness checks the capacity after cold/warm entry so its
+injected inputs cannot conceal this fault again. A build-only run prepares the
+fix without interrupting the user's live manual test. The live repair is
+confirmed; a fresh-boot execution of the rebuilt loader is still pending.
+
+## Startup and native-resume corrections (2026-09-25)
+
+Build v0.5s completes the audited cold-start defaults: `$0289=10`, `$028B=4`,
+`$028C=10`, and temporary ROM key translation vector `$EB48`. It retains the
+machine's PAL/NTSC flag across RAMTAS and calls ROM timer setup `$FDDD` for the
+matching timer period. The shared native wrapper now selects raster line 1
+for C64OS, retaining line 0 / disabled raster IRQ for ReadyOS.
+
+To keep the cold loader inside its original 256-byte `$CF00` allocation, its
+saved IDEDOS vectors and video flag use `$0710–$072A`, inside the already
+displaced/restored trampoline page. No REU layout or persistent record change.
+No changes to shim, launcher, or control-bank library code were needed.
+
+Validation used a separate cloned HDD/D81 under
+`../c64os-readyos-experiment/state-audit-20260925/test-env`, with monitor ports
+6512/6612. Added environment/port overrides to the wrapper and relevant test
+and installation tools so the original manual session could stay running.
+The new utility was installed/read back only on this test HDD.
+
+- Normal wrapper build and precog-d81 release-directory ordering pass.
+- Updated `verify_roundtrip_ui.py`: PASS. One cold and six warm round trips,
+  destructive RAM proofs, both failed-load recovery cases, full shim equality,
+  native D81 save/reopen, unsaved Editor state, and complete REU partitions.
+  New PAL flag, native timing-table and initial keyboard-default checks pass.
+- Additional native warm resume captured in `fixed-native-resume.vsf`:
+  actual VIC compare latch is line 1, including clear high bit; return succeeds.
+- `verify_startup_state.py` with test-only py65: PAL and NTSC cold loaders pass;
+  IDEDOS vectors and trampoline bytes survive; ROM scanning of a held key
+  before BOOTER works. Native keyboard driver passes printable, Shift, Delete,
+  and Control-F paths through a CIA key-matrix model. Fixed first repeat takes
+  19 scans; a negative control restoring the old zero counter takes 271 scans.
+  This focused test stubs external disk calls and does not claim host-key
+  delivery or full VICE keyboard UI automation.
+
+The original manual VICE session (PID 22970 at test time) and its HDD were not
+modified by these tests. Its earlier live `$0289` repair remains separate from
+the new build. Production HDD return-utility installation and restarting that
+manual session remain pending; existing contexts cannot pick up new code.
+
+Outside the app/experiment, comparison against pre-bridge commit f505038 finds
+only Makefile build targets, generated version fields, and generated REU skip
+configuration (0 -> 39). Shim/launcher/control-bank sources are unchanged.
+The bridge uses eight existing reserved bytes at physical bank 39 `$FD40–$FD47`:
+`RBG3`, version, ReadyOS-valid, C64OS-valid, and last boot error. No new bank-zero
+schema fields or resident shim variables were introduced.
+
+## Conditional IDE64 support (2026-09-26)
+
+Build v0.5u / bridge ABI 4 (`RBG4`) detects the documented stable IDEDOS `IDE`
+signature at `$DE60–$DE62` before examining `$DE32`. Detection is read-only;
+known IDE64 with unsupported revision or mapping is rejected. Both native
+wrappers record zero in the existing `$0706` context byte when absent; the
+shared IDE64 context routine then returns before cartridge writes or REU
+transfers. Banks 33/35 remain reserved. The native utility validates the same
+hardware policy. Older utilities reject the new versioned control record.
+
+Cold startup retains saved IDEDOS vectors and issues `CP1`/`CD//OS` only when
+IDE64 is present. Plain IEC keeps KERNAL RESTOR's vectors and loads BOOTER from
+device 8's current directory. IDE64 still defaults to device 12, partition 1,
+`//OS`. These are source defaults, not a configuration UI or autodiscovery.
+The failure probe now increments BOOTER's first letter to COOTER, keeping the
+expanded loader within its existing 256-byte allocation at `$CF00`.
+
+Validation:
+
+- Build, Python syntax, source whitespace and release-directory order pass.
+- CPU startup suite passes both IDE64/plain IEC paths in PAL and NTSC: correct
+  device numbers, no DOS command opens on plain IEC, correct vector handling,
+  seven read-only detector cases (supported, absent, partial signature,
+  unsupported version/mapping), and keyboard regressions.
+- Updated utility installed/read back on isolated test HDD. Full VICE IDE64
+  regression passes one cold plus six warm round trips, file I/O, REU isolation,
+  shim/state preservation, and failure recovery.
+- No-cartridge instance booted via normal wrapper with READYOS_BRIDGE_IDE64=0.
+  verify_noide_ui.py passes three destructive RAM proofs, missing BOOTER and
+  COOTER recovery on standard device 8, all 1024 shim bytes, and unchanged
+  banks 33/35. No complete SD2IEC/CMD C64OS boot or physical-device certification
+  is claimed: that hardware/media is unavailable.
+
+The prior manual VICE PID was no longer running. Before updating the owned
+runtime HDD, a clone backup was made in readyos/runtime-backups. The native
+installer updates the return utility/menu on that copied HDD; the original
+distribution and baseline are untouched. The REU-cap patch itself was not
+changed: it remains a separate six-byte, version-specific disk-library patch
+applied/read back by cap_native_reu.py, not cartridge content or a boot-time
+bridge patch. Its installation transport is still IDE64-specific.

@@ -21,7 +21,7 @@ with socket.create_connection(('127.0.0.1',6511),5) as sock:
     before=snapshot('guard-before-utility')
     offset=39*65536+0xfd40
     expected_record=before[offset:offset+8]
-    assert expected_record[:5]!=b'RBG3\x03','Requires fresh, absent bridge record'
+    assert expected_record[:5]!=b'RBG4\x04','Requires fresh, absent bridge record'
     native_command(mon)
     # Wait for the installed utility to be loaded and its DMA guard to run.
     bss=int(re.search(r'^BSS\s+([0-9A-F]+)',

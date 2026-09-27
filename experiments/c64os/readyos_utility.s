@@ -13,6 +13,12 @@ init:
         sec
         rts
 :
+        jsr _bridge_detect_ide
+        cmp #$ff
+        bne :+
+        sec
+        rts
+:
         ; Own a tiny record in ReadyOS's reserved control-bank tail. Only this
         ; experiment's versioned record and a fully committed image permit return.
         php
@@ -94,7 +100,7 @@ externs:
 timeque: .byte $ec,0,0
         .byte $ff
 .segment "RODATA"
-signature: .byte $52,$42,$47,$33,3
+signature: .byte $52,$42,$47,$34,4
 identity: .byte $d2,"EADY",$cf,$d3,0
 .segment "DATA"
 timer:  .byte 1,0,0,0

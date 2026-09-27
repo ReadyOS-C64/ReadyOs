@@ -1,13 +1,15 @@
-/* Experimental bridge for the fixed 16MB REU + IDE64 v4.1 environment. */
+/* Experimental bridge for a fixed 16MB REU; IDE64 v4.1 or plain KERNAL I/O. */
 #include <stdio.h>
+#include "config.h"
 #include "../../lib/tui.h"
 #include "../../lib/reu_control_bank.h"
 
 extern void bridge_enter(void);
+extern unsigned char bridge_detect_ide(void);
 extern unsigned char bridge_target, bridge_proof, bridge_failprobe;
 static unsigned char header[64];
 static unsigned char record[8];
-static const unsigned char signature[5] = {0x52,0x42,0x47,0x33,3};
+static const unsigned char signature[5] = {0x52,0x42,0x47,0x34,4};
 static unsigned char shim[1024];
 static unsigned int cycles;
 static unsigned int i;
@@ -17,9 +19,10 @@ static unsigned char nav_action;
 static TuiMenu menu;
 static const TuiRect title = {0, 0, 40, 3};
 static const char *items[] = {
-    "Start / resume C64 OS (c)",
+    "Start / resume C64OS (c)",
     "Test RAM save / restore (s)",
-    "Test boot failure recovery (x)"
+    "Test boot failure recovery (x)",
+    "Boot location / settings (l)"
 };
 static char status[40];
 
@@ -31,12 +34,12 @@ static void show_status(const char *text, unsigned char color) {
 
 static void draw(void) {
     tui_clear(TUI_THEME_BG);
-    tui_window_title(&title, "C64 OS BRIDGE", TUI_THEME_BORDER, TUI_THEME_TITLE);
-    tui_puts(CENTER_X("READYOS / C64 OS"), 1, "READYOS / C64 OS", TUI_COLOR_CYAN);
+    tui_window_title(&title, "C64OS BRIDGE", TUI_THEME_BORDER, TUI_THEME_TITLE);
+    tui_puts(CENTER_X("READYOS / C64OS"), 1, "READYOS / C64OS", TUI_COLOR_CYAN);
     tui_menu_draw(&menu);
     tui_puts(CENTER_X("Switch back using the ReadyOS utility"), 10, "Switch back using the ReadyOS utility", TUI_COLOR_GRAY3);
-    tui_puts(CENTER_X("in the C64 OS menu."), 11, "in the C64 OS menu.", TUI_COLOR_GRAY3);
-    tui_puts(1, 15, "REU 0-31: C64 OS", TUI_COLOR_LIGHTBLUE);
+    tui_puts(CENTER_X("via C64OS Utilities."), 11, "via C64OS Utilities.", TUI_COLOR_GRAY3);
+    tui_puts(1, 15, "REU 0-31: C64OS", TUI_COLOR_LIGHTBLUE);
     tui_puts(1, 16, "REU 32-38: bridge snapshots / reserve", TUI_COLOR_LIGHTBLUE);
     tui_puts(1, 17, "REU 39+: ReadyOS", TUI_COLOR_LIGHTBLUE);
     tui_puts(CENTER_X("UP/DOWN:SELECT  RETURN:OPEN"), 22, "UP/DOWN:SELECT  RETURN:OPEN", TUI_COLOR_GRAY3);
@@ -45,8 +48,6 @@ static void draw(void) {
 
 static unsigned char supported(void) {
     if (*SHIM_READYOS_BANK != 39u) return 0;
-    /* v4.1, STD cartridge mapping: OPEN would hide the app itself. */
-    if ((*(volatile unsigned char*)0xde32 & 0xe3u) != 0x23u) return 0;
     readyos_bank_read(REUCB_HEADER_OFF, header, sizeof(header));
     return header[0] == REUCB_MAGIC0 && header[1] == REUCB_MAGIC1 &&
         header[2] == REUCB_MAGIC2 && header[3] == REUCB_MAGIC3 &&
@@ -57,10 +58,26 @@ static unsigned char supported(void) {
 
 int main(void) {
     tui_init();
-    tui_menu_init(&menu, 1, 5, 38, 3, items, 3);
+    tui_menu_init(&menu, 1, 5, 38, 4, items, 4);
+    bridge_config_load(bridge_detect_ide() != 0);
     draw();
     if (!supported()) {
-        show_status("requires skip 39, 16mb reu, ide64 v4.1", TUI_COLOR_LIGHTRED);
+        tui_clear(TUI_THEME_BG);
+        tui_window_title(&title,"C64OS BRIDGE SETUP REQUIRED",TUI_THEME_BORDER,TUI_THEME_TITLE);
+        tui_puts(1,5,"Requires skip 39 and 16mb REU",TUI_COLOR_LIGHTRED);
+        sprintf(status,"This ReadyOS boot skips %u banks",*SHIM_READYOS_BANK);
+        tui_puts(1,7,status,TUI_COLOR_WHITE);
+        tui_puts(1,10,"Normal D81 uses skip 0: cannot switch.",TUI_COLOR_GRAY3);
+        tui_puts(1,12,"Build ReadyOS with reu_bank_skip=39.",TUI_COLOR_GRAY3);
+        tui_puts(1,14,"C64OS 1.09: run Bridge Setup first.",TUI_COLOR_GRAY3);
+        tui_puts(1,15,"Select 8-32 banks (0.5-2 MB), reboot.",TUI_COLOR_GRAY3);
+        tui_puts(1,17,"ReadyOS skip stays 39 for every cap.",TUI_COLOR_GRAY3);
+        show_status("L: boot location  Other key: launcher",TUI_COLOR_CYAN);
+        if (tui_getkey()=='l') bridge_config_edit();
+        tui_return_to_launcher();
+    }
+    if (bridge_detect_ide() == 255u) {
+        show_status("unsupported ide64 revision / mode", TUI_COLOR_LIGHTRED);
         tui_getkey();
         tui_return_to_launcher();
     }
@@ -88,10 +105,17 @@ int main(void) {
         if (key == 'c') action = 0;
         if (key == 's') action = 1;
         if (key == 'x') action = 2;
+        if (key == 'l') action = 3;
         if (action == 255) {
             tui_menu_draw(&menu);
             continue;
         }
+        if (action == 3) {
+            bridge_config_edit();
+            draw();
+            continue;
+        }
+        bridge_config_stage();
         menu.selected = action;
         tui_menu_draw(&menu);
         bridge_proof = action == 1;

@@ -14,7 +14,7 @@ import struct
 import sys
 import time
 from pathlib import Path
-from verify_bridge_ui import ENV, ROOT, Monitor, feed, screen, screenshot, wait_screen
+from verify_bridge_ui import ENV, ROOT, BINARY_PORT, TEXT_PORT, Monitor, feed, screen, screenshot, wait_screen
 from cap_native_reu import wait_bytes
 
 TEXT = b'BRIDGE STATE SEPTEMBER 25'
@@ -43,7 +43,7 @@ def snapshot(name):
     sys.path.insert(0,str(ROOT.parent/'agenticdevharness/tools'))
     from vice_readyshell_automation import Monitor as TextMonitor
     path=ENV/(name+'.vsf')
-    mon=TextMonitor('127.0.0.1',6611)
+    mon=TextMonitor('127.0.0.1',TEXT_PORT)
     try:
         mon.cmd(f'dump "{path}"\n')
         mon.cmd('x\n')
@@ -91,12 +91,13 @@ def main():
     report={'pass':False,'scope':'quiet text mode, IDE64 v4.1, fixed 16MB REU',
             'native_input':'C64 OS event queues dispatched by its normal UI',
             'screenshots':[]}
-    with socket.create_connection(('127.0.0.1',6511),5) as sock:
+    with socket.create_connection(('127.0.0.1',BINARY_PORT),5) as sock:
         sock.settimeout(10)
         mon=Monitor(sock)
         launcher_app(mon,0)
         wait_screen(mon,'TEST BOOT FAILURE RECOVERY (X)')
         shim=mon.read(0xc600,1024)
+        video_standard=mon.read(0x02a6,1)
         assert shim[0x23b]==39
         mon.command(0xaa)
         for n in range(1,4):
@@ -116,6 +117,14 @@ def main():
             wait_screen(mon,'DEVICES')
             wait_screen(mon,'OFFLINE')
             assert mon.read(0x0281,1)==b'\x20'
+            # Native event injection bypasses ROM key enqueue; a disabled
+            # keyboard buffer otherwise lets this demo pass with typing broken.
+            assert 0 < mon.read(0x0289,1)[0] <= 10, 'Printable keyboard input disabled or unsafe'
+            assert mon.read(0x02a6,1) == video_standard, 'PAL/NTSC flag changed'
+            expected_timing = bytes.fromhex('32211911' if video_standard[0] else '3c281e14')
+            assert mon.read(0xeb,4) == expected_timing, 'Wrong native timing table'
+            if n == 4:
+                assert mon.read(0x028b,1) == b'\x04', 'Missing initial key-repeat countdown'
             assert mon.read(0x03fe,1)==b'\0', 'Utility did not close after resume'
             mon.command(0xaa)
             if n==4:

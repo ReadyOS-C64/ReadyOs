@@ -1,7 +1,7 @@
-; Experimental ABI v3: reserved slice of the ReadyOS schema-v5 bank.
+; Experimental ABI v4: reserved slice of the ReadyOS schema-v5 bank.
 BRIDGE_CONTROL_BANK = 39
 BRIDGE_CONTROL_OFF = $FD40
-BRIDGE_VERSION = 3
+BRIDGE_VERSION = 4
 BRIDGE_READY_RAM = 32
 BRIDGE_C64OS_RAM = 34
 ; Adjacent banks 33/35 hold each context's IDE64 RAM at $1000-$7FFF.
@@ -10,7 +10,7 @@ BRIDGE_TARGET = $0701
 BRIDGE_RESUME = $0702
 BRIDGE_SP = $0704
 BRIDGE_PROOF = $0705
-BRIDGE_IDE_ROM = $0706
+BRIDGE_IDE_ROM = $0706           ; zero = no IDE64; otherwise v4.1 STD status
 BRIDGE_VALID = $0707
 BRIDGE_WORK_PAGE = $0708
 BRIDGE_DIRECTION = $0709

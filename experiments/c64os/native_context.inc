@@ -107,6 +107,16 @@ save_pages:
         sta $0700,x
         inx
         bne save_pages
+ .if BRIDGE_NATIVE_BANK = BRIDGE_READY_RAM
+        ; Config is inside the displaced/snapshotted $0700 page. It survives
+        ; RAMTAS and BOOTER loading; it adds no shim or REU control fields.
+        ldx #116
+copy_boot_config:
+        lda _bridge_boot_config,x
+        sta $0730,x
+        dex
+        bpl copy_boot_config
+.endif
         lda #6
         sta $0318
         sta $fffa
@@ -121,7 +131,7 @@ save_pages:
         sta BRIDGE_PROOF
         lda _bridge_failprobe
         sta BRIDGE_FAILPROBE
-        lda $de32
+        jsr _bridge_detect_ide
         sta BRIDGE_IDE_ROM
         lda #<resume
         sta BRIDGE_RESUME
@@ -203,8 +213,8 @@ ntsc:   lda #$95
         lda cia2+15
         ora #$10
         sta $dd0f
-        ; D012 is the current raster when read, not the compare latch. C64 OS
-        ; returns to standard text mode before invoking utilities: raster IRQ 0.
+        ; D012 reads the current raster, not the compare latch. Native C64OS
+        ; 1.09 text mode uses line 1; ReadyOS has no raster IRQ at this boundary.
         ldx #$2e
 restore_vic:
         cpx #$11
@@ -224,7 +234,11 @@ restore_vic:
 skip_vic:
         dex
         bpl restore_vic
+ .if BRIDGE_NATIVE_BANK = BRIDGE_C64OS_RAM
+        lda #1
+ .else
         lda #0
+ .endif
         sta $d012
         lda #$0f
         sta $d019
@@ -247,6 +261,53 @@ skip_vic:
         pla
         plp
         rts
+
+; Read-only IDEDOS signature probe, per ide64.org/guide.html. Do not infer
+; presence from $DE32 alone: unoccupied I/O can return floating-bus values.
+; Return A=0 absent, A=$FF unsupported IDE64 revision/mapping, otherwise DE32.
+; Preserve mapping/flags so both cc65 and native utility init can call this.
+_bridge_detect_ide:
+        php
+        sei
+        lda $01
+        pha
+        lda #$35
+        sta $01
+        jsr detect_ide_io
+        tax
+        pla
+        sta $01
+        txa
+        ldx #0
+        plp
+        rts
+detect_ide_io:
+        lda $de60
+        cmp $de60
+        bne no_ide
+        cmp #$49
+        bne no_ide
+        lda $de61
+        cmp $de61
+        bne no_ide
+        cmp #$44
+        bne no_ide
+        lda $de62
+        cmp $de62
+        bne no_ide
+        cmp #$45
+        bne no_ide
+        lda $de32
+        and #$e3
+        cmp #$23
+        bne unsupported_ide
+        lda $de32
+        rts
+unsupported_ide:
+        lda #$ff
+        rts
+no_ide: lda #0
+        rts
 .segment "RODATA"
 core:   .incbin "obj/c64os_bridge_core.bin"
 .segment "BSS"
@@ -261,3 +322,8 @@ cia2: .res 16
 _bridge_target: .res 1
 _bridge_proof: .res 1
 _bridge_failprobe: .res 1
+
+.if BRIDGE_NATIVE_BANK = BRIDGE_READY_RAM
+.export _bridge_boot_config
+_bridge_boot_config: .res 117
+.endif

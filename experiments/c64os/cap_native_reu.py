@@ -7,13 +7,14 @@ This is installation tooling; the bridge must never depend on a host monitor.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import socket
 import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-ENV = ROOT.parent / "c64os-readyos-experiment"
+ENV = Path(os.environ.get("READYOS_BRIDGE_ENV", ROOT.parent / "c64os-readyos-experiment")).resolve()
 sys.path.insert(0, str(ROOT.parent / "c64os-tasks/tools"))
 from vice_harness import Monitor
 

@@ -13,7 +13,7 @@ with socket.create_connection(('127.0.0.1',6511),5) as sock:
     assert value==b'\x01\x04\x00\x10\x00\x00','This test requires the actual 4MB VICE configuration'
     mon.command(0xaa)
     launcher_app(mon,0)
-    text=wait_screen(mon,'REQUIRES SKIP 39, 16MB REU, IDE64 V4.1')
+    text=wait_screen(mon,'REQUIRES SKIP 39 AND 16MB REU')
     assert 'RESTORED ZP/STACK/SHIM:' not in text
     shot=screenshot('rejected-4mb.png')
     feed(mon,b'C')

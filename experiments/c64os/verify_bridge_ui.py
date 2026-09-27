@@ -5,6 +5,7 @@ Run after experiments/c64os/run.sh, with its fresh launcher visible, or with
 the bridge gate already open. This does not load or execute an app via monitor.
 """
 import json
+import os
 from pathlib import Path
 import re
 import socket
@@ -12,7 +13,9 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-ENV = ROOT.parent / "c64os-readyos-experiment"
+ENV = Path(os.environ.get("READYOS_BRIDGE_ENV", ROOT.parent / "c64os-readyos-experiment")).resolve()
+BINARY_PORT = int(os.environ.get("READYOS_BRIDGE_BINARY_PORT", "6511"))
+TEXT_PORT = int(os.environ.get("READYOS_BRIDGE_TEXT_PORT", "6611"))
 sys.path.insert(0, str(ROOT.parent / "c64os-tasks/tools"))
 from vice_harness import Monitor
 
@@ -46,7 +49,7 @@ def screenshot(name):
     sys.path.insert(0, str(ROOT.parent / "agenticdevharness/tools"))
     from vice_readyshell_automation import Monitor as TextMonitor
     path = ENV / name
-    mon = TextMonitor("127.0.0.1", 6611)
+    mon = TextMonitor("127.0.0.1", TEXT_PORT)
     try:
         mon.cmd(f'screenshot "{path}" 2\n')
         mon.cmd("x\n")
@@ -57,15 +60,15 @@ def screenshot(name):
 
 
 def main():
-    with socket.create_connection(("127.0.0.1", 6511), 5) as sock:
+    with socket.create_connection(("127.0.0.1", BINARY_PORT), 5) as sock:
         sock.settimeout(10)
         mon = Monitor(sock)
         text = screen(mon)
         mon.command(0xAA)
-        if "START / RESUME C64 OS (C)" not in text:
+        if "START / RESUME C64OS (C)" not in text:
             wait_screen(mon, "APPLICATIONS")
             feed(mon, [19,17,17,13])
-        text = wait_screen(mon, "START / RESUME C64 OS (C)")
+        text = wait_screen(mon, "START / RESUME C64OS (C)")
         assert "REQUIRES SKIP" not in text
         previous = [int(n) for n in re.findall(r"RESTORED ZP/STACK/SHIM: (\d+)", text)]
         count = max(previous, default=0)

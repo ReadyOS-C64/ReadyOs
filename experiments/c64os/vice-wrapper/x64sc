@@ -17,6 +17,8 @@ if pidfile.exists():
     else:
         raise SystemExit(f"Experiment process {previous_pid} is still running; close it before reopening its HDD")
 support = env / "runtime/vice support"
+binary_port = int(os.environ.get("READYOS_BRIDGE_BINARY_PORT", "6511"))
+text_port = int(os.environ.get("READYOS_BRIDGE_TEXT_PORT", "6611"))
 args = sys.argv[1:]
 # VICE's PRG autostart aborts when IDEDOS enters cartridge code, and can
 # substitute a temporary autostart floppy. Boot PREBOOT from the real D81.
@@ -40,11 +42,13 @@ for flag in ("-8", "-logfile"):
         args[index] = str(target)
     else:
         args[index] = str(env / "readyos/vice.log")
-extra = ["-cartcrt", str(support / "idedos20190819-c64.crt"),
-         "-IDE64version", "1", "-IDE64autosize1",
-         "-IDE64image1", str(support / "c64os v1.09.hdd"),
-         "-binarymonitor", "-binarymonitoraddress", "127.0.0.1:6511",
-         "-remotemonitor", "-remotemonitoraddress", "127.0.0.1:6611",
+extra = []
+if os.environ.get("READYOS_BRIDGE_IDE64", "1") != "0":
+    extra += ["-cartcrt", str(support / "idedos20190819-c64.crt"),
+              "-IDE64version", "1", "-IDE64autosize1",
+              "-IDE64image1", str(support / "c64os v1.09.hdd")]
+extra += ["-binarymonitor", "-binarymonitoraddress", f"127.0.0.1:{binary_port}",
+         "-remotemonitor", "-remotemonitoraddress", f"127.0.0.1:{text_port}",
          "-controlport1device", "9", "-controlport2device", "0", "-mouse",
          "-keybuf", 'load"*",8\nrun\n',
          "-warp", "-drive8truedrive", "+trapdevice8",

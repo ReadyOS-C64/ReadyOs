@@ -55,7 +55,8 @@ def main():
     assert menu.startswith(b'=;H\r')
     menu = menu.replace(b'=;H\r', b'=;I\r'+name+b':7R\x01\r', 1)
     validate_menu(menu)
-    with socket.create_connection(('127.0.0.1', 6511), 5) as sock:
+    from verify_bridge_ui import BINARY_PORT
+    with socket.create_connection(('127.0.0.1', BINARY_PORT), 5) as sock:
         sock.settimeout(20)
         mon = Monitor(sock)
         resource_name = b'IDE64Image1'
