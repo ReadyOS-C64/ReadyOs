@@ -89,7 +89,7 @@
       "bank_span": 2,
       "load_addr": 4096,
       "payload_len": 32616,
-      "checksum16": 9720,
+      "checksum16": 9722,
       "default_slot": 0,
       "resource_set": 0
     },
@@ -243,7 +243,7 @@
       "bank_span": 3,
       "load_addr": 4096,
       "payload_len": 38685,
-      "checksum16": 45053,
+      "checksum16": 45055,
       "default_slot": 0,
       "resource_set": 0
     },
