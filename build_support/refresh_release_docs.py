@@ -34,7 +34,7 @@ def main():
         else:
             profile = profiles.load_profile(pid)
             entries = profiles.parse_catalog_entries(profile, None)
-            content = profiles.build_help_text(profile, resolved, entries)
+            content = profiles.build_release_help_text(profile, resolved, entries)
         for name in ('README.md', 'help.md', 'helpme.md'):
             outputs[manifest.parent / name] = content
     stale = []

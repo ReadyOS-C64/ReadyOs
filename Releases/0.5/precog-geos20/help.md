@@ -93,7 +93,9 @@ PRECOG 0.5 is planned as the final PRECOG release: the series that established w
 
 The regular D81 SKU includes `c64os` and its optional launcher manifest,
 `app.c64os`. It is not in the default app list. In the launcher, press **F5 (Browse)**
-and select `app.c64os`, then launch the added entry. Other SKUs do not ship the bridge.
+and select `app.c64os`, then launch the added entry. The dedicated
+`precog-ultimate-c64os` SKU includes it directly in the main catalog and already
+compiles the required skip 39. The stock Ultimate SKU excludes bridges.
 
 **The normal D81 still uses `reu_bank_skip=0`. The bridge refuses to switch in
 that configuration.** Installing the app alone does not partition the REU.
@@ -145,7 +147,13 @@ Only switch after disk operations have finished.
 
 ## Configure ReadyOS
 
-`reu_bank_skip` is compiled into the boot/shim image. Editing the disk's
+For the dedicated Ultimate SKU, follow its included Ultimate C64OS setup guide;
+the memory reservation is already compiled in. Open the bridge's location screen
+before the first cold boot and select your C64OS installation. On an Ultimate
+without IDE64, the unsaved app default is device 8, which normally holds ReadyOS;
+use device 9 if that is where you mounted C64OS, then save.
+
+For a custom regular D81, `reu_bank_skip` is compiled into the boot/shim image. Editing the disk's
 `apps.cfg` alone cannot change it. Copy `cfg/profiles/precog-d81.ini`, change
 its `[system]` value to `reu_bank_skip=39`, and build through the normal runner:
 
@@ -182,9 +190,9 @@ If power is lost during a library write, restore `library/bridge.rec` as
 
 ## Build provenance and limits
 
-Bridge Setup source and the CAR builder live in the sibling `c64os-bridge`
-project. The ReadyOS return utility uses this repository's shared bridge core.
-The D81 packager includes the tested CAR as a companion file in the release
+Bridge Setup source and the CAR builder are checked in at
+`experiments/c64os/setup`. The ReadyOS return utility uses this repository's
+shared bridge core. The applicable D81/Ultimate packager includes the CAR as a companion file in the release
 folder. The archive contains only our app, utility and help/metadata.
 
 The switching core retains its existing ABI and fixed layout. IDE64 state is

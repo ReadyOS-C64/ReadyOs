@@ -1348,6 +1348,9 @@ endif
 ifeq ($(PROFILE),precog-ultimate-gdos)
 BRIDGE_PROGRAMS = $(BIN_DIR)/gdos64.prg gdos64-accessory
 endif
+ifeq ($(PROFILE),precog-ultimate-c64os)
+BRIDGE_PROGRAMS = $(C64OS_BRIDGE) c64os-car
+endif
 ifneq ($(filter $(PROFILE),precog-geos20 precog-ultimate-geos20),)
 BRIDGE_PROGRAMS = $(BIN_DIR)/geos20.prg
 endif

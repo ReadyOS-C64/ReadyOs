@@ -23,7 +23,7 @@ but its compiled skip zero disables both transitions until built with a matching
 layout. C64OS uses skip39 plus its 1.09-only bank cap; GDOS and stock GEOS use
 skip71 with different native signatures and allocation checks. Stock Ultimate,
 KFF2, smaller disk SKUs and EasyFlash exclude all bridge apps. Dedicated
-Ultimate GDOS/GEOS profiles are experimental, not additions to stock Ultimate.
+Ultimate C64OS/GDOS/GEOS profiles are experimental, not additions to stock Ultimate.
 
 The user reports manual testing of the hardware. Earlier automated reports
 separately demonstrate GDOS and GEOS transitions in VICE, including live geoWrite
@@ -43,3 +43,9 @@ the release bridges. Avoid copying test logs, live images or inventories to Git.
 The old sibling bridge/setup sources are retained as historical copies. The
 sources here are authoritative for release builds. Do not assume that editing a
 sibling copy changes a release payload.
+
+Dedicated Ultimate setup guides are included automatically in each SKU’s
+README, help.md and helpme.md: `docs/c64os/ultimate.md`,
+`docs/gdos64/ultimate.md` and `docs/geos20/ultimate.md`. The C64OS variant compiles
+skip 39 and includes the native CAR; GDOS/GEOS compile skip 71 and include their
+matching CVT. All three keep the complete Ultimate app set and examples disk.

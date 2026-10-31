@@ -1,0 +1,25 @@
+{
+  "extends": "precog-ultimate",
+  "id": "precog-ultimate-c64os",
+  "display_name": "precog ultimate C64OS bridge",
+  "default_run": false,
+  "catalog_source": "experiments/c64os/ultimate.ini",
+  "disk_overrides": [
+    {
+      "index": 1,
+      "append_contents": [
+        {
+          "artifact": "c64os.prg",
+          "name": "c64os",
+          "type": "prg"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "mount_on_boot": false
+    }
+  ],
+  "bridge_setup_doc": "docs/c64os/ultimate.md",
+  "release_description": "Full Ultimate app set with the C64OS bridge, compiled REU skip 39, native return installer and setup guide. Drive 8 holds ReadyOS; the examples disk is optional while the target OS uses its own storage."
+}

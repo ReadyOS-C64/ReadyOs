@@ -19,5 +19,7 @@
       "index": 2,
       "mount_on_boot": false
     }
-  ]
+  ],
+  "bridge_setup_doc": "docs/geos20/ultimate.md",
+  "release_description": "Full Ultimate app set with the GEOS 2.0 bridge, compiled REU skip 71, native return installer and setup guide. Drive 8 holds ReadyOS; the examples disk is optional while the target OS uses its own storage."
 }

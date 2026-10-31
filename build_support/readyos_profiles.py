@@ -732,7 +732,7 @@ def build_public_variant_matrix(version_text: str) -> str:
         lines.append(
             f"| `{profile_id}` | {media_summary(resolved)} | "
             f"{VARIANT_BEST_FIT.get(kind, 'Profile-specific C64 media target.')} | "
-            f"{VARIANT_NOTES.get(kind, 'Profile-specific ReadyOS media layout.')} | "
+            f"{profile.get('release_description', VARIANT_NOTES.get(kind, 'Profile-specific ReadyOS media layout.'))} | "
             f"`{boot_flow_text(str(resolved['preboot_mode']))}` |"
         )
         if profile_id == "precog-d81":
@@ -1346,6 +1346,9 @@ def build_help_text(profile: Dict[str, object],
     else:
         reu_setup_line = "- Enable REU with at least `1MB`; `8MB` or `16MB` is recommended where available."
         c64_ultimate_reu_line = "- Enable the REU with at least `1MB`; use `8MB` or `16MB` where available."
+    if profile.get("bridge_setup_doc"):
+        reu_setup_line = "- Enable a `16MB` REU. This bridge's fixed memory layout requires the full 256 banks."
+        c64_ultimate_reu_line = reu_setup_line
     vice_parts: List[str] = ["x64sc", "-reu", "-reusize", str(reu_size_kb)]
     boot_disks = [disk for disk in resolved["disks"] if bool(disk.get("mount_on_boot", True))]
     optional_disks = [disk for disk in resolved["disks"] if not bool(disk.get("mount_on_boot", True))]
@@ -1376,7 +1379,7 @@ def build_help_text(profile: Dict[str, object],
         "",
         "## Why This Variant Exists",
         "",
-        f"- {VARIANT_NOTES.get(str(profile['kind']), 'Profile-specific ReadyOS media layout.')}",
+        f"- {profile.get('release_description', VARIANT_NOTES.get(str(profile['kind']), 'Profile-specific ReadyOS media layout.'))}",
         "",
     ]
     variant_warning = VARIANT_WARNINGS.get(str(profile["kind"]))
@@ -1525,7 +1528,9 @@ def build_help_text(profile: Dict[str, object],
         lines.extend([
             "- " + ULTIMATE_PATH,
             "- This SKU compiles the regular launcher with Ultimate DOS DMA support and ships `apps.cfg` with `dma_loading=1`; disk fallback remains active whenever DMA is unavailable.",
-            "- Mount the first D81 on drive `8` and the examples D81 on drive `9`. All apps, games, REL data, RBM packages and media assets remain on drive 8.",
+            ("- Mount the first D81 on drive `8`. Leave the examples D81 unmounted while the native OS uses drive `9`; swap it in only after ending that bridge session. All ReadyOS apps and runtime assets remain on drive 8."
+             if optional_disks else
+             "- Mount the first D81 on drive `8` and the examples D81 on drive `9`. All apps, games, REL data, RBM packages and media assets remain on drive 8."),
             "- Before the first ReadyOS boot, run `LOAD\"SETUP\",8,1`, then `RUN`, and configure the first (drive-8) D81 path.",
             "- In ReadyBASIC, load examples from drive 9, for example `LOAD\"RBUGFXSNDDEMO\",9` then `RUN`. LDMOD and media commands continue reading their files from drive 8.",
             "- SETUP is a standalone utility built from focused ReadyOS TUI micromodules. It checks REU, UCI, and Ultimate DOS, browses active Ultimate storage volumes/folders for D81 images, mounts the selection, validates its `apps.cfg`, and stages the exact host path into that image.",
@@ -1549,6 +1554,22 @@ def build_help_text(profile: Dict[str, object],
         lines.append("- This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.")
     lines.extend(["", "## After PRECOG", "", PRODUCT_DIRECTION, ""])
     return "\n".join(lines)
+
+
+def build_release_help_text(profile: Dict[str, object],
+                            resolved: Dict[str, object],
+                            entries: List[Dict[str, object]]) -> str:
+    """Keep builds and documentation-only refreshes on the same bridge guides."""
+    help_text = build_help_text(profile, resolved, entries).rstrip() + "\n"
+    if profile.get("bridge_setup_doc"):
+        help_text += "\n" + (ROOT / str(profile["bridge_setup_doc"])).read_text(encoding="utf-8")
+    apps_set = enabled_apps(entries)
+    if profile["id"] in {"precog-d81", "precog-geos20"} or "c64os" in apps_set:
+        help_text += "\n" + (ROOT / "docs/c64os/bridge.md").read_text(encoding="utf-8")
+    for target in ("gdos64", "geos20"):
+        if target in apps_set:
+            help_text += "\n" + (ROOT / "docs" / target / "bridge.md").read_text(encoding="utf-8")
+    return help_text
 
 
 def profile_content_enabled(entry: Dict[str, object], apps_set: set[str]) -> bool:
@@ -1700,16 +1721,13 @@ def build_release(profile_id: str,
             fail(f"missing boot-chain artifact for {profile_id}: {source}")
         shutil.copyfile(source, target)
 
-    help_text = build_help_text(profile, resolved, entries).rstrip() + "\n"
-    if profile_id in {"precog-d81", "precog-geos20"}:
-        bridge_help = (ROOT / "docs/c64os/bridge.md").read_text(encoding="utf-8")
-        help_text += "\n" + bridge_help
+    help_text = build_release_help_text(profile, resolved, entries)
+    if profile_id in {"precog-d81", "precog-geos20"} or "c64os" in apps_set:
         shutil.copyfile(ROOT / "assets/c64os/bridge.car", output_dir / "bridge.car")
         shutil.copyfile(ROOT / "assets/c64os/bridge.json", output_dir / "bridge.json")
 
     for target in ("gdos64", "geos20"):
         if target in apps_set:
-            help_text += "\n" + (ROOT / "docs" / target / "bridge.md").read_text(encoding="utf-8")
             shutil.copyfile(ROOT / "assets" / target / "readyos-bridge.cvt",
                             output_dir / (target + "-readyos-bridge.cvt"))
             shutil.copyfile(ROOT / "assets" / target / "bridge.json",

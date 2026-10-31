@@ -45,7 +45,7 @@ def basic_inventory(profile):
     examples = [c for c in entries if c['type'] == 'prg' and
                 (c['name'].startswith(('rbgfx', 'rbugfx', 'rbsnd')) or
                  c['name'] in {'rbtest1', 'rbproc1', 'rbprocerr'})]
-    packages = [c['name'] for c in entries if c['name'].startswith('rbm.')]
+    packages = list(dict.fromkeys(c['name'] for c in entries if c['name'].startswith('rbm.')))
     if not examples and not packages:
         return []
     lines = ["", "## ReadyBASIC examples and modules", "",
