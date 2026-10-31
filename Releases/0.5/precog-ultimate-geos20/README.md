@@ -15,7 +15,7 @@ ReadyOS cannot discover which Ultimate host folder/image it was booted from: the
 ## Artifacts
 
 - Boot-time drive 8: `readyos-v0.5-ultimate_1.d81`
-- Optional drive-9 swap: `readyos-v0.5-ultimate_2.d81` - ReadyBASIC examples and optional C64OS/GDOS bridge apps/manifests; stock skip zero disables switching.
+- Optional drive-9 swap: `readyos-v0.5-ultimate_2.d81` - ReadyBASIC examples. Leave this disk unmounted while the native OS uses device 9.
 - Host-Side Boot PRG: `readyos-v0.5-ultimate-preboot.prg`
 - Host-Side Boot PRG: `readyos-v0.5-ultimate-boot.prg`
 

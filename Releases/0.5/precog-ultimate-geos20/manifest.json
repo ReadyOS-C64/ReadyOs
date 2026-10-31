@@ -29,7 +29,7 @@
       "true_drive": true,
       "mount_on_boot": false,
       "role": "examples",
-      "description": "ReadyBASIC examples and optional C64OS/GDOS bridge apps/manifests; stock skip zero disables switching.",
+      "description": "ReadyBASIC examples. Leave this disk unmounted while the native OS uses device 9.",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate-geos20/readyos-v0.5-ultimate_2.d81"
     }
   ],
