@@ -79,7 +79,12 @@ def main() -> int:
             if target_text is None:
                 continue
             checked_links += 1
-            target = (path.parent / target_text).resolve()
+            # Relative links in the release template are for its emitted README.
+            base = path.parent
+            if path == ROOT / "docs/release_root_readme_template.md":
+                from readyos_profiles import release_version_dir, read_current_version_text
+                base = release_version_dir(read_current_version_text())
+            target = (base / target_text).resolve()
             try:
                 target.relative_to(ROOT)
             except ValueError:

@@ -1,19 +1,5 @@
 """Shared editorial facts for release documentation (not runtime metadata)."""
 
-PRODUCT_DIRECTION = (
-    "PRECOG 0.5 is planned as the final PRECOG release: the series that established "
-    "what is possible and clarified the vision. Next comes ReadyOS Ultimate, the "
-    "main focus, installing/configuring real files and folders on Ultimate storage "
-    "and using its hardware features; and ReadyOS Universal, continuing disk-image "
-    "and REU workflows for VICE, THEC64 and original hardware. Universal effort will "
-    "follow user interest and demand. These are future directions, not separate "
-    "products shipped here. Standalone releases of many apps are also planned, "
-    "including both apps with their own REU needs and apps without them. We remain "
-    "committed to standalone ReadyBASIC independent of Ultimate and ReadyOS; "
-    "this does not promise a no-REU interpreter. Current ReadyOS app PRGs still "
-    "require the ReadyOS runtime."
-)
-
 ULTIMATE_PATH = (
     "ReadyOS cannot discover which Ultimate host folder/image it was booted from: "
     "the mounted C64 drive does not provide the enclosing D81 host pathname. "
@@ -25,6 +11,9 @@ ULTIMATE_PATH = (
 )
 
 APP_REQUIREMENTS = {
+    "c64os": "16 MiB REU, compiled skip 39 and a prepared C64OS 1.09 installation",
+    "gdos64": "16 MiB REU, compiled skip 71 and GDOS64 1.03 with 4 MiB DACC",
+    "geos20": "16 MiB REU, compiled skip 71 and stock GEOS 2.0",
     "quicknotes": "portable; own REU note storage",
     "readyshell": "portable; own REU overlays/state",
     "readybasic": "portable core; own REU core/code and buffers; USPEED/UMHZ require Ultimate",
@@ -38,7 +27,7 @@ APP_REQUIREMENTS = {
 }
 
 def app_requirement(name):
-    return APP_REQUIREMENTS.get(name, "portable; no separate app-owned REU workspace")
+    return APP_REQUIREMENTS.get(name, "")
 
 def basic_inventory(profile):
     entries = [c for d in profile.get('disks', []) for c in d['contents']]
@@ -50,11 +39,11 @@ def basic_inventory(profile):
         return []
     lines = ["", "## ReadyBASIC examples and modules", "",
              f"This profile defines {len(examples)} BASIC example/test PRGs and "
-             f"{len(packages)} disk module packages: " + ', '.join(f'`{p}`' for p in packages) + ".",
+             f"{len(packages)} disk module packages" + (": " + ", ".join(f"`{p}`" for p in packages) if packages else "") + ".",
              "Built-in graphics, immediate SID sound, MEMCAP and BORDER need no disk-module load. "
              "USPEED/UMHZ are built-in but require compatible Ultimate software turbo registers."]
     if 'rbm.media' in packages:
-        lines += ["The new set includes RBSND07, RBGFXSNDDEMO and RBUGFXSNDDEMO. "
+        lines += ["The disk set includes RBSND07, RBGFXSNDDEMO and RBUGFXSNDDEMO. "
                   "Use `LDMOD(\"RBM.MEDIA\",M%)` for eight on-demand music/image/sprite commands. "
                   "Reserve with `MEMCAP(36864)` before strings/music; load images before starting music. "
                   "The vetted PSID player is PAL-only. The standard demo avoids Ultimate speed calls; "
@@ -63,10 +52,8 @@ def basic_inventory(profile):
                   "and M keeps music playing at the text prompt. After M use "
                   "`MUSDROP():CLR:MEMCAP(40960)` to release it."]
     else:
-        lines += ["The example count above is this profile's actual configured subset. The new `rbm.media` "
-                  "package, tune/images and combined demos are currently packaged in regular D81 "
-                  "and Ultimate D81 only. They are not implied by having the ReadyBASIC runtime."]
-    lines += ["The new disk-module/resource loaders read drive 8; they do not take a device argument. "
+        lines += ["Use the regular D81 or an Ultimate D81 set for the Orbital Echoes demos and their media files."]
+    lines += ["Load the example from the disk that holds it. Keep its required modules and media on drive 8. "
               "See the repository's `docs/readybasic_reference.md` (and HTML counterpart) for "
               "every example, command contracts and exact per-profile availability."]
     return lines

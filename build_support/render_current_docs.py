@@ -10,7 +10,7 @@ from update_documentation_html_status import CURRENT, banner
 ROOT = Path(__file__).resolve().parents[1]
 PAIRS = {
     **{f"docs/{name}.md": f"docs/{name}.html" for name in (
-        "DOCUMENTATION_INDEX", "ultimate_setup", "ultimate_dos_dma_loading",
+        "DOCUMENTATION_INDEX", "ReadyShellHostTesting", "ReadyShellArchitecture", "ultimate_setup", "ultimate_dos_dma_loading",
         "readybasic_reference", "app_requirements", "documentation_audit_2026-09",
         "readybasic_orbital_echoes", "readybasic_media_learnings",
         "readybasic_media_load_investigation", "readyos_ultimate_speed_policy")},
@@ -33,7 +33,7 @@ def render(source, target):
     html = result.stdout
     # A 45-example reference needs navigation, but not several screens of TOC
     # before its introduction. Native details keeps it accessible and offline.
-    html = html.replace('<nav id="TOC"', '<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC"')
+    html = html.replace('<nav id="TOC"', '<details class="contents"><summary>Contents</summary><nav id="TOC"')
     html = html.replace('</nav>', '</nav></details>', 1)
     body_end = html.index(">", html.index("<body")) + 1
     html = html[:body_end] + "\n" + banner("current", CURRENT[target]) + html[body_end:]
@@ -42,6 +42,7 @@ def render(source, target):
         rel_md = os.path.relpath(ROOT / other_md, md.parent)
         rel_html = os.path.relpath(ROOT / other_html, out.parent)
         html = html.replace(f'href="{rel_md}"', f'href="{rel_html}"')
+        html = html.replace(f'href="{rel_md}#', f'href="{rel_html}#')
     return html
 
 def main():

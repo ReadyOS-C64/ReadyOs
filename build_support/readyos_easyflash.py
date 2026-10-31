@@ -16,7 +16,7 @@ from typing import Dict, List
 
 import build_apps_catalog_petscii as apps_catalog
 import readyos_profiles
-from readyos_doc_content import PRODUCT_DIRECTION, app_requirement
+from readyos_doc_content import app_requirement
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -546,19 +546,20 @@ def compose_easyflash_image(layout: Dict[str, object],
 
 def build_help_text(output_dir: Path) -> str:
     text = "\n".join([
-        "# readyos easyflash",
+        "# ReadyOS EasyFlash",
         "",
         "- attach `readyos_easyflash.crt` as an easyflash cartridge",
         "- mount `readyos_data.d64` on drive `8`",
         "- enable REU with at least `1MB`; `8MB` or `16MB` is recommended where available",
+        "- reset to start the cartridge. Yellow and orange border phases show apps being copied into REU. Select an app with RETURN and use Ctrl+B to reach the launcher.",
         "- if an app snapshot preloaded from the cartridge is unloaded from REU, ReadyOS cannot load it again from the cartridge until you restart ReadyOS",
         "",
-        "## directory order",
+        "## Companion disk",
         "",
         "- the CRT uses its cartridge-bank layout and is not governed by floppy directory order",
         "- the companion `readyos_data.d64` writes ordinary SEQ/USR data before REL data",
         "",
-        "## vice example",
+        "## Start in VICE",
         "",
         "```sh",
         "x64sc -reu -reusize 16384 -cartcrt readyos_easyflash.crt -drive8type 1541 -devicebackend8 0 +busdevice8 -8 readyos_data.d64",
@@ -570,12 +571,14 @@ def build_help_text(output_dir: Path) -> str:
              "Every app uses the ReadyOS REU snapshot system. Additional requirements:", ""]
     for app in catalog['apps']:
         name = app['prg']
-        lines.append(f"- `{name}`: {app_requirement(name)}.")
+        requirement = app_requirement(name)
+        detail = f" ({requirement})" if requirement else ""
+        lines.append(f"- **{app['label']}** — {app['desc']}{detail}.")
     lines += ["", "ReadyBASIC's built-in commands are preloaded with the runtime. The companion "
               "data D64 does not package the disk-module/example/media collection; use the "
               "regular or Ultimate D81 for the new media demos. Cartridge preload is separate "
               "from Ultimate DOS DMA and needs no D81 host-path setup.",
-              "", "## After PRECOG", "", PRODUCT_DIRECTION, ""]
+              ""]
     return '\n'.join(lines)
 
 

@@ -96,7 +96,7 @@
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current C64 Ultimate DOS DMA behavior. The Ultimate SKU enables it and disk fallback remains part of the contract.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<details class="contents"><summary>Contents</summary><nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#c64-ultimate-dos-dma-loading" id="toc-c64-ultimate-dos-dma-loading">C64 Ultimate DOS DMA Loading</a>
 <ul>
@@ -115,9 +115,9 @@
 <section id="availability" class="level2">
 <h2>Availability</h2>
 <ul>
-<li>Compile gate: <code>LAUNCHER_DMA_LOAD</code>. The Makefile derives it from the selected profile: <code>precog-ultimate</code> sets it to <code>1</code>; portable profiles set it to <code>0</code>.</li>
+<li>Compile gate: <code>LAUNCHER_DMA_LOAD</code>. The Makefile derives it from the selected profile. The stock and dedicated Ultimate profiles enable it. Portable profiles use disk I/O.</li>
 <li>Runtime gate: <code>dma_loading=1</code> in <code>apps.cfg</code>, plus a non-empty <code>c64u_image_path</code>. Both must be present before the launcher attempts DMA.</li>
-<li>The Ultimate SKU ships with DMA enabled but its image path empty, so the standalone SETUP utility can record the actual installed location safely.</li>
+<li>The stock Ultimate SKU ships with DMA enabled but its image path empty, so the standalone SETUP utility can record the actual installed location safely.</li>
 <li>Launcher variant: regular disk launcher only; EasyFlash does not link this path because cartridge preload already supplies its REU payloads.</li>
 <li>Hardware target: C64 Ultimate/Ultimate-family UCI with Ultimate DOS support.</li>
 <li>Catalog keys: <code>dma_loading</code> and <code>c64u_image_path</code>.</li>

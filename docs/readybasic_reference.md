@@ -1,18 +1,14 @@
 # ReadyBASIC: commands, modules and every example
 
 ReadyBASIC adds structured routines, REU resources, graphics and sound to C64
-BASIC V2. Start ReadyOS, launch ReadyBASIC, then load a demonstration from the
-mounted disk, for example `LOAD "RBGFX02",8` followed by `RUN`. These are BASIC
+BASIC V2. Start ReadyOS, launch ReadyBASIC, then load a demonstration. For the regular D81, type `LOAD "RBGFX02",8` followed by `RUN`. These are BASIC
 programs to run inside ReadyBASIC, not independent ReadyOS apps. The source
 listings below explain the working combinations of commands and ordinary BASIC.
 
-The current release profiles do not all carry the same examples. Regular D81
-and Ultimate D81 contain 44: three language tests, 32 graphics examples, seven
-sound examples and two combined demos. The original 41-example set remains in
-the smaller focused ReadyBASIC D64, D71 and KFF2 profiles. The separate rsdebug
-D81 has an older 27-example subset.
-The old `rbsnd08_neon.bas` is retained as historical source, not a current disk
-entry. The profile inventory below is generated from the actual configurations.
+On stock Ultimate, load examples from **device 9** and keep the modules and media
+on device 8. On the regular D81 both are on device 8. Those sets contain 44
+examples. The directory for each profile below lists the examples it ships.
+`rbsnd08_neon.bas` is retained as a historical source example.
 
 ## Choose a starting point
 
@@ -348,6 +344,7 @@ binary image has been rebuilt. Example counts exclude applications/utilities.
 | `precog-dual-d64` | 1 | `rbm.sample1` |
 | `precog-dual-d71-rsdebug` | 41 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
 | `precog-dual-d71` | 41 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
+| `precog-geos20` | 44 | `rbm.media`, `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
 | `precog-kung-fu-flash-2-d81` | 41 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
 | `precog-solo-d64-a` | 1 | `rbm.sample1` |
 | `precog-solo-d64-b` | 1 | `rbm.sample1` |
@@ -356,6 +353,9 @@ binary image has been rebuilt. Example counts exclude applications/utilities.
 | `precog-solo-d64-e-rsdebug` | 1 | `rbm.sample1` |
 | `precog-solo-d64-e` | 1 | `rbm.sample1` |
 | `precog-solo-d64-readybasic` | 41 | `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
+| `precog-ultimate-c64os` | 44 | `rbm.media`, `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
+| `precog-ultimate-gdos` | 44 | `rbm.media`, `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
+| `precog-ultimate-geos20` | 44 | `rbm.media`, `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
 | `precog-ultimate` | 44 | `rbm.media`, `rbm.sample1`, `rbm.sample2`, `rbm.sample3` |
 
 The Ultimate SKU is a D81 pair: all 44 BASIC examples are on drive 9;
@@ -425,7 +425,7 @@ Switch/query all five graphics modes, then restore text.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`.
 
 Disk name: `RBGFX01`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -451,7 +451,7 @@ Plot a hires grid and diagonal, waiting for a key before exit.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `PLOT`.
 
 Disk name: `RBGFX02`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -481,7 +481,7 @@ Draw intersecting hires line fans and restore text after a key.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`.
 
 Disk name: `RBGFX03`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -509,7 +509,7 @@ Compare rectangle outlines with filled boxes.
 Commands used: `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `RECT`.
 
 Disk name: `RBGFX04`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -536,7 +536,7 @@ Read a plotted pixel, its neighbor, then the cleared pixel with PNT.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `PLOT`, `PNT`.
 
 Disk name: `RBGFX05`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -564,7 +564,7 @@ Early surface-handle probe; it predates capture/blit and does not initialize its
 Commands used: `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXTEXT`, `LINE`.
 
 Disk name: `RBGFX06`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -587,7 +587,7 @@ Draw multicolor lines and pixels using the immediate primitive color encoding.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PLOT`.
 
 Disk name: `RBGFX07`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -614,7 +614,7 @@ Use plot/rectangle primitives on character cells in tile mode.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `PLOT`, `PNT`, `RECT`.
 
 Disk name: `RBGFX08`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -642,7 +642,7 @@ Configure two generated sprites, position them and change color.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `SPRCOL`, `SPRMOVE`, `SPRSET`.
 
 Disk name: `RBGFX09`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -667,7 +667,7 @@ Overlap sprites and inspect collision state; retained polling probe.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `SPRCOLL`, `SPRMOVE`, `SPRSCAN`, `SPRSET`.
 
 Disk name: `RBGFX10`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -692,7 +692,7 @@ Poll joystick and keyboard values without an IRQ input sampler.
 Commands used: `JOY`, `KEYLAST`, `KEYP`, `KEYSCAN`.
 
 Disk name: `RBGFX11`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -716,7 +716,7 @@ Combine hires lines, boxes, sprite positioning and pixel readback.
 Commands used: `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PNT`, `RECT`, `SPRMOVE`, `SPRSET`.
 
 Disk name: `RBGFX12`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -745,7 +745,7 @@ Construct sprite art row by row and step through positions/colors with keys.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `SPRMOVE`, `SPRROW`, `SPRSET`.
 
 Disk name: `RBGFX13`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -795,7 +795,7 @@ Compare circle outline with the current rectangular FCIRCLE placeholder.
 Commands used: `CIRCLE`, `FCIRCLE`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `RECT`.
 
 Disk name: `RBGFX14`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -819,7 +819,7 @@ Write visible character/color tiles using TILE and CHARAT.
 Commands used: `CHARAT`, `GFXTEXT`, `PAUSE`, `TILE`.
 
 Disk name: `RBGFX15`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -848,7 +848,7 @@ Step through sprite expansion, multicolor, priority and color controls.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `SPRCOL`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRROW`, `SPRSET`, `SPRSIZE`, `TILE`.
 
 Disk name: `RBGFX16`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -894,7 +894,7 @@ Outline coordinate-pair polygons held in BASIC integer arrays.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `POLY`.
 
 Disk name: `RBGFX17`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -923,7 +923,7 @@ Fill convex polygons held in BASIC integer arrays.
 Commands used: `FPOLY`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `RECT`.
 
 Disk name: `RBGFX18`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -951,7 +951,7 @@ Allocate REU point buffers, set indexed vertices and draw outlines.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `PAUSE`, `PBMAKE`, `PBUFSET`, `POLYH`.
 
 Disk name: `RBGFX19`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -981,7 +981,7 @@ Fill REU-backed polygons alongside lines and rectangles.
 Commands used: `FPOLYH`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PBMAKE`, `PBUFSET`, `RECT`.
 
 Disk name: `RBGFX20`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1012,7 +1012,7 @@ Exercise immediate primitives and color slots in multicolor bitmap mode.
 Commands used: `CIRCLE`, `FBOX`, `FCIRCLE`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PLOT`, `RECT`.
 
 Disk name: `RBGFX21`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1041,7 +1041,7 @@ Check that PNT returns multicolor pixel slot codes 1, 2 and 3.
 Commands used: `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PAUSE`, `PLOT`, `PNT`.
 
 Disk name: `RBGFX22`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1068,7 +1068,7 @@ Record plot/line/rectangle/box commands and replay a retained display list.
 Commands used: `DLDRAW`, `DLFBOX`, `DLLINE`, `DLMAKE`, `DLPLOT`, `DLRECT`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`.
 
 Disk name: `RBGFX23`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1093,7 +1093,7 @@ Build a custom charset, tileset and tilemap, then render them together.
 Commands used: `CHRMAKE`, `CHRROW`, `CHRUSE`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `TMDRAW`, `TMMAKE`, `TMSET`, `TSMAKE`, `TSSET`.
 
 Disk name: `RBGFX24`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1141,7 +1141,7 @@ Change multicolor cell palette attributes independently of bitmap drawing.
 Commands used: `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `MCBG`, `MCELL`, `RECT`.
 
 Disk name: `RBGFX25`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1168,7 +1168,7 @@ Compare visible primitives and PNT across hires, multicolor and tile modes.
 Commands used: `CIRCLE`, `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `MCBG`, `PLOT`, `PNT`, `RECT`.
 
 Disk name: `RBGFX26`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1206,7 +1206,7 @@ Probe surface selection, capture/blit and error reporting before visible drawing
 Commands used: `ERRCODE`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `LINE`, `RECT`.
 
 Disk name: `RBGFX27`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1232,7 +1232,7 @@ Draw and read back ordinary visible tile cells.
 Commands used: `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PLOT`, `PNT`, `RECT`.
 
 Disk name: `RBGFX28`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1255,7 +1255,7 @@ Draw and read back multicolor tile cells.
 Commands used: `FBOX`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `LINE`, `PLOT`, `PNT`, `RECT`.
 
 Disk name: `RBGFX29`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1278,7 +1278,7 @@ Replay a retained display list in multicolor bitmap mode.
 Commands used: `DLDRAW`, `DLFBOX`, `DLLINE`, `DLMAKE`, `DLPLOT`, `DLRECT`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `MCBG`.
 
 Disk name: `RBGFX30`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1303,7 +1303,7 @@ Capture a visible hires scene into REU, clear it and restore it with a key.
 Commands used: `ERRCODE`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `LINE`, `RECT`.
 
 Disk name: `RBGFX31`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1329,7 +1329,7 @@ Draw a polygon outline and a convex filled polygon from integer arrays.
 Commands used: `FPOLY`, `GFXCLEAR`, `GFXMODE`, `GFXTEXT`, `POLY`.
 
 Disk name: `RBGFX32`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem see graphics design md
@@ -1357,7 +1357,7 @@ Orbital Echoes: two cached scenes, READY sprites, palette-safe lines and PAL mus
 Commands used: `BORDER`, `BUFDROP`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `LDMOD`, `MCBG`, `MCFILE`, `MCLINE`, `MEMCAP`, `MUSDROP`, `MUSPLAY`, `MUSTUNE`, `SPRFILE`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRSET`, `SPRSIZE`.
 
 Disk name: `RBGFXSNDDEMO`.
-Profiles: `precog-d81`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-geos20`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem =====================================
@@ -1499,7 +1499,7 @@ Structured routine/function and typed-result regression examples, including nest
 Commands used: `ADD16`, `FADD`, `LDMOD`, `UPPER`.
 
 Disk name: `RBPROC1`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 5 ldmod("rbm.sample1",m%)
@@ -1593,7 +1593,7 @@ Intentional negative cases; run individual numbered sections to test argument/ty
 Commands used: `FADD`.
 
 Disk name: `RBPROCERR`.
-Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem readybasic proc/fun negative probes
@@ -1664,7 +1664,7 @@ Hear separate triangle, saw, pulse and noise tones using immediate SID control.
 Commands used: `ADSR`, `PAUSE`, `PULSE`, `SIDOFF`, `SIDRST`, `SOUND`, `VOL`.
 
 Disk name: `RBSND01`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem readybasic sound design: sound design md
@@ -1693,7 +1693,7 @@ Change pulse width and envelope, gating voices explicitly.
 Commands used: `ADSR`, `FRQ`, `GATE`, `PAUSE`, `PULSE`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`.
 
 Disk name: `RBSND02`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem readybasic sound design: sound design md
@@ -1721,7 +1721,7 @@ Play a chromatic scale with the PAL pitch table.
 Commands used: `ADSR`, `GATE`, `PAUSE`, `PITCH`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`.
 
 Disk name: `RBSND03`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem readybasic sound design: sound design md
@@ -1747,7 +1747,7 @@ Compare low-pass, band-pass and high-pass SID filtering.
 Commands used: `ADSR`, `FILTER`, `FRQ`, `GATE`, `PAUSE`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`.
 
 Disk name: `RBSND04`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem readybasic sound design: sound design md
@@ -1776,7 +1776,7 @@ Set frequency, waveform and packed envelopes together with VOICE.
 Commands used: `GATE`, `PAUSE`, `PULSE`, `SIDOFF`, `SIDRST`, `VOICE`, `VOL`, `WAVE`.
 
 Disk name: `RBSND05`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem readybasic sound design: sound design md
@@ -1804,7 +1804,7 @@ Combine three voices into a chord, then a bass/high-voice pair.
 Commands used: `ADSR`, `GATE`, `PAUSE`, `PITCH`, `PULSE`, `SIDOFF`, `SIDRST`, `VOL`, `WAVE`.
 
 Disk name: `RBSND06`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem readybasic sound design: sound design md
@@ -1833,7 +1833,7 @@ Load the media module and vetted PSID; play, halt, restart and release its arena
 Commands used: `BORDER`, `LDMOD`, `MEMCAP`, `MUSDROP`, `MUSHALT`, `MUSPLAY`, `MUSTUNE`.
 
 Disk name: `RBSND07`.
-Profiles: `precog-d81`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-geos20`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem =====================================
@@ -2061,7 +2061,7 @@ Small command-expression, integer-output and uppercase-string smoke test.
 Commands used: `ADD16`, `ECHO1`, `LDMOD`, `UPPER`.
 
 Disk name: `RBTEST1`.
-Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d64`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-a`, `precog-solo-d64-b`, `precog-solo-d64-c`, `precog-solo-d64-d`, `precog-solo-d64-e-rsdebug`, `precog-solo-d64-e`, `precog-solo-d64-readybasic`, `precog-ultimate`.
+Profiles: `precog-d81-rsdebug`, `precog-d81`, `precog-dual-d64`, `precog-dual-d71-rsdebug`, `precog-dual-d71`, `precog-geos20`, `precog-kung-fu-flash-2-d81`, `precog-solo-d64-a`, `precog-solo-d64-b`, `precog-solo-d64-c`, `precog-solo-d64-d`, `precog-solo-d64-e-rsdebug`, `precog-solo-d64-e`, `precog-solo-d64-readybasic`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 5 ldmod("rbm.sample1",m%)
@@ -2085,7 +2085,7 @@ Ultimate Orbital Echoes: the same media lifecycle, with safe-speed disk loading 
 Commands used: `BORDER`, `BUFDROP`, `GFXBLIT`, `GFXCLEAR`, `GFXMODE`, `GFXSURF`, `GFXSYNC`, `GFXTEXT`, `GFXTGT`, `LDMOD`, `MCBG`, `MCFILE`, `MCLINE`, `MEMCAP`, `MUSDROP`, `MUSPLAY`, `MUSTUNE`, `SPRFILE`, `SPRMCO`, `SPRMOVE`, `SPRMUL`, `SPRPRI`, `SPRSET`, `SPRSIZE`, `USPEED`.
 
 Disk name: `RBUGFXSNDDEMO`.
-Profiles: `precog-d81`, `precog-ultimate`.
+Profiles: `precog-d81`, `precog-geos20`, `precog-ultimate-c64os`, `precog-ultimate-gdos`, `precog-ultimate-geos20`, `precog-ultimate`.
 
 ```basic
 10 rem =====================================

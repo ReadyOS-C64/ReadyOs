@@ -77,6 +77,10 @@ def main():
     pages = parse_markdown_lite((ROOT / 'src/apps/readme/readme_lite.md').read_text(), 38, 18)
     if any(len(page) != 18 or any(len(line.text) > 38 for line in page) for page in pages):
         raise SystemExit('Read.Me content exceeds its 38-column / 18-line page geometry')
+    visible = {line.text for page in pages for line in page}
+    for command in ('LOAD"*",8', 'LST "*", 9, "SEQ"'):
+        if command not in visible:
+            raise SystemExit(f'Read.Me lost literal command characters: {command}')
     with tempfile.TemporaryDirectory(prefix='readyos-readme-doc-check-') as tmp:
         header, source = Path(tmp) / 'readme_pages.h', Path(tmp) / 'readme_pages.c'
         write_header(header, len(pages), 18, 38)

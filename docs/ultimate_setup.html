@@ -96,7 +96,7 @@
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current first-run, safety, and automation contract for the C64 Ultimate D81 SETUP utility.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<details class="contents"><summary>Contents</summary><nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#ultimate-d81-setup" id="toc-ultimate-d81-setup">Ultimate D81 SETUP</a>
 <ul>
@@ -105,6 +105,7 @@
 <li><a href="#prerequisites-and-failure-guidance" id="toc-prerequisites-and-failure-guidance">Prerequisites and Failure Guidance</a></li>
 <li><a href="#safe-config-commit" id="toc-safe-config-commit">Safe Config Commit</a></li>
 <li><a href="#automation-contract" id="toc-automation-contract">Automation Contract</a></li>
+<li><a href="#developer-notes" id="toc-developer-notes">Developer notes</a></li>
 </ul></li>
 </ul>
 </nav></details>
@@ -112,12 +113,11 @@
 <h1>Ultimate D81 SETUP</h1>
 <p><code>precog-ultimate</code> is the C64 Ultimate-first full-content two-D81 SKU. Its launcher is compiled with Ultimate DOS DMA support, and its generated <code>apps.cfg</code> begins with <code>dma_loading=1</code> and an empty <code>c64u_image_path</code>. The image also contains <code>SETUP</code>, a standalone first-run utility that records the exact Ultimate host path of that D81 before ReadyOS boots.</p>
 <p>The path is necessary because a C64 program cannot discover the host location of the disk image it is running from. Drive 8 and the disk directory identify files <em>inside</em> a D81, not that D81's USB/SD pathname. SETUP bridges this gap by letting you choose the image, then writing <code>c64u_image_path</code> and <code>dma_loading=1</code> in the <code>[launcher]</code> section of its <code>apps.cfg</code>. This configures today's image-based fast loader; it is not the full folder-based installer planned for ReadyOS Ultimate.</p>
-<p>SETUP is deliberately not a ReadyOS launcher app. It is a normal <code>$0801</code> C64 program that links only the focused ReadyOS TUI micromodules needed for its screen, window, menu, and small UI helpers. It has no ReadyOS shim, ReadyFS architecture, or overlay dependency. ReadyFS was used only as a reference for the proven Ultimate DOS command spellings and resilient UCI state machine.</p>
 <section id="first-run" class="level2">
 <h2>First Run</h2>
 <ol type="1">
 <li>Copy both Ultimate SKU D81 files into a permanent folder on <code>usb1</code> or the SD card.</li>
-<li>Mount the first (<code>ultimate_1.d81</code>) on drive <code>8</code> and the examples image (<code>ultimate_2.d81</code>) on drive <code>9</code>. All apps, games, REL data, modules and media assets remain on drive 8.</li>
+<li>Mount the first (<code>ultimate_1.d81</code>) on drive <code>8</code> and the examples image (<code>ultimate_2.d81</code>) on drive <code>9</code>. The main apps, REL data, modules and media assets are on drive 8. Stock disk 2 also holds the optional C64OS and GDOS64 launcher manifests. For a dedicated bridge boot, leave drive 9 available for the native OS as its guide directs.</li>
 <li>From BASIC, run <code>LOAD"SETUP",8,1</code>, then <code>RUN</code>.</li>
 <li>Resolve any prerequisite marked <code>MISSING</code> or <code>OFF/ERROR</code>, then press <code>F5</code>.</li>
 <li>Browse from <code>/</code> through the active Ultimate storage volumes and folders. SETUP displays folders and D81 files only.</li>
@@ -181,6 +181,10 @@
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> build_support/start_setup_c64u_matrix.sh</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> build_support/start_setup_c64u_prereq_failures.sh</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> build_support/start_launcher_setup_states_c64u.sh</span></code></pre></div>
+</section>
+<section id="developer-notes" class="level2">
+<h2>Developer notes</h2>
+<p>SETUP is a standalone <code>$0801</code> C64 program that links only the focused ReadyOS TUI micromodules needed for its screen, window, menu, and small UI helpers. It has no ReadyOS shim, ReadyFS architecture, or overlay dependency. ReadyFS was used only as a reference for the proven Ultimate DOS command spellings and resilient UCI state machine.</p>
 </section>
 </section>
 </body>

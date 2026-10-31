@@ -1149,7 +1149,7 @@ $(UZPACK): uzpack-diagnostic-stub
 endif
 
 # Generate README app page assets from markdown-lite source
-$(README_DATA_C): $(BUILD_SUPPORT_DIR)/build_readme_app_assets.py $(APPS_DIR)/readme/readme_lite.md
+$(README_DATA_C): $(BUILD_SUPPORT_DIR)/readme_lite_common.py $(BUILD_SUPPORT_DIR)/build_readme_app_assets.py $(APPS_DIR)/readme/readme_lite.md
 	python3 $(BUILD_SUPPORT_DIR)/build_readme_app_assets.py \
 		--input $(APPS_DIR)/readme/readme_lite.md \
 		--out-h $(README_DATA_H) \

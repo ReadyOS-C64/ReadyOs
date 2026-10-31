@@ -1,10 +1,9 @@
 # ReadyBASIC disk sample modules — 0.5 RC2
 
-`LDMOD` and `PAUSE` are built in. All former Z-prefixed proof commands are
-disk-only examples with the prefix removed. A cold ReadyBASIC session has 83
-production command descriptors and 45 empty registry slots. Demo worker code
-is absent from the built-in `LOWPACK`, slot-1/slot-2 packs and overlays; the
-built-in `SPANPACK` has been removed.
+Start in ReadyBASIC with `rbm.sample1` on device 8. Enter the example below
+and run it. When adapting a module, build its descriptor table and worker code
+against the same runtime that will load it. The [command authoring guide](READYBASIC_MAKING_COMMAND_GUIDE.md)
+covers argument handling, slot placement and registration.
 
 ## Loading and using examples
 
@@ -30,6 +29,13 @@ modules. A cold ReadyBASIC start restores the production registry.
 `PAUSE(UNITS)` preserves the existing busy-loop behavior: it uses the low byte
 of the argument (0–255), and elapsed time depends on CPU speed. It does not
 measure KERNAL jiffies. Graphics and sound samples can use it immediately.
+
+## Build and check a sample package
+
+1. Start with [sample_low.s](sample_low.s) for a worker and [the package builder](../../../build_support/build_readybasic_disk_modules.py) for its descriptor, slot and exported name. Follow `ECHO1` for a scalar result or `ADD16` for integer inputs. The [descriptor guide](READYBASIC_MAKING_COMMAND_GUIDE.md#descriptor-shape) explains how the interpreter dispatches a call.
+2. From the repository root run `/bin/bash ./run.sh --profile precog-d81 --for-release --build-only`. The build links the interpreter and packages its matching sample workers as SEQ files. When adding a package, include its build target and disk entry on a profile that ships ReadyBASIC.
+3. Boot that image through `/bin/bash ./run.sh --profile precog-d81 --skipbuild`. Launch ReadyBASIC. Run the example above with the rebuilt package on device 8. For the supplied sample1, expect **12 registered commands**, **1** from ECHO1 and **15** from ADD16.
+4. Switch away and resume, then call the command again. Start a fresh session and load the package again to check both registration and warm reuse.
 
 ## Sample1: scalar, array, temporary memory and two slots
 
@@ -197,5 +203,6 @@ block. The release now uses two D81s: all apps, games, REL data, modules and
 media assets on drive 8, and all 44 BASIC examples on drive 9. Load examples
 with device 9; LDMOD and media commands continue using drive 8. Compiled worker checks cover all entries, 16-bit carry and counter
 wraparound; the earlier 225 hardware assertions predate this size optimization.
-All release SKUs now set `reu_bank_skip=0`; their boot/shim images use bank 0
-for ReadyOS and start the dynamic pool at bank 1.
+The standard release boot uses bank 0 for ReadyOS and starts the dynamic pool
+at bank 1. Bridge builds reserve low banks before that pool. Use the loader-assigned
+ReadyBASIC core and code banks when registering module commands.

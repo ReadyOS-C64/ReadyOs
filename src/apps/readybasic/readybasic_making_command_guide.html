@@ -96,7 +96,7 @@
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current ReadyBASIC command-authoring counterpart generated from READYBASIC_MAKING_COMMAND_GUIDE.md.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<details class="contents"><summary>Contents</summary><nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#readybasic-making-command-guide" id="toc-readybasic-making-command-guide">ReadyBASIC Making Command Guide</a>
 <ul>
@@ -128,6 +128,8 @@
 </nav></details>
 <section id="readybasic-making-command-guide" class="level1">
 <h1>ReadyBASIC Making Command Guide</h1>
+<p>For a disk module, run the <a href="readybasic_sample_modules.html#loading-and-using-examples">sample1 example</a> first. Follow <code>ECHO1</code> from its descriptor to its assembly worker, then use <code>ADD16</code> to see how a command reads arguments and returns a BASIC integer. For a BASIC-only routine, start with <a href="#when-to-use-procfunc-instead">PROC and FUNC</a>.</p>
+<p><a href="#descriptor-shape">Descriptor layout</a> · <a href="#checklist-for-adding-a-command">Adding a command</a></p>
 <section id="rc2-command-packaging" class="level2">
 <h2>0.5 RC2 command packaging</h2>
 <p><code>LDMOD</code> and <code>PAUSE</code> remain built in. All scalar/array/scratch and slot/overlay proof workers are now disk-only, with no Z prefix. Load <code>RBM.SAMPLE1</code> before using ECHO1, ADD16, HIDDENRAM, SUMNUMARRAY, RANGENUMARRAY, TEMPSCRATCH, FAIL, SLOT0, SLOT1, CPYRST or COPY. <code>RBM.SAMPLE2</code> supplies SLOT2, SPAN and OVL1/OVL2. The packages register 12, 7 and 32 descriptors respectively; sample3 includes COPY/CPYRST and the stateful S6AA–S8EB family. Sample3 replaces the other demo entries, preserving production and media commands. See <a href="readybasic_sample_modules.html">the complete package contract</a> for names, placement, dependencies and examples.</p>

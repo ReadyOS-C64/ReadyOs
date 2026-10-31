@@ -18,7 +18,7 @@
       "true_drive": true,
       "mount_on_boot": true,
       "role": "boot",
-      "description": "Boot, all apps and games, REL data, ReadyBASIC modules and media assets.",
+      "description": "Boot, main-catalog apps and games, REL data, ReadyBASIC modules and media assets.",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate-c64os/readyos-v0.5-ultimate_1.d81"
     },
     {
@@ -29,7 +29,7 @@
       "true_drive": true,
       "mount_on_boot": false,
       "role": "examples",
-      "description": "ReadyBASIC demo and test programs; their modules and media assets remain on drive 8.",
+      "description": "ReadyBASIC examples and optional C64OS/GDOS bridge apps/manifests; stock skip zero disables switching.",
       "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate-c64os/readyos-v0.5-ultimate_2.d81"
     }
   ],

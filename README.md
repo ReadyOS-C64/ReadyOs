@@ -1,199 +1,35 @@
 # ReadyOS
 
-ReadyOS PRECOG is an experimental REU-first environment for a modern
-Commodore 64 setup. Its long-term center of gravity is the new Commodore 64
-Ultimate and related Ultimate-family hardware, but it is intended to support a
-wide range of C64 setups that have a reasonably large REU. That includes VICE,
-Ultimate-family hardware, and other practical REU-capable modern paths. PRECOG
-`0.5` is the current development line.
+ReadyOS lets you switch between full-screen apps on a Commodore 64 and return to
+where you left off. It keeps suspended apps in a RAM Expansion Unit (REU).
+PRECOG `0.5` is the current development line.
 
-`0.5` will be the last PRECOG release: the exploratory series in which we
-learned what is possible and worked out the product vision. Development after
-PRECOG will split into **ReadyOS Ultimate** and **ReadyOS Universal**.
-ReadyOS Ultimate is the main focus: a system that installs and configures real
-files and folders on Ultimate storage and makes fuller use of Ultimate features.
-ReadyOS Universal will continue the disk-image and REU approach for VICE,
-THEC64, and original hardware with suitable REU support. Investment in Universal
-will follow user interest and demand. These are plans, not two products already
-shipped by this tree.
+## Getting started
 
-We also plan standalone releases of many apps, both those whose own work needs
-REU and those whose own work does not. In particular, we will continue investing
-in a standalone ReadyBASIC independent of both Ultimate hardware and ReadyOS.
-That promise does not imply a no-REU ReadyBASIC: its current module architecture
-uses REU. Today's ReadyOS app PRGs still depend on the ReadyOS runtime.
+1. **Choose a release folder.** For VICE or a 1581 drive, start with the [regular D81](Releases/0.5/precog-d81/README.md). For a C64 Ultimate, use the [Ultimate D81 pair](Releases/0.5/precog-ultimate/README.md). For another drive or a cartridge, use the [release guide](Releases/0.5/README.md).
+2. **Enable the REU.** The portable baseline is 1 MiB. Use 8 or 16 MiB where available. Dedicated OS bridges require 16 MiB and their matching boot image.
+3. **Mount the boot disk on device 8.** On the stock Ultimate, mount disk 2 on device 9. Run `LOAD"SETUP",8,1` and `RUN` to record the boot D81's host path for DMA loading. Repeat SETUP if you move or rename that image.
+4. **Boot from BASIC.** Type `LOAD"*",8`, press RETURN, then type `RUN`. For EasyFlash, mount its data D64 on device 8, attach the CRT and reset.
+5. **Open an app.** Select it with the cursor keys and press RETURN. Ctrl+B returns to the launcher. F2 and F4 switch apps. Save work to disk before resetting.
 
-The current tree also contains a C64 Ultimate DOS DMA launcher path. It loads
-disk PRGs directly into loader-assigned REU destinations. The dedicated
-`precog-ultimate` D81 compiles and enables it by default and includes the
-standalone `SETUP` utility; portable SKUs leave it disabled. Every enabled
-build falls back to the established disk loader whenever UCI, image mounting,
-file lookup, or transfer verification is unavailable. See
-[`docs/ultimate_dos_dma_loading.md`](docs/ultimate_dos_dma_loading.md).
+| What you want to do | Where to start |
+| --- | --- |
+| Choose an app or check its hardware needs | [App catalog](#app-catalog) and [hardware requirements](docs/app_requirements.md) |
+| Use ReadyShell commands and pipelines | [ReadyShell tutorial](src/apps/readyshell/ReadyShelltutorial.md) |
+| Run a ReadyBASIC program | [Commands and examples](docs/readybasic_reference.md) |
+| Build an app for ReadyOS | [Build and run](#build-and-run), [app configuration](CONTRIBUTING.md#app-config-format) and [shim interface](docs/ReadyOS_SHIM_ARCHITECTURE_0.5.md) |
+| Write a ReadyBASIC module | [Sample packages](src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md) and [command authoring guide](src/apps/readybasic/READYBASIC_MAKING_COMMAND_GUIDE.md) |
 
-For that fast-loading path, ReadyOS cannot discover the host folder/D81 it was
-booted from. A C64 disk filename or drive number does not identify its enclosing
-image on Ultimate storage. Set `c64u_image_path` in the `[launcher]` section of
-`apps.cfg` to the D81's absolute Ultimate path and enable `dma_loading=1`.
-The standalone SETUP utility lets you browse to that image, validates it, and
-safely saves those settings. Run SETUP again after moving or renaming the image.
-This requirement is specific to Ultimate DOS fast loading; normal disk loading
-remains the fallback.
-
-## The Concept
-
-What if a Commodore 64 could feel ready, not just nostalgic? ReadyOS treats
-waiting as the enemy. It is a keyboard-first, full-screen terminal-style
-environment built around instant app switching, suspend/resume, shared
-clipboard and history, and deeper links between apps. The goal is a C64
-workflow where READY means responsive, reliable, and repeatable.
-
-At a glance:
-
-- requires an REU-backed modern C64 path; `1MB` is the minimum REU target, with `8MB` or `16MB` recommended where available
-- main product direction: new Commodore 64 Ultimate and Ultimate-family workflows
-- practical secondary path today: VICE with REU enabled
-- still intended to support other C64 setups with a decent-sized REU
-- tuned and hardware-tested from `1MHz` through `64MHz` Ultimate turbo operation
-- ships multiple release SKUs so the runtime can fit `D64`, `D71`, `D81`, and EasyFlash cartridge workflows
-- emphasizes "instant" app switching with apps suspended in the REU
-
-Project links:
-
-- GitHub: https://github.com/ReadyOS-C64/ReadyOs
-- Homepage: https://readyos64.com
-- Wiki: https://readyos.notion.site/
-
-<img width="715" height="540" alt="image" src="https://github.com/user-attachments/assets/2053305a-46fe-4335-8394-9cb949982788" />
-<img width="715" height="540" alt="image" src="https://github.com/user-attachments/assets/8bcc8e00-8b6c-4de6-a0cd-b03b740b6a11" />
-<img width="715" height="540" alt="image" src="https://github.com/user-attachments/assets/d403df2f-0aa8-4dd3-aa71-495bbd41a638" />
-<img width="715" height="540" alt="image" src="https://github.com/user-attachments/assets/943470cc-10ef-483e-8edd-770c00407cbb" />
-<img width="715" height="540" alt="image (7)" src="https://github.com/user-attachments/assets/741b1a49-8d95-43c7-aaa3-e752fb5933a6" />
-
-## Getting Started
-
-The canonical release layout is:
-
-- `Releases/<version>/precog-d81/`
-- `Releases/<version>/precog-ultimate/`
-- `Releases/<version>/precog-easyflash/`
-- `Releases/<version>/precog-dual-d71/`
-- `Releases/<version>/precog-kung-fu-flash-2-d81/`
-- `Releases/<version>/precog-dual-d64/`
-- `Releases/<version>/precog-solo-d64-readybasic/`
-- `Releases/<version>/precog-solo-d64-a/`
-- `Releases/<version>/precog-solo-d64-b/`
-- `Releases/<version>/precog-solo-d64-c/`
-- `Releases/<version>/precog-solo-d64-d/`
-- `Releases/<version>/precog-solo-d64-e/`
-
-Targets:
-
-- VICE
-- THEC64 Mini / Maxi
-- Commodore 64 Ultimate-family hardware such as C64 Ultimate, Ultimate 64, or
-  Ultimate Cart
-
-So far tested in VICE and the Commodore 64 Ultimate.
-
-Recommended baseline:
-
-- enable the REU
-- set REU size to at least `1MB`; use `8MB` or `16MB` where available
-- follow the `helpme.md` inside the selected `Releases/<version>/<profile>/` directory
-
-Boot note:
-
-- disk SKUs boot with the documented `PREBOOT` chain for that profile
-- `precog-easyflash` boots by mounting `readyos_data.d64` on drive `8`,
-  attaching `readyos_easyflash.crt`, and resetting into the cartridge
-- during that boot, the on-screen cartridge label reads `precog cartridge (beta)`
-
-## Current Status
-
-- Current development version: `0.5`
-- Audited production baseline: `0.2.5`
-- Local builds use the existing rolling suffix flow for artifact filenames only
-- Builds release media per profile
-- Full-content profiles currently include about `19` to `20` launcher-visible entries
-  depending on media capacity; the catalog table below is the current app-token
-  union across profiles.
-- App snapshots and app-owned resource banks are allocated on demand and
-  recorded in the schema-v5 ReadyOS bank at physical `Skip`; ReadyOS does
-  not reserve a fixed app-slot gap or keep an allocation mirror in C64 RAM.
-
-## What's New In 0.5
-
-The `0.5` line starts from the audited, production-stamped `0.2.5` tree. It now
-adds guided Ultimate SETUP, Ultimate Zip, and DMA state that survives launcher
-returns without probing or remounting. ReadyBASIC adds protected resource RAM,
-on-demand `rbm.media` music/graphics commands, and standard/Ultimate versions of
-the Orbital Echoes demo. The [examples and command guide](docs/readybasic_reference.md)
-contains the complete source collection, current command inventory, module-load
-instructions, and per-profile availability. The older foundations below remain
-part of the product; newer additions are described where their contracts differ.
-
-### 0.2.5 foundation carried into 0.5
-
-- ReadyBASIC grew through five graphics phases and Sound Phase 1. Its built-in
-  modules now cover text/hires/multicolor modes, drawing primitives, REU-backed
-  surfaces, sprites and input, polygon buffers, retained display lists,
-  tiles/tilemaps, multicolor bitmap operations, and immediate SID voice/filter
-  commands. The tree includes 32 graphics demonstrations and 6 sound
-  demonstrations, with regular-disk and EasyFlash automation.
-- The regular launcher gained a gated C64 Ultimate DOS/UCI direct-to-REU
-  loader. It validates exact PRG sizes, handles packed ReadyShell resources,
-  reuses a suitable mounted image, reports `DMA:YES` / `DMA:ON` / `DMA:NO`, and
-  falls back to the portable KERNAL/disk path on any unavailable or failed DMA
-  operation. Portable profiles keep `LAUNCHER_DMA_LOAD=0`; the dedicated
-  Ultimate profile compiles and enables it and adds a guided standalone setup
-  utility.
-- UCI callers in the launcher, ReadyIRC, UCITest, and SysInfo now share the
-  asynchronous state-machine discipline proven on physical Ultimate hardware:
-  quiet-idle synchronization, asynchronous PUSH/ABORT handling, complete data
-  and status draining, explicit DATA_ACC transitions, and bounded waits that do
-  not depend on CPU-speed timing delays.
-- ReadyIRC now provides a validated setup form, connect/disconnect and reconnect
-  flow, channel switching, `/join` and `/names`, NAMES/JOIN/PART handling,
-  editable input, help, and REU-backed scrollback. Fixture-backed C64 Ultimate
-  automation covers its UCI network path.
-- UCITest now has a larger structured/raw command catalog, decoded dword,
-  socket, HTTP, and IEC results, remembered handles, selectable examples, and a
-  dedicated user guide.
-- The launcher and cartridge loaders use the physical `Skip` ReadyOS bank as
-  the source of truth for the launcher snapshot, explicit app-token mapping,
-  loaded/resumable status, clipboard metadata, hotkeys, resource relationships,
-  app catalog metadata, and REU Viewer ownership details. ReadyShell overlays,
-  ReadyShell state/scratch, and ReadyBASIC core/code banks are loader-assigned
-  resources rather than fixed physical banks.
-- Launcher return state is intentionally small: an `RSM1` UI record at
-  ReadyOS `$FC40` keeps selection/scroll/one-shot state, while the `LS` record
-  at `$B9D9` and app registry at `$BA00` reconstruct the app-bank, drive,
-  hotkey, resource, loaded-state, and size arrays. Those arrays are not kept as
-  a second authoritative copy in the launcher resume payload.
-- Ultimate DMA configuration and validation are first-class system state in
-  the ReadyOS `$FCC0` `DM` v1 service record. It owns the image path, enable/
-  availability/use flags, and last error. Ctrl-B restores this state without
-  repeating the startup probe or remounting the D81.
-- Apps can opt into owner-recorded runtime REU allocation without growing the
-  primitive allocator or shim. QuickNotes note banks and the IRC scrollback
-  banks now publish compact ownership records in the ReadyOS bank, so REU
-  Viewer can identify the owner and launcher unload can free those banks with
-  the app.
-- The 0.2.4 EasyFlash, Kung Fu Flash 2, SysInfo, dynamic-resource, ReadyBASIC,
-  ReadyIRC, and UCITest foundations remain part of 0.2.5. Their build
-  products, boot diagnostics, REU-required behavior, and cartridge verification
-  are retained rather than being reintroduced as new 0.2.5 features.
+[Release history](CHANGELOG.md) · [Documentation index](docs/DOCUMENTATION_INDEX.md) · [Project homepage](https://readyos64.com) · [Wiki](https://readyos.notion.site/)
 
 ## Release Variants
 
-ReadyOS now ships the same runtime in `12` public media variants because the
-target drive types, disk capacities, and cartridge support are different.
+There are 12 standard media variants, four dedicated bridge variants and three ReadyShell diagnostic builds. The table covers the standard variants. The [release guide](Releases/0.5/README.md) lists every folder.
 
 | Profile | Media | Why It Exists | Boot Flow | App Set |
 | --- | --- | --- | --- | --- |
 | `precog-d81` | one `D81` image on drive `8` | recommended main ReadyOS SKU and default build/run target | `PREBOOT -> BOOT` | 19 launcher apps plus ReadyBASIC modules and the complete example set; `sidetris` is also present through `app.sidetris` |
-| `precog-ultimate` | two `D81` images on drives `8` and `9` | C64 Ultimate-first SKU with DMA loading and guided image-path setup | run standalone `SETUP` once, then `PREBOOT -> BOOT` | All apps, games, REL data and modules on drive 8; ReadyBASIC examples on drive 9; includes Ultimate Zip and standalone `SETUP` |
+| `precog-ultimate` | two `D81` images on drives `8` and `9` | C64 Ultimate-first SKU with DMA loading and guided image-path setup | run standalone `SETUP` once, then `PREBOOT -> BOOT` | Main apps and modules on drive 8; ReadyBASIC examples and optional C64OS/GDOS manifests on drive 9; includes Ultimate Zip and standalone `SETUP` |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | full cartridge cold-boot path for VICE and Ultimate-family setups that can keep a disk mounted | reset into cartridge boot | full current app catalog |
 | `precog-dual-d71` | two boot-time `D71` images on drives `8` and `9`, plus an optional third `D71` swapped into drive `9` | full core `1571` profile with capacity for optional apps and examples without crowding the boot pair | `PREBOOT -> SETD71 -> BOOT` | 16 core launcher apps; optional disk adds app-config versions of `sidetris`, `deminer`, `ucitest`, and `readme`, followed by the original 41 ReadyBASIC examples |
 | `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | broad Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | same 19-app set as `precog-d81` |
@@ -239,7 +75,7 @@ to BASIC cold start instead of trying to continue.
 The Kung Fu Flash 2 D81 SKU is intentionally separate from the EasyFlash CRT
 SKU. It is a disk-image path for KFF2 setups where CRT cartridge mode would
 disable KFF2 REU emulation. It targets KFF2's `1MB` REU mode and starts at
-physical REU bank `0`, as do all current SKUs. If the 1MB REU fills up, launching another app may simply
+physical REU bank `0`. If the 1MB REU fills up, launching another app may simply
 do nothing instead of showing an error. Unload one or more apps to free REU
 banks, then launch the app again.
 
@@ -306,93 +142,15 @@ and mean the machine is still preloading launcher, app, and overlay snapshots.
 The launcher-visible catalog lives in `cfg/profiles/*.ini` and is generated
 to `apps.cfg` on drive `8` for the selected profile.
 
-## App Config Format
-
-Each profile file in `cfg/profiles/` becomes the generated `apps.cfg` on drive
-`8`. The real file format has three sections in this order: `[system]`,
-`[launcher]`, and `[apps]`. The dual-`d71` profile begins like this:
-
-```ini
-[system]
-variant_name=precog dual d71
-variant_boot_name=precog dual d71
-reu_bank_skip=0
-
-[launcher]
-load_all_to_reu=0
-runappfirst=
-
-[apps]
-9:editor:editor:1
-text editor with clipboard
-
-8:quicknotes:quicknotes
-reu-backed note editor
-
-8:cal26:calendar 26
-calendar for 2026 with appointments
-```
-
-How it works:
-
-- `[system]` carries launcher-visible variant text. `variant_name` is the
-  general profile name, and `variant_boot_name` is the boot/display variant
-  string when that needs to differ.
-- `reu_bank_skip` is a build-time boot contract, not a runtime launcher
-  setting. It is compiled into the disk and EasyFlash boot/shim images as the
-  number of physical 64K REU banks skipped before ReadyOS starts using REU
-  space. The generated `apps.cfg` still records the profile source value for
-  auditability, but the runtime launcher does not read it as configuration.
-  All current SKUs set it to `0`: bank 0 holds ReadyOS and bank 1 starts the
-  dynamic app/resource pool.
-- `load_all_to_reu` controls whether the launcher tries to preload all app
-  payloads into the REU at startup.
-- `runappfirst` optionally names an app token to auto-launch after boot.
-- Each app record uses `drive:program:label[:slot]` on one line, followed by a
-  human-readable description on the next line. Used a lot for automated app testing.
-- In `9:editor:editor:1`, `9` is the source drive, `editor` is the PRG token,
-  the second `editor` is the launcher label, and the trailing `1` is the
-  default hotkey slot. The parser accepts slot values `1..9`; omitting the
-  fourth field means no default slot binding.
-- A catalog entry such as `8:readyshell:readyshell (beta):2` assigns ReadyShell
-  to launcher hotkey slot `2` at boot, even though ReadyShell does not currently
-  support runtime rebinding from inside the shell.
-- `drive` must be numeric and in the range `8..11`.
-- `program` must be lowercase, must not include `.prg`, must not include a
-  Commodore file-type suffix such as `,p`, and must be `12` characters or
-  fewer.
-- `label` is the launcher-visible app name and is limited to `31` characters.
-- The description line is limited to `38` characters.
-- Source text is expected to be lowercase. The build step writes the final
-  `apps.cfg` as a lowercase-PETSCII `SEQ` payload, and the launcher reads that
-  generated file from drive `8`.
-- Blank lines and comment lines are allowed in the source profile. App records
-  still follow the same alternating entry-line / description-line structure.
-
-## Global App Hotkeys
-
-ReadyOS supports up to nine direct app hotkey slots.
-
-- `CTRL+1` through `CTRL+9` launch or switch to the app bound to that slot.
-- `CTRL+SHIFT+1` through `CTRL+SHIFT+9` bind the current app to that slot at
-  runtime in apps that use the shared hotkey handler.
-- The same slot numbers can be seeded at boot from `cfg/profiles/*.ini` by
-  adding the optional fourth `:slot` field in the `[apps]` section.
-- Apps with their own raw keyboard input loops may not support runtime rebinding
-  even though launcher-configured default slots still work.
-
-Real C64 versus emulator key forms:
-
-- On a real C64, launch uses `CTRL` plus the number key.
-- On a real C64, bind uses `CTRL+SHIFT` plus the number key. Those are the same
-  physical keys that print shifted digit symbols: `! " # $ % & ' ( )`.
-- In emulators, host keymaps vary. Some map cleanly to `CTRL+SHIFT+<digit>`,
-  while others deliver `CTRL+!`, `CTRL+"`, `CTRL+#`, and so on.
-- ReadyOS accepts both forms in apps that support runtime rebinding, so use
-  whichever chord your emulator keymap produces.
-
 Drive placement is profile-specific; the selected `cfg/profiles/*.ini` and its
 generated `manifest.json` are authoritative.
+
+**First things to try**
+
+- **Edit a text file.** In Editor, F7 opens a file and F5 saves it. F6 starts a selection, F1 copies and F3 pastes. F8 opens help. The editor holds up to 100 lines of 79 characters. Longer input is truncated on load.
+- **Plan a day.** In Calendar 26, select a date and press RETURN. In day view, N creates an appointment and RETURN edits it. F7 cycles views.
+- **Make an outline.** In Task List, RETURN creates an item. Use ] and [ to indent or outdent, Space to mark an item done and N to add a note. F5 saves the list and F7 opens a saved list. In Dizzy, F1 creates a card, RETURN edits it, and + or − moves it between columns.
+- **Browse a disk.** In Simple Files, F3 changes the drive, F5 refreshes its directory and RETURN previews a SEQ file.
 
 | Program | Display Name | Current Role |
 | --- | --- | --- |
@@ -489,238 +247,35 @@ commands, not part of the media package. The standard demo avoids them.
 - [lifecycle and REU architecture](src/apps/readybasic/READYBASIC_LIFECYCLE_AND_REU_ARCHITECTURE.md)
 - [making module commands](src/apps/readybasic/READYBASIC_MAKING_COMMAND_GUIDE.md)
 
-## Architecture Snapshot
+## Global App Hotkeys
 
-Runtime memory layout:
+ReadyOS supports up to nine direct app hotkey slots.
 
-- app runtime window: `$1000-$C5FF` (`$B600` bytes)
-- resident shim: `$C600-$C9FF` (1 KB); `$C600-$C7FF` is reserved expansion
-  capacity and the public ABI remains at `$C800-$C9FF`
-- ReadyShell/ReadyBASIC high-RAM workspace: `$CA00-$CFFF` when owned by the
-  active app; it is outside the app snapshot and must be managed by that app
-- hardware I/O region: `$D000-$DFFF`
+- `CTRL+1` through `CTRL+9` launch or switch to the app bound to that slot.
+- `CTRL+SHIFT+1` through `CTRL+SHIFT+9` bind the current app to that slot at
+  runtime in apps that use the shared hotkey handler.
+- The same slot numbers can be seeded at boot from `cfg/profiles/*.ini` by
+  adding the optional fourth `:slot` field in the `[apps]` section.
+- Apps with their own raw keyboard input loops may not support runtime rebinding
+  even though launcher-configured default slots still work.
 
-Spatially, the core RAM contract is:
+Real C64 versus emulator key forms:
 
-```text
-$1000                                                         $C5FF $C600             $C9FF $CA00   $CFFF $D000
-|<--------------- active app snapshot: $B600 bytes -------------->|<-- 1 KB shim ------>|<- app high RAM ->|<-- I/O
-```
+- On a real C64, launch uses `CTRL` plus the number key.
+- On a real C64, bind uses `CTRL+SHIFT` plus the number key. Those are the same
+  physical keys that print shifted digit symbols: `! " # $ % & ' ( )`.
+- In emulators, host keymaps vary. Some map cleanly to `CTRL+SHIFT+<digit>`,
+  while others deliver `CTRL+!`, `CTRL+"`, `CTRL+#`, and so on.
+- ReadyOS accepts both forms in apps that support runtime rebinding, so use
+  whichever chord your emulator keymap produces.
 
-Runtime model:
+## Build and run
 
-- the active app owns `$1000-$C5FF`
-- the shim stays resident outside that window
-- app switching works by stashing and fetching the app window through the REU
-- apps can return to the launcher or switch directly to another app without
-  treating each transition as a fresh process launch
+Install cc65, VICE (including c1541 and petcat), Python 3 and Bash. From the checkout, run `/bin/bash ./run.sh --profile precog-d81` to build and boot ReadyOS. For all release images with the plain version stamp, run `bash ./run.sh --build-all --for-release`.
 
-REU layout:
+## Notes for contributors
 
-- physical `Skip`: the ReadyOS bank; launcher snapshot at `$0000-$B5FF`,
-  followed by schema-v5 system state at `$B600-$FFFF`
-- physical `Skip+1` and above: dynamic allocation pool for app snapshots and resources
-- app snapshots: allocated on demand by the launcher, then resolved by token
-  through the ReadyOS bank's explicit `$B740` mapping table
-- clipboard payload banks: allocated from the dynamic pool
-- app-owned runtime banks: allocated from the dynamic pool by apps that opt into
-  the owned-allocation micromodule, recorded in the ReadyOS bank, and reclaimed by
-  launcher unload
-- ReadyShell overlay banks: loader-assigned resources described by the profile
-  overlay list and published as ReadyOS-bank rich resource records
-- ReadyShell state/scratch/value/CAT/diagnostic bank: one loader-assigned
-  resource bank with fixed relative subranges inside that bank
-- ReadyBASIC core/code banks: loader-assigned resources, not fixed `$44/$45`
-  physical banks
-- unavailable physical tail banks: detected by the launcher once at startup and
-  marked as `REU_UNAVAIL` in the ReadyOS-bank table/header, so REU
-  Viewer reports correct totals on smaller REU sizes
-- remaining banks: dynamic allocation pool
-
-The shim's logical token is not a fixed physical app-bank number. Token `0`
-resolves directly to the ReadyOS bank at physical `Skip`; nonzero app tokens
-resolve through its `$B740` lookup page. Loaded/resumable status is authoritative
-at `$B840`, not in the retired `$C836-$C838` bitmap. This lets snapshots and
-resources move while preserving the 512-byte public shim ABI inside the full
-1 KB resident shim region.
-The current shim has 129 verifier-checked executable-padding bytes (largest
-contiguous run: 42 bytes) plus 11 ABI/data bytes that remain reserved rather
-than general feature space; the exact accounting is in the current shim
-architecture report.
-
-The ReadyOS bank also contains the active launcher catalog-shape settings at
-`$B9D9-$B9FF` and a 128-byte validated launcher runtime envelope at
-`$FC40-$FCBF`. The latter stores only compact UI state; the launcher restores
-its working registry arrays from the ReadyOS app records after every return.
-The separate DMA service record at `$FCC0-$FD3F` owns the bounded image path
-and validation status. Its byte layout and lifecycle are documented with the
-other system records in [the shim architecture](docs/ReadyOS_SHIM_ARCHITECTURE_0.5.md#dma-service-record).
-
-Disk layout:
-
-- media shape depends on the selected release profile
-- d81 is the default local run/test target and recommended main SKU
-- d81 and dual-d64 profiles reuse the same runtime with different media maps
-
-## Build And Run
-
-Requirements:
-
-- `cc65` toolchain: `cl65`, `ca65`, `ld65`
-- VICE tools, especially `x64sc`, `c1541`, and `petcat`
-- `python3` for building and bash
-- only tested "on my machine" on macOS. The PowerShell build script is likely obsolete.
-
-Main entry points:
-
-- `bash ./run.sh`
-  rebuild the default release profile and launch ReadyOS in VICE
-- `pwsh -File ./run.ps1`
-  PowerShell entry point for the same workflow
-- `bash ./run.sh --profile precog-d81`
-  build and launch a non-default profile
-- `bash ./run.sh --list-profiles`
-  print the known release profile ids
-- `bash ./run.sh --build-all`
-  build every release profile and exit
-- `bash ./run.sh --build-all --for-release`
-  rebuild every disk and EasyFlash SKU with the plain production version and
-  no rolling letter suffix in artifact filenames
-- `bash ./run.sh --profile precog-d81 --build-only`
-  build and package only the selected profile, then exit without starting VICE;
-  this is useful for hardware-test artifacts and custom `--config` builds
-- `bash ./run.sh --force-artifacts-from-d71 --build-all`
-  promote non-excluded `SEQ` files and current `REL` files from the latest
-  built `precog-dual-d71` images into `cfg/authoritative/`, then rebuild all
-  profiles from that updated authoritative set
-- `LAUNCHER_DMA_LOAD=1 bash ./run.sh --profile precog-d81`
-  build the opt-in C64 Ultimate UCI/Ultimate DOS direct-to-REU launcher path;
-  disk fallback remains available
-- `make seed-cal26`
-  seed CAL26 REL data into the latest built `precog-dual-d71` drive `8` image
-- `bash ./run.sh --vice-fast`
-  launch with VICE drive traps enabled, true drive emulation disabled, and the
-  emulator starting in warp mode
-- `bash ./run.sh --profile precog-d81 --vice-fast`
-  build and launch the full D81 profile interactively in the same VICE fast-disk
-  mode
-- `bash ./run.sh --skipbuild`
-  launch using the latest built artifacts for the selected profile
-- `make`
-  build the default profile release package
-- `make release-all`
-  build all release profiles with one version stamp
-- `make audit-release-assets`
-  extract packaged `SEQ`/`REL` files from every built image and compare them
-  against the source of truth
-- `make verify`
-  run the repo verification, app host smoke checks, and the full
-  `readyshell-host-tests` suite
-- `make readyshell-host-tests`
-  run the full host-side ReadyShell parser, VM, overlay-command, and REU tests
-- `make readyshell-parse-smoke-host`
-  run the fast host-side ReadyShell parser smoke checks
-- `make readyshell-vm-smoke-host`
-  run the host-side ReadyShell VM smoke checks, including the overlay-aware
-  C64-flavored harness build and mocked file-command coverage
-- `make readyshell-reu-tests-host`
-  run the host-side ReadyShell REU heap/value and RSV1 serialization tests
-
-Notes:
-
-- `run.sh` is the preferred local workflow because it rebuilds disks, updates
-  generated assets, and preserves managed disk state correctly.
-- `--force-artifacts-from-d71` is opt-in. Without it, ordinary builds keep the
-  existing repo-authoritative behavior.
-- Disk-seeding and authoritative sync helpers should resolve their donor or
-  destination `D71` from the latest built `precog-dual-d71` release manifest.
-  Root-level `readyos.d71` / `readyos_2.d71` files are not the source of truth.
-- `--vice-fast` only changes the VICE launch configuration. It does not affect
-  build outputs or the packaged release images.
-- Manual launch should match the setup in the Getting Started section.
-- `make verify` now runs the full `readyshell-host-tests` aggregate target,
-  which includes the parser, VM/overlay, and REU ReadyShell host checks.
-- Windows support is still less exercised than the Unix shell path.
-
-## Generated Assets And Public Docs
-
-Generated build-owned assets include:
-
-- `apps.cfg` from the selected `cfg/profiles/*.ini` source
-- `src/generated/readme_pages.c` and `src/generated/readme_pages.h` from
-  `src/apps/readme/readme_lite.md`
-- `src/generated/build_version.h` and `src/generated/msg_version.inc` from the
-  local run/build flow
-
-Authoritative editable support payloads now live in `cfg/authoritative/`.
-That includes the shipped SEQ and REL support files such as `editor help`,
-`example tasks`, `myquicknotes`, `clipset1`, `clipset3`, `sheet2`,
-`cal26.rel`, `cal26cfg.rel`, `dizzy.rel`, and `dizzycfg.rel`.
-
-`cfg/authoritative/sync_inventory.json` tracks the sync-managed support set
-that may be promoted from the latest built `precog-dual-d71` images when
-`bash ./run.sh --force-artifacts-from-d71 ...` is used. Build-owned exclusions
-such as generated `apps.cfg` and generated support payloads still come from the
-normal code/build pipeline rather than from disk extraction.
-
-Forced sync is exact for non-excluded `SEQ` files and discovered `REL` files:
-new files are extracted into `cfg/authoritative/`, changed files replace the
-repo copies, and previously authoritative sync-managed files that are no longer
-present on the dual-D71 source images are removed so later rebuilds stop
-reinserting them.
-
-Normal profile rebuilds preserve non-managed user files from the prior
-profile build while replacing build-owned artifacts in `Releases/<version>/<profile>/`.
-
-The packaged release audit extracts those internal `SEQ` and `REL` files from
-the built images and checks them byte-for-byte against `cfg/authoritative/`
-plus the generated `apps.cfg`.
-
-Public supporting docs in `docs/` currently include:
-
-- [documentation index and freshness policy](docs/DOCUMENTATION_INDEX.md)
-- [C64 Ultimate DOS DMA loading](docs/ultimate_dos_dma_loading.md)
-- [UCI Tester user guide](docs/uci_tester.md)
-- [current 0.5 shim and ReadyOS-bank architecture](docs/ReadyOS_SHIM_ARCHITECTURE_0.5.md)
-- `docs/clipboard_bundle_seq_format.md`
-- `docs/quicknotes_seq_format.md`
-- `docs/simplecells_seq_format.md`
-- [docs/readyshell_overlay_inventory.md](docs/readyshell_overlay_inventory.md)
-- [docs/ReadyShellArchitecture.md](docs/ReadyShellArchitecture.md)
-
-Rendered documentation exports in `docs/` currently include:
-
-- [Documentation Index (HTML)](docs/DOCUMENTATION_INDEX.html)
-- [C64 Ultimate DOS DMA Loading (HTML)](docs/ultimate_dos_dma_loading.html)
-- [UCI Tester User Guide (HTML)](docs/uci_tester.html)
-- [Current 0.5 SHIM Architecture Report (HTML)](docs/ReadyOS_SHIM_ARCHITECTURE_0.5.html)
-- [Preserved 0.2.4 SHIM Architecture Report (HTML)](docs/ReadyOS%20SHIM%20Architecture%20Report%20%280.2%29.html)
-- [ReadyShell Overlay Inventory (HTML)](docs/readyshell_overlay_inventory.html)
-- [ReadyShell Architecture (HTML)](docs/ReadyShellArchitecture.html)
-
-## Repository Layout
-
-- `src/boot`: bootloader and BASIC boot helpers
-- `src/apps`: launcher and user-facing apps
-- `src/lib`: shared TUI, REU, clipboard, storage, and resume libraries
-- `src/shim`: resident shim and switch/runtime support
-- `cfg`: linker configs and catalog inputs
-- `build_support`: local build-chain support, verification, and disk helpers
-- `docs`: public format notes and related documentation
-
-## Notes For Contributors
-
-- Treat the launcher + shim path as the real execution model for ReadyOS.
-- Respect the fixed app window and resident shim/system regions.
-- Use `run.sh`, `run.ps1`, `make`, and `make verify` for normal public
-  build-and-check workflows.
-- look at existing apps to see the "micromodule layout"
-- Apps should always be compiled with the full OS for now (so we don't have to support backwards compatibility with the ABI, and REU patterns change)
-
-## License
-
-ReadyOS is licensed under the MIT License. See `LICENSE` for the full text.
-Copyright (c) 2026 Karl Prosser.
+[Build and package an app](CONTRIBUTING.md) covers disk placement, catalog syntax, RAM boundaries, shared libraries and verification. For ReadyBASIC extensions, use the [sample module guide](src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md).
 
 ## Optional C64OS and GDOS bridges
 
@@ -739,3 +294,17 @@ README/help setup guide. The [C64OS guide](docs/c64os/ultimate.md) covers the
 [GDOS guide](docs/gdos64/ultimate.md) and [GEOS 2.0 guide](docs/geos20/ultimate.md)
 cover their distinct fixed allocations and native accessories. All require the
 supported 16 MiB REU layout. See [bridge source/binary locations](experiments/BRIDGES.md).
+
+<details><summary>ReadyOS screenshots</summary>
+
+<img width="715" height="540" alt="image" src="https://github.com/user-attachments/assets/2053305a-46fe-4335-8394-9cb949982788" />
+<img width="715" height="540" alt="image" src="https://github.com/user-attachments/assets/8bcc8e00-8b6c-4de6-a0cd-b03b740b6a11" />
+<img width="715" height="540" alt="image" src="https://github.com/user-attachments/assets/d403df2f-0aa8-4dd3-aa71-495bbd41a638" />
+<img width="715" height="540" alt="image" src="https://github.com/user-attachments/assets/943470cc-10ef-483e-8edd-770c00407cbb" />
+<img width="715" height="540" alt="image (7)" src="https://github.com/user-attachments/assets/741b1a49-8d95-43c7-aaa3-e752fb5933a6" />
+
+</details>
+
+## License
+
+Copyright (c) 2026 Karl Prosser. [MIT License](LICENSE)

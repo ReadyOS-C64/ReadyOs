@@ -17,26 +17,33 @@
 - Host-Side Boot PRG: `readyos-v0.5-dual-d71-boot.prg`
 - Host-Side Boot PRG: `readyos-v0.5-dual-d71-setd71.prg`
 
+## Start ReadyOS
+
+- Enable the REU with at least `1MB`; use `8MB` or `16MB` where available.
+- Mount the boot-time disks on the devices listed above. At BASIC, type `LOAD"*",8`, press RETURN, then type `RUN`.
+- In the launcher, select an app and press RETURN. Ctrl+B returns to the launcher. Save documents to disk before a reset.
+- This diagnostic build traces the ReadyShell parser. For normal use, choose the corresponding folder without the `-rsdebug` suffix.
+
 ## Included Apps
 
-- Drive 9: `editor` - editor (portable; no separate app-owned REU workspace)
-- Drive 8: `readyshell` - readyshell (beta) (portable; own REU overlays/state)
-- Drive 9: `simplefiles` - simple files (portable; no separate app-owned REU workspace)
-- Drive 9: `clipmgr` - clipboard (portable; shared REU clipboard/history)
-- Drive 9: `readybasic` - ready basic (beta) (portable core; own REU core/code and buffers; USPEED/UMHZ require Ultimate)
-- Drive 8: `cal26` - calendar 26 (portable; no separate app-owned REU workspace)
-- Drive 9: `tasklist` - task list (portable; no separate app-owned REU workspace)
-- Drive 9: `reuviewer` - reu viewer (portable; inspects shared REU allocation records)
-- Drive 9: `sysinfo` - system info (portable diagnostics; Ultimate details available only on Ultimate)
-- Drive 8: `quicknotes` - quicknotes (portable; own REU note storage)
-- Drive 9: `calcplus` - calc plus (portable; no separate app-owned REU workspace)
-- Drive 9: `hexview` - hex viewer (portable; no separate app-owned REU workspace)
-- Drive 9: `simplecells` - simple cells (alpha) (portable; no separate app-owned REU workspace)
-- Drive 9: `game2048` - 2048 game (portable; no separate app-owned REU workspace)
-- Drive 8: `dizzy` - dizzy kanban (portable; no separate app-owned REU workspace)
-- Drive 9: `readyirc` - readyirc (Ultimate-only TCP; own REU scrollback)
+- **editor** (`editor`, drive 9) — text editor with clipboard.
+- **readyshell (beta)** (`readyshell`, drive 8) — command shell poc scaffold (portable; own REU overlays/state).
+- **simple files** (`simplefiles`, drive 9) — dual pane file manager and seq viewer.
+- **clipboard** (`clipmgr`, drive 9) — manage clipboard items (portable; shared REU clipboard/history).
+- **ready basic (beta)** (`readybasic`, drive 9) — beta basic v2 bridge with modules (portable core; own REU core/code and buffers; USPEED/UMHZ require Ultimate).
+- **calendar 26** (`cal26`, drive 8) — calendar for 2026 with appointments.
+- **task list** (`tasklist`, drive 9) — outliner with notes and search.
+- **reu viewer** (`reuviewer`, drive 9) — view reu memory usage (portable; inspects shared REU allocation records).
+- **system info** (`sysinfo`, drive 9) — system, reu, and ultimate status (portable diagnostics; Ultimate details available only on Ultimate).
+- **quicknotes** (`quicknotes`, drive 8) — reu-backed note editor (portable; own REU note storage).
+- **calc plus** (`calcplus`, drive 9) — keyboard-first expression calculator.
+- **hex viewer** (`hexview`, drive 9) — browse memory in hex format.
+- **simple cells (alpha)** (`simplecells`, drive 9) — spreadsheet with formulas and colors.
+- **2048 game** (`game2048`, drive 9) — 2048 tile puzzle.
+- **dizzy kanban** (`dizzy`, drive 8) — fizzy inspired kanban app.
+- **readyirc** (`readyirc`, drive 9) — ultimate tcp irc client (Ultimate-only TCP; own REU scrollback).
 
-All ReadyOS apps require the system REU for snapshots. The labels above distinguish additional app workspace from that baseline; shared clipboard operations also use REU. An Ultimate-only app can be present on portable media without becoming portable.
+All apps use REU for suspend/resume. The notes identify additional workspace and hardware requirements. Clipboard operations use shared REU storage.
 - The boot pair includes ReadyBASIC and the three sample `rbm.*` packages on its normal drive-9 disk; the banked `rbcore`/`rbcode` resources are carried inside `readybasic` itself.
 - The optional drive-9 swap contains `app.*` manifests followed by `sidetris`, `deminer`, `ucitest`, and `readme`, then the original 41 ReadyBASIC examples.
 - Those optional apps need no separate app-owned REU workspace; `ucitest` requires Ultimate services, while Sidetris, Deminer and Read.Me are portable ReadyOS apps.
@@ -46,15 +53,8 @@ All ReadyOS apps require the system REU for snapshots. The labels above distingu
 
 This profile defines 41 BASIC example/test PRGs and 3 disk module packages: `rbm.sample1`, `rbm.sample2`, `rbm.sample3`.
 Built-in graphics, immediate SID sound, MEMCAP and BORDER need no disk-module load. USPEED/UMHZ are built-in but require compatible Ultimate software turbo registers.
-The example count above is this profile's actual configured subset. The new `rbm.media` package, tune/images and combined demos are currently packaged in regular D81 and Ultimate D81 only. They are not implied by having the ReadyBASIC runtime.
-The new disk-module/resource loaders read drive 8; they do not take a device argument. See the repository's `docs/readybasic_reference.md` (and HTML counterpart) for every example, command contracts and exact per-profile availability.
-
-## Disk Directory Order
-
-- Each image uses the groups it needs in this order: boot chain; configs; ordinary SEQ/USR data; main app PRGs; overlays/modules; REL data; ReadyBASIC examples.
-- On bootable images, `PREBOOT` is the first directory entry, followed by any `SETD71` / `SHOWCFG`, then `BOOT` and `LAUNCHER`, so `LOAD"*",8` selects the bootstrap.
-- ReadyShell overlay PRGs and ReadyBASIC `rbm.*` module packages stay in the overlay/module group even though their file types differ.
-- Images that do not carry a category simply omit it without changing the relative order of the remaining categories.
+Use the regular D81 or an Ultimate D81 set for the Orbital Echoes demos and their media files.
+Load the example from the disk that holds it. Keep its required modules and media on drive 8. See the repository's `docs/readybasic_reference.md` (and HTML counterpart) for every example, command contracts and exact per-profile availability.
 
 ## VICE Setup
 
@@ -71,25 +71,3 @@ The new disk-module/resource loaders read drive 8; they do not take a device arg
 ```sh
 x64sc -reu -reusize 16384 -drive8type 1571 -drive8truedrive -devicebackend8 0 +busdevice8 -8 readyos-v0.5-dual-d71_1.d71 -drive9type 1571 -drive9truedrive -devicebackend9 0 +busdevice9 -9 readyos-v0.5-dual-d71_2.d71 -autostart readyos-v0.5-dual-d71-preboot.prg
 ```
-
-## Boot
-
-- This profile uses the dual-stage boot chain `PREBOOT -> SETD71 -> BOOT`.
-- Both disks must already be attached before boot, and both drives must be configured as `1571`.
-- `SETD71` is part of this variant and reasserts the dual-1571 setup before loading `BOOT`.
-- In VICE, autostart `readyos-v0.5-dual-d71-preboot.prg`, or manually run `LOAD "PREBOOT",8` then `RUN`.
-- Do not attach the optional app-data image until boot is complete; it replaces the normal drive-9 disk on demand.
-
-## C64 Ultimate
-
-- Copy the listed disk image files to the target storage.
-- Enable the REU with at least `1MB`; use `8MB` or `16MB` where available.
-- The host-side boot PRGs are optional convenience files for emulator launching; the disk-side `PREBOOT` entry is the standard hardware boot path.
-- This profile compiles the portable launcher without Ultimate DOS DMA. Use `precog-ultimate` for the guided DMA-enabled D81, or explicitly override `LAUNCHER_DMA_LOAD=1` for development testing.
-- Attach both disk images before boot and use `1571`-compatible drive assignments for the two-disk set.
-- Boot with `LOAD "PREBOOT",8` then `RUN`; this variant then chains through `SETD71` before loading `BOOT`.
-- After boot, swap the optional app-data image into drive `9` only when you want to use its manifests, apps, or examples.
-
-## After PRECOG
-
-PRECOG 0.5 is planned as the final PRECOG release: the series that established what is possible and clarified the vision. Next comes ReadyOS Ultimate, the main focus, installing/configuring real files and folders on Ultimate storage and using its hardware features; and ReadyOS Universal, continuing disk-image and REU workflows for VICE, THEC64 and original hardware. Universal effort will follow user interest and demand. These are future directions, not separate products shipped here. Standalone releases of many apps are also planned, including both apps with their own REU needs and apps without them. We remain committed to standalone ReadyBASIC independent of Ultimate and ReadyOS; this does not promise a no-REU interpreter. Current ReadyOS app PRGs still require the ReadyOS runtime.

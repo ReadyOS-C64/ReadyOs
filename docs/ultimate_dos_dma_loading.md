@@ -17,10 +17,10 @@ loading as the fallback; it does not make fast loading automatic.
 ## Availability
 
 - Compile gate: `LAUNCHER_DMA_LOAD`. The Makefile derives it from the selected
-  profile: `precog-ultimate` sets it to `1`; portable profiles set it to `0`.
+  profile. The stock and dedicated Ultimate profiles enable it. Portable profiles use disk I/O.
 - Runtime gate: `dma_loading=1` in `apps.cfg`, plus a non-empty
   `c64u_image_path`. Both must be present before the launcher attempts DMA.
-- The Ultimate SKU ships with DMA enabled but its image path empty, so the
+- The stock Ultimate SKU ships with DMA enabled but its image path empty, so the
   standalone SETUP utility can record the actual installed location safely.
 - Launcher variant: regular disk launcher only; EasyFlash does not link this
   path because cartridge preload already supplies its REU payloads.

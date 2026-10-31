@@ -14,11 +14,17 @@
 - Host-Side Boot PRG: `readyos-v0.5-solo-d64-readybasic-preboot.prg`
 - Host-Side Boot PRG: `readyos-v0.5-solo-d64-readybasic-boot.prg`
 
+## Start ReadyOS
+
+- Enable the REU with at least `1MB`; use `8MB` or `16MB` where available.
+- Mount the boot-time disks on the devices listed above. At BASIC, type `LOAD"*",8`, press RETURN, then type `RUN`.
+- In the launcher, select an app and press RETURN. Ctrl+B returns to the launcher. Save documents to disk before a reset.
+
 ## Included Apps
 
-- Drive 8: `readybasic` - ready basic (beta) (portable core; own REU core/code and buffers; USPEED/UMHZ require Ultimate)
+- **ready basic (beta)** (`readybasic`, drive 8) — basic v2 bridge, modules and examples (portable core; own REU core/code and buffers; USPEED/UMHZ require Ultimate).
 
-All ReadyOS apps require the system REU for snapshots. The labels above distinguish additional app workspace from that baseline; shared clipboard operations also use REU. An Ultimate-only app can be present on portable media without becoming portable.
+All apps use REU for suspend/resume. The notes identify additional workspace and hardware requirements. Clipboard operations use shared REU storage.
 - This one D64 contains ReadyBASIC, the three sample `rbm.*` packages, and the original 41-program procedure, graphics, and sound example/test set.
 - ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable; no second examples disk is required.
 
@@ -26,15 +32,8 @@ All ReadyOS apps require the system REU for snapshots. The labels above distingu
 
 This profile defines 41 BASIC example/test PRGs and 3 disk module packages: `rbm.sample1`, `rbm.sample2`, `rbm.sample3`.
 Built-in graphics, immediate SID sound, MEMCAP and BORDER need no disk-module load. USPEED/UMHZ are built-in but require compatible Ultimate software turbo registers.
-The example count above is this profile's actual configured subset. The new `rbm.media` package, tune/images and combined demos are currently packaged in regular D81 and Ultimate D81 only. They are not implied by having the ReadyBASIC runtime.
-The new disk-module/resource loaders read drive 8; they do not take a device argument. See the repository's `docs/readybasic_reference.md` (and HTML counterpart) for every example, command contracts and exact per-profile availability.
-
-## Disk Directory Order
-
-- Each image uses the groups it needs in this order: boot chain; configs; ordinary SEQ/USR data; main app PRGs; overlays/modules; REL data; ReadyBASIC examples.
-- On bootable images, `PREBOOT` is the first directory entry, followed by any `SETD71` / `SHOWCFG`, then `BOOT` and `LAUNCHER`, so `LOAD"*",8` selects the bootstrap.
-- ReadyShell overlay PRGs and ReadyBASIC `rbm.*` module packages stay in the overlay/module group even though their file types differ.
-- Images that do not carry a category simply omit it without changing the relative order of the remaining categories.
+Use the regular D81 or an Ultimate D81 set for the Orbital Echoes demos and their media files.
+Load the example from the disk that holds it. Keep its required modules and media on drive 8. See the repository's `docs/readybasic_reference.md` (and HTML counterpart) for every example, command contracts and exact per-profile availability.
 
 ## VICE Setup
 
@@ -49,22 +48,3 @@ The new disk-module/resource loaders read drive 8; they do not take a device arg
 ```sh
 x64sc -reu -reusize 16384 -drive8type 1541 -drive8truedrive -devicebackend8 0 +busdevice8 -8 readyos-v0.5-solo-d64-readybasic.d64 -autostart readyos-v0.5-solo-d64-readybasic-preboot.prg
 ```
-
-## Boot
-
-- This profile uses the direct boot chain `PREBOOT -> BOOT`.
-- There is no `SETD71` stage for this variant.
-- Attach the single disk on drive `8`, then autostart `readyos-v0.5-solo-d64-readybasic-preboot.prg` or run `LOAD "PREBOOT",8` then `RUN`.
-
-## C64 Ultimate
-
-- Copy the listed disk image files to the target storage.
-- Enable the REU with at least `1MB`; use `8MB` or `16MB` where available.
-- The host-side boot PRGs are optional convenience files for emulator launching; the disk-side `PREBOOT` entry is the standard hardware boot path.
-- This profile compiles the portable launcher without Ultimate DOS DMA. Use `precog-ultimate` for the guided DMA-enabled D81, or explicitly override `LAUNCHER_DMA_LOAD=1` for development testing.
-- Attach the single disk image on drive `8`, then boot with `LOAD "PREBOOT",8` and `RUN`.
-- This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.
-
-## After PRECOG
-
-PRECOG 0.5 is planned as the final PRECOG release: the series that established what is possible and clarified the vision. Next comes ReadyOS Ultimate, the main focus, installing/configuring real files and folders on Ultimate storage and using its hardware features; and ReadyOS Universal, continuing disk-image and REU workflows for VICE, THEC64 and original hardware. Universal effort will follow user interest and demand. These are future directions, not separate products shipped here. Standalone releases of many apps are also planned, including both apps with their own REU needs and apps without them. We remain committed to standalone ReadyBASIC independent of Ultimate and ReadyOS; this does not promise a no-REU interpreter. Current ReadyOS app PRGs still require the ReadyOS runtime.

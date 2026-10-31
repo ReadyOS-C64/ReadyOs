@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>ReadyOS Documentation Index</title>
+  <title>ReadyOS documentation</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -94,13 +94,12 @@
 </head>
 <body>
 <!-- READYOS-DOC-STATUS:START -->
-<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current documentation index, audited against the September 2026 PRECOG 0.5 development tree; its production baseline is 0.2.5.</aside>
+<aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>ReadyOS 0.5 guides for setup, apps, programming and development.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<details class="contents"><summary>Contents</summary><nav id="TOC" role="doc-toc">
 <ul>
-<li><a href="#readyos-documentation-index" id="toc-readyos-documentation-index">ReadyOS Documentation Index</a>
+<li><a href="#readyos-documentation" id="toc-readyos-documentation">ReadyOS documentation</a>
 <ul>
-<li><a href="#start-here" id="toc-start-here">Start Here</a></li>
 <li><a href="#current-subsystem-documentation" id="toc-current-subsystem-documentation">Current Subsystem Documentation</a></li>
 <li><a href="#generated-reports" id="toc-generated-reports">Generated Reports</a></li>
 <li><a href="#historical-material-policy" id="toc-historical-material-policy">Historical Material Policy</a></li>
@@ -108,30 +107,58 @@
 </ul></li>
 </ul>
 </nav></details>
-<section id="readyos-documentation-index" class="level1">
-<h1>ReadyOS Documentation Index</h1>
-<p>This index separates current contracts from historical records. It was audited against the <code>0.5</code> development sources on 2026-09-18. That tree is based on the audited, production-stamped <code>0.2.5</code> release state.</p>
-<p>An HTML counterpart is generated as <code>DOCUMENTATION_INDEX.html</code>. Every HTML file under <code>docs/</code> and <code>privatedocs/</code>, the root completed-phase HTML report, and the three ReadyBASIC HTML guides are classified by <code>build_support/update_documentation_html_status.py</code> and carry a visible <code>CURRENT DOCUMENT</code> or <code>PRESERVED SNAPSHOT / DESIGN</code> banner. The classification changes presentation only: historical report bodies and measurements are not deleted or rewritten into claims about a version they did not describe.</p>
-<section id="start-here" class="level2">
-<h2>Start Here</h2>
-<ul>
-<li><p><a href="readybasic_reference.html">ReadyBASIC examples and commands</a> (<a href="readybasic_reference.html">styled HTML</a>): all 45 source examples, the current built-in inventory, eight on-demand media commands and per-SKU availability.</p></li>
-<li><p><a href="app_requirements.html">App hardware and REU requirements</a>: Ultimate-only functions, app-owned versus shared REU, and the standalone release plans.</p></li>
-<li><p><a href="documentation_audit_2026-09.html">September audit</a>: corrections and issues that need packaging, code or validation beyond documentation.</p></li>
-<li><p><a href="../privatedocs/reports/readybasic_current_state.html">Private current-state guide</a>: new media/module lifecycle, product direction and retained-evidence policy.</p></li>
-<li><p><a href="../README.md"><code>../README.md</code></a>: project overview, current SKUs, app catalog, runtime summary, and supported build/run entry points.</p></li>
-<li><p><a href="ultimate_setup.html"><code>ultimate_setup.md</code></a>: first-run flow, controls, safe config commit, prerequisites, and automation contract for the Ultimate D81.</p></li>
-<li><p><a href="ultimate_dos_dma_loading.html"><code>ultimate_dos_dma_loading.md</code></a>: C64 Ultimate DOS DMA loading, profile/runtime gates, fallback behavior, and verification.</p></li>
-<li><p><a href="uci_tester.md"><code>uci_tester.md</code></a>: UCI Tester controls, protocol rules, selectable prefills, safety notes, and real-world DOS/network/HTTP workflows.</p></li>
-<li><p><a href="ReadyOS_SHIM_ARCHITECTURE_0.5.md"><code>ReadyOS_SHIM_ARCHITECTURE_0.5.md</code></a>: current resident-shim and schema-v5 ReadyOS-bank architecture, including which state remains resident, which state lives in physical <code>Skip</code>, and which copy is authoritative for each operation.</p></li>
-<li><p><a href="../privatedocs/top_level_md/MEMORY_MAP.md"><code>../privatedocs/top_level_md/MEMORY_MAP.md</code></a>: canonical detailed RAM, REU, shim, and per-app memory contract.</p></li>
-<li><p><a href="../privatedocs/top_level_md/SHIM_PLAN.md"><code>../privatedocs/top_level_md/SHIM_PLAN.md</code></a>: current resident-shim ABI and switching flow (the historical filename is retained).</p></li>
-</ul>
-</section>
+<section id="readyos-documentation" class="level1">
+<h1>ReadyOS documentation</h1>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Task</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Boot ReadyOS or choose a disk</td>
+<td><a href="../README.md#getting-started">Quick start</a> and <a href="../Releases/0.5/README.md">release folders</a></td>
+</tr>
+<tr>
+<td>Configure Ultimate disk loading</td>
+<td><a href="ultimate_setup.html">First-run SETUP</a></td>
+</tr>
+<tr>
+<td>Pick an app</td>
+<td><a href="../README.md#app-catalog">App catalog</a> and <a href="app_requirements.html">hardware requirements</a></td>
+</tr>
+<tr>
+<td>Work in ReadyShell</td>
+<td><a href="../src/apps/readyshell/ReadyShelltutorial.md">Tutorial</a> and <a href="../src/apps/readyshell/README.md">command guide</a></td>
+</tr>
+<tr>
+<td>Run ReadyBASIC programs</td>
+<td><a href="readybasic_reference.html">Examples and commands</a></td>
+</tr>
+<tr>
+<td>Write a ReadyOS app</td>
+<td><a href="../CONTRIBUTING.md">Contributor notes</a> and <a href="ReadyOS_SHIM_ARCHITECTURE_0.5.md">shim ABI</a></td>
+</tr>
+<tr>
+<td>Build a ReadyBASIC module</td>
+<td><a href="../src/apps/readybasic/readybasic_sample_modules.html">Package layout and examples</a> and <a href="../src/apps/readybasic/readybasic_making_command_guide.html">adding a command</a></td>
+</tr>
+<tr>
+<td>Set up an OS bridge</td>
+<td><a href="c64os/ultimate.md">C64OS</a>, <a href="gdos64/ultimate.md">GDOS64</a> or <a href="geos20/ultimate.md">GEOS 2.0</a></td>
+</tr>
+</tbody>
+</table>
 <section id="current-subsystem-documentation" class="level2">
 <h2>Current Subsystem Documentation</h2>
 <ul>
-<li>ReadyShell: <a href="ReadyShellArchitecture.md"><code>ReadyShellArchitecture.md</code></a>, <a href="ReadyShellHostTesting.md"><code>ReadyShellHostTesting.md</code></a>, and the generated <a href="readyshell_overlay_inventory.md"><code>readyshell_overlay_inventory.md</code></a>.</li>
+<li>ReadyShell: <a href="ReadyShellArchitecture.html"><code>ReadyShellArchitecture.md</code></a>, <a href="ReadyShellHostTesting.html"><code>ReadyShellHostTesting.md</code></a>, and the generated <a href="readyshell_overlay_inventory.md"><code>readyshell_overlay_inventory.md</code></a>.</li>
 <li>ReadyBASIC: <a href="../src/apps/readybasic/readybasic_current_design.html"><code>../src/apps/readybasic/READYBASIC_CURRENT_DESIGN.md</code></a>, graphics and sound command designs, lifecycle/REU architecture, module-making guide, and the complete reference linked above. The <a href="readybasic_orbital_echoes.html">Orbital Echoes walkthrough</a>, <a href="readybasic_media_learnings.html">media learnings</a>, and <a href="readyos_ultimate_speed_policy.html">Ultimate speed-policy research</a> separate current contracts from dated test results and unimplemented OS-wide policy.</li>
 <li>EasyFlash: <a href="reports/easyflash_boot_flow.md"><code>reports/easyflash_boot_flow.md</code></a>.</li>
 <li>File formats: the <code>*_format.md</code> and <code>*_seq_format.md</code> documents in this directory.</li>
@@ -148,7 +175,6 @@
 <li><code>python3 build_support/report_app_headroom.py</code> emits current per-app segment endpoints and free bytes from <code>obj/*.map</code>.</li>
 </ul>
 <p>Generated reports are current only for the artifacts in the working tree. A dated stability report or an <code>agentworking/</code> log is evidence from that run, not a live architecture contract.</p>
-<p>After changing Markdown/HTML documentation, regenerate current HTML counterparts and run:</p>
 <p>For a documentation-only release commit that excludes local media rebuilds, use <code>refresh_release_docs.py --manifest-ref HEAD</code> (also with <code>--check</code>) to keep artifact names aligned with committed manifests. Private HTML is refreshed only when its local, untracked Markdown source is available.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/build_readybasic_reference.py</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> build_support/refresh_release_docs.py</span>

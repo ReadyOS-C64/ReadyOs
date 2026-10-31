@@ -24,13 +24,18 @@ def _parse_inline(text: str, base_style: int) -> Tuple[List[str], List[int]]:
     i = 0
     bold = False
     italic = False
+    code = False
 
     while i < len(text):
-        if text.startswith("**", i):
+        if text[i] == "`":
+            code = not code
+            i += 1
+            continue
+        if not code and text.startswith("**", i):
             bold = not bold
             i += 2
             continue
-        if text[i] == "*":
+        if not code and text[i] == "*":
             italic = not italic
             i += 1
             continue

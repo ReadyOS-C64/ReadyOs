@@ -1,46 +1,15 @@
-# ReadyOS Documentation Index
+# ReadyOS documentation
 
-This index separates current contracts from historical records. It was audited
-against the `0.5` development sources on 2026-09-18. That tree is based
-on the audited, production-stamped `0.2.5` release state.
-
-An HTML counterpart is generated as `DOCUMENTATION_INDEX.html`. Every HTML file
-under `docs/` and `privatedocs/`, the root completed-phase HTML report, and the
-three ReadyBASIC HTML guides are classified by
-`build_support/update_documentation_html_status.py` and carry a visible
-`CURRENT DOCUMENT` or `PRESERVED SNAPSHOT / DESIGN` banner. The classification
-changes presentation only: historical report bodies and measurements are not
-deleted or rewritten into claims about a version they did not describe.
-
-## Start Here
-
-- [ReadyBASIC examples and commands](readybasic_reference.md)
-  ([styled HTML](readybasic_reference.html)): all 45 source examples, the current
-  built-in inventory, eight on-demand media commands and per-SKU availability.
-- [App hardware and REU requirements](app_requirements.md): Ultimate-only
-  functions, app-owned versus shared REU, and the standalone release plans.
-- [September audit](documentation_audit_2026-09.md): corrections and issues that
-  need packaging, code or validation beyond documentation.
-- [Private current-state guide](../privatedocs/reports/readybasic_current_state.md):
-  new media/module lifecycle, product direction and retained-evidence policy.
-
-- [`../README.md`](../README.md): project overview, current SKUs, app catalog,
-  runtime summary, and supported build/run entry points.
-- [`ultimate_setup.md`](ultimate_setup.md): first-run flow, controls, safe
-  config commit, prerequisites, and automation contract for the Ultimate D81.
-- [`ultimate_dos_dma_loading.md`](ultimate_dos_dma_loading.md): C64 Ultimate
-  DOS DMA loading, profile/runtime gates, fallback behavior, and verification.
-- [`uci_tester.md`](uci_tester.md): UCI Tester controls, protocol rules,
-  selectable prefills, safety notes, and real-world DOS/network/HTTP workflows.
-- [`ReadyOS_SHIM_ARCHITECTURE_0.5.md`](ReadyOS_SHIM_ARCHITECTURE_0.5.md):
-  current resident-shim and schema-v5 ReadyOS-bank architecture, including which
-  state remains resident, which state lives in physical `Skip`, and which copy is
-  authoritative for each operation.
-- [`../privatedocs/top_level_md/MEMORY_MAP.md`](../privatedocs/top_level_md/MEMORY_MAP.md):
-  canonical detailed RAM, REU, shim, and per-app memory contract.
-- [`../privatedocs/top_level_md/SHIM_PLAN.md`](../privatedocs/top_level_md/SHIM_PLAN.md):
-  current resident-shim ABI and switching flow (the historical filename is
-  retained).
+| Task | Guide |
+| --- | --- |
+| Boot ReadyOS or choose a disk | [Quick start](../README.md#getting-started) and [release folders](../Releases/0.5/README.md) |
+| Configure Ultimate disk loading | [First-run SETUP](ultimate_setup.md) |
+| Pick an app | [App catalog](../README.md#app-catalog) and [hardware requirements](app_requirements.md) |
+| Work in ReadyShell | [Tutorial](../src/apps/readyshell/ReadyShelltutorial.md) and [command guide](../src/apps/readyshell/README.md) |
+| Run ReadyBASIC programs | [Examples and commands](readybasic_reference.md) |
+| Write a ReadyOS app | [Contributor notes](../CONTRIBUTING.md) and [shim ABI](ReadyOS_SHIM_ARCHITECTURE_0.5.md) |
+| Build a ReadyBASIC module | [Package layout and examples](../src/apps/readybasic/READYBASIC_SAMPLE_MODULES.md) and [adding a command](../src/apps/readybasic/READYBASIC_MAKING_COMMAND_GUIDE.md) |
+| Set up an OS bridge | [C64OS](c64os/ultimate.md), [GDOS64](gdos64/ultimate.md) or [GEOS 2.0](geos20/ultimate.md) |
 
 ## Current Subsystem Documentation
 
@@ -76,9 +45,6 @@ deleted or rewritten into claims about a version they did not describe.
 Generated reports are current only for the artifacts in the working tree. A
 dated stability report or an `agentworking/` log is evidence from that run, not
 a live architecture contract.
-
-After changing Markdown/HTML documentation, regenerate current HTML
-counterparts and run:
 
 For a documentation-only release commit that excludes local media rebuilds,
 use `refresh_release_docs.py --manifest-ref HEAD` (also with `--check`) to keep

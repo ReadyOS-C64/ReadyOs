@@ -1,18 +1,14 @@
 # ReadyBASIC: commands, modules and every example
 
 ReadyBASIC adds structured routines, REU resources, graphics and sound to C64
-BASIC V2. Start ReadyOS, launch ReadyBASIC, then load a demonstration from the
-mounted disk, for example `LOAD "RBGFX02",8` followed by `RUN`. These are BASIC
+BASIC V2. Start ReadyOS, launch ReadyBASIC, then load a demonstration. For the regular D81, type `LOAD "RBGFX02",8` followed by `RUN`. These are BASIC
 programs to run inside ReadyBASIC, not independent ReadyOS apps. The source
 listings below explain the working combinations of commands and ordinary BASIC.
 
-The current release profiles do not all carry the same examples. Regular D81
-and Ultimate D81 contain 44: three language tests, 32 graphics examples, seven
-sound examples and two combined demos. The original 41-example set remains in
-the smaller focused ReadyBASIC D64, D71 and KFF2 profiles. The separate rsdebug
-D81 has an older 27-example subset.
-The old `rbsnd08_neon.bas` is retained as historical source, not a current disk
-entry. The profile inventory below is generated from the actual configurations.
+On stock Ultimate, load examples from **device 9** and keep the modules and media
+on device 8. On the regular D81 both are on device 8. Those sets contain 44
+examples. The directory for each profile below lists the examples it ships.
+`rbsnd08_neon.bas` is retained as a historical source example.
 
 ## Choose a starting point
 

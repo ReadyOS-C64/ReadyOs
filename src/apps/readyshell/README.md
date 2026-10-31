@@ -1,39 +1,12 @@
-# ReadyShell Guide
+# ReadyShell guide
 
-This document describes the **current ReadyShell app in ReadyOS**, with examples for language features, commands, pipelines, and shell behavior.
+Open ReadyShell in the launcher and type `HELP`. Try `LST | SEL "NAME" | MORE` to list filenames a page at a time. On the C64 keyboard, type `!` for the pipe character. To read the on-disk command guide, use `CAT "rshelp" | MORE`.
 
-It is intentionally implementation-accurate for this build, not a forward-looking spec.
-
-For a broader recipe-style walkthrough, see [ReadyShelltutorial.md](./ReadyShelltutorial.md).
-For the implementation architecture, see [../../../docs/ReadyShellArchitecture.md](../../../docs/ReadyShellArchitecture.md).
-For the generated overlay/runtime inventory, see [../../../docs/readyshell_overlay_inventory.md](../../../docs/readyshell_overlay_inventory.md).
-
-## Host-Side Checks
-
-ReadyShell still has host-compiled smoke and unit-style checks that build the
-current `src/apps/readyshell` sources with `clang` on the host machine.
-the host machine `clang` version allows us to effectively put tests and verifications around the language.
-
-- `make readyshell-host-tests` runs the full host-side ReadyShell suite.
-- `make verify` runs `readyshell-host-tests` as part of repo verification.
-- `make readyshell-parse-smoke-host` runs parser-only smoke checks.
-- `make readyshell-vm-smoke-host` runs VM/pipeline smoke checks and an
-  overlay-aware C64-flavored host harness with mocked text-file and snapshot
-  command coverage.
-- `make readyshell-reu-tests-host` runs REU heap/value and serialization
-  round-trip tests, including nested values and malformed RSV1 rejection.
-
-Current host coverage includes:
-
-- parser coverage for the documented statement and command shapes
-- VM coverage for language semantics, pipeline capture rules, and `SEL`
-  scalar-vs-object projection behavior
-- mocked file I/O coverage for `LDV` / `STV` binary snapshots
-- overlay-command coverage for `CAT`, `PUT`, `ADD`, `DEL`, `REN`, and `COPY`
+[Worked examples](ReadyShelltutorial.md) · [Shell architecture](../../../docs/ReadyShellArchitecture.md) · [Overlay inventory](../../../docs/readyshell_overlay_inventory.md)
 
 ## 1. Scope: What Is Implemented
 
-Implemented in this POC:
+ReadyShell supports:
 
 - Expression language (numbers, strings, booleans, vars, arrays, ranges, comparisons)
 - Assignment and expression statements
@@ -1068,3 +1041,25 @@ Typical messages:
 For a larger, example-heavy guide covering pipelines, filtering, foreach,
 printing, disk commands, file commands, serialization, arrays, comparisons,
 `TOP`, and `SEL`, see [ReadyShelltutorial.md](./ReadyShelltutorial.md).
+
+## Host-Side Checks
+
+ReadyShell still has host-compiled smoke and unit-style checks that build the
+current `src/apps/readyshell` sources with `clang` on the host machine.
+
+- `make readyshell-host-tests` runs the full host-side ReadyShell suite.
+- `make verify` runs `readyshell-host-tests` as part of repo verification.
+- `make readyshell-parse-smoke-host` runs parser-only smoke checks.
+- `make readyshell-vm-smoke-host` runs VM/pipeline smoke checks and an
+  overlay-aware C64-flavored host harness with mocked text-file and snapshot
+  command coverage.
+- `make readyshell-reu-tests-host` runs REU heap/value and serialization
+  round-trip tests, including nested values and malformed RSV1 rejection.
+
+Current host coverage includes:
+
+- parser coverage for the documented statement and command shapes
+- VM coverage for language semantics, pipeline capture rules, and `SEL`
+  scalar-vs-object projection behavior
+- mocked file I/O coverage for `LDV` / `STV` binary snapshots
+- overlay-command coverage for `CAT`, `PUT`, `ADD`, `DEL`, `REN`, and `COPY`

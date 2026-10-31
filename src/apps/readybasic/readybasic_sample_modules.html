@@ -31,11 +31,12 @@
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current 0.5 RC2 disk-only demo commands, package loading and slot/overlay layout.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<details class="contents"><summary>Contents</summary><nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#readybasic-disk-sample-modules-0.5-rc2" id="toc-readybasic-disk-sample-modules-0.5-rc2">ReadyBASIC disk sample modules — 0.5 RC2</a>
 <ul>
 <li><a href="#loading-and-using-examples" id="toc-loading-and-using-examples">Loading and using examples</a></li>
+<li><a href="#build-and-check-a-sample-package" id="toc-build-and-check-a-sample-package">Build and check a sample package</a></li>
 <li><a href="#sample1-scalar-array-temporary-memory-and-two-slots" id="toc-sample1-scalar-array-temporary-memory-and-two-slots">Sample1: scalar, array, temporary memory and two slots</a></li>
 <li><a href="#sample2-slot-2-a-two-slot-span-and-replacement-overlays" id="toc-sample2-slot-2-a-two-slot-span-and-replacement-overlays">Sample2: slot 2, a two-slot span and replacement overlays</a></li>
 <li><a href="#sample3-stateful-overlays" id="toc-sample3-stateful-overlays">Sample3: stateful overlays</a></li>
@@ -47,7 +48,7 @@
 </nav></details>
 <section id="readybasic-disk-sample-modules-0.5-rc2" class="level1">
 <h1>ReadyBASIC disk sample modules — 0.5 RC2</h1>
-<p><code>LDMOD</code> and <code>PAUSE</code> are built in. All former Z-prefixed proof commands are disk-only examples with the prefix removed. A cold ReadyBASIC session has 83 production command descriptors and 45 empty registry slots. Demo worker code is absent from the built-in <code>LOWPACK</code>, slot-1/slot-2 packs and overlays; the built-in <code>SPANPACK</code> has been removed.</p>
+<p>Start in ReadyBASIC with <code>rbm.sample1</code> on device 8. Enter the example below and run it. When adapting a module, build its descriptor table and worker code against the same runtime that will load it. The <a href="readybasic_making_command_guide.html">command authoring guide</a> covers argument handling, slot placement and registration.</p>
 <section id="loading-and-using-examples" class="level2">
 <h2>Loading and using examples</h2>
 <pre class="basic"><code>5 LDMOD(&quot;RBM.SAMPLE1&quot;,M%)
@@ -57,6 +58,15 @@
 <p><code>LDMOD(NAME$)</code> or <code>LDMOD(NAME$,N%)</code> streams an RBM SEQ package from device 8 into the assigned REU banks. The returned integer is the descriptor count: 12 for sample1, 7 for sample2, 32 for sample3, or 8 for media. Loader failures return diagnostic values 240–245. Use the disk name without a host <code>.seq</code> suffix, for example <code>RBM.SAMPLE1</code>. Packages and runtime must be rebuilt together because the scalar sample resolves private runtime helper addresses from the matching link's <code>obj/readybasic.labels</code>.</p>
 <p><code>RBTEST1</code> and <code>RBPROC1</code> load sample1 on line 5. Interactive examples and probes must load the package before their first demo command. <code>NEW</code> retains registered modules. A cold ReadyBASIC start restores the production registry.</p>
 <p><code>PAUSE(UNITS)</code> preserves the existing busy-loop behavior: it uses the low byte of the argument (0–255), and elapsed time depends on CPU speed. It does not measure KERNAL jiffies. Graphics and sound samples can use it immediately.</p>
+</section>
+<section id="build-and-check-a-sample-package" class="level2">
+<h2>Build and check a sample package</h2>
+<ol type="1">
+<li>Start with <a href="sample_low.s">sample_low.s</a> for a worker and <a href="../../../build_support/build_readybasic_disk_modules.py">the package builder</a> for its descriptor, slot and exported name. Follow <code>ECHO1</code> for a scalar result or <code>ADD16</code> for integer inputs. The <a href="readybasic_making_command_guide.html#descriptor-shape">descriptor guide</a> explains how the interpreter dispatches a call.</li>
+<li>From the repository root run <code>/bin/bash ./run.sh --profile precog-d81 --for-release --build-only</code>. The build links the interpreter and packages its matching sample workers as SEQ files. When adding a package, include its build target and disk entry on a profile that ships ReadyBASIC.</li>
+<li>Boot that image through <code>/bin/bash ./run.sh --profile precog-d81 --skipbuild</code>. Launch ReadyBASIC. Run the example above with the rebuilt package on device 8. For the supplied sample1, expect <strong>12 registered commands</strong>, <strong>1</strong> from ECHO1 and <strong>15</strong> from ADD16.</li>
+<li>Switch away and resume, then call the command again. Start a fresh session and load the package again to check both registration and warm reuse.</li>
+</ol>
 </section>
 <section id="sample1-scalar-array-temporary-memory-and-two-slots" class="level2">
 <h2>Sample1: scalar, array, temporary memory and two slots</h2>
@@ -315,7 +325,7 @@
 <section id="release-packaging-follow-up" class="level3">
 <h3>Release packaging follow-up</h3>
 <p>The committed Ultimate D81 had four free blocks. Moving demos into external packages initially added eight blocks and exceeded that budget. Sample3 now carries only the COPY/CPYRST workers it uses, and each pair of stateful overlay entries shares result-writing code. Sample1's ECHO1 worker also avoids repeated immediate loads. Names, descriptor counts, return values, overlay state and package format are unchanged.</p>
-<p>The packages now occupy 4, 2 and 7 disk blocks respectively (1014, 411 and 1761 bytes). This first recovered enough space for a single Ultimate D81 with one free block. The release now uses two D81s: all apps, games, REL data, modules and media assets on drive 8, and all 44 BASIC examples on drive 9. Load examples with device 9; LDMOD and media commands continue using drive 8. Compiled worker checks cover all entries, 16-bit carry and counter wraparound; the earlier 225 hardware assertions predate this size optimization. All release SKUs now set <code>reu_bank_skip=0</code>; their boot/shim images use bank 0 for ReadyOS and start the dynamic pool at bank 1.</p>
+<p>The packages now occupy 4, 2 and 7 disk blocks respectively (1014, 411 and 1761 bytes). This first recovered enough space for a single Ultimate D81 with one free block. The release now uses two D81s: all apps, games, REL data, modules and media assets on drive 8, and all 44 BASIC examples on drive 9. Load examples with device 9; LDMOD and media commands continue using drive 8. Compiled worker checks cover all entries, 16-bit carry and counter wraparound; the earlier 225 hardware assertions predate this size optimization. The standard release boot uses bank 0 for ReadyOS and starts the dynamic pool at bank 1. Bridge builds reserve low banks before that pool. Use the loader-assigned ReadyBASIC core and code banks when registering module commands.</p>
 </section>
 </section>
 </section>

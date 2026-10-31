@@ -28,18 +28,14 @@ disk image does not make an Ultimate-dependent application portable.
 | ReadyIRC | Yes, UCI TCP | App-owned REU scrollback |
 | UCI Tester | Yes, for UCI experiments | No separate app-owned workspace |
 | Ultimate Zip | Yes, Ultimate DOS | Launcher package resource plus REU work/data resources |
+| C64OS bridge | Dedicated Ultimate image available | 16 MiB REU, skip 39, C64OS 1.09 capped at 8–32 banks |
+| GDOS64 bridge | Dedicated Ultimate image available | 16 MiB REU, skip 71, GDOS64 1.03 with 4 MiB DACC |
+| GEOS 2.0 bridge | Portable and Ultimate bridge images available | 16 MiB REU, skip 71, stock GEOS 2.0 |
 | SETUP | Yes, Ultimate DOS | Standalone utility that checks REU; no ReadyOS snapshot/shim dependency |
 
 ReadyBASIC's `USPEED`, `UMHZ` and `RBUGFXSNDDEMO` need C64 Ultimate / U64
 Elite-II software speed registers. That does not make the interpreter or the
 standard `RBGFXSNDDEMO` Ultimate-only. The vetted media music player is PAL-only.
-
-This is a source audit, not a standalone release certification. It follows
-the app C/assembly, `cfg/profiles/*.ini` dependency declarations, ReadyShell's
-C64 platform implementation and shared REU/clipboard libraries. Merely including
-`reu_mgr.h` or calling its initializer does not prove an app owns working banks;
-allocation, DMA and shared-service usage determine the classifications above.
-System Info's optional hardware probes are not an allocation requirement.
 
 ## Planned standalone releases
 

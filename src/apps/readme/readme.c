@@ -55,7 +55,7 @@ static void draw_frame(void) {
 
     tui_clear(TUI_COLOR_BLUE);
     tui_window_title(&header, "READYOS README", TUI_COLOR_LIGHTBLUE, TUI_COLOR_YELLOW);
-    tui_puts(2, 1, "PRECOG: ARCHITECTURE + APP GUIDE", TUI_COLOR_CYAN);
+    tui_puts(2, 1, "READYOS USER GUIDE", TUI_COLOR_CYAN);
 
     tui_puts(0, HELP_Y, "CURSOR:PAGE HOME:FIRST F2/F4:APPS", TUI_COLOR_GRAY3);
     tui_puts(0, HELP_Y + 1, "CTRL+B:HOME  STOP:QUIT", TUI_COLOR_GRAY3);

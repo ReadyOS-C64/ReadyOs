@@ -89,7 +89,7 @@
       "bank_span": 2,
       "load_addr": 4096,
       "payload_len": 32616,
-      "checksum16": 9715,
+      "checksum16": 9716,
       "default_slot": 0,
       "resource_set": 0
     },
@@ -243,7 +243,7 @@
       "bank_span": 3,
       "load_addr": 4096,
       "payload_len": 38685,
-      "checksum16": 45048,
+      "checksum16": 45049,
       "default_slot": 0,
       "resource_set": 0
     },
@@ -282,10 +282,10 @@
       "label": "read.me",
       "artifact": "bin/readme.prg",
       "start_bank": 41,
-      "bank_span": 2,
+      "bank_span": 1,
       "load_addr": 4096,
-      "payload_len": 26864,
-      "checksum16": 5621,
+      "payload_len": 15025,
+      "checksum16": 41616,
       "default_slot": 0,
       "resource_set": 0
     }
@@ -294,7 +294,7 @@
     {
       "name": "rsparser",
       "artifact": "bin/rsparser.prg",
-      "start_bank": 43,
+      "start_bank": 42,
       "bank_span": 1,
       "load_addr": 36352,
       "payload_len": 13005,
@@ -306,7 +306,7 @@
     {
       "name": "rsvm",
       "artifact": "bin/rsvm.prg",
-      "start_bank": 44,
+      "start_bank": 43,
       "bank_span": 1,
       "load_addr": 36352,
       "payload_len": 14028,
@@ -318,7 +318,7 @@
     {
       "name": "rsdrvilst",
       "artifact": "bin/rsdrvilst.prg",
-      "start_bank": 45,
+      "start_bank": 44,
       "bank_span": 1,
       "load_addr": 36352,
       "payload_len": 11258,
@@ -330,7 +330,7 @@
     {
       "name": "rsldv",
       "artifact": "bin/rsldv.prg",
-      "start_bank": 46,
+      "start_bank": 45,
       "bank_span": 1,
       "load_addr": 36352,
       "payload_len": 11894,
@@ -342,7 +342,7 @@
     {
       "name": "rsstv",
       "artifact": "bin/rsstv.prg",
-      "start_bank": 47,
+      "start_bank": 46,
       "bank_span": 1,
       "load_addr": 36352,
       "payload_len": 10249,
@@ -354,7 +354,7 @@
     {
       "name": "rsfops",
       "artifact": "bin/rsfops.prg",
-      "start_bank": 48,
+      "start_bank": 47,
       "bank_span": 1,
       "load_addr": 36352,
       "payload_len": 14325,
@@ -366,7 +366,7 @@
     {
       "name": "rscat",
       "artifact": "bin/rscat.prg",
-      "start_bank": 49,
+      "start_bank": 48,
       "bank_span": 1,
       "load_addr": 36352,
       "payload_len": 8081,
@@ -378,7 +378,7 @@
     {
       "name": "rscopy",
       "artifact": "bin/rscopy.prg",
-      "start_bank": 50,
+      "start_bank": 49,
       "bank_span": 1,
       "load_addr": 36352,
       "payload_len": 6599,
@@ -390,7 +390,7 @@
     {
       "name": "rsedit",
       "artifact": "bin/rsedit.prg",
-      "start_bank": 51,
+      "start_bank": 50,
       "bank_span": 1,
       "load_addr": 36352,
       "payload_len": 2002,
@@ -410,5 +410,5 @@
     25,
     26
   ],
-  "last_used_bank": 51
+  "last_used_bank": 50
 }

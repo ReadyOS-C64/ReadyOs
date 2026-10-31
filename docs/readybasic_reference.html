@@ -31,7 +31,7 @@
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current source-generated inventory: 83 built-ins, eight media commands, developer packages and all 45 BASIC source examples. Profile packaging is stated separately.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<details class="contents"><summary>Contents</summary><nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#readybasic-commands-modules-and-every-example" id="toc-readybasic-commands-modules-and-every-example">ReadyBASIC: commands, modules and every example</a>
 <ul>
@@ -96,8 +96,8 @@
 </nav></details>
 <section id="readybasic-commands-modules-and-every-example" class="level1">
 <h1>ReadyBASIC: commands, modules and every example</h1>
-<p>ReadyBASIC adds structured routines, REU resources, graphics and sound to C64 BASIC V2. Start ReadyOS, launch ReadyBASIC, then load a demonstration from the mounted disk, for example <code>LOAD "RBGFX02",8</code> followed by <code>RUN</code>. These are BASIC programs to run inside ReadyBASIC, not independent ReadyOS apps. The source listings below explain the working combinations of commands and ordinary BASIC.</p>
-<p>The current release profiles do not all carry the same examples. Regular D81 and Ultimate D81 contain 44: three language tests, 32 graphics examples, seven sound examples and two combined demos. The original 41-example set remains in the smaller focused ReadyBASIC D64, D71 and KFF2 profiles. The separate rsdebug D81 has an older 27-example subset. The old <code>rbsnd08_neon.bas</code> is retained as historical source, not a current disk entry. The profile inventory below is generated from the actual configurations.</p>
+<p>ReadyBASIC adds structured routines, REU resources, graphics and sound to C64 BASIC V2. Start ReadyOS, launch ReadyBASIC, then load a demonstration. For the regular D81, type <code>LOAD "RBGFX02",8</code> followed by <code>RUN</code>. These are BASIC programs to run inside ReadyBASIC, not independent ReadyOS apps. The source listings below explain the working combinations of commands and ordinary BASIC.</p>
+<p>On stock Ultimate, load examples from <strong>device 9</strong> and keep the modules and media on device 8. On the regular D81 both are on device 8. Those sets contain 44 examples. The directory for each profile below lists the examples it ships. <code>rbsnd08_neon.bas</code> is retained as a historical source example.</p>
 <section id="choose-a-starting-point" class="level2">
 <h2>Choose a starting point</h2>
 <ul>
@@ -900,6 +900,11 @@
 <td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
 </tr>
 <tr>
+<td><code>precog-geos20</code></td>
+<td style="text-align: right;">44</td>
+<td><code>rbm.media</code>, <code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
+</tr>
+<tr>
 <td><code>precog-kung-fu-flash-2-d81</code></td>
 <td style="text-align: right;">41</td>
 <td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
@@ -938,6 +943,21 @@
 <td><code>precog-solo-d64-readybasic</code></td>
 <td style="text-align: right;">41</td>
 <td><code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
+</tr>
+<tr>
+<td><code>precog-ultimate-c64os</code></td>
+<td style="text-align: right;">44</td>
+<td><code>rbm.media</code>, <code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
+</tr>
+<tr>
+<td><code>precog-ultimate-gdos</code></td>
+<td style="text-align: right;">44</td>
+<td><code>rbm.media</code>, <code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
+</tr>
+<tr>
+<td><code>precog-ultimate-geos20</code></td>
+<td style="text-align: right;">44</td>
+<td><code>rbm.media</code>, <code>rbm.sample1</code>, <code>rbm.sample2</code>, <code>rbm.sample3</code></td>
 </tr>
 <tr>
 <td><code>precog-ultimate</code></td>
@@ -1151,7 +1171,7 @@
 <p>Switch/query all five graphics modes, then restore text.</p>
 <p><a href="../src/apps/readybasic/rbgfx01_modes.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>.</p>
-<p>Disk name: <code>RBGFX01</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX01</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx01 modes&quot;
 30 gfxmode(&quot;hires&quot;):m%=gfxmode():print &quot;hires mode&quot;;m%
@@ -1170,7 +1190,7 @@
 <p>Plot a hires grid and diagonal, waiting for a key before exit.</p>
 <p><a href="../src/apps/readybasic/rbgfx02_hires_plot.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PAUSE</code>, <code>PLOT</code>.</p>
-<p>Disk name: <code>RBGFX02</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX02</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx02 hires plot&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1193,7 +1213,7 @@
 <p>Draw intersecting hires line fans and restore text after a key.</p>
 <p><a href="../src/apps/readybasic/rbgfx03_hires_lines.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PAUSE</code>.</p>
-<p>Disk name: <code>RBGFX03</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX03</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx03 hires lines&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1214,7 +1234,7 @@
 <p>Compare rectangle outlines with filled boxes.</p>
 <p><a href="../src/apps/readybasic/rbgfx04_rects.bas">Original source</a>.</p>
 <p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PAUSE</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX04</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX04</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx04 rects&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1234,7 +1254,7 @@
 <p>Read a plotted pixel, its neighbor, then the cleared pixel with PNT.</p>
 <p><a href="../src/apps/readybasic/rbgfx05_point_read.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PAUSE</code>, <code>PLOT</code>, <code>PNT</code>.</p>
-<p>Disk name: <code>RBGFX05</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX05</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx05 pnt read&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1255,7 +1275,7 @@
 <p>Early surface-handle probe; it predates capture/blit and does not initialize its new surface.</p>
 <p><a href="../src/apps/readybasic/rbgfx06_reu_surface.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXTEXT</code>, <code>LINE</code>.</p>
-<p>Disk name: <code>RBGFX06</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX06</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx06 reu surface&quot;
 30 h%=gfxsurf(&quot;hires&quot;)
@@ -1271,7 +1291,7 @@
 <p>Draw multicolor lines and pixels using the immediate primitive color encoding.</p>
 <p><a href="../src/apps/readybasic/rbgfx07_mbitmap.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PAUSE</code>, <code>PLOT</code>.</p>
-<p>Disk name: <code>RBGFX07</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX07</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx07 mbitmap&quot;
 30 gfxmode(&quot;mbitmap&quot;):gfxclear(0)
@@ -1291,7 +1311,7 @@
 <p>Use plot/rectangle primitives on character cells in tile mode.</p>
 <p><a href="../src/apps/readybasic/rbgfx08_tile.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PAUSE</code>, <code>PLOT</code>, <code>PNT</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX08</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX08</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx08 tile&quot;
 30 gfxmode(&quot;tile&quot;):gfxclear(0)
@@ -1312,7 +1332,7 @@
 <p>Configure two generated sprites, position them and change color.</p>
 <p><a href="../src/apps/readybasic/rbgfx09_sprites.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>SPRCOL</code>, <code>SPRMOVE</code>, <code>SPRSET</code>.</p>
-<p>Disk name: <code>RBGFX09</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX09</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx09 sprites&quot;
 30 gfxmode(&quot;tile&quot;):gfxclear(0)
@@ -1330,7 +1350,7 @@
 <p>Overlap sprites and inspect collision state; retained polling probe.</p>
 <p><a href="../src/apps/readybasic/rbgfx10_collision.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>SPRCOLL</code>, <code>SPRMOVE</code>, <code>SPRSCAN</code>, <code>SPRSET</code>.</p>
-<p>Disk name: <code>RBGFX10</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX10</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx10 collision&quot;
 30 gfxmode(&quot;tile&quot;):gfxclear(0)
@@ -1348,7 +1368,7 @@
 <p>Poll joystick and keyboard values without an IRQ input sampler.</p>
 <p><a href="../src/apps/readybasic/rbgfx11_input.bas">Original source</a>.</p>
 <p>Commands used: <code>JOY</code>, <code>KEYLAST</code>, <code>KEYP</code>, <code>KEYSCAN</code>.</p>
-<p>Disk name: <code>RBGFX11</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX11</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx11 input&quot;
 30 for i=1 to 30
@@ -1365,7 +1385,7 @@
 <p>Combine hires lines, boxes, sprite positioning and pixel readback.</p>
 <p><a href="../src/apps/readybasic/rbgfx12_showcase.bas">Original source</a>.</p>
 <p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PAUSE</code>, <code>PNT</code>, <code>RECT</code>, <code>SPRMOVE</code>, <code>SPRSET</code>.</p>
-<p>Disk name: <code>RBGFX12</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX12</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx12 showcase&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1387,7 +1407,7 @@
 <p>Construct sprite art row by row and step through positions/colors with keys.</p>
 <p><a href="../src/apps/readybasic/rbgfx13_sprite_steps.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PAUSE</code>, <code>SPRMOVE</code>, <code>SPRROW</code>, <code>SPRSET</code>.</p>
-<p>Disk name: <code>RBGFX13</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX13</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx13 sprite steps&quot;
 30 gfxmode(&quot;tile&quot;):gfxclear(0)
@@ -1430,7 +1450,7 @@
 <p>Compare circle outline with the current rectangular FCIRCLE placeholder.</p>
 <p><a href="../src/apps/readybasic/rbgfx14_phase2_prims.bas">Original source</a>.</p>
 <p>Commands used: <code>CIRCLE</code>, <code>FCIRCLE</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PAUSE</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX14</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX14</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx14 phase2 prims&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1447,7 +1467,7 @@
 <p>Write visible character/color tiles using TILE and CHARAT.</p>
 <p><a href="../src/apps/readybasic/rbgfx15_phase2_tiles.bas">Original source</a>.</p>
 <p>Commands used: <code>CHARAT</code>, <code>GFXTEXT</code>, <code>PAUSE</code>, <code>TILE</code>.</p>
-<p>Disk name: <code>RBGFX15</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX15</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx15 phase2 tiles&quot;
 30 gfxtext():print chr$(147)
@@ -1469,7 +1489,7 @@
 <p>Step through sprite expansion, multicolor, priority and color controls.</p>
 <p><a href="../src/apps/readybasic/rbgfx16_phase2_sprite_ctrl.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PAUSE</code>, <code>SPRCOL</code>, <code>SPRMCO</code>, <code>SPRMOVE</code>, <code>SPRMUL</code>, <code>SPRPRI</code>, <code>SPRROW</code>, <code>SPRSET</code>, <code>SPRSIZE</code>, <code>TILE</code>.</p>
-<p>Disk name: <code>RBGFX16</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX16</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx16 sprite controls&quot;
 30 gfxmode(&quot;tile&quot;):gfxclear(0)
@@ -1508,7 +1528,7 @@
 <p>Outline coordinate-pair polygons held in BASIC integer arrays.</p>
 <p><a href="../src/apps/readybasic/rbgfx17_poly_array.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PAUSE</code>, <code>POLY</code>.</p>
-<p>Disk name: <code>RBGFX17</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX17</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 rem demo 17
 30 dim p%(7),q%(9)
@@ -1530,7 +1550,7 @@
 <p>Fill convex polygons held in BASIC integer arrays.</p>
 <p><a href="../src/apps/readybasic/rbgfx18_fpoly_array.bas">Original source</a>.</p>
 <p>Commands used: <code>FPOLY</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PAUSE</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX18</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX18</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 rem demo 18
 30 dim p%(7),q%(7)
@@ -1551,7 +1571,7 @@
 <p>Allocate REU point buffers, set indexed vertices and draw outlines.</p>
 <p><a href="../src/apps/readybasic/rbgfx19_poly_reu.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>PAUSE</code>, <code>PBMAKE</code>, <code>PBUFSET</code>, <code>POLYH</code>.</p>
-<p>Disk name: <code>RBGFX19</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX19</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 rem demo 19
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1574,7 +1594,7 @@
 <p>Fill REU-backed polygons alongside lines and rectangles.</p>
 <p><a href="../src/apps/readybasic/rbgfx20_fpoly_reu_showcase.bas">Original source</a>.</p>
 <p>Commands used: <code>FPOLYH</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PAUSE</code>, <code>PBMAKE</code>, <code>PBUFSET</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX20</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX20</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 rem demo 20
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1598,7 +1618,7 @@
 <p>Exercise immediate primitives and color slots in multicolor bitmap mode.</p>
 <p><a href="../src/apps/readybasic/rbgfx21_mbitmap_prims.bas">Original source</a>.</p>
 <p>Commands used: <code>CIRCLE</code>, <code>FBOX</code>, <code>FCIRCLE</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PAUSE</code>, <code>PLOT</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX21</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX21</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx21 mbitmap prims&quot;
 30 gfxmode(&quot;mbitmap&quot;):gfxclear(0)
@@ -1620,7 +1640,7 @@
 <p>Check that PNT returns multicolor pixel slot codes 1, 2 and 3.</p>
 <p><a href="../src/apps/readybasic/rbgfx22_mbitmap_point.bas">Original source</a>.</p>
 <p>Commands used: <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PAUSE</code>, <code>PLOT</code>, <code>PNT</code>.</p>
-<p>Disk name: <code>RBGFX22</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX22</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx22 mbitmap pnt&quot;
 30 gfxmode(&quot;mbitmap&quot;):gfxclear(0)
@@ -1640,7 +1660,7 @@
 <p>Record plot/line/rectangle/box commands and replay a retained display list.</p>
 <p><a href="../src/apps/readybasic/rbgfx23_dlist.bas">Original source</a>.</p>
 <p>Commands used: <code>DLDRAW</code>, <code>DLFBOX</code>, <code>DLLINE</code>, <code>DLMAKE</code>, <code>DLPLOT</code>, <code>DLRECT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>.</p>
-<p>Disk name: <code>RBGFX23</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX23</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx23 dlist&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1658,7 +1678,7 @@
 <p>Build a custom charset, tileset and tilemap, then render them together.</p>
 <p><a href="../src/apps/readybasic/rbgfx24_tilemap.bas">Original source</a>.</p>
 <p>Commands used: <code>CHRMAKE</code>, <code>CHRROW</code>, <code>CHRUSE</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>TMDRAW</code>, <code>TMMAKE</code>, <code>TMSET</code>, <code>TSMAKE</code>, <code>TSSET</code>.</p>
-<p>Disk name: <code>RBGFX24</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX24</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx24 tilemap&quot;
 30 gfxmode(&quot;tile&quot;):gfxclear(0)
@@ -1699,7 +1719,7 @@
 <p>Change multicolor cell palette attributes independently of bitmap drawing.</p>
 <p><a href="../src/apps/readybasic/rbgfx25_mbcells.bas">Original source</a>.</p>
 <p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>MCBG</code>, <code>MCELL</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX25</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX25</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx25 mbitmap cells&quot;
 30 gfxmode(&quot;mbitmap&quot;):gfxclear(0):mcbg(0)
@@ -1719,7 +1739,7 @@
 <p>Compare visible primitives and PNT across hires, multicolor and tile modes.</p>
 <p><a href="../src/apps/readybasic/rbgfx26_mode_matrix.bas">Original source</a>.</p>
 <p>Commands used: <code>CIRCLE</code>, <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>MCBG</code>, <code>PLOT</code>, <code>PNT</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX26</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX26</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx26 mode matrix&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1750,7 +1770,7 @@
 <p>Probe surface selection, capture/blit and error reporting before visible drawing.</p>
 <p><a href="../src/apps/readybasic/rbgfx27_target_blit.bas">Original source</a>.</p>
 <p>Commands used: <code>ERRCODE</code>, <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXSYNC</code>, <code>GFXTEXT</code>, <code>GFXTGT</code>, <code>LINE</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX27</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX27</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx27 target blit&quot;
 30 h%=gfxsurf(&quot;hires&quot;)
@@ -1769,7 +1789,7 @@
 <p>Draw and read back ordinary visible tile cells.</p>
 <p><a href="../src/apps/readybasic/rbgfx28_tile_visible.bas">Original source</a>.</p>
 <p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PLOT</code>, <code>PNT</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX28</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX28</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx28 tile visible&quot;
 30 gfxmode(&quot;tile&quot;):gfxclear(0)
@@ -1785,7 +1805,7 @@
 <p>Draw and read back multicolor tile cells.</p>
 <p><a href="../src/apps/readybasic/rbgfx29_mtile_visible.bas">Original source</a>.</p>
 <p>Commands used: <code>FBOX</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>LINE</code>, <code>PLOT</code>, <code>PNT</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX29</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX29</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx29 mtile visible&quot;
 30 gfxmode(&quot;mtile&quot;):gfxclear(0)
@@ -1801,7 +1821,7 @@
 <p>Replay a retained display list in multicolor bitmap mode.</p>
 <p><a href="../src/apps/readybasic/rbgfx30_mbitmap_dlist.bas">Original source</a>.</p>
 <p>Commands used: <code>DLDRAW</code>, <code>DLFBOX</code>, <code>DLLINE</code>, <code>DLMAKE</code>, <code>DLPLOT</code>, <code>DLRECT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>MCBG</code>.</p>
-<p>Disk name: <code>RBGFX30</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX30</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx30 mbitmap dlist&quot;
 30 gfxmode(&quot;mbitmap&quot;):gfxclear(0):mcbg(0)
@@ -1819,7 +1839,7 @@
 <p>Capture a visible hires scene into REU, clear it and restore it with a key.</p>
 <p><a href="../src/apps/readybasic/rbgfx31_sync_blit.bas">Original source</a>.</p>
 <p>Commands used: <code>ERRCODE</code>, <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXSYNC</code>, <code>GFXTEXT</code>, <code>GFXTGT</code>, <code>LINE</code>, <code>RECT</code>.</p>
-<p>Disk name: <code>RBGFX31</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX31</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx31 sync blit&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1838,7 +1858,7 @@
 <p>Draw a polygon outline and a convex filled polygon from integer arrays.</p>
 <p><a href="../src/apps/readybasic/rbgfx32_convex_poly.bas">Original source</a>.</p>
 <p>Commands used: <code>FPOLY</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXTEXT</code>, <code>POLY</code>.</p>
-<p>Disk name: <code>RBGFX32</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFX32</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem see graphics design md
 20 print chr$(147);&quot;rbgfx32 convex poly&quot;
 30 gfxmode(&quot;hires&quot;):gfxclear(0)
@@ -1859,7 +1879,7 @@
 <p>Orbital Echoes: two cached scenes, READY sprites, palette-safe lines and PAL music; no Ultimate speed calls.</p>
 <p><a href="../src/apps/readybasic/rbgfxsnddemo.bas">Original source</a>.</p>
 <p>Commands used: <code>BORDER</code>, <code>BUFDROP</code>, <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXSYNC</code>, <code>GFXTEXT</code>, <code>GFXTGT</code>, <code>LDMOD</code>, <code>MCBG</code>, <code>MCFILE</code>, <code>MCLINE</code>, <code>MEMCAP</code>, <code>MUSDROP</code>, <code>MUSPLAY</code>, <code>MUSTUNE</code>, <code>SPRFILE</code>, <code>SPRMCO</code>, <code>SPRMOVE</code>, <code>SPRMUL</code>, <code>SPRPRI</code>, <code>SPRSET</code>, <code>SPRSIZE</code>.</p>
-<p>Disk name: <code>RBGFXSNDDEMO</code>. Profiles: <code>precog-d81</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBGFXSNDDEMO</code>. Profiles: <code>precog-d81</code>, <code>precog-geos20</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem =====================================
 20 rem rbgfxsnddemo - orbital echoes
 30 rem art: luis zuno / ansimuz - cc0
@@ -1994,7 +2014,7 @@
 <p>Structured routine/function and typed-result regression examples, including nested expressions.</p>
 <p><a href="../src/apps/readybasic/rbproc1.bas">Original source</a>.</p>
 <p>Commands used: <code>ADD16</code>, <code>FADD</code>, <code>LDMOD</code>, <code>UPPER</code>.</p>
-<p>Disk name: <code>RBPROC1</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBPROC1</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>5 ldmod(&quot;rbm.sample1&quot;,m%)
 10 print &quot;procfunc&quot;
 20 exec show0
@@ -2081,7 +2101,7 @@
 <p>Intentional negative cases; run individual numbered sections to test argument/type/stack errors.</p>
 <p><a href="../src/apps/readybasic/rbprocerr.bas">Original source</a>.</p>
 <p>Commands used: <code>FADD</code>.</p>
-<p>Disk name: <code>RBPROCERR</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBPROCERR</code>. Profiles: <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem readybasic proc/fun negative probes
 20 rem run 100,200,...,1500 one case at a time
 100 exec missing(1)
@@ -2145,7 +2165,7 @@
 <p>Hear separate triangle, saw, pulse and noise tones using immediate SID control.</p>
 <p><a href="../src/apps/readybasic/rbsnd01_sid_basics.bas">Original source</a>.</p>
 <p>Commands used: <code>ADSR</code>, <code>PAUSE</code>, <code>PULSE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>SOUND</code>, <code>VOL</code>.</p>
-<p>Disk name: <code>RBSND01</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBSND01</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem readybasic sound design: sound design md
 20 print chr$(147);&quot;rbsnd01 sid basics&quot;
 30 print &quot;you should hear triangle, saw, pulse,&quot;
@@ -2167,7 +2187,7 @@
 <p>Change pulse width and envelope, gating voices explicitly.</p>
 <p><a href="../src/apps/readybasic/rbsnd02_voice_state.bas">Original source</a>.</p>
 <p>Commands used: <code>ADSR</code>, <code>FRQ</code>, <code>GATE</code>, <code>PAUSE</code>, <code>PULSE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOL</code>, <code>WAVE</code>.</p>
-<p>Disk name: <code>RBSND02</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBSND02</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem readybasic sound design: sound design md
 20 print chr$(147);&quot;rbsnd02 voice state&quot;
 30 print &quot;manual sid voice setup.&quot;
@@ -2188,7 +2208,7 @@
 <p>Play a chromatic scale with the PAL pitch table.</p>
 <p><a href="../src/apps/readybasic/rbsnd03_notes.bas">Original source</a>.</p>
 <p>Commands used: <code>ADSR</code>, <code>GATE</code>, <code>PAUSE</code>, <code>PITCH</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOL</code>, <code>WAVE</code>.</p>
-<p>Disk name: <code>RBSND03</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBSND03</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem readybasic sound design: sound design md
 20 print chr$(147);&quot;rbsnd03 pitchs&quot;
 30 print &quot;chromatic pitch command.&quot;
@@ -2207,7 +2227,7 @@
 <p>Compare low-pass, band-pass and high-pass SID filtering.</p>
 <p><a href="../src/apps/readybasic/rbsnd04_filter.bas">Original source</a>.</p>
 <p>Commands used: <code>ADSR</code>, <code>FILTER</code>, <code>FRQ</code>, <code>GATE</code>, <code>PAUSE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOL</code>, <code>WAVE</code>.</p>
-<p>Disk name: <code>RBSND04</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBSND04</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem readybasic sound design: sound design md
 20 print chr$(147);&quot;rbsnd04 filter&quot;
 30 print &quot;saw wave through sid filter.&quot;
@@ -2229,7 +2249,7 @@
 <p>Set frequency, waveform and packed envelopes together with VOICE.</p>
 <p><a href="../src/apps/readybasic/rbsnd05_voice_batch.bas">Original source</a>.</p>
 <p>Commands used: <code>GATE</code>, <code>PAUSE</code>, <code>PULSE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOICE</code>, <code>VOL</code>, <code>WAVE</code>.</p>
-<p>Disk name: <code>RBSND05</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBSND05</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem readybasic sound design: sound design md
 20 print chr$(147);&quot;rbsnd05 voice batch&quot;
 30 print &quot;voice uses packed sid envelope bytes:&quot;
@@ -2250,7 +2270,7 @@
 <p>Combine three voices into a chord, then a bass/high-voice pair.</p>
 <p><a href="../src/apps/readybasic/rbsnd06_three_voice.bas">Original source</a>.</p>
 <p>Commands used: <code>ADSR</code>, <code>GATE</code>, <code>PAUSE</code>, <code>PITCH</code>, <code>PULSE</code>, <code>SIDOFF</code>, <code>SIDRST</code>, <code>VOL</code>, <code>WAVE</code>.</p>
-<p>Disk name: <code>RBSND06</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBSND06</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem readybasic sound design: sound design md
 20 print chr$(147);&quot;rbsnd06 three voice&quot;
 30 print &quot;three sid voices: c major, then&quot;
@@ -2272,7 +2292,7 @@
 <p>Load the media module and vetted PSID; play, halt, restart and release its arena.</p>
 <p><a href="../src/apps/readybasic/rbsnd07_psid.bas">Original source</a>.</p>
 <p>Commands used: <code>BORDER</code>, <code>LDMOD</code>, <code>MEMCAP</code>, <code>MUSDROP</code>, <code>MUSHALT</code>, <code>MUSPLAY</code>, <code>MUSTUNE</code>.</p>
-<p>Disk name: <code>RBSND07</code>. Profiles: <code>precog-d81</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBSND07</code>. Profiles: <code>precog-d81</code>, <code>precog-geos20</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem =====================================
 20 rem rbsnd07 - music while basic works
 30 rem summer vacation by shiru (2010)
@@ -2487,7 +2507,7 @@
 <p>Small command-expression, integer-output and uppercase-string smoke test.</p>
 <p><a href="../src/apps/readybasic/rbtest1.bas">Original source</a>.</p>
 <p>Commands used: <code>ADD16</code>, <code>ECHO1</code>, <code>LDMOD</code>, <code>UPPER</code>.</p>
-<p>Disk name: <code>RBTEST1</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d64</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-a</code>, <code>precog-solo-d64-b</code>, <code>precog-solo-d64-c</code>, <code>precog-solo-d64-d</code>, <code>precog-solo-d64-e-rsdebug</code>, <code>precog-solo-d64-e</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBTEST1</code>. Profiles: <code>precog-d81-rsdebug</code>, <code>precog-d81</code>, <code>precog-dual-d64</code>, <code>precog-dual-d71-rsdebug</code>, <code>precog-dual-d71</code>, <code>precog-geos20</code>, <code>precog-kung-fu-flash-2-d81</code>, <code>precog-solo-d64-a</code>, <code>precog-solo-d64-b</code>, <code>precog-solo-d64-c</code>, <code>precog-solo-d64-d</code>, <code>precog-solo-d64-e-rsdebug</code>, <code>precog-solo-d64-e</code>, <code>precog-solo-d64-readybasic</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>5 ldmod(&quot;rbm.sample1&quot;,m%)
 10 echo1(p%)
 20 print &quot;readybasic&quot;;p%
@@ -2504,7 +2524,7 @@
 <p>Ultimate Orbital Echoes: the same media lifecycle, with safe-speed disk loading and 64 MHz computation/animation.</p>
 <p><a href="../src/apps/readybasic/rbugfxsnddemo.bas">Original source</a>.</p>
 <p>Commands used: <code>BORDER</code>, <code>BUFDROP</code>, <code>GFXBLIT</code>, <code>GFXCLEAR</code>, <code>GFXMODE</code>, <code>GFXSURF</code>, <code>GFXSYNC</code>, <code>GFXTEXT</code>, <code>GFXTGT</code>, <code>LDMOD</code>, <code>MCBG</code>, <code>MCFILE</code>, <code>MCLINE</code>, <code>MEMCAP</code>, <code>MUSDROP</code>, <code>MUSPLAY</code>, <code>MUSTUNE</code>, <code>SPRFILE</code>, <code>SPRMCO</code>, <code>SPRMOVE</code>, <code>SPRMUL</code>, <code>SPRPRI</code>, <code>SPRSET</code>, <code>SPRSIZE</code>, <code>USPEED</code>.</p>
-<p>Disk name: <code>RBUGFXSNDDEMO</code>. Profiles: <code>precog-d81</code>, <code>precog-ultimate</code>.</p>
+<p>Disk name: <code>RBUGFXSNDDEMO</code>. Profiles: <code>precog-d81</code>, <code>precog-geos20</code>, <code>precog-ultimate-c64os</code>, <code>precog-ultimate-gdos</code>, <code>precog-ultimate-geos20</code>, <code>precog-ultimate</code>.</p>
 <pre class="basic"><code>10 rem =====================================
 20 rem rbugfxsnddemo - orbital echoes / ultimate
 30 rem art: luis zuno / ansimuz - cc0

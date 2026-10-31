@@ -31,7 +31,7 @@
 <!-- READYOS-DOC-STATUS:START -->
 <aside role="note" data-readyos-doc-status="current" style="margin:16px;padding:12px 14px;border:2px solid #238636;background:#e7f7ec;color:#1f2328;font:14px/1.45 system-ui,sans-serif"><strong>CURRENT DOCUMENT</strong><br>Current source-audited Ultimate and app-specific REU requirements, distinct from system snapshot needs and future standalone plans.</aside>
 <!-- READYOS-DOC-STATUS:END -->
-<details class="contents"><summary>Contents — commands, modules and examples</summary><nav id="TOC" role="doc-toc">
+<details class="contents"><summary>Contents</summary><nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#app-hardware-and-reu-requirements" id="toc-app-hardware-and-reu-requirements">App hardware and REU requirements</a>
 <ul>
@@ -162,6 +162,21 @@
 <td>Launcher package resource plus REU work/data resources</td>
 </tr>
 <tr>
+<td>C64OS bridge</td>
+<td>Dedicated Ultimate image available</td>
+<td>16 MiB REU, skip 39, C64OS 1.09 capped at 8–32 banks</td>
+</tr>
+<tr>
+<td>GDOS64 bridge</td>
+<td>Dedicated Ultimate image available</td>
+<td>16 MiB REU, skip 71, GDOS64 1.03 with 4 MiB DACC</td>
+</tr>
+<tr>
+<td>GEOS 2.0 bridge</td>
+<td>Portable and Ultimate bridge images available</td>
+<td>16 MiB REU, skip 71, stock GEOS 2.0</td>
+</tr>
+<tr>
 <td>SETUP</td>
 <td>Yes, Ultimate DOS</td>
 <td>Standalone utility that checks REU; no ReadyOS snapshot/shim dependency</td>
@@ -169,7 +184,6 @@
 </tbody>
 </table>
 <p>ReadyBASIC's <code>USPEED</code>, <code>UMHZ</code> and <code>RBUGFXSNDDEMO</code> need C64 Ultimate / U64 Elite-II software speed registers. That does not make the interpreter or the standard <code>RBGFXSNDDEMO</code> Ultimate-only. The vetted media music player is PAL-only.</p>
-<p>This is a source audit, not a standalone release certification. It follows the app C/assembly, <code>cfg/profiles/*.ini</code> dependency declarations, ReadyShell's C64 platform implementation and shared REU/clipboard libraries. Merely including <code>reu_mgr.h</code> or calling its initializer does not prove an app owns working banks; allocation, DMA and shared-service usage determine the classifications above. System Info's optional hardware probes are not an allocation requirement.</p>
 <section id="planned-standalone-releases" class="level2">
 <h2>Planned standalone releases</h2>
 <p>Many apps are intended for future standalone release: both those whose own work needs REU and those whose own work does not. Existing ReadyOS PRGs are not therefore standalone already; packaging, startup and shared-service integration still need work. Standalone ReadyBASIC independent of Ultimate and ReadyOS is a specific commitment, while a no-REU interpreter is not promised.</p>

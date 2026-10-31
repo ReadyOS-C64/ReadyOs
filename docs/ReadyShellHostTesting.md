@@ -1,42 +1,10 @@
-# ReadyShell Host Version For Mocking, Unit, And Smoke Testing
+# Testing ReadyShell on the host
 
-This document describes the current host-side ReadyShell test harness in
-ReadyOS.
+Run `make readyshell-host-tests` from the project root. It builds the parser, VM and value serialization code with clang and runs them against mock disk and REU services. Use a ReadyOS boot test to check disk loading, overlay placement and app switching on the C64.
 
-It is not a separate productized host port of ReadyShell. It is a native
-`clang` test harness around the real parser, VM, value, serialization, and
-external-command protocol code used by the C64 build.
+[Using ReadyShell](../src/apps/readyshell/README.md) · [C64 architecture](ReadyShellArchitecture.md)
 
-For the user-facing shell guide, see
-[../src/apps/readyshell/README.md](../src/apps/readyshell/README.md).
-For the full C64 architecture, overlay model, and runtime layout, see
-[./ReadyShellArchitecture.md](./ReadyShellArchitecture.md).
-
-## 1. What The Host Harness Is
-
-ReadyShell host testing exists to validate logic quickly without booting VICE
-or running on a real C64.
-
-The host harness compiles selected ReadyShell sources as normal native code and
-runs small test executables on the host machine. It keeps the same parser, VM,
-value, and REU-serialization code paths wherever possible, but replaces the
-hardware-facing pieces with narrow mocks.
-
-That means the host harness is best thought of as:
-
-- a fast parser smoke test
-- a fast VM and pipeline behavior smoke test
-- a fast REU-backed value and serialization unit test
-- a protocol-level test for the external overlay command ABI
-
-It is not:
-
-- a full host UI version of ReadyShell
-- a cycle-accurate C64 emulator
-- a replacement for disk boot testing in ReadyOS
-- a substitute for overlay loading, REU DMA, or true-drive verification
-
-## 2. Make Targets
+## Make targets
 
 The current host-side targets are:
 

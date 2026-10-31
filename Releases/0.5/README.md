@@ -1,89 +1,42 @@
-# ReadyOS 0.5 Release Guide
+# ReadyOS 0.5 release guide
 
-ReadyOS PRECOG is an experimental REU-first environment for a modern Commodore
-64 setup. Its long-term center of gravity is the new Commodore 64 Ultimate and
-related Ultimate-family hardware, but it is intended to support a wide range of
-C64 setups that have a reasonably large REU. This release line is organized as
-multiple disk-image variants so the same ReadyOS runtime can fit different
-real-world C64 environments without pretending every machine, cartridge,
-loader, or emulator mounts the same media.
+Choose the folder for your machine. Its README gives the exact filenames, required drives and app list.
 
-- Public release line: `0.5`
-- Artifact builds: see each profile's README and manifest; local build suffixes can differ.
-- Main site: [readyos64.com](https://readyos64.com)
-- Wiki / working knowledge base: [readyos.notion.site](https://readyos.notion.site)
-- GitHub source and issues: [ReadyOS-C64/ReadyOs](https://github.com/ReadyOS-C64/ReadyOs)
+| Setup | Release folder | First boot |
+| --- | --- | --- |
+| VICE or a 1581 drive | [Regular D81](precog-d81/README.md) | Enable the REU, mount the D81 on 8, then `LOAD"*",8` and `RUN`. |
+| C64 Ultimate | [Ultimate](precog-ultimate/README.md) | Mount disk 1 on 8 and disk 2 on 9. Use `LOAD"SETUP",8,1` and `RUN` to configure fast loading before booting. |
+| EasyFlash | [Cartridge and data disk](precog-easyflash/README.md) | Mount the data D64 on 8, attach the CRT and reset. |
+| 1541, 1571 or KFF2 | See the media table below | Match the drive types and mount the complete boot set. |
 
-If this folder is distributed as a GitHub release or a packaged download, this
-README is the landing page for the whole release line. The profile folders next
-to it are the actual ReadyOS SKUs for different disk and drive constraints.
+Allow at least 1 MiB REU for portable releases. Dedicated bridges require 16 MiB.
+On stock Ultimate, disk 2 holds 44 ReadyBASIC examples and the optional C64OS/GDOS launch manifests.
+Stock Ultimate boots with skip zero. For switching, choose the dedicated [C64OS](precog-ultimate-c64os/README.md), [GDOS64](precog-ultimate-gdos/README.md) or [GEOS 2.0](precog-ultimate-geos20/README.md) package and install its native companion.
 
-The shared ReadyOS runtime remains broadly usable on REU-capable C64 setups.
-Release `0.5` also begins the explicit new-Commodore-64-Ultimate
-path through a dedicated SKU, while retaining portable disk-based variants for
-other environments.
+## Media variants
 
-The dedicated `precog-ultimate` D81 pair compiles and enables the C64 Ultimate DOS
-DMA launcher and includes a standalone first-run SETUP utility. Other public
-profiles use the portable disk path. The Ultimate path always retains normal
-disk fallback when UCI, the image, or a transfer is unavailable. Drive 8 holds
-all apps, games, REL data, modules and media assets; drive 9 holds the 44
-ReadyBASIC examples. Load demos with device 9; their resource loaders use 8.
+| Folder | Media | Best Fit | Why It Exists | Boot |
+| --- | --- | --- | --- | --- |
+| [`precog-d81`](precog-d81/README.md) | 1x `D81` on drive `8` | C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU. | Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples. | `PREBOOT -> BOOT` |
+| [`precog-easyflash`](precog-easyflash/README.md) | `CRT` cartridge plus companion `D64` on drive `8` | VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | Full catalog cartridge preload plus the required companion data disk. | `cartridge reset` |
+| [`precog-ultimate`](precog-ultimate/README.md) | 2x `D81` on drives `8` and `9` | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate main app set on drive 8; ReadyBASIC examples and optional C64OS/GDOS apps/manifests on drive 9. Stock skip zero disables OS switching; dedicated bridge variants provide matched reservations. | `PREBOOT -> BOOT` |
+| [`precog-dual-d71`](precog-dual-d71/README.md) | 2x `D71` boot set on drives `8` and `9`; 1x optional `D71` drive-9 swap | C64 Ultimate, Ultimate 64, or VICE setups using two 1571-class drives, with optional drive-9 disk swapping. | Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and the original 41 ReadyBASIC examples. | `PREBOOT -> SETD71 -> BOOT` |
+| [`precog-kung-fu-flash-2-d81`](precog-kung-fu-flash-2-d81/README.md) | 1x `D81` on drive `8` | Kung Fu Flash 2 users who want one full-content D81 and the cartridge's 1MB REU mode instead of CRT cartridge mode. | Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks. | `PREBOOT -> BOOT` |
+| [`precog-dual-d64`](precog-dual-d64/README.md) | 2x `D64` on drives `8` and `9` | Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media. | Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media. | `PREBOOT -> BOOT` |
+| [`precog-solo-d64-readybasic`](precog-solo-d64-readybasic/README.md) | 1x `D64` on drive `8` | 1541-only users who want ReadyBASIC and the original graphics/sound examples on one disk. | Focused single-D64 ReadyBASIC profile with ReadyOS, ReadyBASIC, three sample packages and the original 41 examples; new media demos are on regular/Ultimate D81. | `PREBOOT -> BOOT` |
+| [`precog-solo-d64-a`](precog-solo-d64-a/README.md) | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 subset focused on editor, reference, and dizzy for one-disk-only environments. | `PREBOOT -> BOOT` |
+| [`precog-solo-d64-b`](precog-solo-d64-b/README.md) | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 productivity subset centered on quicknotes, clipboard, calculator, and files. | `PREBOOT -> BOOT` |
+| [`precog-solo-d64-c`](precog-solo-d64-c/README.md) | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 planning subset centered on tasklist, calendar, and REU viewer. | `PREBOOT -> BOOT` |
+| [`precog-solo-d64-d`](precog-solo-d64-d/README.md) | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 experimental subset for simple cells, calculator, 2048, and deminer. | `PREBOOT -> BOOT` |
+| [`precog-solo-d64-e`](precog-solo-d64-e/README.md) | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 shell-focused subset for readyshell and its overlay payloads in one-disk-only environments. | `PREBOOT -> BOOT` |
+| [`precog-geos20`](precog-geos20/README.md) | 1x `D81` on drive `8` | C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU. | Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples. | `PREBOOT -> BOOT` |
+| [`precog-ultimate-c64os`](precog-ultimate-c64os/README.md) | 1x `D81` boot set on drives `8`; 1x optional `D81` drive-9 swap | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate app set with the C64OS bridge, compiled REU skip 39, native return installer and setup guide. Drive 8 holds ReadyOS; the examples disk is optional while the target OS uses its own storage. | `PREBOOT -> BOOT` |
+| [`precog-ultimate-gdos`](precog-ultimate-gdos/README.md) | 1x `D81` boot set on drives `8`; 1x optional `D81` drive-9 swap | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate app set with the GDOS64 bridge, compiled REU skip 71, native return installer and setup guide. Drive 8 holds ReadyOS; the examples disk is optional while the target OS uses its own storage. | `PREBOOT -> BOOT` |
+| [`precog-ultimate-geos20`](precog-ultimate-geos20/README.md) | 1x `D81` boot set on drives `8`; 1x optional `D81` drive-9 swap | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate app set with the GEOS 2.0 bridge, compiled REU skip 71, native return installer and setup guide. Drive 8 holds ReadyOS; the examples disk is optional while the target OS uses its own storage. | `PREBOOT -> BOOT` |
 
-ReadyOS cannot discover the Ultimate host location of its boot image. For DMA,
-`[launcher]` in `apps.cfg` needs `dma_loading=1` and `c64u_image_path` set to
-the D81's absolute Ultimate storage path. SETUP lets you browse/select that D81,
-validates it and safely saves the configuration. Rerun SETUP after moving or
-renaming the image. A C64 drive number alone cannot supply this host path.
+## ReadyShell diagnostic builds
 
-## Final PRECOG and what comes next
-
-PRECOG 0.5 will be the final PRECOG release, completing the phase in which we
-learned what is possible and developed the vision. ReadyOS Ultimate will be
-the main focus, installing/configuring files and folders on Ultimate storage
-and using its specific features. ReadyOS Universal will continue disk-image
-and REU workflows for VICE, THEC64 and original hardware; effort will follow
-user interest and demand. These are future directions, not already shipped
-successors. Many apps are planned for standalone release, both with their own
-REU needs and without them. Standalone ReadyBASIC independent of Ultimate and
-ReadyOS remains a commitment; this does not promise a no-REU interpreter.
-
-## ReadyBASIC and app requirements
-
-Regular D81 and Ultimate D81 now carry 44 BASIC examples, four `rbm.*` packages,
-and music/graphics assets. Load `RBM.MEDIA` on demand for eight commands covering
-PSID playback, bounded resources, images, sprites and palette-preserving lines.
-The original 41-example / three-sample-module set remains in the D71, focused
-D64, KFF2 and separate debug D81 profiles. EasyFlash's preloaded runtime does
-not imply that its data D64 contains this disk collection. Full source listings
-and command contracts are in the repository's `docs/readybasic_reference.md`
-and its styled HTML counterpart.
-
-All ReadyOS apps require REU for the system. QuickNotes, ReadyIRC, ReadyShell,
-ReadyBASIC and Ultimate Zip additionally use their own REU data/code resources.
-Clipboard Manager and REU Viewer depend on shared REU records. Other app cores
-do not allocate separate workspaces, though clipboard features use shared REU.
-System Info can inspect REU/Ultimate features without making its entire UI
-Ultimate-only. ReadyIRC, UCI Tester, Ultimate Zip and standalone SETUP require
-Ultimate services for their main functions. Each SKU's app list labels these
-requirements; mere inclusion in portable media does not remove them.
-
-## What ReadyOS Is
-
-ReadyOS is not trying to be a generic desktop shell squeezed into a C64. It is
-an opinionated, keyboard-first environment built around the idea that a modern
-C64 workflow should feel immediate once the machine is up:
-
-- fast app switching instead of cold-starting every tool from BASIC
-- suspend and resume across apps instead of constantly reloading state
-- shared clipboard and common interaction patterns across tools
-- full-screen, terminal-style apps that favor repeatable keyboard workflows
-- REU-backed state so the machine can behave more like a ready workspace than a
-  single-program-at-a-time disk menu
-
-The current public release line is `0.5`. Full-content ReadyOS
-profiles currently expose `19` launcher-visible apps, with
-the exact app mix depending on the variant you choose.
+This release line also ships debug-trace variants for ReadyShell development: `precog-d81-rsdebug`, `precog-dual-d71-rsdebug`, `precog-solo-d64-e-rsdebug`. They are intended for debugging and instrumentation, not as the default end-user choice.
 
 ## Runtime And REU Contract
 
@@ -91,8 +44,8 @@ the exact app mix depending on the variant you choose.
   shim owns `$C600-$C9FF`; its public ABI remains at `$C800-$C9FF`.
 - Physical REU bank `Skip` is the **ReadyOS bank** and is never allocated to an
   app/resource. Physical `Skip+1` is the first dynamic bank.
-- All current SKUs set `reu_bank_skip=0`: bank 0 holds ReadyOS, bank 1 starts
-  the dynamic pool, and no lower banks are skipped. This setting is compiled
+- Standard profiles use `reu_bank_skip=0`. The C64OS bridge reserves 39 banks.
+  GDOS64 and GEOS 2.0 bridge profiles reserve 71. This setting is compiled
   into the boot/shim image; changing the disk's `apps.cfg` alone has no effect.
 - The ReadyOS bank contains the launcher snapshot at `$0000-$B5FF` and
   schema-v5 mappings, status, clipboard, hotkeys, registry/catalog, audit, and
@@ -102,175 +55,5 @@ the exact app mix depending on the variant you choose.
 - ReadyShell and ReadyBASIC resource banks are loader-assigned and recorded in
   the ReadyOS bank. ReadyBASIC retains its custom ca65/ld65 compact-image shape.
 
-## Why There Are Multiple Variants
 
-The short answer is that C64 storage and loader realities are not uniform.
-
-ReadyOS wants to run on:
-
-- C64 Ultimate and Ultimate 64 setups
-- VICE on modern desktops
-- real C64 hardware with REU-capable cartridges or other REU-capable expansions
-- THEC64 Mini and Maxi style workflows
-- web C64 emulators and simplified loaders that may only mount a single `D64`
-
-Those environments differ in three important ways:
-
-1. Drive type support.
-   Some setups are happy with `1571` or `1581` style media, while others are
-   effectively limited to `1541` / `D64`.
-
-2. Number of simultaneously mounted images.
-   Some environments can keep two drives online all the time. Others can only
-   mount one disk image at once, which forces ReadyOS into smaller curated
-   subsets.
-
-3. REU path and convenience model.
-   ReadyOS is designed for an REU-capable path. VICE can emulate that cleanly,
-   Ultimate-family hardware can provide it directly, and some other modern
-   setups can approximate it well enough to be practical. But the storage SKU
-   still has to match the drive and media constraints of the environment.
-
-That is why this release line ships multiple folders instead of pretending one
-image is universally correct. The runtime philosophy is shared. The disk-image
-packaging changes to match the target.
-
-## Quick Recommendation By Environment
-
-- If you are on the new Commodore 64 Ultimate and want Ultimate DOS DMA plus
-  guided first-run path setup, use `precog-ultimate`.
-- If you are on Ultimate 64, VICE, or another 1581-capable setup and want the
-  fullest portable default, use `precog-d81`. It remains the main ReadyOS SKU
-  and default build/run target.
-- If your setup uses two `1571` drives, use `precog-dual-d71`. Its two-image
-  boot set can be supplemented after boot by swapping the optional app-data
-  D71 into drive `9`.
-- If you only have `1541`-class compatibility but can mount two disks: use
-  `precog-dual-d64`.
-- If you can only mount one `D64` at a time, especially in simpler emulators,
-  loaders, THEC64-style flows, or web environments: choose one of the solo
-  `D64` subsets based on the app group you care about.
-- If that one-D64 environment is specifically for ReadyBASIC, choose
-  `precog-solo-d64-readybasic`; it includes ReadyOS, ReadyBASIC, all module
-  sample packages, and the original 41-example set on one image. New media
-  examples currently require one of the D81 profiles described above.
-
-## Public Variant Matrix
-
-This release line currently has `16` public variants.
-
-| Folder | Media | Best Fit | Why It Exists | Boot |
-| --- | --- | --- | --- | --- |
-| `precog-d81` | 1x `D81` on drive `8` | C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU. | Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples. | `PREBOOT -> BOOT` |
-| `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | Full catalog cartridge preload plus the required companion data disk. | `cartridge reset` |
-| `precog-ultimate` | 2x `D81` on drives `8` and `9` | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate main app set on drive 8; ReadyBASIC examples and optional C64OS/GDOS apps/manifests on drive 9. Stock skip zero disables OS switching; dedicated bridge variants provide matched reservations. | `PREBOOT -> BOOT` |
-| `precog-dual-d71` | 2x `D71` boot set on drives `8` and `9`; 1x optional `D71` drive-9 swap | C64 Ultimate, Ultimate 64, or VICE setups using two 1571-class drives, with optional drive-9 disk swapping. | Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and the original 41 ReadyBASIC examples. | `PREBOOT -> SETD71 -> BOOT` |
-| `precog-kung-fu-flash-2-d81` | 1x `D81` on drive `8` | Kung Fu Flash 2 users who want one full-content D81 and the cartridge's 1MB REU mode instead of CRT cartridge mode. | Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks. | `PREBOOT -> BOOT` |
-| `precog-dual-d64` | 2x `D64` on drives `8` and `9` | Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media. | Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media. | `PREBOOT -> BOOT` |
-| `precog-solo-d64-readybasic` | 1x `D64` on drive `8` | 1541-only users who want ReadyBASIC and the original graphics/sound examples on one disk. | Focused single-D64 ReadyBASIC profile with ReadyOS, ReadyBASIC, three sample packages and the original 41 examples; new media demos are on regular/Ultimate D81. | `PREBOOT -> BOOT` |
-| `precog-solo-d64-a` | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 subset focused on editor, reference, and dizzy for one-disk-only environments. | `PREBOOT -> BOOT` |
-| `precog-solo-d64-b` | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 productivity subset centered on quicknotes, clipboard, calculator, and files. | `PREBOOT -> BOOT` |
-| `precog-solo-d64-c` | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 planning subset centered on tasklist, calendar, and REU viewer. | `PREBOOT -> BOOT` |
-| `precog-solo-d64-d` | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 experimental subset for simple cells, calculator, 2048, and deminer. | `PREBOOT -> BOOT` |
-| `precog-solo-d64-e` | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 shell-focused subset for readyshell and its overlay payloads in one-disk-only environments. | `PREBOOT -> BOOT` |
-| `precog-geos20` | 1x `D81` on drive `8` | C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU. | Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples. | `PREBOOT -> BOOT` |
-| `precog-ultimate-c64os` | 1x `D81` boot set on drives `8`; 1x optional `D81` drive-9 swap | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate app set with the C64OS bridge, compiled REU skip 39, native return installer and setup guide. Drive 8 holds ReadyOS; the examples disk is optional while the target OS uses its own storage. | `PREBOOT -> BOOT` |
-| `precog-ultimate-gdos` | 1x `D81` boot set on drives `8`; 1x optional `D81` drive-9 swap | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate app set with the GDOS64 bridge, compiled REU skip 71, native return installer and setup guide. Drive 8 holds ReadyOS; the examples disk is optional while the target OS uses its own storage. | `PREBOOT -> BOOT` |
-| `precog-ultimate-geos20` | 1x `D81` boot set on drives `8`; 1x optional `D81` drive-9 swap | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate app set with the GEOS 2.0 bridge, compiled REU skip 71, native return installer and setup guide. Drive 8 holds ReadyOS; the examples disk is optional while the target OS uses its own storage. | `PREBOOT -> BOOT` |
-
-## What The Release Root Contains
-
-The release line is centered on these public folders:
-
-- `precog-d81/`
-- `precog-easyflash/`
-- `precog-ultimate/`
-- `precog-dual-d71/`
-- `precog-kung-fu-flash-2-d81/`
-- `precog-dual-d64/`
-- `precog-solo-d64-readybasic/`
-- `precog-solo-d64-a/`
-- `precog-solo-d64-b/`
-- `precog-solo-d64-c/`
-- `precog-solo-d64-d/`
-- `precog-solo-d64-e/`
-- `precog-geos20/`
-- `precog-ultimate-c64os/`
-- `precog-ultimate-gdos/`
-- `precog-ultimate-geos20/`
-
-Depending on whether a local workflow built one profile or all profiles, a
-working tree may not contain every folder until the full multi-profile build has
-been run. The intended GitHub release layout is this shared root README plus the
-variant folders that carry the actual images, boot PRGs, `manifest.json`, and
-per-variant `README.md` plus compatibility copies in `help.md` / `helpme.md`.
-
-## How To Think About The Variants
-
-The variants are not random repacks. They are different answers to the same
-question: "What is the best ReadyOS shape for this storage environment?"
-
-- `precog-d81` is the mainline, recommended profile and the cleanest
-  single-image full-content option when `1581` support is available.
-- `precog-dual-d71` is the 1571-oriented alternative. Its two boot disks keep
-  the core app set and ReadyBASIC modules online; its optional third disk is a
-  post-boot drive-9 swap for lesser apps and the original 41 ReadyBASIC examples.
-- `precog-dual-d64` exists because many C64-adjacent environments still top out
-  at `D64`, but can at least keep two images mounted.
-- The solo `D64` variants exist for the environments that cannot do more than
-  one `D64` at a time. Instead of forcing a bloated or broken one-disk build,
-ReadyOS splits into intentional subsets.
-- `precog-solo-d64-readybasic` fits the ReadyBASIC runtime, three sample modules
-  and original 41 examples together on one focused D64; media additions are D81-only.
-
-## Disk Directory Order
-
-Every D64, D71, and D81 applies the same semantic ordering to the files it
-contains: boot-chain PRGs (`PREBOOT` first, followed by any `SETD71` / `SHOWCFG`,
-then `BOOT` and `LAUNCHER`); configs; ordinary SEQ/USR data; main app PRGs;
-overlays/modules; REL data; and finally any ReadyBASIC examples. This keeps
-`LOAD"*",8` safe on bootable images while allowing each SKU and disk side to
-omit categories it does not need. The EasyFlash CRT uses cartridge banks
-instead; its companion D64 follows the applicable data-file ordering.
-
-That last category matters more than it may seem. A web emulator that only
-mounts one `D64` is a very different target from VICE on a desktop with REU and
-multiple virtual drives. THEC64 Mini / Maxi style workflows can also be more
-pleasant with smaller, direct, single-image choices. A release that pretends all
-of those paths are identical would be harder to understand and harder to boot.
-
-## REU Expectation
-
-ReadyOS is still an REU-first environment. The disk-image variants solve storage
-shape, not the absence of an REU-capable path.
-
-Recommended baseline:
-
-- enable the REU
-- use at least `1MB`; use `8MB` or `16MB` where the environment supports it
-- treat VICE and Ultimate-family hardware as the smoothest targets today
-
-On real C64 hardware, the exact cartridge or expansion path can vary. The main
-question is not the brand of REU-capable device, but whether the setup can
-deliver the REU behavior the runtime expects and whether the chosen media SKU
-matches the drive constraints of that setup.
-
-## Debug Variants
-
-This release line also ships debug-trace variants for ReadyShell development: `precog-d81-rsdebug`, `precog-dual-d71-rsdebug`, `precog-solo-d64-e-rsdebug`. They are intended for debugging and instrumentation, not as the default end-user choice.
-
-If you are just trying to run ReadyOS, prefer the non-debug variants first.
-
-## Where To Go Next
-
-- Start with the variant folder that matches your environment.
-- Read that folder's `README.md` for exact boot and VICE setup details;
-  `help.md` and `helpme.md` carry the same content for existing workflows.
-- Use [readyos64.com](https://readyos64.com) as the public front door.
-- Use [readyos.notion.site](https://readyos.notion.site) for the more wiki-like working docs.
-- Use [GitHub](https://github.com/ReadyOS-C64/ReadyOs) for source, issues, and future packaged releases.
-
-ReadyOS `0.5` is still explicitly experimental, but the purpose
-of this release layout is simple: make it easier to pick the right image for the
-hardware or emulator in front of you, instead of assuming every C64 environment
-looks the same.
+[Source and issues](https://github.com/ReadyOS-C64/ReadyOs) · [Homepage](https://readyos64.com) · [Wiki](https://readyos.notion.site)

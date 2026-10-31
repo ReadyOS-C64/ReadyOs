@@ -6,7 +6,7 @@ ReadyOS profile loader and release packager.
 from __future__ import annotations
 
 import argparse
-from readyos_doc_content import PRODUCT_DIRECTION, ULTIMATE_PATH, app_requirement, basic_inventory
+from readyos_doc_content import ULTIMATE_PATH, app_requirement, basic_inventory
 import json
 import os
 import re
@@ -733,14 +733,14 @@ def build_public_variant_matrix(version_text: str) -> str:
         resolved = resolve_profile(profile_id, version_text, latest=False)
         kind = str(profile["kind"])
         lines.append(
-            f"| `{profile_id}` | {media_summary(resolved)} | "
+            f"| [`{profile_id}`]({profile_id}/README.md) | {media_summary(resolved)} | "
             f"{VARIANT_BEST_FIT.get(kind, 'Profile-specific C64 media target.')} | "
             f"{profile.get('release_description', VARIANT_NOTES.get(kind, 'Profile-specific ReadyOS media layout.'))} | "
             f"`{boot_flow_text(str(resolved['preboot_mode']))}` |"
         )
         if profile_id == "precog-d81":
             lines.append(
-                "| `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | "
+                "| [`precog-easyflash`](precog-easyflash/README.md) | `CRT` cartridge plus companion `D64` on drive `8` | "
                 "VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | "
                 "Full catalog cartridge preload plus the required companion data disk. | `cartridge reset` |"
             )
@@ -1351,7 +1351,7 @@ def build_help_text(profile: Dict[str, object],
     else:
         reu_setup_line = "- Enable REU with at least `1MB`; `8MB` or `16MB` is recommended where available."
         c64_ultimate_reu_line = "- Enable the REU with at least `1MB`; use `8MB` or `16MB` where available."
-    if profile.get("bridge_setup_doc"):
+    if profile.get("bridge_setup_doc") or profile["id"] == "precog-geos20":
         reu_setup_line = "- Enable a `16MB` REU. This bridge's fixed memory layout requires the full 256 banks."
         c64_ultimate_reu_line = reu_setup_line
     vice_parts: List[str] = ["x64sc", "-reu", "-reusize", str(reu_size_kb)]
@@ -1372,8 +1372,6 @@ def build_help_text(profile: Dict[str, object],
     boot_prgs = list(resolved.get("boot_prgs", []))
     vice_parts.extend(["-autostart", autostart_name])
     vice_command = " ".join(vice_parts)
-    preboot_mode = str(resolved["preboot_mode"])
-    disk_count = len(boot_disks)
 
     lines = [
         f"# {profile['display_name']}",
@@ -1408,17 +1406,29 @@ def build_help_text(profile: Dict[str, object],
         lines.append(f"- Optional drive-{disk['drive']} swap: `{Path(disk['path']).name}` - {description}")
     for boot_prg in boot_prgs:
         lines.append(f"- Host-Side Boot PRG: `{Path(str(boot_prg['path'])).name}`")
+    if profile.get("bridge_setup_doc"):
+        lines.extend(["", (ROOT / str(profile["bridge_setup_doc"])).read_text(encoding="utf-8").strip(), ""])
+    else:
+        lines.extend(["", "## Start ReadyOS", "", c64_ultimate_reu_line])
+        if profile["kind"] == "ultimate":
+            lines.append('- For DMA loading, mount the first D81 on device 8. Run `LOAD"SETUP",8,1` and `RUN`, select the boot image on Ultimate storage and save. Reset after SETUP confirms the path.')
+        lines.append('- Mount the boot-time disks on the devices listed above. At BASIC, type `LOAD"*",8`, press RETURN, then type `RUN`.')
+    lines.append('- In the launcher, select an app and press RETURN. Ctrl+B returns to the launcher. Save documents to disk before a reset.')
+    if readyshell_parse_trace_debug(profile):
+        lines.append('- This diagnostic build traces the ReadyShell parser. For normal use, choose the corresponding folder without the `-rsdebug` suffix.')
     lines.extend([
         "",
         "## Included Apps",
         "",
     ])
     for entry in entries:
-        lines.append(f"- Drive {entry['drive']}: `{entry['prg']}` - {entry['label']} ({app_requirement(entry['prg'])})")
+        requirement = app_requirement(entry['prg'])
+        detail = f" ({requirement})" if requirement else ""
+        lines.append(f"- **{entry['label']}** (`{entry['prg']}`, drive {entry['drive']}) — {entry['desc']}{detail}.")
     lines.extend([
-        "", "All ReadyOS apps require the system REU for snapshots. The labels above distinguish "
-        "additional app workspace from that baseline; shared clipboard operations also use REU. "
-        "An Ultimate-only app can be present on portable media without becoming portable.",
+        "", "All apps use REU for suspend/resume. The notes identify "
+        "additional workspace and hardware requirements. "
+        "Clipboard operations use shared REU storage.",
     ])
     if str(profile.get("id")) in {"precog-dual-d71", "precog-dual-d71-rsdebug"}:
         lines.extend([
@@ -1438,21 +1448,12 @@ def build_help_text(profile: Dict[str, object],
             "- ReadyBASIC's banked `rbcore`/`rbcode` resources are carried inside the `readybasic` executable; no second examples disk is required.",
         ])
     lines.extend(basic_inventory(profile))
-    lines.extend([
-        "",
-        "## Disk Directory Order",
-        "",
-        "- Each image uses the groups it needs in this order: boot chain; configs; ordinary SEQ/USR data; main app PRGs; overlays/modules; REL data; ReadyBASIC examples.",
-        "- On bootable images, `PREBOOT` is the first directory entry, followed by any `SETD71` / `SHOWCFG`, then `BOOT` and `LAUNCHER`, so `LOAD\"*\",8` selects the bootstrap.",
-        "- ReadyShell overlay PRGs and ReadyBASIC `rbm.*` module packages stay in the overlay/module group even though their file types differ.",
-        "- Images that do not carry a category simply omit it without changing the relative order of the remaining categories.",
-    ])
     if str(profile.get("kind")) == "ultimate":
         lines.extend([
             "",
             "## Validation Target",
             "",
-            "- This is an Ultimate-only SKU. VICE does not provide the Ultimate UCI/Ultimate DOS services SETUP requires, so VICE testing has no acceptance value for this variant.",
+            "- Validate SETUP and DMA on physical Ultimate hardware.",
             "- SETUP and DMA acceptance run on physical C64 Ultimate hardware at 1, 16, and 64 MHz.",
             "",
         ])
@@ -1489,7 +1490,7 @@ def build_help_text(profile: Dict[str, object],
             "## 1MB REU Budget",
             "",
             "- This SKU is intentionally limited to `1MB` REU, which is `16` physical `64KB` REU banks.",
-            "- Like every current SKU, it uses `reu_bank_skip=0`: bank 0 holds ReadyOS, and banks 1 through 15 are available for app snapshots and resources.",
+            "- KFF2 uses `reu_bank_skip=0`: bank 0 holds ReadyOS, and banks 1 through 15 are available for app snapshots and resources.",
             "- Fresh launcher state uses `1` bank by default: bank `0` is the combined ReadyOS bank, holding both the launcher snapshot and schema-v5 system state. That leaves `15` banks for suspended apps and app resources.",
             "- Each suspended app normally costs `1` additional bank.",
             "- ReadyShell costs `5` additional banks when loaded: `1` app snapshot bank, `3` overlay cache banks, and `1` state/scratch bank. With only ReadyShell loaded, expect about `6/16` banks in use including the ReadyOS bank.",
@@ -1499,65 +1500,7 @@ def build_help_text(profile: Dict[str, object],
             "- If all REU banks are full, launching another app may simply do nothing instead of showing an error. Unload one or more apps to make room, then launch the app again.",
             "",
         ])
-    lines.extend([
-        "## Boot",
-        "",
-    ])
-    if preboot_mode == "setd71":
-        lines.extend([
-            "- This profile uses the dual-stage boot chain `PREBOOT -> SETD71 -> BOOT`.",
-            "- Both disks must already be attached before boot, and both drives must be configured as `1571`.",
-            "- `SETD71` is part of this variant and reasserts the dual-1571 setup before loading `BOOT`.",
-            f"- In VICE, autostart `{autostart_name}`, or manually run `LOAD \"{Path(autostart_disk_name).stem.upper()}\",8` then `RUN`.",
-        ])
-        if optional_disks:
-            lines.append("- Do not attach the optional app-data image until boot is complete; it replaces the normal drive-9 disk on demand.")
-    else:
-        lines.extend([
-            "- This profile uses the direct boot chain `PREBOOT -> BOOT`.",
-            "- There is no `SETD71` stage for this variant.",
-        ])
-        if disk_count == 1:
-            lines.append(f"- Attach the single disk on drive `8`, then autostart `{autostart_name}` or run `LOAD \"{Path(autostart_disk_name).stem.upper()}\",8` then `RUN`.")
-        else:
-            lines.append(f"- Attach all listed disks before boot, then autostart `{autostart_name}` or run `LOAD \"{Path(autostart_disk_name).stem.upper()}\",8` then `RUN`.")
-    lines.extend([
-        "",
-        "## C64 Ultimate",
-        "",
-        "- Copy the listed disk image files to the target storage.",
-        c64_ultimate_reu_line,
-        "- The host-side boot PRGs are optional convenience files for emulator launching; the disk-side `PREBOOT` entry is the standard hardware boot path.",
-    ])
-    if str(profile.get("kind")) == "ultimate":
-        lines.extend([
-            "- " + ULTIMATE_PATH,
-            "- This SKU compiles the regular launcher with Ultimate DOS DMA support and ships `apps.cfg` with `dma_loading=1`; disk fallback remains active whenever DMA is unavailable.",
-            ("- Mount the first D81 on drive `8`. Leave the examples D81 unmounted while the native OS uses drive `9`; swap it in only after ending that bridge session. All ReadyOS apps and runtime assets remain on drive 8."
-             if optional_disks else
-             "- Mount the first D81 on drive `8` and the examples/optional-apps D81 on drive `9`. Main-catalog apps, games, REL data, RBM packages and media assets remain on drive 8; optional bridge manifests load their PRGs from drive 9."),
-            "- Before the first ReadyOS boot, run `LOAD\"SETUP\",8,1`, then `RUN`, and configure the first (drive-8) D81 path.",
-            "- In ReadyBASIC, load examples from drive 9, for example `LOAD\"RBUGFXSNDDEMO\",9` then `RUN`. LDMOD and media commands continue reading their files from drive 8.",
-            "- SETUP is a standalone utility built from focused ReadyOS TUI micromodules. It checks REU, UCI, and Ultimate DOS, browses active Ultimate storage volumes/folders for D81 images, mounts the selection, validates its `apps.cfg`, and stages the exact host path into that image.",
-            "- SETUP uses F1/F3 for pages, cursor keys for selection, RETURN to enter/select, LEFT or DELETE to go to the parent, F5 to retest prerequisites, and F7 to apply a saved path or enter an absolute D81 path when none is available.",
-            "- After SETUP reports `CONFIGURED`, exit with RUN/STOP and reset or boot `PREBOOT`. Do not rename or move the D81 afterward without running SETUP again.",
-        ])
-    else:
-        lines.append("- This profile compiles the portable launcher without Ultimate DOS DMA. Use `precog-ultimate` for the guided DMA-enabled D81, or explicitly override `LAUNCHER_DMA_LOAD=1` for development testing.")
-    if preboot_mode == "setd71":
-        lines.extend([
-            "- Attach both disk images before boot and use `1571`-compatible drive assignments for the two-disk set.",
-            "- Boot with `LOAD \"PREBOOT\",8` then `RUN`; this variant then chains through `SETD71` before loading `BOOT`.",
-        ])
-        if optional_disks:
-            lines.append("- After boot, swap the optional app-data image into drive `9` only when you want to use its manifests, apps, or examples.")
-    else:
-        if disk_count == 1:
-            lines.append("- Attach the single disk image on drive `8`, then boot with `LOAD \"PREBOOT\",8` and `RUN`.")
-        else:
-            lines.append("- Attach all listed disk images to their matching drives before boot, then run `LOAD \"PREBOOT\",8` and `RUN`.")
-        lines.append("- This variant boots directly from `PREBOOT` into `BOOT` and does not use `SETD71`.")
-    lines.extend(["", "## After PRECOG", "", PRODUCT_DIRECTION, ""])
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -1567,7 +1510,7 @@ def build_release_help_text(profile: Dict[str, object],
     """Keep builds and documentation-only refreshes on the same bridge guides."""
     help_text = build_help_text(profile, resolved, entries).rstrip() + "\n"
     if profile.get("bridge_setup_doc"):
-        help_text += "\n" + (ROOT / str(profile["bridge_setup_doc"])).read_text(encoding="utf-8")
+        return help_text  # The complete native setup guide precedes the app list.
     if profile["id"] == "precog-ultimate":
         help_text += "\n" + (ROOT / "docs/ultimate_optional_bridges.md").read_text(encoding="utf-8")
     apps_set = packaged_apps(profile, entries)

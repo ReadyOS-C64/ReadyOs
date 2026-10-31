@@ -4,7 +4,17 @@ ReadyShell is a small expression language plus a streaming pipeline shell.
 It works well for quick transformations, directory queries, saved snapshots,
 and lightweight scripting inside ReadyOS.
 
-This tutorial is example-first. Every example is written in ReadyShell syntax.
+## Quick Start
+
+```ruby
+VER
+PRT "HELLO"
+1..5
+1..5 | ?[ @ > 3 ]
+$A = 1..10
+PRT $A(4)
+```
+
 
 ## Quick Notes
 
@@ -22,16 +32,6 @@ This tutorial is example-first. Every example is written in ReadyShell syntax.
 - Object values usually come from commands like `LST` and `DRVI`.
 - Missing properties and out-of-range indexes evaluate to `FALSE`.
 
-## Quick Start
-
-```ruby
-VER
-PRT "HELLO"
-1..5
-1..5 | ?[ @ > 3 ]
-$A = 1..10
-PRT $A(4)
-```
 
 ## Values and Expressions
 

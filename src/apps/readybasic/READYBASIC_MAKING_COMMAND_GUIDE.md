@@ -1,5 +1,9 @@
 # ReadyBASIC Making Command Guide
 
+For a disk module, run the [sample1 example](READYBASIC_SAMPLE_MODULES.md#loading-and-using-examples) first. Follow `ECHO1` from its descriptor to its assembly worker, then use `ADD16` to see how a command reads arguments and returns a BASIC integer. For a BASIC-only routine, start with [PROC and FUNC](#when-to-use-procfunc-instead).
+
+[Descriptor layout](#descriptor-shape) · [Adding a command](#checklist-for-adding-a-command)
+
 ## 0.5 RC2 command packaging
 
 `LDMOD` and `PAUSE` remain built in. All scalar/array/scratch and slot/overlay

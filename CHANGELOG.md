@@ -20,6 +20,69 @@
 - Marked the current Kung Fu Flash 2 D81 SKU as hardware-unverified: it may not
   currently work, and the latest 0.5 artifacts have not yet been tested on KFF2.
 
+## What's New In 0.5
+
+The `0.5` line starts from the audited, production-stamped `0.2.5` tree. It now
+adds guided Ultimate SETUP, Ultimate Zip, and DMA state that survives launcher
+returns without probing or remounting. ReadyBASIC adds protected resource RAM,
+on-demand `rbm.media` music/graphics commands, and standard/Ultimate versions of
+the Orbital Echoes demo. The [examples and command guide](docs/readybasic_reference.md)
+contains the complete source collection, current command inventory, module-load
+instructions, and per-profile availability. The older foundations below remain
+part of the product; newer additions are described where their contracts differ.
+
+### 0.2.5 foundation carried into 0.5
+
+- ReadyBASIC grew through five graphics phases and Sound Phase 1. Its built-in
+  modules now cover text/hires/multicolor modes, drawing primitives, REU-backed
+  surfaces, sprites and input, polygon buffers, retained display lists,
+  tiles/tilemaps, multicolor bitmap operations, and immediate SID voice/filter
+  commands. The tree includes 32 graphics demonstrations and 6 sound
+  demonstrations, with regular-disk and EasyFlash automation.
+- The regular launcher gained a gated C64 Ultimate DOS/UCI direct-to-REU
+  loader. It validates exact PRG sizes, handles packed ReadyShell resources,
+  reuses a suitable mounted image, reports `DMA:YES` / `DMA:ON` / `DMA:NO`, and
+  falls back to the portable KERNAL/disk path on any unavailable or failed DMA
+  operation. Portable profiles keep `LAUNCHER_DMA_LOAD=0`; the dedicated
+  Ultimate profile compiles and enables it and adds a guided standalone setup
+  utility.
+- UCI callers in the launcher, ReadyIRC, UCITest, and SysInfo now share the
+  asynchronous state-machine discipline proven on physical Ultimate hardware:
+  quiet-idle synchronization, asynchronous PUSH/ABORT handling, complete data
+  and status draining, explicit DATA_ACC transitions, and bounded waits that do
+  not depend on CPU-speed timing delays.
+- ReadyIRC now provides a validated setup form, connect/disconnect and reconnect
+  flow, channel switching, `/join` and `/names`, NAMES/JOIN/PART handling,
+  editable input, help, and REU-backed scrollback. Fixture-backed C64 Ultimate
+  automation covers its UCI network path.
+- UCITest now has a larger structured/raw command catalog, decoded dword,
+  socket, HTTP, and IEC results, remembered handles, selectable examples, and a
+  dedicated user guide.
+- The launcher and cartridge loaders use the physical `Skip` ReadyOS bank as
+  the source of truth for the launcher snapshot, explicit app-token mapping,
+  loaded/resumable status, clipboard metadata, hotkeys, resource relationships,
+  app catalog metadata, and REU Viewer ownership details. ReadyShell overlays,
+  ReadyShell state/scratch, and ReadyBASIC core/code banks are loader-assigned
+  resources rather than fixed physical banks.
+- Launcher return state is intentionally small: an `RSM1` UI record at
+  ReadyOS `$FC40` keeps selection/scroll/one-shot state, while the `LS` record
+  at `$B9D9` and app registry at `$BA00` reconstruct the app-bank, drive,
+  hotkey, resource, loaded-state, and size arrays. Those arrays are not kept as
+  a second authoritative copy in the launcher resume payload.
+- Ultimate DMA configuration and validation are first-class system state in
+  the ReadyOS `$FCC0` `DM` v1 service record. It owns the image path, enable/
+  availability/use flags, and last error. Ctrl-B restores this state without
+  repeating the startup probe or remounting the D81.
+- Apps can opt into owner-recorded runtime REU allocation without growing the
+  primitive allocator or shim. QuickNotes note banks and the IRC scrollback
+  banks now publish compact ownership records in the ReadyOS bank, so REU
+  Viewer can identify the owner and launcher unload can free those banks with
+  the app.
+- The 0.2.4 EasyFlash, Kung Fu Flash 2, SysInfo, dynamic-resource, ReadyBASIC,
+  ReadyIRC, and UCITest foundations remain part of 0.2.5. Their build
+  products, boot diagnostics, REU-required behavior, and cartridge verification
+  are retained rather than being reintroduced as new 0.2.5 features.
+
 ## 0.2.5
 
 ### ReadyBASIC Graphics/Sound, C64 Ultimate DMA, Documentation

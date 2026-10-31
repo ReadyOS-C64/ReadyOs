@@ -1,3 +1,7 @@
+# Reported issues
+
+The dates below record when each issue was observed. Reproduce it on the intended release image before assigning a current SKU status.
+
 | Date | BugID | Description |
 | --- | --- | --- |
 | 2026-04-09 | BUG-001 | `simplefiles`, at least in the D81 version, crashes sometimes on reentry. |

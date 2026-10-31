@@ -13,18 +13,13 @@ letting you choose the image, then writing `c64u_image_path` and `dma_loading=1`
 in the `[launcher]` section of its `apps.cfg`. This configures today's image-based
 fast loader; it is not the full folder-based installer planned for ReadyOS Ultimate.
 
-SETUP is deliberately not a ReadyOS launcher app. It is a normal `$0801` C64
-program that links only the focused ReadyOS TUI micromodules needed for its
-screen, window, menu, and small UI helpers. It has no ReadyOS shim, ReadyFS
-architecture, or overlay dependency. ReadyFS was used only as a reference for
-the proven Ultimate DOS command spellings and resilient UCI state machine.
-
 ## First Run
 
 1. Copy both Ultimate SKU D81 files into a permanent folder on `usb1` or the SD card.
 2. Mount the first (`ultimate_1.d81`) on drive `8` and the examples image
-   (`ultimate_2.d81`) on drive `9`. All apps, games, REL data, modules and media
-   assets remain on drive 8.
+   (`ultimate_2.d81`) on drive `9`. The main apps, REL data, modules and media assets are on drive 8. Stock disk 2
+   also holds the optional C64OS and GDOS64 launcher manifests. For a dedicated
+   bridge boot, leave drive 9 available for the native OS as its guide directs.
 3. From BASIC, run `LOAD"SETUP",8,1`, then `RUN`.
 4. Resolve any prerequisite marked `MISSING` or `OFF/ERROR`, then press `F5`.
 5. Browse from `/` through the active Ultimate storage volumes and folders.
@@ -146,3 +141,11 @@ python3 build_support/verify_release_directory_order.py --profile precog-ultimat
 /bin/bash build_support/start_setup_c64u_prereq_failures.sh
 /bin/bash build_support/start_launcher_setup_states_c64u.sh
 ```
+
+## Developer notes
+
+SETUP is a standalone `$0801` C64
+program that links only the focused ReadyOS TUI micromodules needed for its
+screen, window, menu, and small UI helpers. It has no ReadyOS shim, ReadyFS
+architecture, or overlay dependency. ReadyFS was used only as a reference for
+the proven Ultimate DOS command spellings and resilient UCI state machine.
