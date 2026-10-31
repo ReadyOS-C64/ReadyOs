@@ -722,32 +722,20 @@ Rendered documentation exports in `docs/` currently include:
 ReadyOS is licensed under the MIT License. See `LICENSE` for the full text.
 Copyright (c) 2026 Karl Prosser.
 
-## Experimental GDOS64 bridge (D81 and dedicated Ultimate SKU)
+## Optional C64OS and GDOS bridges
 
-ReadyOS includes **GDOS64 Bridge** in the regular D81's main
-launcher catalog. The normal release still skips zero REU banks, so the bridge
-refuses switching until the experimental memory layout is configured. The
-current lab requires GDOS64 1.03 with 4 MiB DACC, ReadyOS skip 71, a 16 MiB REU
-and two native C1581 drives. Separate Ultimate GDOS and GEOS 2.0 experiment
-profiles use the matching reserved layout; the stock Ultimate SKU excludes bridges.
-See the [GDOS64 experiment setup and limitations](experiments/gdos64/README.md).
-Native return accessory sources and companion CVT builds are included here, as
-is the GEOS 2.0 port. See `experiments/BRIDGES.md` for source and binary locations.
+The regular single-D81 SKU excludes these bridges. Stock Ultimate disk 2 carries
+optional C64OS/GDOS apps and device-9 manifests (`app.c64os`, `app.gdos64`) near
+the top of its directory. Load them with the launcher's F5 browser on drive 9.
+The stock boot still uses skip zero, so these apps explain the requirements and
+refuse switching. Native CAR/CVT installers are companion files beside the
+Ultimate images. See [optional Ultimate bridge instructions](docs/ultimate_optional_bridges.md).
 
-## Experimental C64OS bridge (D81 and dedicated Ultimate SKU)
-
-The D81 includes an optional `app.c64os` launcher manifest and a companion
-`bridge.car` containing native C64OS **Bridge Setup** and **ReadyOS** return utility.
-The normal D81 keeps `reu_bank_skip=0`, so switching is disabled until you build
-a matching configuration: **16 MB REU, ReadyOS skip 39, C64OS 1.09 capped at
-8–32 banks (0.5–2 MB)**. Setup can apply, update or undo the patch; each change
-requires a restart. Boot location is editable in the bridge and saved to device
-8 as `c64os.cfg`. Read the [installation, matched settings and undo instructions](docs/c64os/bridge.md)
-before using it.
-
-The full `precog-ultimate-c64os` variant includes the bridge in its main catalog,
-compiled skip 39, and the native setup/return CAR. See the
-[Ultimate C64OS setup guide](docs/c64os/ultimate.md). Dedicated
-[Ultimate GDOS](docs/gdos64/ultimate.md) and
-[Ultimate GEOS 2.0](docs/geos20/ultimate.md) guides cover their skip-71 variants.
-These guides ship inside each variant’s README/help documents.
+Enabled switching uses the full dedicated `precog-ultimate-c64os` (skip39),
+`precog-ultimate-gdos` (skip71), or `precog-ultimate-geos20` (skip71) variants.
+Each includes its native return component, all Ultimate apps, and a complete
+README/help setup guide. The [C64OS guide](docs/c64os/ultimate.md) covers the
+1.09-only reversible bank cap, boot location and recovery; the
+[GDOS guide](docs/gdos64/ultimate.md) and [GEOS 2.0 guide](docs/geos20/ultimate.md)
+cover their distinct fixed allocations and native accessories. All require the
+supported 16 MiB REU layout. See [bridge source/binary locations](experiments/BRIDGES.md).

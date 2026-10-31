@@ -549,9 +549,12 @@ def load_profile(profile_id: str) -> Dict[str, object]:
             if disk is None:
                 fail(f"disk override {wanted} not found for {profile_id}")
             for key, value in override.items():
-                if key not in {"index", "append_contents"}:
+                if key not in {"index", "append_contents", "remove_contents"}:
                     disk[key] = value
             disk["contents"].extend(override.get("append_contents", []))
+            removed = set(override.get("remove_contents", []))
+            disk["contents"] = [entry for entry in disk["contents"]
+                                if entry["name"] not in removed]
     profile["_path"] = str(path)
     return profile
 
@@ -1009,7 +1012,9 @@ def ensure_generated_assets(profile: Dict[str, object],
 
 
 def managed_build_names(profile: Dict[str, object], apps_set: set[str]) -> set[str]:
-    managed = {"apps.cfg"} | RETIRED_BUILD_OWNED_DISK_NAMES
+    # These manifests stay build-owned even when removed from a SKU; otherwise
+    # preserve/restore would reintroduce a retired app as supposed user data.
+    managed = {"apps.cfg", "app.c64os", "app.gdos64"} | RETIRED_BUILD_OWNED_DISK_NAMES
     for disk in profile.get("disks", []):
         for entry in disk.get("contents", []):
             keep_on_demand = bool(entry.get("include_even_if_not_catalog", False))
@@ -1530,7 +1535,7 @@ def build_help_text(profile: Dict[str, object],
             "- This SKU compiles the regular launcher with Ultimate DOS DMA support and ships `apps.cfg` with `dma_loading=1`; disk fallback remains active whenever DMA is unavailable.",
             ("- Mount the first D81 on drive `8`. Leave the examples D81 unmounted while the native OS uses drive `9`; swap it in only after ending that bridge session. All ReadyOS apps and runtime assets remain on drive 8."
              if optional_disks else
-             "- Mount the first D81 on drive `8` and the examples D81 on drive `9`. All apps, games, REL data, RBM packages and media assets remain on drive 8."),
+             "- Mount the first D81 on drive `8` and the examples/optional-apps D81 on drive `9`. Main-catalog apps, games, REL data, RBM packages and media assets remain on drive 8; optional bridge manifests load their PRGs from drive 9."),
             "- Before the first ReadyOS boot, run `LOAD\"SETUP\",8,1`, then `RUN`, and configure the first (drive-8) D81 path.",
             "- In ReadyBASIC, load examples from drive 9, for example `LOAD\"RBUGFXSNDDEMO\",9` then `RUN`. LDMOD and media commands continue reading their files from drive 8.",
             "- SETUP is a standalone utility built from focused ReadyOS TUI micromodules. It checks REU, UCI, and Ultimate DOS, browses active Ultimate storage volumes/folders for D81 images, mounts the selection, validates its `apps.cfg`, and stages the exact host path into that image.",
@@ -1563,8 +1568,10 @@ def build_release_help_text(profile: Dict[str, object],
     help_text = build_help_text(profile, resolved, entries).rstrip() + "\n"
     if profile.get("bridge_setup_doc"):
         help_text += "\n" + (ROOT / str(profile["bridge_setup_doc"])).read_text(encoding="utf-8")
-    apps_set = enabled_apps(entries)
-    if profile["id"] in {"precog-d81", "precog-geos20"} or "c64os" in apps_set:
+    if profile["id"] == "precog-ultimate":
+        help_text += "\n" + (ROOT / "docs/ultimate_optional_bridges.md").read_text(encoding="utf-8")
+    apps_set = packaged_apps(profile, entries)
+    if "c64os" in apps_set:
         help_text += "\n" + (ROOT / "docs/c64os/bridge.md").read_text(encoding="utf-8")
     for target in ("gdos64", "geos20"):
         if target in apps_set:
@@ -1582,6 +1589,16 @@ def profile_content_enabled(entry: Dict[str, object], apps_set: set[str]) -> boo
     if app_name and str(app_name) not in apps_set:
         return False
     return True
+
+
+def packaged_apps(profile: Dict[str, object],
+                  entries: List[Dict[str, object]]) -> set[str]:
+    """Include on-demand disk apps as well as the main launcher catalog."""
+    catalog_apps = enabled_apps(entries)
+    return {str(entry["name"]) for disk in profile["disks"]
+            for entry in disk["contents"]
+            if entry["type"] == "prg" and str(entry["name"]) in KNOWN_APP_NAMES
+            and profile_content_enabled(entry, catalog_apps)}
 
 
 def write_profile_content(profile_id: str,
@@ -1722,16 +1739,23 @@ def build_release(profile_id: str,
         shutil.copyfile(source, target)
 
     help_text = build_release_help_text(profile, resolved, entries)
-    if profile_id in {"precog-d81", "precog-geos20"} or "c64os" in apps_set:
+    shipped_apps = packaged_apps(profile, entries)
+    if "c64os" in shipped_apps:
         shutil.copyfile(ROOT / "assets/c64os/bridge.car", output_dir / "bridge.car")
         shutil.copyfile(ROOT / "assets/c64os/bridge.json", output_dir / "bridge.json")
+    else:
+        for name in ("bridge.car", "bridge.json"):
+            (output_dir / name).unlink(missing_ok=True)
 
     for target in ("gdos64", "geos20"):
-        if target in apps_set:
+        if target in shipped_apps:
             shutil.copyfile(ROOT / "assets" / target / "readyos-bridge.cvt",
                             output_dir / (target + "-readyos-bridge.cvt"))
             shutil.copyfile(ROOT / "assets" / target / "bridge.json",
                             output_dir / (target + "-bridge.json"))
+        else:
+            for suffix in ("-readyos-bridge.cvt", "-bridge.json"):
+                (output_dir / (target + suffix)).unlink(missing_ok=True)
 
     (output_dir / "helpme.md").write_text(help_text, encoding="utf-8")
     (output_dir / "help.md").write_text(help_text, encoding="utf-8")

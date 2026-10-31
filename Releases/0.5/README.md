@@ -82,7 +82,7 @@ C64 workflow should feel immediate once the machine is up:
   single-program-at-a-time disk menu
 
 The current public release line is `0.5`. Full-content ReadyOS
-profiles currently expose `20` launcher-visible apps, with
+profiles currently expose `19` launcher-visible apps, with
 the exact app mix depending on the variant you choose.
 
 ## Runtime And REU Contract
@@ -163,7 +163,7 @@ This release line currently has `16` public variants.
 | --- | --- | --- | --- | --- |
 | `precog-d81` | 1x `D81` on drive `8` | C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU. | Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples. | `PREBOOT -> BOOT` |
 | `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | Full catalog cartridge preload plus the required companion data disk. | `cartridge reset` |
-| `precog-ultimate` | 2x `D81` on drives `8` and `9` | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | C64 Ultimate D81 pair: drive 8 holds all apps, REL data, modules and media; drive 9 holds ReadyBASIC examples. DMA loading is enabled, with standalone SETUP for the drive-8 image path. | `PREBOOT -> BOOT` |
+| `precog-ultimate` | 2x `D81` on drives `8` and `9` | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate main app set on drive 8; ReadyBASIC examples and optional C64OS/GDOS apps/manifests on drive 9. Stock skip zero disables OS switching; dedicated bridge variants provide matched reservations. | `PREBOOT -> BOOT` |
 | `precog-dual-d71` | 2x `D71` boot set on drives `8` and `9`; 1x optional `D71` drive-9 swap | C64 Ultimate, Ultimate 64, or VICE setups using two 1571-class drives, with optional drive-9 disk swapping. | Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and the original 41 ReadyBASIC examples. | `PREBOOT -> SETD71 -> BOOT` |
 | `precog-kung-fu-flash-2-d81` | 1x `D81` on drive `8` | Kung Fu Flash 2 users who want one full-content D81 and the cartridge's 1MB REU mode instead of CRT cartridge mode. | Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks. | `PREBOOT -> BOOT` |
 | `precog-dual-d64` | 2x `D64` on drives `8` and `9` | Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media. | Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media. | `PREBOOT -> BOOT` |

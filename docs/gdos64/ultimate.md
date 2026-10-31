@@ -2,7 +2,7 @@
 
 This dedicated SKU contains the full Ultimate app set, SETUP, Ultimate Zip and
 the GDOS64 bridge as its first launcher entry. It is already compiled with
-**skip 71**. The stock Ultimate SKU has no bridge and uses skip zero.
+**skip 71**. Stock Ultimate instead carries disabled optional bridge copies on disk 2 and uses skip zero.
 
 ### Files and requirements
 

@@ -91,14 +91,15 @@ PRECOG 0.5 is planned as the final PRECOG release: the series that established w
 
 # Experimental C64OS bridge
 
-The regular D81 SKU includes `c64os` and its optional launcher manifest,
-`app.c64os`. It is not in the default app list. In the launcher, press **F5 (Browse)**
-and select `app.c64os`, then launch the added entry. The dedicated
-`precog-ultimate-c64os` SKU includes it directly in the main catalog and already
-compiles the required skip 39. The stock Ultimate SKU excludes bridges.
+The regular single-D81 SKU excludes this bridge. Stock Ultimate supplies the
+optional `c64os` PRG and `app.c64os` manifest on its second D81/device 9, with
+`bridge.car` beside the images. Use the launcher's **F5 (Browse)** on device 9
+to select that manifest. Stock Ultimate still uses skip zero and the app refuses
+switching until booted under a matching compiled reservation.
 
-**The normal D81 still uses `reu_bank_skip=0`. The bridge refuses to switch in
-that configuration.** Installing the app alone does not partition the REU.
+The dedicated `precog-ultimate-c64os` SKU puts the bridge directly in the main
+catalog on device 8 and already compiles skip 39. Installing an app or editing
+`apps.cfg` alone does not partition the REU.
 
 ## Requirements and matched settings
 
@@ -154,14 +155,14 @@ without IDE64, the unsaved app default is device 8, which normally holds ReadyOS
 use device 9 if that is where you mounted C64OS, then save.
 
 For a custom regular D81, `reu_bank_skip` is compiled into the boot/shim image. Editing the disk's
-`apps.cfg` alone cannot change it. Copy `cfg/profiles/precog-d81.ini`, change
-its `[system]` value to `reu_bank_skip=39`, and build through the normal runner:
+`apps.cfg` alone cannot change it. Copy `experiments/c64os/apps.ini` (which includes the active bridge catalog
+entry and skip 39), then build through the normal runner:
 
 ```sh
 /bin/bash ./run.sh --profile precog-d81 --config /absolute/path/bridge-readyos.ini --reu-size 16384 --build-only
 ```
 
-Boot that D81 fresh. Use **F5 (Browse)** to load `app.c64os` in the launcher. The bridge checks the actual
+Boot that custom D81 fresh and select its main-catalog C64OS bridge entry. The bridge checks the actual
 booted skip and REU capacity, and explains the required settings if unsuitable.
 The normal release D81 remains skip zero. Our experiment's separate
 `experiments/c64os/apps.ini` supplies skip 39 for automated bridge testing.

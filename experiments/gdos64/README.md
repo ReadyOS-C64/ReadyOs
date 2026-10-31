@@ -1,9 +1,10 @@
 # GDOS64 bridge experiment
 
-The regular D81 includes **GDOS64 Bridge** in the main launcher catalog of the regular
-`precog-d81` SKU only. The stock Ultimate and ReadyShell debug
-SKUs exclude it; `precog-ultimate-gdos` is a separate experiment. It does not use an `app.config` manifest. The native GDOS desk accessory source is `accessory.s`; its companion
-`gdos64-readyos-bridge.cvt` is built into the release folder.
+The stock single-D81 release excludes bridges. The private lab still builds a
+custom regular D81 using `experiments/gdos64/apps.ini`; that explicit catalog
+activates the GDOS payload. Stock Ultimate instead carries optional drive-9
+bridge apps/manifests, while `precog-ultimate-gdos` enables switching with skip71.
+The native accessory is built from `accessory.s` and shipped as a companion CVT.
 
 The initial supported test environment is GDOS64 English 1.03 build 260511,
 a plain PAL C64, 16 MiB Commodore-compatible REU, and two native C1581 drives.
@@ -22,7 +23,7 @@ This is emulator-tested development software, not a general hardware release.
 | 71 | ReadyOS control bank; bridge record at `$FD40` |
 | 72–255 | ReadyOS application banks |
 
-The regular release keeps `reu_bank_skip=0`. Its bridge shows a setup-required
+The regular release keeps `reu_bank_skip=0`. The stock Ultimate bridge shows a setup-required
 screen and refuses to switch. Only the experiment configuration uses skip 71.
 GDOS's native 4 MiB setting and ReadyOS's skip 71 are a matched pair; arbitrary
 sizes are not supported by this first implementation. No shim code or public

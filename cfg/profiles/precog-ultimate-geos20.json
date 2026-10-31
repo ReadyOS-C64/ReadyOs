@@ -17,7 +17,13 @@
     },
     {
       "index": 2,
-      "mount_on_boot": false
+      "mount_on_boot": false,
+      "remove_contents": [
+        "c64os",
+        "gdos64",
+        "app.c64os",
+        "app.gdos64"
+      ]
     }
   ],
   "bridge_setup_doc": "docs/geos20/ultimate.md",

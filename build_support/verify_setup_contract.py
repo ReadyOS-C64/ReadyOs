@@ -90,10 +90,29 @@ def main() -> int:
     boot_names = {e["name"] for e in disks[0]["contents"]}
     if not {"readybasic", "game2048", "deminer", "dizzy", "cal26", "rbm.sample1", "rbm.media", "setup"} <= boot_names:
         fail("Ultimate apps, games, REL-backed apps and module packages must stay on drive 8")
-    demos = disks[1]["contents"]
-    if len(demos) != 44 or any(readyos_profiles.disk_directory_group(
-            e["name"], e["type"], e.get("directory_group")) != "readybasic_example" for e in demos):
-        fail("Ultimate drive 9 must contain all 44 ReadyBASIC examples and no app/REL payloads")
+    demos = [e for e in disks[1]["contents"] if readyos_profiles.disk_directory_group(
+        e["name"], e["type"], e.get("directory_group")) == "readybasic_example"]
+    extras = {e["name"]: e["type"] for e in disks[1]["contents"] if e not in demos}
+    if len(demos) != 44 or extras != {
+            "c64os": "prg", "gdos64": "prg", "app.c64os": "seq", "app.gdos64": "seq"}:
+        fail("Ultimate drive 9 must contain 44 examples and exactly the optional C64OS/GDOS apps/manifests")
+    for name in ("c64os", "gdos64"):
+        manifest = ROOT / f"cfg/profiles/precog-ultimate-app-{name}.txt"
+        if not manifest.read_text().startswith(f"9:{name}:"):
+            fail(f"Ultimate optional {name} manifest must load its PRG from drive 9")
+    regular = readyos_profiles.load_profile("precog-d81")
+    regular_catalog = readyos_profiles.parse_catalog_entries(regular, None)
+    if {"c64os", "gdos64"} & readyos_profiles.packaged_apps(regular, regular_catalog):
+        fail("Stock regular D81 must not package the relocated bridge apps")
+    for suffix, bridge in (("c64os", "c64os"), ("gdos", "gdos64"), ("geos20", "geos20")):
+        dedicated = readyos_profiles.load_profile("precog-ultimate-" + suffix)
+        catalog = readyos_profiles.parse_catalog_entries(dedicated, None)
+        bridge_names = {"c64os", "gdos64", "geos20"}
+        if readyos_profiles.packaged_apps(dedicated, catalog) & bridge_names != {bridge}:
+            fail(f"Dedicated Ultimate {suffix} must package only its matching bridge")
+        if any(e["name"] in bridge_names or e["name"] in {"app.c64os", "app.gdos64"}
+               for e in dedicated["disks"][1]["contents"]):
+            fail(f"Dedicated Ultimate {suffix} must not inherit optional drive-9 bridge copies")
     if any(readyos_profiles.disk_directory_group(e["name"], e["type"], e.get("directory_group")) ==
            "readybasic_example" for e in disks[0]["contents"]):
         fail("Ultimate BASIC examples must be on drive 9")

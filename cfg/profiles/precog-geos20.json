@@ -12,8 +12,31 @@
           "artifact": "geos20.prg",
           "name": "geos20",
           "type": "prg"
+        },
+        {
+          "artifact": "c64os.prg",
+          "name": "c64os",
+          "type": "prg",
+          "include_even_if_not_catalog": true
+        },
+        {
+          "artifact": "obj/app_c64os.seq",
+          "name": "app.c64os",
+          "type": "seq"
         }
       ]
+    }
+  ],
+  "app_manifests": [
+    {
+      "source": "cfg/app_sidetris.txt",
+      "output": "obj/app_sidetris.seq",
+      "disk_name": "app.sidetris"
+    },
+    {
+      "source": "cfg/app_c64os.txt",
+      "output": "obj/app_c64os.seq",
+      "disk_name": "app.c64os"
     }
   ]
 }

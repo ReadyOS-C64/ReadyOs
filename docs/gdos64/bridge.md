@@ -1,11 +1,11 @@
 ## Experimental GDOS64 Bridge
 
-The regular D81 includes GDOS64 Bridge in its main launcher catalog. The stock Ultimate
-and other normal SKUs do not include it; `precog-ultimate-gdos` is a separate experiment. This is an experimental plain-C64 bridge for
-the dedicated VICE lab, not a general hardware release.
+The regular single-D81 SKU excludes this bridge. Stock Ultimate carries its
+optional `gdos64` PRG and `app.gdos64` manifest on disk 2/device 9; use F5 Browse
+on that device to load the entry. Stock Ultimate skips zero banks and therefore
+refuses switching. `precog-ultimate-gdos` is the dedicated enabled variant.
 
-The normal D81 skips **0 banks**, so switching is disabled. The experimental
-configuration requires **16 MiB REU**, **ReadyOS skip 71**, and **GDOS64 English
+The supported experimental configuration requires **16 MiB REU**, **ReadyOS skip 71**, and **GDOS64 English
 1.03 build 260511 with 4 MiB DACC** on native C1581 drives. Do not use an external
 C=REU RAMNative drive with this layout. Banks 0–63 belong to GDOS; 64–70 are
 reserved for the bridge; bank 71 and above belong to ReadyOS. The current
@@ -22,5 +22,5 @@ patch the GDOS kernel. Select it from GDOS's desk accessory menu to return.
 
 Source checkout instructions, automation and memory details are in
 `experiments/gdos64/README.md`. The private experiment disk is distinct from this
-stock skip-0 release disk. Never enable switching merely by changing a runtime
+stock Ultimate skip-zero release disks. Never enable switching merely by changing a runtime
 catalog: ReadyOS's skip count is compiled into its boot image.

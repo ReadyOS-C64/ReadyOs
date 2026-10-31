@@ -4,9 +4,12 @@
   "display_name": "precog ultimate (dual d81)",
   "kind": "ultimate",
   "default_run": false,
+  "release_description": "Full Ultimate main app set on drive 8; ReadyBASIC examples and optional C64OS/GDOS apps/manifests on drive 9. Stock skip zero disables OS switching; dedicated bridge variants provide matched reservations.",
   "catalog_source": "cfg/profiles/precog-ultimate.ini",
   "app_manifests": [
-    {"source": "cfg/app_sidetris.txt", "output": "obj/app_sidetris.seq", "disk_name": "app.sidetris"}
+    {"source": "cfg/app_sidetris.txt", "output": "obj/app_sidetris.seq", "disk_name": "app.sidetris"},
+    {"source": "cfg/profiles/precog-ultimate-app-c64os.txt", "output": "obj/app_c64os_ultimate.seq", "disk_name": "app.c64os"},
+    {"source": "cfg/profiles/precog-ultimate-app-gdos64.txt", "output": "obj/app_gdos64_ultimate.seq", "disk_name": "app.gdos64"}
   ],
   "launcher_dma_load": 1,
   "disks": [
@@ -66,7 +69,7 @@
       "post_build": [
         {"type": "seed_cal26_rel"}
       ],
-      "description": "Boot, all apps and games, REL data, ReadyBASIC modules and media assets."
+      "description": "Boot, main-catalog apps and games, REL data, ReadyBASIC modules and media assets."
     },
     {
       "index": 2,
@@ -77,7 +80,7 @@
       "true_drive": true,
       "mount_on_boot": true,
       "role": "examples",
-      "description": "ReadyBASIC demo and test programs; their modules and media assets remain on drive 8.",
+      "description": "ReadyBASIC examples and optional C64OS/GDOS bridge apps/manifests; stock skip zero disables switching.",
       "contents": [
         {"artifact": "obj/rbtest1.prg", "name": "rbtest1", "type": "prg"},
         {"artifact": "obj/rbproc1.prg", "name": "rbproc1", "type": "prg"},
@@ -122,7 +125,11 @@
         {"artifact": "obj/rbsnd06_three_voice.prg", "name": "rbsnd06", "type": "prg"},
         {"artifact": "obj/rbsnd07_psid.prg", "name": "rbsnd07", "type": "prg"},
         {"artifact": "obj/rbgfxsnddemo.prg", "name": "rbgfxsnddemo", "type": "prg", "directory_group": "readybasic_example"},
-        {"artifact": "obj/rbugfxsnddemo.prg", "name": "rbugfxsnddemo", "type": "prg", "directory_group": "readybasic_example"}
+        {"artifact": "obj/rbugfxsnddemo.prg", "name": "rbugfxsnddemo", "type": "prg", "directory_group": "readybasic_example"},
+        {"artifact": "c64os.prg", "name": "c64os", "type": "prg", "include_even_if_not_catalog": true},
+        {"artifact": "gdos64.prg", "name": "gdos64", "type": "prg", "include_even_if_not_catalog": true},
+        {"artifact": "obj/app_c64os_ultimate.seq", "name": "app.c64os", "type": "seq"},
+        {"artifact": "obj/app_gdos64_ultimate.seq", "name": "app.gdos64", "type": "seq"}
       ]
     }
   ],

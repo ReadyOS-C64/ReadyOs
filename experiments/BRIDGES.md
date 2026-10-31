@@ -18,12 +18,13 @@ checked-in sources, without requiring sibling source folders or licensed OS disk
 CAR/CVT companions are copied beside the applicable release images, not into
 those images. These companions do not contain the licensed operating systems.
 
-Normal D81 includes the optional C64OS app manifest/CAR and the GDOS catalog app,
-but its compiled skip zero disables both transitions until built with a matching
-layout. C64OS uses skip39 plus its 1.09-only bank cap; GDOS and stock GEOS use
-skip71 with different native signatures and allocation checks. Stock Ultimate,
-KFF2, smaller disk SKUs and EasyFlash exclude all bridge apps. Dedicated
-Ultimate C64OS/GDOS/GEOS profiles are experimental, not additions to stock Ultimate.
+The normal single-D81 SKU excludes bridges. Stock Ultimate disk 2 carries optional
+C64OS/GDOS PRGs and drive-9 manifests; its skip-zero boot disables switching.
+The dedicated Ultimate C64OS variant uses skip39 with the 1.09-only bank cap;
+GDOS and stock GEOS use skip71 with distinct native signatures and allocation
+checks. KFF2, smaller disk SKUs and EasyFlash exclude all bridge apps. Dedicated
+bridge variants keep only their active bridge on disk 1, without duplicate
+optional bridge copies/manifests on their examples disk.
 
 The user reports manual testing of the hardware. Earlier automated reports
 separately demonstrate GDOS and GEOS transitions in VICE, including live geoWrite

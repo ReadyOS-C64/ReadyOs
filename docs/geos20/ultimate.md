@@ -2,7 +2,7 @@
 
 This dedicated SKU contains the full Ultimate app set, SETUP, Ultimate Zip and
 **geos 2.0 bridge** as its first launcher entry. ReadyOS is already compiled with
-**skip 71**. Stock Ultimate remains a separate skip-zero SKU without bridges.
+**skip 71**. Stock Ultimate remains a separate skip-zero SKU without enabled GEOS switching.
 
 ### Files and requirements
 
