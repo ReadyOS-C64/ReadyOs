@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Build native Bridge Setup and one install CAR. No licensed OS bytes packaged."""
-import binascii, datetime, hashlib, json, subprocess, argparse
+import binascii, datetime, hashlib, json, subprocess, argparse, os
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def petscii(s):
@@ -50,7 +50,10 @@ def build(readyos):
  nodes.append(directory('help',[node('S','toc.t',len(petscii('Setup\n')),petscii('Setup\n')),node('S','Setup',len(helptext)+2,b'\xf6\xf1'+helptext)]))
  utility=(readyos/'bin/c64os-readyos-utility.prg').read_bytes()
  tree=directory('ReadyOS Bridge',[directory('applications',[directory('Bridge Setup',nodes)]),directory('utilities',[node('P','ReadyOS',len(utility),utility)])])
- now=datetime.datetime.now()
+ # CAR requires a timestamp. Use a fixed valid epoch unless explicitly supplied,
+ # so identical payloads do not churn across profiles, rebuilds or release commits.
+ epoch=os.environ.get('SOURCE_DATE_EPOCH','946684800')  # 2000-01-01 UTC
+ now=datetime.datetime.fromtimestamp(int(epoch),datetime.timezone.utc)
  car=b'\x02\xc364\xc1RCHIVE\x03'+bytes([now.year-1900,now.month,now.day,now.hour,now.minute])+petscii('ReadyOS bridge / C64OS 1.09').ljust(31,b'\0')+tree
  car+=binascii.crc32(car).to_bytes(4,'little')
  out=ROOT/'dist/bridge.car';out.parent.mkdir(exist_ok=True);out.write_bytes(car)

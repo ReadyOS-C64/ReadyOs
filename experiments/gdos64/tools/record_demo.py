@@ -1,7 +1,7 @@
 """Capture a verified, real cold/warm UI workflow from the VICE framebuffer."""
 import json, os, runpy, shutil, subprocess, threading, time
 import probe
-from session import ROOT, frame, feed, keys
+from session import ROOT, SOURCE, frame, feed, keys
 
 OUT = ROOT/'evidence/video'
 OUT.mkdir(parents=True, exist_ok=True)

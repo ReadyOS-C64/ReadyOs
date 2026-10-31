@@ -1,7 +1,7 @@
 """Record the complete real GEOS bridge test; never restore emulator snapshots."""
 import json, runpy, shutil, subprocess, threading, time
 import session
-from session import ROOT, frame
+from session import ROOT, SOURCE, frame
 OUT=ROOT/'evidence/video';OUT.mkdir(parents=True,exist_ok=True)
 FPS=20
 im=frame();log=(OUT/'encoder.log').open('w')
