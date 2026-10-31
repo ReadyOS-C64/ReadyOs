@@ -5,7 +5,7 @@
   "variant_boot_name": "precog d81",
   "version_text": "0.5",
   "reu_size_kb": 16384,
-  "catalog_source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/cfg/profiles/precog-d81.ini",
+  "catalog_source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/cfg/profiles/precog-d81-rsdebug.ini",
   "autostart_prg": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-d81-rsdebug/readyos-v0.5-d81-preboot.prg",
   "autostart_disk_prg": "preboot.prg",
   "preboot_mode": "boot",

@@ -36,6 +36,7 @@ def report(version):
             payloads.update(bridges)
             free = int(match.group(1))
             disks.append({'drive': image['drive'], 'image': path.name,
+                          'mount_on_boot': image.get('mount_on_boot', True),
                           'free_blocks': free, 'free_payload_bytes': free * 254,
                           'bridges': bridges})
         row = {'sku': manifest['id'], 'skip': skip, 'disks': disks,
@@ -54,7 +55,7 @@ def markdown(rows):
     lines = ['| SKU | Disk free blocks (KiB of file payload) | Bridges present | Compiled skip |',
              '| --- | --- | --- | --- |']
     for row in rows:
-        space = '; '.join(f"D{d['drive']}: {d['free_blocks']} ({d['free_payload_bytes']/1024:.1f})"
+        space = '; '.join(f"D{d['drive']}{' optional' if not d['mount_on_boot'] else ''}: {d['free_blocks']} ({d['free_payload_bytes']/1024:.1f})"
                           for d in row['disks'])
         if 'cartridge_free_banks' in row:
             space += f"; CRT: {row['cartridge_free_banks']} banks ({row['cartridge_free_bytes']/1024:.0f} KiB)"

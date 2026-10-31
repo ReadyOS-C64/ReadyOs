@@ -39,6 +39,12 @@
   "apps": [
     {
       "drive": 8,
+      "prg": "gdos64",
+      "label": "gdos64 bridge",
+      "desc": "experimental gdos64 interop"
+    },
+    {
+      "drive": 8,
       "prg": "editor",
       "label": "editor",
       "desc": "text editor with clipboard"

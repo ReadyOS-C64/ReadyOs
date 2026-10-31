@@ -82,7 +82,7 @@ C64 workflow should feel immediate once the machine is up:
   single-program-at-a-time disk menu
 
 The current public release line is `0.5`. Full-content ReadyOS
-profiles currently expose `19` launcher-visible apps, with
+profiles currently expose `20` launcher-visible apps, with
 the exact app mix depending on the variant you choose.
 
 ## Runtime And REU Contract
@@ -157,7 +157,7 @@ packaging changes to match the target.
 
 ## Public Variant Matrix
 
-This release line currently has `12` public variants.
+This release line currently has `15` public variants.
 
 | Folder | Media | Best Fit | Why It Exists | Boot |
 | --- | --- | --- | --- | --- |
@@ -173,6 +173,9 @@ This release line currently has `12` public variants.
 | `precog-solo-d64-c` | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 planning subset centered on tasklist, calendar, and REU viewer. | `PREBOOT -> BOOT` |
 | `precog-solo-d64-d` | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 experimental subset for simple cells, calculator, 2048, and deminer. | `PREBOOT -> BOOT` |
 | `precog-solo-d64-e` | 1x `D64` on drive `8` | THEC64, web emulators, or simple loaders that can mount only one D64 at a time. | Single-D64 shell-focused subset for readyshell and its overlay payloads in one-disk-only environments. | `PREBOOT -> BOOT` |
+| `precog-geos20` | 1x `D81` on drive `8` | C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU. | Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples. | `PREBOOT -> BOOT` |
+| `precog-ultimate-gdos` | 1x `D81` boot set on drives `8`; 1x optional `D81` drive-9 swap | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | C64 Ultimate D81 pair: drive 8 holds all apps, REL data, modules and media; drive 9 holds ReadyBASIC examples. DMA loading is enabled, with standalone SETUP for the drive-8 image path. | `PREBOOT -> BOOT` |
+| `precog-ultimate-geos20` | 1x `D81` boot set on drives `8`; 1x optional `D81` drive-9 swap | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | C64 Ultimate D81 pair: drive 8 holds all apps, REL data, modules and media; drive 9 holds ReadyBASIC examples. DMA loading is enabled, with standalone SETUP for the drive-8 image path. | `PREBOOT -> BOOT` |
 
 ## What The Release Root Contains
 
@@ -190,6 +193,9 @@ The release line is centered on these public folders:
 - `precog-solo-d64-c/`
 - `precog-solo-d64-d/`
 - `precog-solo-d64-e/`
+- `precog-geos20/`
+- `precog-ultimate-gdos/`
+- `precog-ultimate-geos20/`
 
 Depending on whether a local workflow built one profile or all profiles, a
 working tree may not contain every folder until the full multi-profile build has
