@@ -44,7 +44,7 @@ SECTION_SYSTEM = "system"
 SECTION_LAUNCHER = "launcher"
 SECTION_APPS = "apps"
 VALID_SECTIONS = {SECTION_SYSTEM, SECTION_LAUNCHER, SECTION_APPS}
-REU_BANK_SKIP_MAX = 39
+REU_BANK_SKIP_MAX = 71  # GDOS experimental reservation; release defaults remain zero.
 
 
 def fail(path: str, line_no: int, msg: str) -> None:

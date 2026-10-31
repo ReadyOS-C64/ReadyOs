@@ -33,7 +33,7 @@
     "first_dynamic": 1,
     "first_dynamic_logical": 1,
     "first_dynamic_physical_offset": 1,
-    "bank_skip_max": 39,
+    "bank_skip_max": 71,
     "shim_readyos_bank_addr": "0xC83B",
     "readyos_physical_offset": 0,
     "launcher_token": 0,

@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+"""Private test media/ports only; normal run.sh still boots ReadyOS PREBOOT."""
+from pathlib import Path
+import os,sys,shutil,socket,json
+root=Path(os.environ['GEOS_BRIDGE_PROJECT']).resolve()
+run=root/'runtime';run.mkdir(exist_ok=True)
+for port in (6560,6660):
+ with socket.socket() as s:s.bind(('127.0.0.1',port))
+args=sys.argv[1:]
+i=args.index('-autostart');del args[i:i+2]
+i=args.index('-8')+1
+ready_image=Path(os.environ.get('GEOS_BRIDGE_READY_IMAGE',str(root/'media/readyos.d81'))).resolve()
+shutil.copy2(ready_image,run/'readyos.d81');args[i]=str(run/'readyos.d81')
+shutil.copy2(root/'media/geos-system.d81',run/'geos-system.d81')
+args[args.index('-logfile')+1]=str(run/'vice.log')
+extra=['-9',str(run/'geos-system.d81'),'-drive9type','1581','-drive8truedrive','-drive9truedrive','+trapdevice8','+trapdevice9','-binarymonitor','-binarymonitoraddress','127.0.0.1:6560','-remotemonitor','-remotemonitoraddress','127.0.0.1:6660','-controlport1device','1','-controlport2device','0','-mouse','-keybuf','load"*",8\\nrun\\n','+warp','-speed','1000','+saveres','+confirmonexit','+sound']
+(run/'pid').write_text(str(os.getpid()))
+(run/'launch.json').write_text(json.dumps(args+extra,indent=2))
+vice=os.environ['GEOS_BRIDGE_VICE'];os.execv(vice,[vice,'-default',*args,*extra])

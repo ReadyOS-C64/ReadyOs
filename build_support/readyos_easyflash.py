@@ -40,7 +40,7 @@ READYSHELL_OVL_META_VALID_MASK = 0x01FF
 RESOURCE_NONE = 0
 RESOURCE_READYSHELL_OVL = 1
 RESOURCE_READYBASIC_CORE = 2
-REU_BANK_SKIP_MAX = 39
+REU_BANK_SKIP_MAX = 71  # GDOS experimental reservation; release defaults remain zero.
 
 OVERLAY_SPECS = (
     ("rsparser", "bin/rsparser.prg", 0, 0x0000, 0x01),

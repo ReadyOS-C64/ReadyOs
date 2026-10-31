@@ -1,0 +1,7 @@
+{
+  "target": "gdos64",
+  "load": 4096,
+  "end": 9089,
+  "cvt_sha256": "ed76303bc0e4c3f0ff49f3aa6b7128e611570fce6f11afa14a5f8a19850ed4d9",
+  "source": "experiments/gdos64/accessory.s"
+}

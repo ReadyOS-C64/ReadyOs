@@ -33,3 +33,9 @@ artifacts/dev_harness/
 # Physical ReadyBASIC suite artifacts and video helper build output.
 build/readybasic-c64u-suites/
 build_support/readybasic_c64u_video/bin/
+
+# Native bridge setup intermediates; release CAR/CVT payloads live in assets/.
+experiments/c64os/setup/build/
+experiments/c64os/setup/dist/
+experiments/gdos64/tools/ultimate/VideoCapture/obj/
+experiments/gdos64/tools/ultimate/VideoCapture/bin/

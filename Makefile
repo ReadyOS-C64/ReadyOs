@@ -1343,9 +1343,52 @@ else
 endif
 
 ifeq ($(PROFILE),precog-d81)
-BRIDGE_PROGRAMS = $(C64OS_BRIDGE) c64os-car
+BRIDGE_PROGRAMS = $(C64OS_BRIDGE) c64os-car $(BIN_DIR)/gdos64.prg gdos64-accessory
+endif
+ifeq ($(PROFILE),precog-ultimate-gdos)
+BRIDGE_PROGRAMS = $(BIN_DIR)/gdos64.prg gdos64-accessory
+endif
+ifneq ($(filter $(PROFILE),precog-geos20 precog-ultimate-geos20),)
+BRIDGE_PROGRAMS = $(BIN_DIR)/geos20.prg
+endif
+ifeq ($(PROFILE),precog-geos20)
+BRIDGE_PROGRAMS += $(C64OS_BRIDGE) c64os-car geos20-accessory
+endif
+ifeq ($(PROFILE),precog-ultimate-geos20)
+BRIDGE_PROGRAMS += geos20-accessory
 endif
 programs: prepare-version $(PROGRAMS) $(BRIDGE_PROGRAMS)
+
+.PHONY: gdos64-accessory geos20-accessory
+gdos64-accessory: $(OBJ_DIR)/gdos64_bridge_core.bin
+	$(PYTHON) build_support/build_geos_accessory.py --target gdos64
+
+geos20-accessory: $(OBJ_DIR)/geos20_bridge_core.bin
+	$(PYTHON) build_support/build_geos_accessory.py --target geos20
+
+$(OBJ_DIR)/gdos64_cold_boot.bin: experiments/gdos64/cold_boot.s experiments/gdos64/cold_boot.cfg
+	$(AS) -o $(OBJ_DIR)/gdos64_cold_boot.o $<
+	$(LD) -C experiments/gdos64/cold_boot.cfg -o $@ $(OBJ_DIR)/gdos64_cold_boot.o
+
+$(OBJ_DIR)/gdos64_bridge_core.bin: experiments/gdos64/bridge_core.s experiments/gdos64/bridge_core.cfg experiments/gdos64/bridge_abi.inc $(OBJ_DIR)/gdos64_cold_boot.bin
+	$(AS) -I . -o $(OBJ_DIR)/gdos64_bridge_core.o $<
+	$(LD) -C experiments/gdos64/bridge_core.cfg -o $@ $(OBJ_DIR)/gdos64_bridge_core.o
+
+$(BIN_DIR)/gdos64.prg: $(APPS_DIR)/gdos64/gdos64.c $(APPS_DIR)/gdos64/config.h $(APPS_DIR)/gdos64/config.c $(LIB_DIR)/tui_input.c $(APPS_DIR)/gdos64/bridge.s experiments/gdos64/native_context.inc $(LIB_DIR)/reu_mgr_dma.c $(TUI_BASE_MENU) $(TUI_NAV_SRC) $(TUI_HOTKEY_SRC) $(OBJ_DIR)/gdos64_bridge_core.bin
+	$(CC) $(APP_CFLAGS) --asm-include-dir . -Os -m $(OBJ_DIR)/gdos64.map -o $@ $(APPS_DIR)/gdos64/gdos64.c $(APPS_DIR)/gdos64/config.c $(LIB_DIR)/tui_input.c $(APPS_DIR)/gdos64/bridge.s $(LIB_DIR)/reu_mgr_dma.c $(TUI_BASE_MENU) $(TUI_NAV_SRC) $(TUI_HOTKEY_SRC)
+
+
+$(OBJ_DIR)/geos20_cold_boot.bin: experiments/gdos64/cold_boot.s experiments/gdos64/cold_boot.cfg
+	$(AS) -D BRIDGE_GEOS20=1 -o $(OBJ_DIR)/geos20_cold_boot.o $<
+	$(LD) -C experiments/gdos64/cold_boot.cfg -o $@ $(OBJ_DIR)/geos20_cold_boot.o
+
+$(OBJ_DIR)/geos20_bridge_core.bin: experiments/gdos64/bridge_core.s experiments/gdos64/bridge_core.cfg experiments/gdos64/bridge_abi.inc $(OBJ_DIR)/geos20_cold_boot.bin
+	$(AS) -D BRIDGE_GEOS20=1 -I . -o $(OBJ_DIR)/geos20_bridge_core.o $<
+	$(LD) -C experiments/gdos64/bridge_core.cfg -o $@ $(OBJ_DIR)/geos20_bridge_core.o
+
+$(BIN_DIR)/geos20.prg: $(APPS_DIR)/geos20/geos20.c $(APPS_DIR)/geos20/config.h $(APPS_DIR)/geos20/config.c $(LIB_DIR)/tui_input.c $(APPS_DIR)/geos20/bridge.s experiments/gdos64/native_context.inc $(LIB_DIR)/reu_mgr_dma.c $(TUI_BASE_MENU) $(TUI_NAV_SRC) $(TUI_HOTKEY_SRC) $(OBJ_DIR)/geos20_bridge_core.bin
+	$(CC) $(APP_CFLAGS) --asm-include-dir . -Os -m $(OBJ_DIR)/geos20.map -o $@ $(APPS_DIR)/geos20/geos20.c $(APPS_DIR)/geos20/config.c $(LIB_DIR)/tui_input.c $(APPS_DIR)/geos20/bridge.s $(LIB_DIR)/reu_mgr_dma.c $(TUI_BASE_MENU) $(TUI_NAV_SRC) $(TUI_HOTKEY_SRC)
+
 
 $(OBJ_DIR)/c64os_cold_boot.bin: experiments/c64os/cold_boot.s experiments/c64os/cold_boot.cfg
 	$(AS) -o $(OBJ_DIR)/c64os_cold_boot.o $<

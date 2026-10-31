@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build from sibling source when present; otherwise verify the shipped CAR."""
+"""Build the checked-in native setup source; allow an explicit source override."""
 import hashlib
 import json
 import os
@@ -9,7 +9,7 @@ import subprocess
 import sys
 import binascii
 ROOT=Path(__file__).resolve().parents[1]
-SOURCE=Path(os.environ.get('C64OS_BRIDGE_SOURCE',ROOT.parent/'c64os-bridge'))
+SOURCE=Path(os.environ.get('C64OS_BRIDGE_SOURCE',ROOT/'experiments/c64os/setup'))
 DEST=ROOT/'assets/c64os'
 expected=hashlib.sha256((ROOT/'bin/c64os-readyos-utility.prg').read_bytes()).hexdigest()
 if (SOURCE/'tools/build.py').is_file():

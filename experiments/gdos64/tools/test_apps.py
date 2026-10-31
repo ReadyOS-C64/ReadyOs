@@ -1,0 +1,11 @@
+from probe import *
+def stage(s):print(s,flush=True)
+wait_ready('APPLICATIONS:');feed(bytes([19,17,17,13]));wait_ready('TEST BOOT FAILURE');stage('bridge open')
+feed('C');desktop();stage('cold GDOS desktop');open_accessory();stage('native accessory')
+click(94,110);wait_ready('RESTORED ZP/STACK/SHIM: 1');stage('returned ReadyOS');text('warp on')
+feed(bytes([2]));wait_ready('APPLICATIONS:');stage('returned launcher')
+feed(bytes([19,17,17,17,13]));wait_ready('EDITOR:');stage('editor loaded')
+feed('READYOS AND GDOS64\rSTATE SURVIVES THE SWITCH\r');wait_ready('STATE SURVIVES THE SWITCH');screenshot(ROOT/'evidence/editor-first.png');stage('editor typing')
+feed(bytes([2]));wait_ready('APPLICATIONS:');feed(bytes([19,17,17,13]));wait_ready('START / RESUME');feed('C');desktop();stage('resumed GDOS')
+click(23,191);time.sleep(1);click(10,110);time.sleep(1);click(65,70);text('warp on');time.sleep(2);text('warp off');screenshot(ROOT/'evidence/native-app-picker.png');stage('native application picker')
+click(220,42);keys('GEOWRITE\r');time.sleep(1);screenshot(ROOT/'evidence/picker-search.png');stage('search geowrite')

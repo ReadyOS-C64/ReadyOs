@@ -222,6 +222,32 @@ trip passed while preparing the fresh demo; Editor and REU Viewer were
 preloaded before recording.
 
 
+## C64OS wording and cold-start demo (2026-09-25)
+
+Updated only bridge UI strings and launcher label/description; core assembly,
+REU layout, IDE64 preservation and native utility are unchanged. The built
+native utility remains SHA256
+749358d4cd2679be07185f345b49f2d38b2de1c0f5cba4ad2f27b4aca2aa7cc7.
+Normal experiment build v0.5q and release directory ordering pass.
+
+Added reproducible preparation, recording, soundtrack and gallery scripts.
+Preparation preloads ReadyOS apps without entering C64OS. Initial ReadyOS disk
+boot still requires true-drive emulation with IDE64; preparation then enables
+TrapDevice8 and disables Drive8TrueEmulation, with resource readback checks.
+The complete 61.96-second capture keeps warp on and includes the real initial
+C64OS load, one cold and one warm round trip, revised Tasks outline, completion,
+note creation and second-visit append, selection moved away from the new task,
+Editor text persistence and a faster REU walkthrough. No emulator snapshots
+are restored. All 24 capture stages completed, encoder returned zero, and the
+soundtracked MP4 passed full decode verification.
+
+Follow-up pacing revision: final capture is 90.68 seconds. Warp is
+disabled during the first C64OS load, enabled afterward, and ReadyOS Editor
+input is paced at 130–200 ms per character. C64OS typing is unchanged.
+Final capture directory: bridge-demo-final-20260925 (24 stages, no capture
+errors, both OS round trips completed). This supersedes the 61.96-second take.
+
+
 ## Physical keyboard cold-start fix (2026-09-25)
 
 Manual testing exposed printable-key failure in C64OS while command shortcuts

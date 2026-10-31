@@ -1,0 +1,23 @@
+{
+  "extends": "precog-ultimate",
+  "id": "precog-ultimate-geos20",
+  "display_name": "precog ultimate GEOS 2.0 experiment",
+  "catalog_source": "experiments/geos20/ultimate.ini",
+  "default_run": false,
+  "disk_overrides": [
+    {
+      "index": 1,
+      "append_contents": [
+        {
+          "artifact": "geos20.prg",
+          "name": "geos20",
+          "type": "prg"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "mount_on_boot": false
+    }
+  ]
+}

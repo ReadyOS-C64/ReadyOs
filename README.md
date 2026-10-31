@@ -722,6 +722,18 @@ Rendered documentation exports in `docs/` currently include:
 ReadyOS is licensed under the MIT License. See `LICENSE` for the full text.
 Copyright (c) 2026 Karl Prosser.
 
+## Experimental GDOS64 bridge (regular D81 only)
+
+ReadyOS includes **GDOS64 Bridge** in the regular D81's main
+launcher catalog. The normal release still skips zero REU banks, so the bridge
+refuses switching until the experimental memory layout is configured. The
+current lab requires GDOS64 1.03 with 4 MiB DACC, ReadyOS skip 71, a 16 MiB REU
+and two native C1581 drives. Separate Ultimate GDOS and GEOS 2.0 experiment
+profiles use the matching reserved layout; the stock Ultimate SKU excludes bridges.
+See the [GDOS64 experiment setup and limitations](experiments/gdos64/README.md).
+Native return accessory sources and companion CVT builds are included here, as
+is the GEOS 2.0 port. See `experiments/BRIDGES.md` for source and binary locations.
+
 ## Experimental C64OS bridge (regular D81 only)
 
 The D81 includes an optional `app.c64os` launcher manifest and a companion

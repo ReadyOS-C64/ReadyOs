@@ -1,0 +1,19 @@
+{
+  "extends": "precog-d81",
+  "id": "precog-geos20",
+  "display_name": "precog GEOS 2.0 experiment",
+  "catalog_source": "experiments/geos20/apps.ini",
+  "default_run": false,
+  "disk_overrides": [
+    {
+      "index": 1,
+      "append_contents": [
+        {
+          "artifact": "geos20.prg",
+          "name": "geos20",
+          "type": "prg"
+        }
+      ]
+    }
+  ]
+}

@@ -180,6 +180,33 @@ The installed native binaries/headers are authoritative where older web docs
 conflict, notably the six-vector utility ABI. See `PROGRESS.md` for failed
 experiments and the evidence that supersedes them.
 
+## Recording the bridge demo
+
+The launcher label is `c64os bridge`, with description `experimental c64os
+interop`. Bridge UI strings use `C64OS` without an internal space.
+
+Start a fresh experiment through `/bin/bash experiments/c64os/run.sh` (or
+`--skipbuild` for the already-built experiment). The IDE64 cartridge needs true
+drive emulation for ReadyOS's initial floppy boot. Then run `prepare_demo.py`: it
+preloads only Editor, REU Viewer and the bridge app, verifies centered text, and
+enables drive traps with true-drive emulation off. It does not start C64OS.
+
+Run `record_demo.py` with a Python interpreter that has Pillow. The recording
+disables warp for the first C64OS disk boot, then enables it for the rest of the
+demo, paces ReadyOS Editor keystrokes in wall time, and builds the Tasks outline using
+native UI input, and completes one cold and one warm round trip. The second
+visit appends to the task note and moves the selection away from the new task.
+`finish_demo_video.py` adds Downloads/Block By Block.mp3 and verifies decoding.
+`publish_demo_assets.py` adds the video/gallery to the existing Site source; the
+normal Sites workflow publishes it separately. The Site source lives alongside
+ReadyOS at `../readyos-c64os-demo`; `READYOS_DEMO_SITE` can override that project
+folder. `READYOS_DEMO_OUT` may select a
+new output directory consistently for all four scripts.
+
+Do not reuse a previously started C64OS context when preparing this recording.
+The default output is outside the repository in the private experiment folder.
+No RAM snapshots are restored to produce the video.
+
 ## Startup-state fixes and isolated testing
 
 Build v0.5s restores the cold KERNAL keyboard capacity/repeat defaults and its

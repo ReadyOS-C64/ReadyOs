@@ -1,0 +1,7 @@
+{
+  "target": "geos20",
+  "load": 4096,
+  "end": 9084,
+  "cvt_sha256": "511a55d0234f29f19ac37d80dd5c0fc9c66835e92aa55aa559bef156adf3117c",
+  "source": "experiments/geos20/accessory.s"
+}

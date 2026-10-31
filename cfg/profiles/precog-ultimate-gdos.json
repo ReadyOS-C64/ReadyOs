@@ -1,0 +1,23 @@
+{
+  "extends": "precog-ultimate",
+  "id": "precog-ultimate-gdos",
+  "display_name": "precog ultimate GDOS bridge experiment",
+  "default_run": false,
+  "catalog_source": "experiments/gdos64/ultimate.ini",
+  "disk_overrides": [
+    {
+      "index": 1,
+      "append_contents": [
+        {
+          "artifact": "gdos64.prg",
+          "name": "gdos64",
+          "type": "prg"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "mount_on_boot": false
+    }
+  ]
+}

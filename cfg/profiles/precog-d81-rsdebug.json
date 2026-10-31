@@ -4,7 +4,7 @@
   "kind": "d81",
   "default_run": false,
   "readyshell_parse_trace_debug": 1,
-  "catalog_source": "cfg/profiles/precog-d81.ini",
+  "catalog_source": "cfg/profiles/precog-d81-rsdebug.ini",
   "boot": {
     "preboot_mode": "boot",
     "autostart_prg": "preboot.prg"
