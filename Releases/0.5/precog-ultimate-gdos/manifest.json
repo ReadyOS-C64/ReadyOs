@@ -5,8 +5,8 @@
   "variant_boot_name": "precog ultimate",
   "version_text": "0.5",
   "reu_size_kb": 16384,
-  "catalog_source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/experiments/gdos64/ultimate.ini",
-  "autostart_prg": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate-preboot.prg",
+  "catalog_source": "experiments/gdos64/ultimate.ini",
+  "autostart_prg": "Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate-preboot.prg",
   "autostart_disk_prg": "preboot.prg",
   "preboot_mode": "boot",
   "disks": [
@@ -19,7 +19,7 @@
       "mount_on_boot": true,
       "role": "boot",
       "description": "Boot, main-catalog apps and games, REL data, ReadyBASIC modules and media assets.",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate_1.d81"
+      "path": "Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate_1.d81"
     },
     {
       "index": 2,
@@ -30,21 +30,21 @@
       "mount_on_boot": false,
       "role": "examples",
       "description": "ReadyBASIC examples. Leave this disk unmounted while the native OS uses device 9.",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate_2.d81"
+      "path": "Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate_2.d81"
     }
   ],
   "boot_prgs": [
     {
       "stem": "preboot",
       "disk_name": "preboot",
-      "source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/bin/preboot.prg",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate-preboot.prg"
+      "source": "bin/preboot.prg",
+      "path": "Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate-preboot.prg"
     },
     {
       "stem": "boot",
       "disk_name": "boot",
-      "source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/bin/boot.prg",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate-boot.prg"
+      "source": "bin/boot.prg",
+      "path": "Releases/0.5/precog-ultimate-gdos/readyos-v0.5-ultimate-boot.prg"
     }
   ],
   "apps": [

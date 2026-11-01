@@ -188,6 +188,8 @@ def main() -> int:
 
     for rel, snippets in REQUIRED.items():
         path = ROOT / rel
+        if rel.startswith("privatedocs/") and not path.exists():
+            continue
         if not path.exists():
             failures.append(f"missing current document: {rel}")
             continue
@@ -199,6 +201,8 @@ def main() -> int:
 
     for rel, snippets in FORBIDDEN.items():
         path = ROOT / rel
+        if rel.startswith("privatedocs/") and not path.exists():
+            continue
         if not path.exists():
             failures.append(f"missing checked file: {rel}")
             continue
@@ -207,8 +211,12 @@ def main() -> int:
             if snippet in text:
                 failures.append(f"{rel}: stale current-contract text {snippet!r}")
 
+    historical_count = 0
     for rel in (*historical.MARKDOWN_PATHS, *historical.HTML_PATHS):
         path = ROOT / rel
+        if rel.startswith("privatedocs/") and not path.exists():
+            continue
+        historical_count += 1
         if not path.exists():
             failures.append(f"missing retained historical document: {rel}")
             continue
@@ -233,7 +241,7 @@ def main() -> int:
     print(
         "DOCUMENTATION CONTRACT VERIFICATION PASSED: "
         f"{checked} current documents, "
-        f"{len(historical.MARKDOWN_PATHS) + len(historical.HTML_PATHS)} historical markers"
+        f"{historical_count} historical markers"
     )
     if status.stdout.strip():
         print(status.stdout.strip())

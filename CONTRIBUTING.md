@@ -220,6 +220,26 @@ Disk layout:
 
 ## Generated Assets And Public Docs
 
+Release manifests store **repository-relative** paths with forward slashes.
+Consumers that need host filenames use `readyos_profiles.load_disk_manifest`;
+never copy workstation paths from a test run into a published manifest.
+Before packaging, run `python3 build_support/verify_release_portability.py`.
+It checks the Git inventory as well as files on disk, so an ignored file on
+the build machine cannot accidentally satisfy a release dependency.
+
+Keep release binaries, source fixtures and plan generators tracked. Checked-in
+VICE plans should name shipped media; run the appropriate generator for tests
+requiring a special startup app, private catalog, or diagnostic build.
+Generated UCI probe disks, readbacks and instrumented assembly stay local in
+`build/uci_dma_probe/` and `build/uci_timing/`. The original probe recipes
+remain in `probes/`; the frozen August 2026 timing measurements are under
+`docs/reports/uci-timing-2026-08/`. The dated hand-authored launcher/SETUP
+reproductions in `build/` are historical references, not release inputs.
+
+Private notes stay under the ignored `privatedocs/` tree. Public documentation
+checks must pass without that tree; known local reports are checked when
+present. The public EasyFlash boot-flow guide is in `docs/reports/`.
+
 Generated build-owned assets include:
 
 - `apps.cfg` from the selected `cfg/profiles/*.ini` source

@@ -1534,6 +1534,7 @@ easyflash-clean:
 	rm -rf $(READYSHELL_EASYFLASH_OBJ_DIR)
 
 audit-release-assets:
+	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_release_portability.py
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/audit_release_seq_rel.py
 	$(PYTHON) $(BUILD_SUPPORT_DIR)/verify_release_directory_order.py
 

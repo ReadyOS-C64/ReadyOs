@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-repo="/Users/karlprosserpp/dev/c64projects/readyosprecog"
-harness="/Users/karlprosserpp/dev/c64projects/agenticdevharness/tools/vice_tasks_dotnet"
+repo="$(cd "$(dirname "$0")/.." && pwd)"
+harness="${VICE_TASKS_ROOT:-$repo/../agenticdevharness/tools/vice_tasks_dotnet}"
 log="${1:-/tmp/uci_timing_probe_ultimate.log}"
 status="${2:-/tmp/uci_timing_probe_ultimate.status}"
 host="${C64U_HOST:-10.0.0.79}"
@@ -67,6 +67,7 @@ fi
 
 remote_root="${remote_image%%/*}"
 sed \
+  -e "s#:\\( *\\)build/uci_timing/#:\\1$repo/build/uci_timing/#g" \
   -e "s#remote_root: USB1#remote_root: ${remote_root}#g" \
   -e "s#remote_disk: USB1/readyos.d81#remote_disk: ${remote_image}#g" \
   -e "s#host: 10.0.0.79#host: ${host}#g" \

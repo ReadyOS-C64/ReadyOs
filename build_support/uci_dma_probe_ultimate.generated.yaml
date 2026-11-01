@@ -21,7 +21,7 @@ global_defaults:
     ftp_user: anonymous
     ftp_password: anonymous@
     remote_root: USB1
-    disk8: /Users/karlprosserpp/dev/c64projects/readyosprecog/build/uci_dma_probe/uci_dma_probe.d81
+    disk8: build/uci_dma_probe/uci_dma_probe.d81
     disk9: null
     autostart_prg: null
     drive_a_bus_id: 8
@@ -47,14 +47,14 @@ steps:
       bus_id: 8
       drive_type: '1581'
       enabled: true
-      disk: /Users/karlprosserpp/dev/c64projects/readyosprecog/build/uci_dma_probe/uci_dma_probe.d81
+      disk: build/uci_dma_probe/uci_dma_probe.d81
       remote_disk: USB1/UCI.D81
       mount_mode: readwrite
     - slot: b
       bus_id: 11
       drive_type: '1581'
       enabled: false
-      disk: /Users/karlprosserpp/dev/c64projects/readyosprecog/build/uci_dma_probe/uci_dma_probe.d81
+      disk: build/uci_dma_probe/uci_dma_probe.d81
       remote_disk: USB1/UCI.D81
       mount_mode: readwrite
     boot_drive: 8

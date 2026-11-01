@@ -5,8 +5,8 @@
   "variant_boot_name": "precog d81",
   "version_text": "0.5",
   "reu_size_kb": 16384,
-  "catalog_source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/cfg/profiles/precog-d81.ini",
-  "autostart_prg": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-d81/readyos-v0.5-d81-preboot.prg",
+  "catalog_source": "cfg/profiles/precog-d81.ini",
+  "autostart_prg": "Releases/0.5/precog-d81/readyos-v0.5-d81-preboot.prg",
   "autostart_disk_prg": "preboot.prg",
   "preboot_mode": "boot",
   "disks": [
@@ -19,21 +19,21 @@
       "mount_on_boot": true,
       "role": "boot",
       "description": "",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-d81/readyos-v0.5-d81.d81"
+      "path": "Releases/0.5/precog-d81/readyos-v0.5-d81.d81"
     }
   ],
   "boot_prgs": [
     {
       "stem": "preboot",
       "disk_name": "preboot",
-      "source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/bin/preboot.prg",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-d81/readyos-v0.5-d81-preboot.prg"
+      "source": "bin/preboot.prg",
+      "path": "Releases/0.5/precog-d81/readyos-v0.5-d81-preboot.prg"
     },
     {
       "stem": "boot",
       "disk_name": "boot",
-      "source": "/Users/karlprosserpp/dev/c64projects/readyosprecog/bin/boot.prg",
-      "path": "/Users/karlprosserpp/dev/c64projects/readyosprecog/Releases/0.5/precog-d81/readyos-v0.5-d81-boot.prg"
+      "source": "bin/boot.prg",
+      "path": "Releases/0.5/precog-d81/readyos-v0.5-d81-boot.prg"
     }
   ],
   "apps": [

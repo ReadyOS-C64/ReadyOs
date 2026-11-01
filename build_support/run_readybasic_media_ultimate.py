@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import uuid
+from readyos_profiles import load_disk_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "build/readybasic-media-tools"
@@ -25,7 +26,7 @@ subprocess.run(["python3", str(ROOT / "build_support/run_readybasic_media_probe.
                env={**os.environ, "READYBASIC_GENERATE_PLAN_ONLY": "1"}, check=True)
 plan = json.loads((OUT / "probe.yaml").read_text())
 release = ROOT / "Releases/0.5/precog-ultimate"
-manifest = json.loads((release / "manifest.json").read_text())
+manifest = load_disk_manifest(release / "manifest.json")
 disk = next(Path(d['path']) for d in manifest['disks'] if d['drive'] == 8)
 examples = next(Path(d['path']) for d in manifest['disks'] if d['drive'] == 9)
 remote_examples = remote.rsplit('/', 1)[0] + '/EXAMPLES.D81'

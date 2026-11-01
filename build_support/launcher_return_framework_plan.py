@@ -20,9 +20,13 @@ def main():
     parser.add_argument("--disk", type=Path, required=True)
     parser.add_argument("--boot", type=Path, help="D81 PREBOOT PRG or EasyFlash CRT")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--direct-switch", action="store_true",
+                        help="VICE: also test F2/F4 from the restored Editor (BUG-003)")
     args = parser.parse_args()
     ultimate = args.target == "ultimate"
     cartridge = args.target == "easyflash"
+    if args.direct_switch and ultimate:
+        parser.error("--direct-switch is a VICE test")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     defaults = dict(retry_policy=dict(max_attempts=1),
         timeouts=dict(launch_s=120, step_s=180, read_s=30),
@@ -30,13 +34,15 @@ def main():
     plan = dict(version=1, kind="ultimate_task_plan" if ultimate else "vice_task_plan",
         plan_id="launcher_return_" + args.target,
         run_mode="ultimate64" if ultimate else "gui_vice", global_defaults=defaults, steps=[])
+    if args.direct_switch:
+        plan["plan_id"] = "direct_switch_" + args.target
 
     def step(name, kind, **params):
         plan["steps"].append(dict(id=name, type=kind, params=params))
 
-    def wait(name, text, delay=0):
+    def wait(name, text, delay=0, timeout=180):
         step(name, "screen.wait_contains", text=text, pre_delay_s=delay,
-             wait_timeout_s=180, poll_s=0.5, capture_label=name)
+             wait_timeout_s=timeout, poll_s=0.5, capture_label=name)
 
     def keys(name, values, delay=0.5):
         if ultimate:
@@ -134,6 +140,11 @@ def main():
         wait(prefix + "_after_shell", footer)
         keys(prefix + "_cross_app", [19] + [17] * editor + [13])
         wait(prefix + "_cross_app_buffer", marker)
+        if args.direct_switch:
+            keys("direct_F2", [137])
+            wait("shell_after_F2", "READYOS READYSHELL", timeout=30)
+            keys("direct_F4", [138])
+            wait("editor_marker_after_F4", marker, timeout=30)
         keys(prefix + "_final_return", [2])
         wait(prefix + "_final_menu", footer)
     args.out.write_text(json.dumps(plan, indent=2) + "\n")

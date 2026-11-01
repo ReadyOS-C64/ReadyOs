@@ -7,7 +7,7 @@
     "status_prefix": ""
   },
   "done": 1,
-  "dump": "/private/tmp/uci_timing_probe_c64u_rest_capture/probe_results_3000.bin",
+  "dump": "probe_results_3000.bin",
   "failures": 0,
   "first_failure": {
     "debug_status0": 0,

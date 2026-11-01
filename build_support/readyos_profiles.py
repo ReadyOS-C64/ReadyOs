@@ -6,6 +6,7 @@ ReadyOS profile loader and release packager.
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 from readyos_doc_content import ULTIMATE_PATH, app_requirement, basic_inventory
 import json
 import os
@@ -860,13 +861,51 @@ def boot_prg_specs(profile: Dict[str, object], version_text: str, output_dir: Pa
     return specs
 
 
+def map_manifest_paths(manifest, convert):
+    """Transform host paths only; C64 disk names, drives and tokens are opaque."""
+    result = deepcopy(manifest)
+    for key in ("catalog_source", "autostart_prg", "output_dir", "manifest_path"):
+        if key in result:
+            result[key] = convert(result[key])
+    for group, keys in (("disks", ("path",)), ("boot_prgs", ("source", "path"))):
+        for entry in result.get(group, []):
+            for key in keys:
+                if key in entry:
+                    entry[key] = convert(entry[key])
+    if "artifacts" in result:
+        result["artifacts"] = {key: convert(value) for key, value in result["artifacts"].items()}
+    return result
+
+
+def write_release_manifest(path, manifest):
+    # Local overrides may reference a catalog outside ROOT; those builds are
+    # not publishable. The release gate rejects paths outside the checkout.
+    def relative(value):
+        return Path(os.path.relpath((ROOT / value).resolve(), ROOT)).as_posix()
+    path.write_text(json.dumps(map_manifest_paths(manifest, relative), indent=2) + "\n",
+                    encoding="utf-8")
+
+
+def load_disk_manifest(path):
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    # Older manifests contain absolute names from the machine that built
+    # them. Rebase their checkout-local files before any backup or cleanup.
+    boot = Path(raw.get("autostart_prg", ""))
+    old_root = next((p.parent for p in boot.parents if p.name == "Releases"), None)
+    def local(value):
+        p = Path(value)
+        if p.is_absolute() and old_root is not None and p.is_relative_to(old_root):
+            p = p.relative_to(old_root)
+        return str((ROOT / p).resolve())
+    return map_manifest_paths(raw, local)
+
+
 def resolve_profile(profile_id: str, version_text: str | None, latest: bool) -> Dict[str, object]:
     profile = load_profile(profile_id)
 
     if latest:
         manifest_path = latest_manifest_path(profile_id)
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        return manifest
+        return load_disk_manifest(manifest_path)
 
     if not version_text:
         version_text = read_current_version_text()
@@ -1589,7 +1628,7 @@ def build_release(profile_id: str,
 
     previous_manifest = None
     if manifest_path.exists():
-        previous_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        previous_manifest = load_disk_manifest(manifest_path)
         manifest_path.unlink()
     for stale_doc in ("help.md", "helpme.md"):
         (output_dir / stale_doc).unlink(missing_ok=True)
@@ -1712,7 +1751,7 @@ def build_release(profile_id: str,
         "variant_boot_name": resolved["variant_boot_name"],
         "version_text": version_text,
         "reu_size_kb": resolved["reu_size_kb"],
-        "catalog_source": str(catalog_source),
+        "catalog_source": str(catalog_source.resolve()),
         "autostart_prg": resolved["autostart_prg"],
         "autostart_disk_prg": resolved["autostart_disk_prg"],
         "preboot_mode": str(profile["boot"]["preboot_mode"]),
@@ -1720,7 +1759,7 @@ def build_release(profile_id: str,
         "boot_prgs": resolved["boot_prgs"],
         "apps": entries,
     }
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    write_release_manifest(manifest_path, manifest)
     write_release_root_readme(version_text)
 
     if previous_manifest:
@@ -1793,7 +1832,7 @@ def migrate_legacy_release_tree(version_text: str) -> None:
 
         manifest_path = target_dir / "manifest.json"
         if manifest_path.is_file():
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest = load_disk_manifest(manifest_path)
             manifest["version_text"] = version_text
             manifest["catalog_source"] = str(profile_catalog_source(profile))
             manifest["output_dir"] = str(target_dir)
@@ -1805,7 +1844,7 @@ def migrate_legacy_release_tree(version_text: str) -> None:
                 disk["path"] = str(target_dir / Path(str(disk["path"])).name)
             for boot_prg in manifest.get("boot_prgs", []):
                 boot_prg["path"] = str(target_dir / Path(str(boot_prg["path"])).name)
-            manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+            write_release_manifest(manifest_path, manifest)
     write_release_root_readme(version_text)
 
 

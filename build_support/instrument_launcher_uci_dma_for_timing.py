@@ -29,7 +29,7 @@ REPLACEMENTS = [
 
 TARGETED_CD_REPLACEMENTS = [
     ("jsr dos_cd\n        BCC_FAR load_cd_root_fail", "jsr utime_call_cd_root\n        BCC_FAR load_cd_root_fail"),
-    ("jsr dos_cd\n        BCC_FAR load_cd_dir_fail", "jsr utime_call_cd_dir\n        BCC_FAR load_cd_dir_fail"),
+    ("jsr dos_cd_path\n        BCC_FAR load_cd_dir_fail", "jsr utime_call_cd_dir\n        BCC_FAR load_cd_dir_fail"),
     ("jsr dos_cd\n        BCC_FAR load_cd_image_fail", "jsr utime_call_cd_image\n        BCC_FAR load_cd_image_fail"),
 ]
 
@@ -84,7 +84,7 @@ utime_call_cd_root:
 utime_call_cd_dir:
         lda #$04
         jsr _utime_stage_begin
-        jsr dos_cd
+        jsr dos_cd_path
         php
         lda #$04
         jsr _utime_stage_end

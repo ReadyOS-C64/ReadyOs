@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-repo="/Users/karlprosserpp/dev/c64projects/readyosprecog"
-harness="/Users/karlprosserpp/dev/c64projects/agenticdevharness/tools/vice_tasks_dotnet"
+repo="$(cd "$(dirname "$0")/.." && pwd)"
+harness="${VICE_TASKS_ROOT:-$repo/../agenticdevharness/tools/vice_tasks_dotnet}"
 log="${1:-/tmp/uci_dma_probe_ultimate.log}"
 status="${2:-/tmp/uci_dma_probe_ultimate.status}"
 
@@ -130,6 +130,7 @@ for candidate in "${candidate_dirs[@]}"; do
   candidate_plan="/tmp/uci_dma_probe_ultimate_${candidate}.yaml"
 
   sed \
+    -e "s#:\\( *\\)build/uci_dma_probe/#:\\1$repo/build/uci_dma_probe/#g" \
     -e "s#remote_root: USB1#remote_root: ${candidate}#g" \
     -e "s#remote_disk: USB1/UCI.D81#remote_disk: ${candidate_image}#g" \
     -e "s#uci_dma_probe.d81#uci_dma_probe.${image_type}#g" \

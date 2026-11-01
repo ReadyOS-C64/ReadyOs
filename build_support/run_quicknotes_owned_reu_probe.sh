@@ -44,6 +44,17 @@ PREBOOT_REL="$(ls -t Releases/$PUBLIC_VERSION/precog-d81/*-preboot.prg | head -1
 D81="$D81_REL"
 PREBOOT="$PREBOOT_REL"
 
+# The third dynamic bank held QuickNotes' NOTE allocation in this fixture.
+# Start from the profile's actual reservation, not the old fixed skip of 32.
+BANK_KEYS="$(PYTHONPATH="$SCRIPT_DIR" python3 - <<'PY'
+from readyos_profiles import resolve_profile, apps_catalog
+manifest = resolve_profile("precog-d81", None, latest=True)
+settings, _, _ = apps_catalog.parse_source(manifest["catalog_source"])
+row, col = divmod(int(settings["reu_bank_skip"]) + 3, 16)
+print(",".join(map(str, [17] * row + [29] * col)))
+PY
+)"
+
 cat >"$PLAN" <<YAML
 version: 1
 kind: vice_task_plan
@@ -134,7 +145,7 @@ steps:
   - id: move_reuviewer_to_quicknotes_owned_bank
     type: input.sequence
     params:
-      keys: [17,17,29,29,29]
+      keys: [$BANK_KEYS]
       inter_key_delay_s: 0.08
       post_delay_s: 0.5
   - id: capture_owned_bank_before_unload
@@ -268,7 +279,7 @@ steps:
   - id: move_reuviewer_to_freed_bank
     type: input.sequence
     params:
-      keys: [17,17,29,29,29]
+      keys: [$BANK_KEYS]
       inter_key_delay_s: 0.08
       post_delay_s: 0.5
   - id: capture_owned_bank_after_unload

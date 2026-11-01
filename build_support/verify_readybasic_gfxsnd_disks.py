@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Read back both release D81s and compare demo/runtime/resource bytes."""
 import argparse
-import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -23,7 +22,7 @@ parser.add_argument('--profile', action='append', choices=('precog-d81', 'precog
                     help='Limit verification to rebuilt profiles (default: both)')
 args = parser.parse_args()
 for profile in (args.profile or ('precog-d81', 'precog-ultimate')):
-    manifest=json.loads((ROOT/f'Releases/0.5/{profile}/manifest.json').read_text())
+    manifest=readyos_profiles.load_disk_manifest(ROOT/f'Releases/0.5/{profile}/manifest.json')
     disks={d['index']: d['path'] for d in manifest['disks']}
     file_disks={e['name']: disks[d['index']]
                 for d in readyos_profiles.load_profile(profile)['disks'] for e in d['contents']}

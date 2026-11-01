@@ -28,6 +28,13 @@ obj/
 /build/xuzio/
 /build/xuzreu/
 /build/xuzstore/
+# Rebuilt by probes/{uci_dma,uci_timing}/build.sh; reference measurements
+# live under docs/reports/ rather than alongside the next run's output.
+/build/uci_dma_probe/
+/build/uci_timing/
+# Superseded workstation-only physical test plans (not release inputs).
+/build_support/launcher_boot_control_ultimate.generated.yaml
+/build_support/launcher_dma_ultimate.generated.yaml
 build_support/readybasic_video_gate/bin/
 # ReadyBASIC media experiment: local tools, recordings and pre-build backup.
 build/readybasic-media-tools/

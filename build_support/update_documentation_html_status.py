@@ -114,7 +114,13 @@ def main() -> None:
         help="verify classification and exact banners without writing files",
     )
     args = parser.parse_args()
-    classified = set(CURRENT) | set(HISTORICAL)
+    # A public checkout has no private tree. Where local reports exist, keep
+    # validating their classification; never waive a missing public report.
+    def available(entries):
+        return {p: v for p, v in entries.items()
+                if not p.startswith("privatedocs/") or (ROOT / p).is_file()}
+    current, historical = available(CURRENT), available(HISTORICAL)
+    classified = set(current) | set(historical)
     actual = {
         str(path.relative_to(ROOT))
         for tree in (ROOT / "docs", ROOT / "privatedocs")
@@ -138,11 +144,11 @@ def main() -> None:
         )
     if args.check:
         failures = []
-        for path_text, message in CURRENT.items():
+        for path_text, message in current.items():
             text = (ROOT / path_text).read_text(encoding="utf-8")
             if banner("current", message) not in text:
                 failures.append(path_text)
-        for path_text, message in HISTORICAL.items():
+        for path_text, message in historical.items():
             text = (ROOT / path_text).read_text(encoding="utf-8")
             if banner("historical", message) not in text:
                 failures.append(path_text)
@@ -150,9 +156,9 @@ def main() -> None:
             raise SystemExit("missing/stale status banner: " + ", ".join(failures))
         print(f"verified {len(classified)} classified HTML documents")
     else:
-        for path, message in CURRENT.items():
+        for path, message in current.items():
             update(path, "current", message)
-        for path, message in HISTORICAL.items():
+        for path, message in historical.items():
             update(path, "historical", message)
         print(f"updated {len(classified)} classified HTML documents")
 

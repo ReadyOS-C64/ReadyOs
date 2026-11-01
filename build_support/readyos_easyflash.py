@@ -588,6 +588,7 @@ def build_release(catalog_path: Path,
                   romh_path: Path,
                   version_text: str,
                   output_dir: Path) -> None:
+    catalog_path, output_dir = catalog_path.resolve(), output_dir.resolve()
     catalog = parse_catalog(catalog_path)
     layout = json.loads(layout_path.read_text(encoding="utf-8"))
     ensure_dir(output_dir)
@@ -625,7 +626,7 @@ def build_release(catalog_path: Path,
         "launcher": layout["launcher"],
         "overlays": list(layout["overlays"]),
     }
-    (output_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    readyos_profiles.write_release_manifest(output_dir / "manifest.json", manifest)
     force_easyflash_subtype(crt_path, 1)
 
 

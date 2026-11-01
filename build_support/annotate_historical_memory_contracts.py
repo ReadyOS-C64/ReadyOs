@@ -104,10 +104,14 @@ def main() -> None:
     changed: list[Path] = []
     for rel in MARKDOWN_PATHS:
         path = ROOT / rel
+        if rel.startswith("privatedocs/") and not path.is_file():
+            continue
         if annotate_markdown(path):
             changed.append(path)
     for rel in HTML_PATHS:
         path = ROOT / rel
+        if rel.startswith("privatedocs/") and not path.is_file():
+            continue
         if annotate_html(path):
             changed.append(path)
     print(f"annotated {len(changed)} retained historical reports")
