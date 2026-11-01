@@ -30,7 +30,13 @@ resolve_build_support_dir() {
         exit 1
     fi
 
-    BUILD_SUPPORT_DIR="$(cd "$candidate" && pwd)"
+    # We already run from the repository root. Keep the bundled directory a
+    # single relative Make prerequisite even when the checkout path has spaces.
+    if [ "$candidate" -ef build_support ]; then
+        BUILD_SUPPORT_DIR=build_support
+    else
+        BUILD_SUPPORT_DIR="$(cd "$candidate" && pwd)"
+    fi
 }
 
 configure_vice_env() {

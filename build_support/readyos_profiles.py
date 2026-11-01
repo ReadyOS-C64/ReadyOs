@@ -1856,6 +1856,7 @@ def main() -> int:
     sub.add_parser("default-id")
 
     catalog_parser = sub.add_parser("catalog-source")
+    catalog_parser.add_argument("--repo-relative", action="store_true")
     catalog_parser.add_argument("--profile", required=True)
 
     parse_trace_parser = sub.add_parser("readyshell-parse-trace-debug")
@@ -1906,7 +1907,8 @@ def main() -> int:
             return 0
         if args.cmd == "catalog-source":
             profile = load_profile(args.profile)
-            print(profile_catalog_source(profile))
+            source = profile_catalog_source(profile)
+            print(source.relative_to(ROOT).as_posix() if args.repo_relative else source)
             return 0
         if args.cmd == "readyshell-parse-trace-debug":
             profile = load_profile(args.profile)
