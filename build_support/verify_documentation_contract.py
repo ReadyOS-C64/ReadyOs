@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED: dict[str, tuple[str, ...]] = {
     "README.md": (
-        "`0.5` is the current development line",
+        "`0.5` is the current release",
         "## Getting started",
         "12 standard media variants, four dedicated bridge variants and three ReadyShell diagnostic builds",
         "| `precog-d81` | one `D81` image on drive `8` | recommended main ReadyOS SKU",

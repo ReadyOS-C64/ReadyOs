@@ -16,6 +16,13 @@ Allow at least 1 MiB for the portable disk editions. Use 16 MiB for the supplied
 On stock Ultimate, disk 2 holds 44 ReadyBASIC examples and the optional C64OS/GDOS launch manifests.
 Stock Ultimate boots with skip zero. For switching, choose the dedicated [C64OS](precog-ultimate-c64os/README.md), [GDOS64](precog-ultimate-gdos/README.md) or [GEOS 2.0](precog-ultimate-geos20/README.md) package and install its native companion.
 
+## Guides included in the download
+
+- For app controls, hardware requirements and shell commands, see the [app guide](../../docs/app_requirements.md) and [ReadyShell tutorial](../../src/apps/readyshell/ReadyShelltutorial.md).
+- To run a BASIC example or load a graphics or music module, see the [ReadyBASIC command and example reference](../../docs/readybasic_reference.md).
+- For Ultimate fast loading, see the [SETUP guide](../../docs/ultimate_setup.md). For OS switching, start with the README in your dedicated bridge folder.
+- In VICE, switching directly from a restored Editor with F2 on EasyFlash can leave the display blank. Use Ctrl+B and select the next app in Launcher. [Known issues](../../knownbugs.md)
+
 ## Media variants
 
 {{PUBLIC_VARIANT_MATRIX}}

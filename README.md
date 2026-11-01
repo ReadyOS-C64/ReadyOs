@@ -2,7 +2,7 @@
 
 ReadyOS lets you switch between full-screen apps on a Commodore 64 and return to
 where you left off. It keeps suspended apps in a RAM Expansion Unit (REU).
-PRECOG `0.5` is the current development line.
+PRECOG `0.5` is the current release. [Download all 19 editions](https://github.com/ReadyOS-C64/ReadyOs/releases/tag/v0.5)
 
 ## Choose your edition
 

@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.5 (development)
+## 0.5
+
+The [0.5 release guide](Releases/0.5/README.md) covers all 19 editions.
+Dedicated bridge editions include native return utilities and instructions
+for switching between ReadyOS and C64OS, GDOS64 or GEOS 2.0.
 
 ### Release Preparation Baseline
 
