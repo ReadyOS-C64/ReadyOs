@@ -14,6 +14,20 @@ privatedocs/
 
 # Build intermediates
 obj/
+/bin/uzpack.raw
+/bin/uzplan.raw
+/bin/uzui.raw
+# Local SETUP disk copies, uZIP probe outputs and the one-off RC1 smoke plan.
+/build/rc1-boot-smoke.yaml
+/build/setup_ultimate/
+/build/uzcreate-compile/
+/build/xuzcreateplan-fixture/
+/build/xuzdeflate/
+/build/xuzextract/
+/build/xuzinflate/
+/build/xuzio/
+/build/xuzreu/
+/build/xuzstore/
 build_support/readybasic_video_gate/bin/
 # ReadyBASIC media experiment: local tools, recordings and pre-build backup.
 build/readybasic-media-tools/
