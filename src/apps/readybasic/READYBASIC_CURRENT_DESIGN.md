@@ -91,7 +91,7 @@ runtime model is the module-aware layout described here.
 Retained pre-media measurements from `obj/readybasic.map` (regenerate the memory
 report for current lengths; the bridge now also owns media state at `$C1FF`):
 
-| Item | Current value |
+| Item | Pre-media value |
 |---|---:|
 | `BASIC_START` | `$2AC1` |
 | Empty BASIC free bytes | `30013` |
@@ -176,10 +176,7 @@ entries are the same submodule family, but they are different overlays.
 The assigned core bank is the authoritative registry/runtime bank: header,
 call/result scratch, handle directory, zero-page/stack snapshots, command
 descriptors, and the typed heap. The assigned code bank is the payload bank:
-built-in module bytes start at `$0000`, and the current disk samples use
-`$3000`, `$3200`, `$3300`, and `$3400`. Future richer per-slot residency
-metadata is reserved for assigned core-bank offsets `$2000-$3FFF`; the current proof keeps only a tiny last-command/copy-count
-record in bridge RAM.
+built-in module bytes start at `$0000`, media loads at `$8000`, and disk samples occupy selected offsets from `$A000` through `$CE26`. The core bank stores the warm-resume hidden-helper copy at `$3000`.
 
 ## Current Syntax And Statement Behavior
 
@@ -542,7 +539,7 @@ the full `$C600-$C9FF` region is resident shim space.
 | Region | Current range | Size | Owner and role |
 |---|---:|---:|---|
 | `ENTRY` | `$1000-$11FF` | `$0200` (512B) | Tiny entry, cold/warm discriminator, early hidden/bridge copies, and prompt hotkey helpers. |
-| `RESIDENT` | `$1200-$2ABF` | `$18C0` (6.2K, 6336 exact bytes) | Visible parser, vector hooks, BASIC ROM calls, REU DMA wrappers, result commit, bare command dispatch, expression hook, native `PROC`/`FUNC`/`RET`, `REPEAT`/`UNTIL`, `LABEL`/`JUMP`, error introspection, proper nested term state, float helpers, and prompt hotkey dispatch. |
+| `RESIDENT` | `$1200-$2A92` | `$1893` (6291 bytes) | Visible parser, vector hooks, BASIC ROM calls, REU DMA wrappers, result commit, bare command dispatch, expression hook, native `PROC`/`FUNC`/`RET`, `REPEAT`/`UNTIL`, `LABEL`/`JUMP`, error introspection, proper nested term state, float helpers, and prompt hotkey dispatch. |
 | BASIC sentinel | `$2AC0` | 1 byte | Must stay zero before stored-program `RUN`. |
 | BASIC workspace | `$2AC1-$9FFF` | `$753F` region, `30013` formula free bytes (29.3K) | Program text, variables, arrays, string heap. |
 | Command pack load image | `$2B00-$3FFF` | `$1500` (5.25K) file range | Built-in module/submodule payload seed bytes before cold prestash. |
@@ -584,7 +581,7 @@ not a contradiction; it is a time-of-use distinction.
 | PRG load / cold seed | `CMDPACK` is loaded at `$2B00-$3FFF`, `HIDLOAD` at `$4000+`, `BRLOAD` at `$4800+`, `REGSEED` at `$5000-$600F`, and `CMDPACK2` at `$6200-$7FFF`. These ranges are inside the future BASIC workspace but BASIC is not live there yet. | No user BASIC program or variables exist yet, so the load image can safely occupy this space temporarily. |
 | End of cold seed | Built-in module/submodule payloads have been copied from `CMDPACK` and `CMDPACK2` to the assigned code bank; the registry has been copied to the assigned core bank; hidden and bridge live copies are in their runtime homes. | `$2AC1-$9FFF` becomes the BASIC workspace. The former load-image bytes are now disposable. |
 | Ready prompt / running BASIC | BASIC owns `$2AC1-$9FFF`, including the old `$2B00-$7FFF` load ranges. Command code is fetched from REU into `$A800`, `$B000`, and/or `$B800` under BASIC ROM only while a command runs. | Empty BASIC free space is `30013` formula bytes. Warm resume never trusts the old load-image addresses. |
-| Future command growth | `CMDPACK` carries `$1455` / 5205B of base built-ins and has `$00AB` / 171B free. `CMDPACK2` carries `$18C3` / 6339B of overlay built-ins and has `$053D` / 1341B free. | Both cold-load windows are reclaimed before BASIC owns the workspace, so growing within them does not reduce steady-state BASIC free bytes. Runtime growth is still bounded by each 2K execution image. |
+| Future command growth | `CMDPACK` carries `$12AE` / 4782B of base built-ins and has `$0252` / 594B free. `CMDPACK2` carries `$1968` / 6504B of overlay built-ins and has `$0498` / 1176B free. | Both cold-load windows are reclaimed before BASIC owns the workspace, so growing within them does not reduce steady-state BASIC free bytes. Runtime growth is still bounded by each 2K execution image. |
 
 The visual way to read this: `CMDPACK` looks like it overlaps BASIC RAM in the
 link/load map because it really does during cold loading. It does not reduce the
@@ -712,8 +709,7 @@ names.
 | Descriptor buffer | `$C480` | One descriptor fetched from the assigned core bank. |
 | Command buffer | `$C4A0` | Uppercase normalized command name. |
 | Page buffer | `$C500` | 256-byte staging page for descriptor scans, REU handle operations, heap bitmap scans, and warm-resume stack buffer. |
-| REU call snapshot | Assigned core bank `$0400` | Copy of the current call frame. |
-| REU result snapshot | Assigned core bank `$0400` | Copy of the current result frame. |
+| REU frame mailbox | Assigned core bank `$0400-$047F` | The first 128 bytes of the call frame, replaced by the first 128 bytes of the result frame after dispatch. |
 | Runtime zero-page snapshot | Assigned core bank `$0A00` | Saved zero page, restored through the temporary buffer at `$C400`. |
 | Runtime stack snapshot | Assigned core bank `$0B00` | Saved stack page, restored through the temporary buffer at `$C500`. |
 
@@ -758,24 +754,23 @@ ReadyBASIC uses two launcher-assigned REU resource banks:
 | core bank | `14` | ReadyBASIC core/system storage. |
 | code bank | `15` | Packed ReadyBASIC command-code storage. |
 
-The launcher marks the assigned physical banks in the ReadyOS REU allocation
-table at `$C600-$C6FF`. ReadyBASIC scans that table at startup and does not use
-`$C600-$C7FF` as private scratch.
+The launcher records physical bank types at offset `$B640` in the ReadyOS REU bank. The shim publishes that bank number at `$C83B`.
 
 ### Assigned Core Bank: Core/System Storage
 
 | Offset | Region |
 |---:|---|
 | `$0000` | Header: `RBPL`, version, descriptor count, descriptor size, and frame offsets. |
-| `$0400` | Current call-frame snapshot. |
-| `$0400` | Current result-frame snapshot. |
+| `$0400-$047F` | First 128 bytes of the call frame, then of the result frame in the same mailbox. |
 | `$0600` | Reserved debug ring area. |
 | `$0800-$09FF` | REU-backed handle directory: 128 descriptors, 4 bytes each. |
 | `$0A00` | Saved zero page for ReadyOS suspend/resume. |
 | `$0B00` | Saved stack page for ReadyOS suspend/resume. |
 | `$0C00-$0CFF` | 192-byte heap page bitmap plus reserved bytes. |
 | `$1000-$1FFF` | 128 command descriptor slots, 32 bytes each. Cold build has 83 real descriptors, 45 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128. |
-| `$2000-$3FFF` | Reserved common/system space for future ReadyBASIC metadata. |
+| `$2000-$2FFF` | Reserved common space. |
+| `$3000-$37A9` | Hidden-helper shadow for warm resume. |
+| `$37AA-$3FFF` | Reserved space before the heap. |
 | `$4000-$FFFF` | Typed handle heap: 192 pages / 48KB. |
 
 The descriptor table keeps `SCRPUT` in the final slot to prove full-table lookup.
@@ -822,19 +817,10 @@ reads the actual link map and RBM packages for exact sizes.
 
 1. ReadyOS loads `readybasic.prg` at `$1000`.
 2. Entry code checks its local warm/cold magic.
-3. On cold path, it maps RAM under BASIC ROM long enough to copy the hidden
-   helper seed to `$A000`, then stashes the helper shadow to assigned core-bank
-   offset `$3000`.
-4. It copies bridge seed bytes from the load image to `$C000`.
-5. The resident core resets KERNAL/BASIC vectors, saves originals, and installs
-   ReadyBASIC crunch/execute/eval, KEYLOG, and CHRIN hooks.
-6. BASIC is relocated to `TXTTAB=$2AC1` with top at `$A000`.
-7. `$2AC0`, `$2AC1`, and `$2AC2` are cleared. `$2AC0` is the sentinel byte
-   required by BASIC `RUN`.
-8. The assigned core bank receives the header and descriptors from `REGSEED`.
-9. The assigned code bank receives the packed low and hidden command code.
-10. ReadyBASIC clears/redraws the screen, prints its banner, and enters
-    `BASIC_READY`.
+3. Cold entry copies the helper from `$4000` to RAM under BASIC ROM at `$A000`, then copies the bridge seed from `$4800` to `$C000`.
+4. The resident resets the KERNAL and BASIC vectors, initializes BASIC with `TXTTAB=$2AC1` and top `$A000`, and clears `$2AC0-$2AC2`. BASIC `RUN` needs the sentinel at `$2AC0` to be zero.
+5. It installs the hooks, clears pending input and seeds the assigned REU banks. The core bank receives the header, descriptors and hidden-helper shadow at offset `$3000`. The code bank receives the base and replacement payloads.
+6. ReadyBASIC draws its banner and enters `BASIC_READY`.
 
 ## EXIT, Suspend, And Warm Resume
 
@@ -898,7 +884,7 @@ ReadyBASIC uses hidden code in two places:
 
 | Code | Range | Purpose |
 |---|---:|---|
-| Hidden helper | `$A000-$A6C7` | REU prestash, save/restore helpers, bank-sensitive work. |
+| Hidden helper | `$A000-$A7A9` | REU prestash, save/restore helpers, bank-sensitive work. |
 | Command slots | `$A800-$BFFF` | Module/submodule payload slots fetched from the assigned code bank. |
 
 Before calling hidden code, ReadyBASIC saves flags, disables interrupts, forces
@@ -969,7 +955,7 @@ Current measured guardrails:
 | `BASIC_START` | `$2AC1` |
 | Empty BASIC free bytes | `30013` |
 | `bin/readybasic.prg` size | `28674` |
-| `RESIDENT` | `$18C0` / 6336B |
+| `RESIDENT` | `$1893` / 6291B |
 | `LOWPACK` | `$0654` / 1620B |
 | `HIDDEN` | `$07AA` / 1962B |
 | `BRIDGE` | `$0200` / 512B |

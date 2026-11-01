@@ -738,11 +738,11 @@ def build_public_variant_matrix(version_text: str) -> str:
             f"{profile.get('release_description', VARIANT_NOTES.get(kind, 'Profile-specific ReadyOS media layout.'))} | "
             f"`{boot_flow_text(str(resolved['preboot_mode']))}` |"
         )
-        if profile_id == "precog-d81":
+        if profile_id == "precog-ultimate":
             lines.append(
                 "| [`precog-easyflash`](precog-easyflash/README.md) | `CRT` cartridge plus companion `D64` on drive `8` | "
                 "VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | "
-                "Full catalog cartridge preload plus the required companion data disk. | `cartridge reset` |"
+                "Preloaded apps and ReadyShell overlays plus the required companion data disk. | `cartridge reset` |"
             )
     return "\n".join(lines)
 
@@ -770,7 +770,7 @@ def render_release_root_readme(version_text: str) -> str:
     public_version = public_release_version(version_text)
     public_ids = public_profile_ids()
     release_ids = list(public_ids)
-    release_ids.insert(release_ids.index("precog-d81") + 1, "precog-easyflash")
+    release_ids.insert(release_ids.index("precog-ultimate") + 1, "precog-easyflash")
     replacements = {
         "PUBLIC_VERSION": public_version,
         "VERSION_TEXT": version_text,

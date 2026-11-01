@@ -23,6 +23,14 @@ Skip (ReadyOS bank)                       Skip+1 ... detected end
 The configured skip is compiled into the build; resident shim byte `$C83B`
 stores the direct physical ReadyOS bank number (`Skip`).
 
+| Release configuration | Native OS reservation | Bridge snapshot reservation | ReadyOS bank | First dynamic bank |
+| --- | --- | --- | ---: | ---: |
+| Stock disk or EasyFlash | None | None | 0 | 1 |
+| Dedicated C64OS | 0–31 | 32–38 (ReadyOS RAM at 32, C64OS RAM at 34) | 39 | 40 |
+| Dedicated GDOS64 or GEOS 2.0 | 0–63 | 64–70 (ReadyOS RAM at 64, native RAM at 66) | 71 | 72 |
+
+Bank numbers above are decimal. Each REU bank is 64 KiB. The reservations describe the maximum range each side may use. For example, the supported GEOS 2.0 setup uses an eight-bank native allocation inside its reservation.
+
 ## What Changed
 
 The older shim calculated every app snapshot's physical bank from a fixed
@@ -189,7 +197,7 @@ logical token without carrying a large resident table.
 | `$FB40` | `$0100` | audit page |
 | `$FC40` | `$0080` | launcher `RSM1` envelope: 16-byte header plus compact UI payload |
 | `$FCC0` | `$0080` | DMA service record (`DM` v1), independent of launcher UI resume |
-| `$FD40` | `$02C0` | reserved for compatible schema growth |
+| `$FD40` | `$02C0` | dedicated bridges use `$FD40-$FD47` for their eight-byte control record. The remaining bytes are reserved |
 
 `reu_control_bank_sync_and_mirror()` writes bank types directly to the ReadyOS
 bank; there is no resident mirror to reconcile. The launcher registry writer

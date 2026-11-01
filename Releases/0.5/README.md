@@ -1,15 +1,18 @@
 # ReadyOS 0.5 release guide
 
+## Main editions
+
 Choose the folder for your machine. Its README gives the exact filenames, required drives and app list.
 
 | Setup | Release folder | First boot |
 | --- | --- | --- |
 | VICE or a 1581 drive | [Regular D81](precog-d81/README.md) | Enable the REU, mount the D81 on 8, then `LOAD"*",8` and `RUN`. |
-| C64 Ultimate | [Ultimate](precog-ultimate/README.md) | Mount disk 1 on 8 and disk 2 on 9. Use `LOAD"SETUP",8,1` and `RUN` to configure fast loading before booting. |
+| C64 Ultimate | [Ultimate dual D81](precog-ultimate/README.md) | Mount disk 1 on 8 and disk 2 on 9. Use `LOAD"SETUP",8,1` and `RUN` to configure fast loading before booting. |
 | EasyFlash | [Cartridge and data disk](precog-easyflash/README.md) | Mount the data D64 on 8, attach the CRT and reset. |
-| 1541, 1571 or KFF2 | See the media table below | Match the drive types and mount the complete boot set. |
 
-Allow at least 1 MiB REU for portable releases. Dedicated bridges require 16 MiB.
+For 1541, 1571 and Kung Fu Flash 2, use the media table below.
+
+Allow at least 1 MiB for the portable disk editions. Use 16 MiB for the supplied EasyFlash setup. Dedicated bridges require 16 MiB.
 On stock Ultimate, disk 2 holds 44 ReadyBASIC examples and the optional C64OS/GDOS launch manifests.
 Stock Ultimate boots with skip zero. For switching, choose the dedicated [C64OS](precog-ultimate-c64os/README.md), [GDOS64](precog-ultimate-gdos/README.md) or [GEOS 2.0](precog-ultimate-geos20/README.md) package and install its native companion.
 
@@ -18,8 +21,8 @@ Stock Ultimate boots with skip zero. For switching, choose the dedicated [C64OS]
 | Folder | Media | Best Fit | Why It Exists | Boot |
 | --- | --- | --- | --- | --- |
 | [`precog-d81`](precog-d81/README.md) | 1x `D81` on drive `8` | C64 Ultimate, VICE, or other 1581-capable setups; this is the recommended and default ReadyOS SKU. | Main full-content ReadyOS profile: one D81 holds the current app catalog, ReadyBASIC modules, and examples. | `PREBOOT -> BOOT` |
-| [`precog-easyflash`](precog-easyflash/README.md) | `CRT` cartridge plus companion `D64` on drive `8` | VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | Full catalog cartridge preload plus the required companion data disk. | `cartridge reset` |
 | [`precog-ultimate`](precog-ultimate/README.md) | 2x `D81` on drives `8` and `9` | C64 Ultimate users who want Ultimate DOS DMA loading and a guided first-run image-path setup utility. | Full Ultimate main app set on drive 8; ReadyBASIC examples and optional C64OS/GDOS apps/manifests on drive 9. Stock skip zero disables OS switching; dedicated bridge variants provide matched reservations. | `PREBOOT -> BOOT` |
+| [`precog-easyflash`](precog-easyflash/README.md) | `CRT` cartridge plus companion `D64` on drive `8` | VICE and Ultimate-family setups that want cartridge cold boot with disk-backed runtime data. | Preloaded apps and ReadyShell overlays plus the required companion data disk. | `cartridge reset` |
 | [`precog-dual-d71`](precog-dual-d71/README.md) | 2x `D71` boot set on drives `8` and `9`; 1x optional `D71` drive-9 swap | C64 Ultimate, Ultimate 64, or VICE setups using two 1571-class drives, with optional drive-9 disk swapping. | Two boot-time D71 images hold the core 1571 app set; a third optional drive-9 swap image adds lesser apps and the original 41 ReadyBASIC examples. | `PREBOOT -> SETD71 -> BOOT` |
 | [`precog-kung-fu-flash-2-d81`](precog-kung-fu-flash-2-d81/README.md) | 1x `D81` on drive `8` | Kung Fu Flash 2 users who want one full-content D81 and the cartridge's 1MB REU mode instead of CRT cartridge mode. | Full-content single-D81 profile tuned for Kung Fu Flash 2 disk loading with a 1MB REU and no skipped REU banks. | `PREBOOT -> BOOT` |
 | [`precog-dual-d64`](precog-dual-d64/README.md) | 2x `D64` on drives `8` and `9` | Real or emulated 1541-only setups that can mount two disks but not D71 or D81 media. | Reduced dual-disk profile for 1541-class environments that can mount two D64 images but not higher-capacity media. | `PREBOOT -> BOOT` |

@@ -356,6 +356,7 @@ def render(ctx: dict[str, object]) -> str:
         Block("Vectors, buffers, screen", 0x0200, 0x0E00, "system", "Includes page-3 hooks, input buffer, screen RAM, and low BASIC/system RAM."),
         Block("ReadyBASIC entry", seg["ENTRY"].start, seg["ENTRY"].size, "entry", "Cold/warm discriminator and early copies."),
         Block("ReadyBASIC resident", seg["RESIDENT"].start, seg["RESIDENT"].size, "resident", "Parser, hooks, ROM calls, REU DMA, PROC/FUNC, flow control, command dispatch."),
+        Block("Resident headroom", seg["RESIDENT"].end + 1, basic_start - 2 - seg["RESIDENT"].end, "free", "Linker capacity before the sentinel."),
         Block("BASIC sentinel", basic_start - 1, 1, "sentinel", "Must be zero before stored-program RUN."),
         Block("BASIC workspace", basic_start, basic_limit - basic_start, "basic", "Program text, variables, arrays, strings, and reclaimed cold-load seed space."),
         Block("Under BASIC ROM", 0xA000, 0x2000, "underrom", "Common helper plus three 2K command submodule slots."),
@@ -368,9 +369,9 @@ def render(ctx: dict[str, object]) -> str:
         ),
         Block("ReadyOS shim expansion reserve", 0xC600, 0x0200, "shim", "Resident capacity reserved for future shim functionality; not app RAM."),
         Block("ReadyOS shim ABI", 0xC800, 0x0200, "shim", "Resident jump table/data; public addresses remain stable."),
-        Block("High RAM gap", 0xCA00, 0x0600, "reserved", "Outside app snapshot and below I/O."),
+        Block("VIC bank 3 sprite/screen RAM", 0xCA00, 0x0600, "underrom", "Outside the app snapshot. Graphics uses $CA00-$CBFF for sprites and $CC00-$CFFF for the screen."),
         Block("I/O / color", 0xD000, 0x1000, "io", "REU registers at $DF00-$DF0A when I/O visible."),
-        Block("KERNAL ROM", 0xE000, 0x2000, "rom", "Normally visible after banking is restored."),
+        Block("KERNAL ROM / graphics RAM", 0xE000, 0x2000, "rom", "CPU normally sees KERNAL ROM. The VIC can use the underlying RAM for bitmap or character data."),
     ]
 
     cold_basic_blocks = [
@@ -403,9 +404,9 @@ def render(ctx: dict[str, object]) -> str:
     ]
 
     post_blocks = [
-        Block("Resident ReadyBASIC", seg["RESIDENT"].start, seg["RESIDENT"].size, "resident", "Still live in visible RAM."),
+        *[block for block in ram_blocks if 0x1000 <= block.start < basic_start],
         Block("BASIC workspace", basic_start, basic_limit - basic_start, "basic", "Former seed bytes are user BASIC memory now."),
-        Block("Under-ROM command slots", 0xA000, 0x2000, "underrom", "Fetched from the assigned code bank on demand."),
+        Block("Hidden helper and three command slots", 0xA000, 0x2000, "underrom", "The helper occupies the first 2 KiB window. Commands use the remaining three slots."),
         Block("Bridge/frames", 0xC000, 0x0600, "bridge", "Bridge and shared command frames."),
     ]
 
@@ -414,9 +415,9 @@ def render(ctx: dict[str, object]) -> str:
     slot_blocks = [
         Block("Slot 0 current", 0xA800, slot0_used, "module-a", "Module 1 system/default payload.", groups["slot0"] + groups["end"]),
         Block("Slot 0 free", 0xA800 + slot0_used, slot_size - slot0_used, "free", f"{fmt_size(slot_size - slot0_used)} free inside slot 0."),
-        Block("Slot 1 current", 0xB000, slot1_used, "module-b", "Module 2 proof, LDMOD, and GFXCORE.", groups["slot1"] + groups["gfxcore"]),
+        Block("Slot 1 current", 0xB000, slot1_used, "module-b", "LDMOD and GFXCORE.", groups["slot1"] + groups["gfxcore"]),
         Block("Slot 1 free", 0xB000 + slot1_used, slot_size - slot1_used, "free", f"{fmt_size(slot_size - slot1_used)} free inside slot 1."),
-        Block("Slot 2 GFXPRIM current", 0xB800, seg["SLOTPACK2"].size, "module-c", "Base proof plus GFXPRIM; replacement overlays load over this when called.", groups["slot2"] + groups["gfxprim"]),
+        Block("Slot 2 GFXPRIM current", 0xB800, seg["SLOTPACK2"].size, "module-c", "GFXPRIM base image. Replacement overlays load at the same address.", groups["slot2"] + groups["gfxprim"]),
         Block("Slot 2 GFXPRIM free", 0xB800 + seg["SLOTPACK2"].size, slot_size - seg["SLOTPACK2"].size, "free", f"{fmt_size(slot_size - seg['SLOTPACK2'].size)} free in the GFXPRIM slot image."),
         Block("Slot 2 GFXSPR overlay", 0xB800, seg["OVL1PACK"].size, "overlay", "Replacement overlay for sprite commands.", groups["overlay"][:1] + groups["gfxspr"]),
         Block("Slot 2 GFXSPR free", 0xB800 + seg["OVL1PACK"].size, slot_size - seg["OVL1PACK"].size, "free", f"{fmt_size(slot_size - seg['OVL1PACK'].size)} free in the GFXSPR overlay image."),
@@ -435,18 +436,30 @@ def render(ctx: dict[str, object]) -> str:
     reu44_blocks = [
         Block("Header", 0x0000, 0x0010, "registry", "RBPL header and offsets."),
         Block("Reserved metadata", 0x0010, 0x03F0, "reserved", "Common/system metadata before frames."),
-        Block("Call/result frame mirror", 0x0400, 0x0200, "bridge", "Current frame snapshots."),
+        Block("Call/result frame mirror", 0x0400, 0x0080, "bridge", "First 128 bytes of the latest call or result frame."),
+        Block("Reserved", 0x0480, 0x0180, "reserved"),
         Block("Debug ring reserve", 0x0600, 0x0200, "reserved", "Parser/command breadcrumbs reserve."),
         Block("Handle directory", 0x0800, 0x0200, "handle", "128 handle descriptors, 4B each."),
         Block("ZP snapshot", 0x0A00, 0x0100, "system", "ReadyBASIC suspend/resume zero page."),
         Block("Stack snapshot", 0x0B00, 0x0100, "system", "ReadyBASIC suspend/resume stack page."),
         Block("Heap bitmap", 0x0C00, 0x0400, "handle", "192 pages tracked; rest reserved."),
         Block("Command descriptors", 0x1000, 0x1000, "registry", "128 x 32-byte descriptor slots."),
-        Block("Reserved common", 0x2000, 0x2000, "reserved", "Future per-slot residency/catalog metadata."),
+        Block("Reserved common", 0x2000, 0x1000, "reserved"),
+        Block("Hidden helper shadow", 0x3000, seg["HIDDEN"].size, "underrom", "Restores the helper under BASIC ROM on warm resume."),
+        Block("Reserved common", 0x3000 + seg["HIDDEN"].size, 0x1000 - seg["HIDDEN"].size, "reserved"),
         Block("Typed handle heap", 0x4000, 0xC000, "heap", "48K data heap for buffers and screen handles."),
     ]
 
     disk_blocks = disk_module_blocks()
+    disk_layout = []
+    disk_end = 0xA000
+    for block in sorted(disk_blocks, key=lambda block: block.start):
+        if block.start < disk_end:
+            raise ValueError(f"Overlapping payload at {block.label}")
+        if disk_end < block.start:
+            disk_layout.append(Block("Unused sample space", disk_end, block.start - disk_end, "free"))
+        disk_layout.append(block)
+        disk_end = block.end + 1
     media_size = (ROOT / "obj/readybasic_modules/media.bin").stat().st_size
     if not 0 < media_size <= 0x1000:
         raise SystemExit("Media payload must fit the two-slot span")
@@ -468,9 +481,25 @@ def render(ctx: dict[str, object]) -> str:
         Block("On-demand media payload", 0x8000, media_size, "span", "Current media.bin; fetched into $B000-$BFFF slots 1+2. IRQ driver is copied separately into MEMCAP-reserved C64 RAM.", ("MUSTUNE", "MUSPLAY", "MUSHALT", "MUSDROP", "RSCFILE", "MCFILE", "SPRFILE", "MCLINE")),
         Block("Media span headroom", 0x8000 + media_size, 0x1000 - media_size, "free", "Remaining capacity within the two-slot media reservation."),
         Block("Free code gap", 0x9000, 0x1000, "free", "Space before disk-only examples."),
-        *disk_blocks,
-        Block("Payload bank free tail", 0xCE3D, 0x31C3, "free", "Space after disk sample overlays."),
+        *disk_layout,
+        Block("Payload bank free tail", disk_end, 0x10000 - disk_end, "free", "Space after disk sample overlays."),
     ]
+
+    # Each complete address-space diagram must account for every byte once.
+    for blocks, start, limit in (
+        (ram_blocks, 0, 0x10000), (post_blocks, 0x1000, 0xC600),
+        (reu44_blocks, 0, 0x10000), (reu45_blocks, 0, 0x10000),
+        (cmdpack_blocks, cmdpack_start, cmdpack_start + cmdpack_size),
+        (cmdpack2_blocks, cmdpack2_start, cmdpack2_start + cmdpack2_size),
+        (cold_basic_blocks, basic_start - 1, basic_limit),
+    ):
+        cursor = start
+        for block in blocks:
+            if block.start != cursor or block.size < 0:
+                raise ValueError(f"Invalid range for {block.label} at {fmt_hex(block.start)}")
+            cursor += block.size
+        if cursor != limit:
+            raise ValueError(f"Map ending at {fmt_hex(cursor)} must end at {fmt_hex(limit)}")
 
     reu_overview_blocks = [
         Block("ReadyOS bank", 0x000000, 0x010000, "readyos", "Physical Skip: launcher snapshot at $0000-$B5FF plus schema-v5 mappings, status, clipboard, hotkeys, app/resource registry, catalog, audit, and runtime records at $B600-$FFFF."),
@@ -660,15 +689,18 @@ def render(ctx: dict[str, object]) -> str:
 
   <section id="slots">
     <h2>The 6K Under-ROM Command Window</h2>
-    <p>At runtime, command payloads are fetched from REU into one or more fixed 2K slots behind BASIC ROM. Small proof payloads are visually thickened here so they remain visible; the table below preserves exact byte counts.</p>
-    {stacked_map(slot_blocks, 3 * slot_size, cls="short")}
+    <p>At runtime, command payloads are fetched from REU into one or more fixed 2K slots behind BASIC ROM. Small regions have a minimum display height. The table gives exact byte counts.</p>
+    {stacked_map(slot_blocks[:6], 3 * slot_size, cls="short")}
+    <h3>Alternate images for slot 2</h3>
+    <p>Each row replaces the image at $B800 in the same 2 KiB of RAM.</p>
+    {"".join(stacked_map(slot_blocks[i:i+2], slot_size, cls="short") for i in range(6, len(slot_blocks), 2))}
   </section>
 
   <section id="reu">
     <h2>REU Picture</h2>
     <div class="grid-2">
       <div>
-        <h3>16MB REU Ownership Overview</h3>
+        <h3>Stock 16 MiB REU (Skip = 0)</h3>
         {stacked_map(reu_overview_blocks, reu['REU_TOTAL_BANKS'] * 0x10000, cls="reu-overview", show_range=False)}
       </div>
       <div>

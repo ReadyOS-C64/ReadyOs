@@ -48,29 +48,14 @@ actual C64/ReadyOS evidence trail rather than a pile of confident guesses.
 - A refreshed REU shadow copy of the hidden helper image lives in the
   launcher-assigned ReadyBASIC core bank at offset `$3000`. Warm entry restores
   `$A000` from that shadow before using hidden helpers.
-- The plugin spine keeps visible resident code at `$1200-$2AB8`, command
-  overlays under BASIC ROM, shared frames at `$C200-$C5FF`, and
-  launcher-assigned ReadyBASIC core/code REU banks. Older entries below may
-  mention `$44/$45`; treat those as historical fixed-bank examples, not the
-  current contract.
-- Module/submodule branch update: the current visible resident range is
-  `$1200-$2AB8`, the bridge is `$C000-$C1FD`, and command payloads now use a
-  common under-ROM helper area `$A000-$A7FF` plus three 2KB submodule slots:
-  `$A800-$AFFF`, `$B000-$B7FF`, and `$B800-$BFFF`.
+- The visible resident segment ends at `$2A92`. The common under-ROM helper uses `$A000-$A7A9`; three execution slots begin at `$A800`, `$B000` and `$B800`. Bridge state occupies `$C000-$C1FF`, immediately before the shared frames.
 - Current command descriptors are module-aware 32-byte records: command id,
   module id, payload offset/size in the assigned code bank, submodule id,
   overlay id, slot mask, generation/check byte, runtime destination, entry
   offset, signature id, and name.
-- Built-in payload bytes are prestashed into the assigned code bank: module 1 slot 0 at
-  `$0000-$06CD`, module 2 slot 1 at `$06CE-$0908`, slot 2/span/overlay proofs
-  through `$095C`, and disk sample payloads currently starting at `$3000`.
-- The current registry has 128 descriptor slots in REU bank `$44` at
-  `$1000-$1FFF`. Lookup fetches one 256-byte page at a time into `$C500`, scans
-  eight descriptors locally, and copies a match into `$C480`.
-- The current typed handle system supports 128 live handles. Handle descriptors
-  live at REU `$44:$0800-$09FF`, the 192-page bitmap at `$44:$0C00`, and the
-  48KB typed heap at `$44:$4000-$FFFF`; bridge RAM keeps only current-handle
-  scratch.
+- The assigned code bank holds the built-in base images from `$0000`, replacement overlays from `$5000`, media at `$8000` and disk samples from `$A000`.
+- The assigned core bank holds 128 descriptors at `$1000-$1FFF`. Lookup fetches eight descriptors at a time into `$C500` and copies a match into `$C480`.
+- The same bank holds the handle directory at `$0800-$09FF`, heap allocation bitmap at `$0C00`, and 48 KiB heap at `$4000-$FFFF`. Older notebook entries use the physical bank assignments of their test builds.
 - Cold entry prestashes `CMDPACK`, hidden helper/bridge seeds, and `REGSEED`
   into their runtime locations or REU. Warm resume must reuse those runtime/REU
   copies rather than rereading load-only addresses that BASIC may now own.

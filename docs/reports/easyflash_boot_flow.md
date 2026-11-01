@@ -42,23 +42,22 @@ In practice, the cartridge is mainly a fast cold-boot source for the initial pay
 
 ## Current Cartridge Layout
 
-The generated layout currently defines:
+The shipped [cartridge layout](../../Releases/0.5/precog-easyflash/layout.json) assigns these 16 KiB flash banks. Each REU bank holds 64 KiB.
 
 - bank `0`: boot bank
 - banks `1-2`: launcher payload
-- banks `3-43`: 21 application payloads in the current generated layout
-- banks `44-52`: nine ReadyShell overlay payloads
-- banks `53-63`: unused cartridge capacity in the current one-megabyte image
+- banks `3-41`: 20 application payloads in the current generated layout
+- banks `42-50`: nine ReadyShell overlay payloads
+- banks `51-63`: unused cartridge capacity in the current one-megabyte image
 
 Current generated constants:
 
 - `EASYFLASH_LAUNCHER_BANK = 1`
 - `EASYFLASH_LAUNCHER_BANK_SPAN = 2`
-- `EASYFLASH_APP_COUNT = 21` in the current generated layout
+- `EASYFLASH_APP_COUNT = 20` in the current generated layout
 - overlay/resource counts are generated from the profile resource metadata
 
-This count is a generated-layout measurement, not an ABI constant. Regenerate
-the report after catalog changes rather than copying the number forward.
+In the shipped REU layout, bank 0 belongs to ReadyOS and banks 1–20 hold app snapshots. ReadyShell gets banks 21–23 for overlay caches and 24 for state. ReadyBASIC gets banks 25–26. These are decimal REU bank numbers. The disk editions allocate app and resource banks at runtime.
 
 Each EasyFlash bank is treated as one 16 KiB payload slot, split across:
 
@@ -78,13 +77,13 @@ Each EasyFlash bank is treated as one 16 KiB payload slot, split across:
 
 - `$0800-$27FF`: EasyFlash loader copied from cartridge and executed from RAM
 - `$1000-$C5FF`: `$B600` app working/launcher restore window
-- `$1000-$47FF`: upper part of loader tail refresh
-- `$1000-$47FF` / full window: temporary staging during preload
+- `$1000-$27FF`: loader tail refreshed from cartridge bank 0 before preload
+- `$1000-$47FF`: ReadyShell overlay staging during preload
 - `$C600-$C7FF`: resident shim expansion reserve (no REU bookkeeping mirror)
 - `$C600-$C9FF`: canonical 1 KB shim copied into RAM; public ABI remains at `$C800`
 - `$CA00+`: diagnostic/debug scratch
-- `$CC00-$CC8F`: copied app layout table
-- `$CC90-...`: copied overlay layout table
+- `$CC00-$CCC7`: 20 app entries of 10 bytes each
+- `$CCC8-$CD33`: nine overlay entries of 12 bytes each
 
 ### Screen / VIC visible areas
 
@@ -174,9 +173,7 @@ What it copies:
 
 Why this exists:
 
-- The loader itself is larger than the first 8 KiB copied by the ROMH stub.
-- The stub only gets the first chunk into RAM.
-- The loader then pulls in its own remaining code/data from cart bank `0`.
+- The reset stub copies the full 8 KiB window. The loader re-enables the cartridge and refreshes the upper 6 KiB of that same RAM window before installing the shim.
 
 This is still pure asm.
 
@@ -235,7 +232,7 @@ Important nuance:
   preload work begins
 - the failure path still runs entirely in early boot asm
 
-## Stage 4: Historical Shim Install
+## Stage 4: Install the resident shim
 
 The loader copies the canonical 1 KB shim byte image into `$C600-$C9FF`.
 
@@ -251,7 +248,7 @@ Destination:
 
 What the shim is:
 
-- a resident 512-byte helper layer
+- a 1 KiB resident region with the public jump table and data in its upper 512 bytes
 - common contract between launcher/apps and the boot/runtime handoff model
 
 Key shim jump table entries:
@@ -282,7 +279,7 @@ schema-v5 portion at `$B600-$FFFF` without disturbing that snapshot.
 The generated tables from `src/generated/easyflash_layout.inc` are copied into normal RAM:
 
 - app table -> `$CC00`
-- overlay table -> `$CC90`
+- overlay table -> `$CCC8` (immediately after the app table)
 
 Why:
 
@@ -301,7 +298,7 @@ Current launcher layout:
 - cart start bank: `1`
 - span: `2` banks
 - load address: `$1000`
-- payload length: `$78B0`
+- payload length: `$69D6`
 
 Detailed flow:
 
@@ -312,7 +309,7 @@ Detailed flow:
 
 Important nuance:
 
-- The payload itself is about `30.2 KiB`.
+- The payload itself is about `26.5 KiB`.
 - The stash is the full `46,592` byte app window.
 - That means the REU snapshot stores the complete runtime RAM image shape expected by the launcher, not just the compressed-on-cart payload bytes.
 - The border switches to yellow for cart-to-RAM copy, then orange for the REU stash.
@@ -537,7 +534,7 @@ The long pause at 100 percent speed is expected from the current design.
 What boot is doing during that pause:
 
 - preloading launcher snapshot
-- preloading 21 application snapshots
+- preloading 20 application snapshots
 - preloading 9 ReadyShell overlay/resource payloads
 - clearing large RAM windows before each preload
 - copying payloads from cartridge into RAM in software loops
@@ -545,9 +542,9 @@ What boot is doing during that pause:
 
 Roughly:
 
-- about `635 KiB` of current launcher/app/overlay payload content gets copied
+- about `615 KiB` of current launcher/app/overlay payload content gets copied
   from cartridge
-- app snapshots alone account for about `956 KiB` of REU stash traffic, before
+- app snapshots alone account for about `910 KiB` of REU stash traffic, before
   launcher and ReadyShell resource/state transfers
 - plus a large amount of repeated RAM clearing
 

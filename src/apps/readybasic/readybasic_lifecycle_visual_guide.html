@@ -117,7 +117,7 @@
 <li><a href="#persistent-handle-model" id="toc-persistent-handle-model">Persistent Handle Model</a></li>
 <li><a href="#hidden-code-and-banking-contract" id="toc-hidden-code-and-banking-contract">Hidden Code And Banking Contract</a></li>
 <li><a href="#what-must-stay-true" id="toc-what-must-stay-true">What Must Stay True</a></li>
-<li><a href="#current-repeatlabel-delta" id="toc-current-repeatlabel-delta">Current Repeat/Label Delta</a></li>
+<li><a href="#historical-repeatlabel-checkpoint" id="toc-historical-repeatlabel-checkpoint">Historical repeat/label checkpoint</a></li>
 <li><a href="#current-verification" id="toc-current-verification">Current Verification</a></li>
 <li><a href="#design-notes-for-future-expansion" id="toc-design-notes-for-future-expansion">Design Notes For Future Expansion</a></li>
 </ul></li>
@@ -261,7 +261,7 @@
 <td>Cold/warm discriminator, handoff, hotkey quarantine, and small visible trampolines.</td>
 </tr>
 <tr>
-<td><code>$1200-$2ABD</code></td>
+<td><code>$1200-$2A92</code></td>
 <td>ReadyBASIC resident</td>
 <td>Parser, ROM calls, dispatch, commit, native language runtime.</td>
 </tr>
@@ -278,7 +278,7 @@
 <tr>
 <td><code>$A000-$A7FF</code></td>
 <td>RAM behind BASIC ROM</td>
-<td>Common helper, current use <code>$A000-$A6E9</code>; <code>$0116</code> / 278B remain free.</td>
+<td>Common helper, current use <code>$A000-$A7A9</code>; <code>$0056</code> / 86B remain free.</td>
 </tr>
 <tr>
 <td><code>$A800-$AFFF</code></td>
@@ -288,7 +288,7 @@
 <tr>
 <td><code>$B000-$B7FF</code></td>
 <td>RAM behind BASIC ROM</td>
-<td>Submodule slot 1, current module 2 proof/loader payload.</td>
+<td>Submodule slot 1, current LDMOD/GFXCORE payload.</td>
 </tr>
 <tr>
 <td><code>$B800-$BFFF</code></td>
@@ -296,7 +296,7 @@
 <td>Submodule slot 2 and overlay target.</td>
 </tr>
 <tr>
-<td><code>$C000-$C1FE</code></td>
+<td><code>$C000-$C1FF</code></td>
 <td>ReadyBASIC bridge</td>
 <td>Small state below shared frames.</td>
 </tr>
@@ -327,8 +327,7 @@
 </tr>
 </tbody>
 </table>
-<p>Current measured values are <code>BASIC_START=$2AC1</code>, <code>RESIDENT=$18BE</code>, <code>BRIDGE=$01FF</code>, common helper <code>$06EA</code>, slot 0 <code>$06CE</code>, slot 1 <code>$023B</code>, and formula empty BASIC free bytes <code>30013</code>.</p>
-<p>The older low/hidden command overlay vocabulary is now implemented as a module-aware under-ROM command system. Descriptors remain 32 bytes, but their fields now identify module id, submodule id, overlay id, slot mask, assigned code-bank payload offset/size, runtime destination, entry offset, signature id, and name. Assigned core-bank offsets <code>$2000-$3FFF</code> are reserved for the richer per-slot residency catalog; the current proof keeps only a tiny last-command/copy-count record in bridge RAM.</p>
+<p>The empty BASIC workspace has 30,013 free bytes. Slot payloads and their linked sizes are in the <a href="../../../docs/readybasic_memory_diagrams.html">generated memory map</a>. The assigned core bank keeps a copy of the hidden helper at offset <code>$3000</code> for warm resume.</p>
 </section>
 <section id="technical-philosophy" class="level2">
 <h2>Technical Philosophy</h2>
@@ -365,23 +364,28 @@
 <p>The ReadyOS app working region is <code>$1000-$C5FF</code>; the resident 1 KB shim owns <code>$C600-$C9FF</code>, with its public ABI in the upper half. ReadyBASIC must preserve its custom assembler/linker shape while hosting BASIC.</p>
 <pre class="mermaid"><code>flowchart TB
   A[&quot;$1000-$11FF ENTRY&lt;br/&gt;load entry, cold/warm cookie, hotkey quarantine&quot;]
-  B[&quot;$1200-$2ABD RESIDENT&lt;br/&gt;visible parser, vector hooks, REU DMA, commit, PROC/FUNC/RET, flow control, float terms&quot;]
+  B[&quot;$1200-$2A92 RESIDENT&lt;br/&gt;visible parser, vector hooks, REU DMA, commit, PROC/FUNC/RET, flow control, float terms&quot;]
   C[&quot;$2AC0 SENTINEL&lt;br/&gt;must be zero for BASIC RUN&quot;]
   D[&quot;$2AC1-$9FFF BASIC WORKSPACE&lt;br/&gt;30013 formula free bytes / 29.3K&quot;]
   E[&quot;$2B00-$3FFF CMDPACK LOAD IMAGE&lt;br/&gt;module/submodule payload seed bytes before cold prestash&quot;]
   F[&quot;Assigned core bank $0A00-$0BFF RUNTIME SNAPSHOT&lt;br/&gt;zero page and stack / 0.5K&quot;]
+  Q[&quot;$6200-$7FFF CMDPACK2 LOAD IMAGE&lt;br/&gt;replacement overlays before cold prestash&quot;]
   G[&quot;$C200-$C5FF SHARED FRAMES&lt;br/&gt;call/result/descriptor/name/page buffers / 1.0K&quot;]
   I[&quot;Assigned core bank $3000 HIDDEN SHADOW&lt;br/&gt;refreshed on EXIT&quot;]
-  J[&quot;$A000-$A6E9 COMMON HELPER&lt;br/&gt;runs under BASIC ROM RAM&quot;]
-  K[&quot;$A800-$AECD SLOT 0 PAYLOAD&lt;br/&gt;module 1 system/default payload&quot;]
-  O[&quot;$B000-$B23A SLOT 1 PAYLOAD&lt;br/&gt;module 2 proof and LDMOD loader&quot;]
-  P[&quot;$B800-$B814 SLOT 2 / OVERLAYS&lt;br/&gt;proof and overlay slices&quot;]
-  L[&quot;$C000-$C1FE BRIDGE STATE&lt;br/&gt;magic, saved vectors, overlay vars, handle scratch, PROC/FUNC stack&quot;]
+  J[&quot;$A000-$A7A9 COMMON HELPER&lt;br/&gt;runs under BASIC ROM RAM&quot;]
+  K[&quot;$A800-$AE53 SLOT 0 PAYLOAD&lt;br/&gt;module 1 system/default payload&quot;]
+  O[&quot;$B000-$B536 SLOT 1 PAYLOAD&lt;br/&gt;GFXCORE and LDMOD loader&quot;]
+  P[&quot;$B800-$BF22 SLOT 2 / OVERLAYS&lt;br/&gt;GFXPRIM base or one replacement overlay&quot;]
+  L[&quot;$C000-$C1FF BRIDGE STATE&lt;br/&gt;magic, saved vectors, overlay vars, handle scratch, PROC/FUNC stack&quot;]
   M[&quot;$C600-$C7FF SHIM EXPANSION RESERVE&lt;br/&gt;resident ReadyOS capacity, not app RAM&quot;]
   N[&quot;$C800-$C9FF SHIM ABI&lt;br/&gt;ReadyOS jump table/data, not app RAM&quot;]
 
-  A --&gt; B --&gt; C --&gt; D --&gt; G
-  G --&gt; F --&gt; J --&gt; K --&gt; O --&gt; P --&gt; L --&gt; M --&gt; N</code></pre>
+  A --- B --- C --- D
+  E -. reclaimed .-&gt; D
+  Q -. reclaimed .-&gt; D
+  I -. warm restore .-&gt; J
+  J --- K --- O --- P --- L --- G --- M --- N
+  F -. warm restore .-&gt; A</code></pre>
 <section id="load-image-versus-runtime-image" class="level3">
 <h3>Load Image Versus Runtime Image</h3>
 <p>The PRG load address is <code>$1000</code>. The linker emits a larger load image than the runtime-visible resident core:</p>
@@ -403,7 +407,7 @@
 </tr>
 <tr>
 <td style="text-align: right;"><code>$1200-$2ABF</code></td>
-<td>Resident core image budget. Current linked core ends at <code>$2AB8</code>.</td>
+<td>Resident core image budget. Current linked core ends at <code>$2A92</code>.</td>
 </tr>
 <tr>
 <td style="text-align: right;"><code>$2AC0-$2AFF</code></td>
@@ -424,6 +428,10 @@
 <tr>
 <td style="text-align: right;"><code>$5000-$600F</code></td>
 <td>Registry seed bytes, copied to the assigned core bank only on cold entry.</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$6200-$7FFF</code></td>
+<td>Replacement overlay seed window, copied to the assigned code bank on cold entry.</td>
 </tr>
 </tbody>
 </table>
@@ -468,125 +476,7 @@
 </tr>
 </tbody>
 </table>
-<p><code>CMDPACK</code> is therefore both visually inside the BASIC address span and steady-state free. The current reservation is <code>$1500</code> (5.25K); the implemented built-in module/submodule payload content is <code>$085C</code> / 2.1K. That reserved command-pack area currently has <code>$0CA4</code> / 3.2K of unused seed room and can grow during cold load without changing <code>BASIC_START</code>, <code>BASIC_LIMIT</code>, or the <code>30013</code> empty BASIC free-byte measurement, because it is prestashed to REU before BASIC owns the range.</p>
-<p>There are two separate limits:</p>
-<table>
-<colgroup>
-<col style="width: 30%" />
-<col style="width: 40%" />
-<col style="width: 30%" />
-</colgroup>
-<thead>
-<tr>
-<th>Layer</th>
-<th style="text-align: right;">Current size</th>
-<th>What it means</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>C64 <code>CMDPACK</code> cold-load window</td>
-<td style="text-align: right;"><code>$1500</code> / 5.25K</td>
-<td>The linker currently places the initial packed command seed bytes at <code>$2B00-$3FFF</code> before cold setup copies them out. This is a seed window, not the architectural command-code ceiling.</td>
-</tr>
-<tr>
-<td>Assigned command-code bank</td>
-<td style="text-align: right;"><code>$10000</code> / 64.0K</td>
-<td>The current descriptor format uses 16-bit offsets/sizes into this bank, so one code bank can address up to 64K of packed command bodies. Production and disk-only demonstration payloads use the distinct ranges documented below. Native <code>PROC</code>/<code>FUNC</code> definitions and resident flow-control markers are BASIC text and do not use this bank.</td>
-</tr>
-<tr>
-<td>Beyond one code bank</td>
-<td style="text-align: right;">More than 64K</td>
-<td>Requires a descriptor/loader extension for additional code banks or a bank-selection field. That is future architecture, not the current single-bank ABI.</td>
-</tr>
-</tbody>
-</table>
-<p>So, with the current descriptor and REU command-code architecture, packed command code can grow to one 64K REU code bank. The current PRG/load linker only seeds a 5.25K <code>CMDPACK</code> window today; filling more of the assigned code bank would require expanding or adding cold-load seed windows and copying them before BASIC owns the memory. That kind of seed expansion should still be reclaimed and should not reduce steady-state BASIC free bytes.</p>
-<p>The generated proportional HTML report uses these exact current subranges inside the raw <code>$2AC0-$9FFF</code> cold-load span:</p>
-<table>
-<colgroup>
-<col style="width: 16%" />
-<col style="width: 16%" />
-<col style="width: 22%" />
-<col style="width: 22%" />
-<col style="width: 22%" />
-</colgroup>
-<thead>
-<tr>
-<th>Subrange</th>
-<th>Cold-load role</th>
-<th style="text-align: right;">Hex size</th>
-<th style="text-align: right;">Display size</th>
-<th style="text-align: right;">Exact bytes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>$2AC0-$2AFF</code></td>
-<td>Sentinel and padding before <code>CMDPACK</code>.</td>
-<td style="text-align: right;"><code>$0040</code></td>
-<td style="text-align: right;">64B</td>
-<td style="text-align: right;">64</td>
-</tr>
-<tr>
-<td><code>$2B00-$3FFF</code></td>
-<td><code>CMDPACK</code> reserved cold-load image.</td>
-<td style="text-align: right;"><code>$1500</code></td>
-<td style="text-align: right;">5.25K</td>
-<td style="text-align: right;">5376</td>
-</tr>
-<tr>
-<td><code>$4000-$4364</code></td>
-<td><code>HIDLOAD</code> seed.</td>
-<td style="text-align: right;"><code>$0365</code></td>
-<td style="text-align: right;">0.8K</td>
-<td style="text-align: right;">869</td>
-</tr>
-<tr>
-<td><code>$4365-$47FF</code></td>
-<td>Padding / future BASIC after cold seed.</td>
-<td style="text-align: right;"><code>$049B</code></td>
-<td style="text-align: right;">1.2K</td>
-<td style="text-align: right;">1179</td>
-</tr>
-<tr>
-<td><code>$4800-$49F6</code></td>
-<td><code>BRLOAD</code> seed.</td>
-<td style="text-align: right;"><code>$01F7</code></td>
-<td style="text-align: right;">503B</td>
-<td style="text-align: right;">503</td>
-</tr>
-<tr>
-<td><code>$49F7-$4FFF</code></td>
-<td>Padding / future BASIC after cold seed.</td>
-<td style="text-align: right;"><code>$0609</code></td>
-<td style="text-align: right;">1.5K</td>
-<td style="text-align: right;">1545</td>
-</tr>
-<tr>
-<td><code>$5000-$600F</code></td>
-<td><code>REGSEED</code> header plus 128 descriptors.</td>
-<td style="text-align: right;"><code>$1010</code></td>
-<td style="text-align: right;">4.0K</td>
-<td style="text-align: right;">4112</td>
-</tr>
-<tr>
-<td><code>$6010-$61FF</code></td>
-<td><code>REGSEED</code> reserved tail.</td>
-<td style="text-align: right;"><code>$01F0</code></td>
-<td style="text-align: right;">496B</td>
-<td style="text-align: right;">496</td>
-</tr>
-<tr>
-<td><code>$6200-$9FFF</code></td>
-<td>Future BASIC bytes after <code>REGSEED</code>.</td>
-<td style="text-align: right;"><code>$3E00</code></td>
-<td style="text-align: right;">15.5K</td>
-<td style="text-align: right;">15872</td>
-</tr>
-</tbody>
-</table>
-<p>Inside <code>CMDPACK</code>, the current packed built-in content is slot 0 payload <code>$2B00-$31CD</code> (<code>$06CE</code>, 1742B), slot 1 payload <code>$31CE-$3408</code> (<code>$023B</code>, 571B), slot 2 base payload <code>$3409-$341D</code> (<code>$0015</code>, 21B), span payload <code>$341E-$3432</code> (<code>$0015</code>, 21B), overlay 1 <code>$3433-$3447</code> (<code>$0015</code>, 21B), overlay 2 <code>$3448-$345C</code> (<code>$0015</code>, 21B), and reserved room <code>$345D-$3FFF</code> (<code>$0BA3</code>, 2.9K, 2979 exact bytes).</p>
+<p>The base payloads load in <code>CMDPACK</code> at <code>$2B00-$3FFF</code>. Six replacement overlays load in <code>CMDPACK2</code> at <code>$6200-$7FFF</code>. Both windows return to BASIC after their contents have been copied to REU. The code bank has 64 KiB of addressable space. Its 16-bit descriptor offsets address that one bank. See the <a href="../../../docs/readybasic_memory_diagrams.html">generated memory map</a> for each seed, its length, the unused space and its runtime destination.</p>
 </section>
 </section>
 <section id="reu-layout" class="level2">
@@ -631,10 +521,11 @@
   ZP[&quot;$0A00 Zero-page snapshot&lt;br/&gt;ReadyOS suspend/resume&quot;]
   ST[&quot;$0B00 Stack-page snapshot&lt;br/&gt;ReadyOS suspend/resume&quot;]
   BM[&quot;$0C00 Heap bitmap&lt;br/&gt;192 pages tracked in REU&quot;]
-  RS[&quot;$2000-$3FFF Reserved common space&lt;br/&gt;future typed metadata&quot;]
+  RS[&quot;$2000-$2FFF Reserved&quot;]
+  SH[&quot;$3000-$37A9 Hidden-helper shadow&lt;br/&gt;$37AA-$3FFF reserved&quot;]
   DATA[&quot;$4000-$FFFF Typed handle heap&lt;br/&gt;48KB / 192 pages&quot;]
 
-  H --&gt; C --&gt; R --&gt; DBG --&gt; HM --&gt; ZP --&gt; ST --&gt; BM --&gt; D --&gt; RS --&gt; DATA</code></pre>
+  H --&gt; C --&gt; R --&gt; DBG --&gt; HM --&gt; ZP --&gt; ST --&gt; BM --&gt; D --&gt; RS --&gt; SH --&gt; DATA</code></pre>
 <p>Exact assigned core-bank suballocation sizes:</p>
 <table>
 <colgroup>
@@ -669,18 +560,18 @@
 <td style="text-align: right;">1008</td>
 </tr>
 <tr>
-<td><code>$0400-$04FF</code></td>
-<td>Call frame snapshot.</td>
-<td style="text-align: right;"><code>$0100</code></td>
-<td style="text-align: right;">256B</td>
-<td style="text-align: right;">256</td>
+<td><code>$0400-$047F</code></td>
+<td>First 128 bytes of the call frame, overwritten by the result frame.</td>
+<td style="text-align: right;"><code>$0080</code></td>
+<td style="text-align: right;">128B</td>
+<td style="text-align: right;">128</td>
 </tr>
 <tr>
-<td><code>$0400-$05FF</code></td>
-<td>Result frame snapshot.</td>
-<td style="text-align: right;"><code>$0100</code></td>
-<td style="text-align: right;">256B</td>
-<td style="text-align: right;">256</td>
+<td><code>$0480-$05FF</code></td>
+<td>Reserved.</td>
+<td style="text-align: right;"><code>$0180</code></td>
+<td style="text-align: right;">384B</td>
+<td style="text-align: right;">384</td>
 </tr>
 <tr>
 <td><code>$0600-$07FF</code></td>
@@ -725,11 +616,25 @@
 <td style="text-align: right;">4096</td>
 </tr>
 <tr>
-<td><code>$2000-$3FFF</code></td>
-<td>Reserved common/system expansion space.</td>
-<td style="text-align: right;"><code>$2000</code></td>
-<td style="text-align: right;">8.0K</td>
-<td style="text-align: right;">8192</td>
+<td><code>$2000-$2FFF</code></td>
+<td>Reserved common space.</td>
+<td style="text-align: right;"><code>$1000</code></td>
+<td style="text-align: right;">4 KiB</td>
+<td style="text-align: right;">4096</td>
+</tr>
+<tr>
+<td><code>$3000-$37A9</code></td>
+<td>Hidden-helper shadow.</td>
+<td style="text-align: right;"><code>$07AA</code></td>
+<td style="text-align: right;">1962B</td>
+<td style="text-align: right;">1962</td>
+</tr>
+<tr>
+<td><code>$37AA-$3FFF</code></td>
+<td>Reserved.</td>
+<td style="text-align: right;"><code>$0856</code></td>
+<td style="text-align: right;">2134B</td>
+<td style="text-align: right;">2134</td>
 </tr>
 <tr>
 <td><code>$4000-$FFFF</code></td>
@@ -834,24 +739,15 @@
   P[&quot;Clear screen, lowercase VIC mode, banner&quot;]
   R[&quot;Enter BASIC_READY&quot;]
 
-  L --&gt; E --&gt; C --&gt; H1 --&gt; H2 --&gt; H3 --&gt; B1 --&gt; RB --&gt; V --&gt; I --&gt; W --&gt; S --&gt; P --&gt; R</code></pre>
-<p>The cold setup performs these important operations:</p>
-<ol type="1">
-<li>It copies hidden helper code before BASIC owns <code>$2AC1+</code>.</li>
-<li>It stores a REU shadow copy at assigned core-bank offset <code>$3000</code> because <code>$A000</code> code cannot be trusted after a ReadyOS app switch.</li>
-<li>It copies bridge state to <code>$C000</code>.</li>
-<li>It resets KERNAL and BASIC vectors, then installs the execute vector hook at <code>$0308/$0309</code> and the eval hook at <code>$030A/$030B</code>.</li>
-<li>It relocates BASIC:
+  L --&gt; E --&gt; C --&gt; H1 --&gt; H2 --&gt; B1 --&gt; RB --&gt; V --&gt; W --&gt; I --&gt; S --&gt; H3 --&gt; P --&gt; R</code></pre>
+<p>Cold entry copies the hidden helper from <code>$4000</code> to <code>$A000</code> and the bridge seed from <code>$4800</code> to <code>$C000</code>. The resident then resets the KERNAL and BASIC vectors and initializes the workspace:</p>
 <ul>
 <li><code>TXTTAB = $2AC1</code></li>
 <li><code>VARTAB = ARYTAB = STREND = $2AC3</code></li>
 <li><code>FRETOP = MEMSIZ = $A000</code></li>
 <li>KERNAL memory bottom/top = <code>$2AC0/$A000</code></li>
-</ul></li>
-<li>It clears <code>$2AC0</code>, <code>$2AC1</code>, and <code>$2AC2</code>. The <code>$2AC0</code> byte is a hard invariant: C64 BASIC <code>RUN</code> expects the byte before <code>TXTTAB</code> to be zero.</li>
-<li>It seeds the assigned ReadyBASIC core and code banks.</li>
-<li>It draws the ReadyBASIC banner and enters <code>BASIC_READY</code>.</li>
-</ol>
+</ul>
+<p>It clears the sentinel at <code>$2AC0</code> and the empty-program bytes at <code>$2AC1-$2AC2</code>, installs the hooks, clears pending input and seeds the assigned REU banks. Seeding creates the hidden-helper shadow at core-bank offset <code>$3000</code>. The console then shows the banner and enters <code>BASIC_READY</code>.</p>
 </section>
 <section id="warm-resume-lifecycle" class="level2">
 <h2>Warm Resume Lifecycle</h2>
@@ -979,8 +875,8 @@
   BASIC-&gt;&gt;RES: $0308 execute vector
   RES-&gt;&gt;RES: Match bare command or native routine keyword
   RES-&gt;&gt;RES: Normalize command name
-  RES-&gt;&gt;R44: Fetch descriptors one at a time from $0100
-  R44--&gt;&gt;RES: Descriptor -&gt; $C480
+  RES-&gt;&gt;R44: Fetch a 256-byte descriptor page from the table at $1000
+  R44--&gt;&gt;RES: Page to $C500, matching descriptor copied to $C480
   RES-&gt;&gt;RES: Parse signature with BASIC ROM helpers
   RES-&gt;&gt;RES: Clear output variables
   RES-&gt;&gt;R44: Stash call frame $C200 -&gt; $0400
@@ -1041,7 +937,7 @@
 </tr>
 </tbody>
 </table>
-<p>The call and result frames are also mirrored to assigned core-bank offsets <code>$0400</code> and <code>$0400</code>. This gives crash/debug visibility and gives future worker models a stable mailbox shape.</p>
+<p>The first 128 bytes of each frame are copied to the same core-bank mailbox at <code>$0400-$047F</code>. The result replaces the call after dispatch.</p>
 </section>
 </section>
 <section id="parameter-and-result-semantics" class="level2">
@@ -1303,7 +1199,7 @@
 <h2>Hidden Code And Banking Contract</h2>
 <p>ReadyBASIC uses two kinds of hidden code:</p>
 <ul>
-<li>Hidden helper at <code>$A000-$A6C7</code>.</li>
+<li>Hidden helper at <code>$A000-$A7A9</code>.</li>
 <li>Command/module payload slots at <code>$A800-$BFFF</code>.</li>
 </ul>
 <p>Before calling hidden code, ReadyBASIC:</p>
@@ -1327,9 +1223,9 @@
 <li>In the current repeat/label/error-introspection design, <code>BASIC_START</code> stays <code>$2AC1</code>.</li>
 </ul>
 </section>
-<section id="current-repeatlabel-delta" class="level2">
-<h2>Current Repeat/Label Delta</h2>
-<p>The current design moves the live BASIC workspace to <code>$2AC1-$9FFF</code> so <code>REPEAT</code>/<code>UNTIL</code>, <code>LABEL</code>/<code>JUMP</code>, and <code>ERRCODE</code>/<code>ERRLINE</code> can fit on top of the proper nested expression and float-term work. The sections above have been updated to the current repeat/label layout; older dated measurements remain in <code>READYBASIC_PLUGIN_PROGRESS.md</code>.</p>
+<section id="historical-repeatlabel-checkpoint" class="level2">
+<h2>Historical repeat/label checkpoint</h2>
+<p>The current design moves the live BASIC workspace to <code>$2AC1-$9FFF</code> so <code>REPEAT</code>/<code>UNTIL</code>, <code>LABEL</code>/<code>JUMP</code>, and <code>ERRCODE</code>/<code>ERRLINE</code> can fit on top of the proper nested expression and float-term work. The table below records the repeat/label build. For release measurements, see the <a href="../../../docs/readybasic_memory_diagrams.html">generated memory map</a>.</p>
 <table>
 <thead>
 <tr>

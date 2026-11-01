@@ -4,13 +4,20 @@ ReadyOS lets you switch between full-screen apps on a Commodore 64 and return to
 where you left off. It keeps suspended apps in a RAM Expansion Unit (REU).
 PRECOG `0.5` is the current development line.
 
+## Choose your edition
+
+1. **Regular D81** — Start here for VICE or a 1581-compatible drive. Mount the single disk on device 8. [Regular D81 guide](Releases/0.5/precog-d81/README.md)
+2. **C64 Ultimate dual D81** — Mount the boot disk on device 8 and the companion on device 9. SETUP configures fast loading from the boot image. [Ultimate dual-D81 guide](Releases/0.5/precog-ultimate/README.md)
+3. **EasyFlash cartridge** — Mount the companion data D64 on device 8, attach the CRT and reset. The cartridge preloads apps into the REU. [EasyFlash guide](Releases/0.5/precog-easyflash/README.md)
+
+For 1541, 1571, Kung Fu Flash 2 and dedicated OS bridge packages, see the [full release guide](Releases/0.5/README.md).
+
 ## Getting started
 
-1. **Choose a release folder.** For VICE or a 1581 drive, start with the [regular D81](Releases/0.5/precog-d81/README.md). For a C64 Ultimate, use the [Ultimate D81 pair](Releases/0.5/precog-ultimate/README.md). For another drive or a cartridge, use the [release guide](Releases/0.5/README.md).
-2. **Enable the REU.** The portable baseline is 1 MiB. Use 8 or 16 MiB where available. Dedicated OS bridges require 16 MiB and their matching boot image.
-3. **Mount the boot disk on device 8.** On the stock Ultimate, mount disk 2 on device 9. Run `LOAD"SETUP",8,1` and `RUN` to record the boot D81's host path for DMA loading. Repeat SETUP if you move or rename that image.
-4. **Boot from BASIC.** Type `LOAD"*",8`, press RETURN, then type `RUN`. For EasyFlash, mount its data D64 on device 8, attach the CRT and reset.
-5. **Open an app.** Select it with the cursor keys and press RETURN. Ctrl+B returns to the launcher. F2 and F4 switch apps. Save work to disk before resetting.
+1. **Enable the REU.** Allow at least 1 MiB for the portable disk editions. Use 16 MiB for the supplied EasyFlash setup. Dedicated OS bridges require 16 MiB and their matching boot image.
+2. **Mount the boot disk on device 8.** On the stock Ultimate, mount disk 2 on device 9. Run `LOAD"SETUP",8,1` and `RUN` to record the boot D81's host path for DMA loading. Repeat SETUP if you move or rename that image.
+3. **Boot from BASIC.** Type `LOAD"*",8`, press RETURN, then type `RUN`. For EasyFlash, mount its data D64 on device 8, attach the CRT and reset.
+4. **Open an app.** Select it with the cursor keys and press RETURN. Ctrl+B returns to the launcher. F2 and F4 switch apps. Save work to disk before resetting.
 
 | What you want to do | Where to start |
 | --- | --- |
@@ -30,7 +37,7 @@ There are 12 standard media variants, four dedicated bridge variants and three R
 | --- | --- | --- | --- | --- |
 | `precog-d81` | one `D81` image on drive `8` | recommended main ReadyOS SKU and default build/run target | `PREBOOT -> BOOT` | 19 launcher apps plus ReadyBASIC modules and the complete example set; `sidetris` is also present through `app.sidetris` |
 | `precog-ultimate` | two `D81` images on drives `8` and `9` | C64 Ultimate-first SKU with DMA loading and guided image-path setup | run standalone `SETUP` once, then `PREBOOT -> BOOT` | Main apps and modules on drive 8; ReadyBASIC examples and optional C64OS/GDOS manifests on drive 9; includes Ultimate Zip and standalone `SETUP` |
-| `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | full cartridge cold-boot path for VICE and Ultimate-family setups that can keep a disk mounted | reset into cartridge boot | full current app catalog |
+| `precog-easyflash` | `CRT` cartridge plus companion `D64` on drive `8` | full cartridge cold-boot path for VICE and Ultimate-family setups that can keep a disk mounted | reset into cartridge boot | 20 preloaded apps and nine ReadyShell overlays |
 | `precog-dual-d71` | two boot-time `D71` images on drives `8` and `9`, plus an optional third `D71` swapped into drive `9` | full core `1571` profile with capacity for optional apps and examples without crowding the boot pair | `PREBOOT -> SETD71 -> BOOT` | 16 core launcher apps; optional disk adds app-config versions of `sidetris`, `deminer`, `ucitest`, and `readme`, followed by the original 41 ReadyBASIC examples |
 | `precog-kung-fu-flash-2-d81` | one `D81` image on drive `8` | broad Kung Fu Flash 2 disk-loading profile with `1MB` REU and no skipped REU banks | `PREBOOT -> BOOT` | same 19-app set as `precog-d81` |
 | `precog-dual-d64` | two `D64` images on drives `8` and `9` | reduced profile for `1541`-compatible capacity limits | `PREBOOT -> BOOT` | curated subset of the current app catalog |

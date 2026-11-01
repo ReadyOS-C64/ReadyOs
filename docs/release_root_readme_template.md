@@ -1,15 +1,18 @@
 # ReadyOS {{PUBLIC_VERSION}} release guide
 
+## Main editions
+
 Choose the folder for your machine. Its README gives the exact filenames, required drives and app list.
 
 | Setup | Release folder | First boot |
 | --- | --- | --- |
 | VICE or a 1581 drive | [Regular D81](precog-d81/README.md) | Enable the REU, mount the D81 on 8, then `LOAD"*",8` and `RUN`. |
-| C64 Ultimate | [Ultimate](precog-ultimate/README.md) | Mount disk 1 on 8 and disk 2 on 9. Use `LOAD"SETUP",8,1` and `RUN` to configure fast loading before booting. |
+| C64 Ultimate | [Ultimate dual D81](precog-ultimate/README.md) | Mount disk 1 on 8 and disk 2 on 9. Use `LOAD"SETUP",8,1` and `RUN` to configure fast loading before booting. |
 | EasyFlash | [Cartridge and data disk](precog-easyflash/README.md) | Mount the data D64 on 8, attach the CRT and reset. |
-| 1541, 1571 or KFF2 | See the media table below | Match the drive types and mount the complete boot set. |
 
-Allow at least 1 MiB REU for portable releases. Dedicated bridges require 16 MiB.
+For 1541, 1571 and Kung Fu Flash 2, use the media table below.
+
+Allow at least 1 MiB for the portable disk editions. Use 16 MiB for the supplied EasyFlash setup. Dedicated bridges require 16 MiB.
 On stock Ultimate, disk 2 holds 44 ReadyBASIC examples and the optional C64OS/GDOS launch manifests.
 Stock Ultimate boots with skip zero. For switching, choose the dedicated [C64OS](precog-ultimate-c64os/README.md), [GDOS64](precog-ultimate-gdos/README.md) or [GEOS 2.0](precog-ultimate-geos20/README.md) package and install its native companion.
 

@@ -550,7 +550,7 @@ def build_help_text(output_dir: Path) -> str:
         "",
         "- attach `readyos_easyflash.crt` as an easyflash cartridge",
         "- mount `readyos_data.d64` on drive `8`",
-        "- enable REU with at least `1MB`; `8MB` or `16MB` is recommended where available",
+        "- enable a 16 MiB REU for the supplied VICE configuration. The stock cartridge assigns banks 0–26 during preload and startup (27 × 64 KiB), exceeding a 1 MiB REU.",
         "- reset to start the cartridge. Yellow and orange border phases show apps being copied into REU. Select an app with RETURN and use Ctrl+B to reach the launcher.",
         "- if an app snapshot preloaded from the cartridge is unloaded from REU, ReadyOS cannot load it again from the cartridge until you restart ReadyOS",
         "",

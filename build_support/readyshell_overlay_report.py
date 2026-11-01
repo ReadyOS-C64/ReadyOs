@@ -666,20 +666,14 @@ def build_report_context(args: argparse.Namespace) -> dict[str, object]:
     cmd_reg_state_count = parse_define(registry_c, "RS_CMD_REG_STATE_COUNT")
     ovl_meta_rel = shared_meta_rel
     ovl_meta_len = parse_define(ui_state_h, "RS_REU_OVL_CACHE_META_LEN")
-    if easyflash_layout:
-        ovl_cache_bank = parse_asm_assignment(easyflash_layout, "READYSHELL_CACHE_BANK")
-        ovl_cache_bank2 = parse_asm_assignment(easyflash_layout, "READYSHELL_CACHE_BANK2")
-        ovl_cache_bank3 = parse_asm_assignment(easyflash_layout, "READYSHELL_CACHE_BANK3")
-        state_bank = parse_asm_assignment(easyflash_layout, "READYSHELL_STATE_BANK")
-        cache_assignment_note = "current generated EasyFlash assignment"
-        state_assignment_note = f"current generated EasyFlash state bank 0x{state_bank:02X}"
-    else:
-        ovl_cache_bank = 0
-        ovl_cache_bank2 = 1
-        ovl_cache_bank3 = 2
-        state_bank = 0
-        cache_assignment_note = "symbolic loader-assigned bank set"
-        state_assignment_note = "symbolic loader-assigned ReadyShell state bank"
+    if not easyflash_layout:
+        raise SystemExit("Generate the EasyFlash layout before reporting physical REU addresses.")
+    ovl_cache_bank = parse_asm_assignment(easyflash_layout, "READYSHELL_CACHE_BANK")
+    ovl_cache_bank2 = parse_asm_assignment(easyflash_layout, "READYSHELL_CACHE_BANK2")
+    ovl_cache_bank3 = parse_asm_assignment(easyflash_layout, "READYSHELL_CACHE_BANK3")
+    state_bank = parse_asm_assignment(easyflash_layout, "READYSHELL_STATE_BANK")
+    cache_assignment_note = "current generated EasyFlash assignment"
+    state_assignment_note = f"current generated EasyFlash state bank 0x{state_bank:02X}"
     ovl_parse_rel = parse_define(ui_state_h, "RS_REU_OVL_CACHE_PARSE_REL")
     ovl_exec_rel = parse_define(ui_state_h, "RS_REU_OVL_CACHE_EXEC_REL")
     ovl_cmd3_rel = parse_define(ui_state_h, "RS_REU_OVL_CACHE_CMD3_REL")
@@ -903,7 +897,7 @@ def render_markdown(ctx: dict[str, object]) -> str:
                     f"- Commands: {spec.command_summary}",
                     f"- Runtime bytes in overlay window: `{row['live_size']}` at `{fmt_range(row['live_start'], row['live_end'])}`",
                     f"- Window share: `{fmt_pct(row['window_pct'])}` used, `{row['window_free']}` bytes free",
-                    f"- Disk footprint: `{row['file_size']}` bytes, `{row['disk_blocks']}` D71 blocks",
+                    f"- Disk footprint: `{row['file_size']}` bytes, `{row['disk_blocks']}` disk blocks",
                     f"- REU policy: {reu_line}",
                     f"- RAM notes: {spec.ram_notes}",
                 ]
@@ -937,7 +931,7 @@ def render_markdown(ctx: dict[str, object]) -> str:
             f"| Shared ReadyShell metadata | `{fmt_hex24(ctx['ovl_meta_off'])}-{fmt_hex24(ctx['ovl_meta_off'] + ctx['ovl_meta_len'] - 1)}` | `{ctx['ovl_meta_len']}` | Shared core-overlay cache metadata record. |",
             f"| Pause flag | `{fmt_hex24(ctx['ui_flags_off'])}` | `1` | Shared output-pause bit used by resident output and `MORE`. |",
             f"| REU heap metadata | `{fmt_hex24(ctx['heap_meta_abs'])}-{fmt_hex24(ctx['heap_meta_abs'] + 0xFF)}` | `256` | ReadyShell REU heap header region, including shared metadata bytes. |",
-            f"| Reserved metadata guard | `{fmt_hex24(ctx['heap_meta_end'] + 1)}-{fmt_hex24(ctx['heap_arena_abs'] - 1)}` | `{ctx['heap_arena_abs'] - ctx['heap_meta_end'] - 1}` | Reserved gap keeping shared overlay metadata and pause state clear of the value arena. |",
+            f"| Reserved metadata guard | `{fmt_hex24(ctx['ui_flags_off'] + 1)}-{fmt_hex24(ctx['heap_arena_abs'] - 1)}` | `{ctx['heap_arena_abs'] - ctx['ui_flags_off'] - 1}` | Unused gap after the shared pause flag and before the value arena. |",
             f"| REU heap arena | `{fmt_hex24(ctx['heap_arena_abs'])}-{fmt_hex24(ctx['heap_arena_end_abs'])}` | `{ctx['heap_arena_size']}` | Persistent value payload arena for REU-backed strings/arrays/objects. |",
         ]
     )
@@ -946,12 +940,12 @@ def render_markdown(ctx: dict[str, object]) -> str:
         [
             f"# ReadyShell Overlay Inventory Report ({ctx['version']})",
             "",
-            f"Artifact-backed report generated from the current local ReadyShell build, linker map, and {ctx['disk_image_label']}.",
+            f"Artifact-backed report generated from the current local ReadyShell build, linker map, and {ctx['disk_image_label']}. Physical REU addresses illustrate the shipped EasyFlash assignment. Disk boots allocate these banks at runtime.",
             "",
             "## Executive Summary",
             "",
             f"- Profile / disk source: `{ctx['profile']}` using `{ctx['disk_path']}` (disk label `{ctx['disk_label']}`, `{ctx['disk_free_blocks']}` blocks free).",
-            f"- Resident ReadyShell PRG: `readyshell.prg` on disk as `readyshell`, `{ctx['resident_prg_size']}` bytes and `{ctx['resident_disk_blocks']}` D71 blocks.",
+            f"- Resident ReadyShell PRG: `readyshell.prg` on disk as `readyshell`, `{ctx['resident_prg_size']}` bytes and `{ctx['resident_disk_blocks']}` disk blocks.",
             f"- Overlay execution window: `{fmt_range(ctx['overlay_start'], ctx['himem'] - 1)}` for `{ctx['window_size']}` bytes, with PRG load-address bytes at `{fmt_range(ctx['overlay_loadaddr'], ctx['overlay_start'] - 1)}`.",
             f"- Resident BSS / heap below overlays: BSS `{fmt_range(ctx['bss_start'], ctx['bss_end'])}` (`{ctx['bss_size']}` bytes), heap `{fmt_range(ctx['heap_start'], ctx['heap_end'])}` (`{ctx['heap_size']}` bytes).",
             f"- High RAM runtime region outside the app window: `{fmt_range(ctx['runtime_addr'], ctx['runtime_limit'] - 1)}`.",
@@ -1144,7 +1138,7 @@ def render_html(ctx: dict[str, object], status_message: str) -> str:
             f"<li><strong>Commands:</strong> {html.escape(spec.command_summary)}</li>"
             f"<li><strong>Live window range:</strong> <code>{fmt_range(row['live_start'], row['live_end'])}</code> ({row['live_size']} bytes)</li>"
             f"<li><strong>Window share:</strong> {fmt_pct(row['window_pct'])} used, {row['window_free']} bytes free</li>"
-            f"<li><strong>Disk footprint:</strong> {row['file_size']} bytes, {row['disk_blocks']} D71 blocks</li>"
+            f"<li><strong>Disk footprint:</strong> {row['file_size']} bytes, {row['disk_blocks']} disk blocks</li>"
             f"<li><strong>REU policy:</strong> {html.escape(spec.reu_policy)}</li>"
             f"<li><strong>RAM notes:</strong> {html.escape(spec.ram_notes)}</li>"
             "</ul>"
@@ -1420,7 +1414,7 @@ def render_html(ctx: dict[str, object], status_message: str) -> str:
   <h1>ReadyShell Overlay Inventory Report ({html.escape(ctx['version'])})</h1>
   <p class="sub">
     Artifact-backed inventory for the current ReadyShell overlay system. This report is generated from the live build
-    outputs, the ReadyShell linker map, and the active {html.escape(ctx['disk_image_label'])} instead of hand-maintained notes.
+    outputs, the ReadyShell linker map, and the active {html.escape(ctx['disk_image_label'])} on disk. Physical REU addresses illustrate the EasyFlash assignment. Disk boots allocate these banks at runtime.
   </p>
 </header>
 <main>
@@ -1606,7 +1600,7 @@ def render_html(ctx: dict[str, object], status_message: str) -> str:
     <ul>
       <li><strong>Build PRG:</strong> <code>readyshell.prg</code></li>
       <li><strong>Disk name:</strong> <code>readyshell</code></li>
-      <li><strong>Disk footprint:</strong> {ctx['resident_prg_size']} bytes, {ctx['resident_disk_blocks']} D71 blocks</li>
+      <li><strong>Disk footprint:</strong> {ctx['resident_prg_size']} bytes, {ctx['resident_disk_blocks']} disk blocks</li>
       <li><strong>Resident sources:</strong> <code>{html.escape(short_sources(ctx['resident_sources']))}</code></li>
       <li><strong>Resident asm/runtime:</strong> <code>{html.escape(short_sources(ctx['resident_asm_sources']))}</code></li>
       <li><strong>Role:</strong> {html.escape(RESIDENT_COMMANDS)}</li>

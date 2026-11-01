@@ -42,7 +42,7 @@ generated memory report for build-specific sizes.
 The module/submodule design keeps the fixed ReadyOS contract and updates the
 under-ROM command layout:
 
-| Constant or range | Current value |
+| Constant or range | Checkpoint value |
 |---|---:|
 | `BASIC_START` | `$2AC1` |
 | Formula empty BASIC bytes | `30013` |
@@ -79,9 +79,9 @@ uppercase name field.
 ## Loader-Assigned ReadyBASIC REU Banks
 
 - ReadyBASIC assembler:
-  - `rb_reu_core_bank` is resolved at startup by scanning `$C600-$C6FF` for
+  - `rb_reu_core_bank` is resolved at startup by scanning the ReadyOS bank at offsets `$B640-$B73F` for
     bank type `REU_RB_CORE`.
-  - `rb_reu_code_bank` is resolved at startup by scanning `$C600-$C6FF` for
+  - `rb_reu_code_bank` is resolved at startup by scanning the ReadyOS bank at offsets `$B640-$B73F` for
     bank type `REU_RB_CODE`.
   - `RB_REU_DESC_OFF = $1000`
   - `RB_CMD_DESC_COUNT = 128`
@@ -98,7 +98,7 @@ uppercase name field.
 
 - ReadyBASIC still uses:
   - `SHIM_RETURN = $C80C`
-  - bridge state at `$C000-$C1FD`
+  - bridge state at `$C000-$C1FF`
   - shared frames at `$C200-$C5FF`
   - hidden-helper warm-resume shadow in the assigned core bank at `$3000`
   - app runtime zero-page/stack save in the assigned core bank offsets
@@ -109,19 +109,11 @@ uppercase name field.
 ## Current ReadyBASIC Memory Snapshot
 
 - `BASIC_START = $2AC1`; BASIC owns `$2AC1-$9FFF`, with `30013` formula empty free bytes.
-- `ENTRY` lives at `$1000-$11FC`, size `$01FD` / 509B.
-- `RESIDENT` lives at `$1200-$2ABE` (`$18BF`, 6335B) and must stay below `$2AC0`; that leaves `$01` / 1B of visible headroom at `$2ABF`.
-- `CMDPACK` load-only seed space is `$2B00-$3FFF`; it is copied to the assigned
-  ReadyBASIC code bank on cold entry.
-- `HIDLOAD` load-only helper seed starts at `$4000`.
-- `BRLOAD` load-only bridge seed starts at `$4800`.
-- `REGSEED` load-only registry seed is `$5000-$600F`, size `$1010`.
-- Runtime common under-ROM helper code is `$A000-$A6C7`, size `$06C8` / 1736B, leaving `$0138` / 312B free in `$A000-$A7FF`.
-- Runtime submodule slot 0 is `$A800-$AFFF`; current module 1/default payload uses `$A800-$AECD`, size `$06CE` / 1742B.
-- Runtime submodule slot 1 is `$B000-$B7FF`; current module 2 proof/streaming loader payload uses `$B000-$B23A`, size `$023B` / 571B.
-- Runtime submodule slot 2 is `$B800-$BFFF`; current proof/overlay payloads use `$B800-$B814` in 21B slices.
-- Runtime `BRIDGE` is `$C000-$C1FD`, size `$01FE` / 510B; the native `PROC`/`FUNC`
-  return stack and flow-control scratch live here and must stay below shared frames at `$C200`.
+- The resident segment ends at `$2A92`. The sentinel is at `$2AC0`.
+- The common helper runs at `$A000`. Three 2 KiB execution slots begin at `$A800`, `$B000` and `$B800`. Slot 2 holds one image at a time.
+- The bridge fills `$C000-$C1FF`. Shared frames and buffers occupy `$C200-$C5FF`.
+
+For linked endpoints, cold-load windows and free bytes in each slot, see the [generated memory map](../../../docs/readybasic_memory_diagrams.html).
 
 Hotkey release branch delta, measured against checkpoint `fe169a8`:
 
@@ -133,23 +125,20 @@ Hotkey release branch delta, measured against checkpoint `fe169a8`:
 | `BRIDGE` | `$01FE` / 510B | `$01FE` / 510B | `0B` |
 | BASIC free | `30013` | `30013` | `0B` |
 
-The code cost is intentionally paid mostly in entry/setup and the `$A000-$A7FF`
-helper area. BASIC free bytes are unchanged, and the 2K helper area still has
-`$0138` / 312B free for more small ReadyOS/BASIC glue.
+At that checkpoint the helper had 312 bytes free.
 
 ## Assigned Core Bank ReadyBASIC Layout
 
 - `$0000`: registry header.
-- `$0400`: current call-frame snapshot.
-- `$0400`: current result-frame snapshot.
+- `$0400-$047F` stores the first 128 bytes of the call frame, then the result frame.
 - `$0600`: reserved debug region.
 - `$0800-$09FF`: REU-backed handle directory, 128 descriptors at 4 bytes each.
 - `$0A00`: zero-page snapshot.
 - `$0B00`: stack-page snapshot.
 - `$0C00-$0CFF`: heap page bitmap, 192 pages tracked in REU.
 - `$1000-$1FFF`: 128 command descriptor slots, 32 bytes each. Slots 1-82 are built-ins, slots 83-127 are cold-empty, and slot 128 is `SCRPUT`.
-- `$2000-$3FFF`: reserved common/system expansion space.
-- `$3000`: current hidden-helper warm-resume shadow (`$06A8` bytes).
+- `$2000-$2FFF` and `$37AA-$3FFF` are reserved.
+- `$3000-$37A9` holds the hidden-helper warm-resume shadow (1962 bytes).
 - `$4000-$FFFF`: typed handle heap, 48KB.
 
 Command lookup fetches one 256-byte descriptor page at a time into `$C500`,

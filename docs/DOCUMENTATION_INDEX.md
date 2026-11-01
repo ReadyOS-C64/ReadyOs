@@ -2,7 +2,7 @@
 
 | Task | Guide |
 | --- | --- |
-| Boot ReadyOS or choose a disk | [Quick start](../README.md#getting-started) and [release folders](../Releases/0.5/README.md) |
+| Boot ReadyOS or choose a disk | [Regular D81](../Releases/0.5/precog-d81/README.md) · [Ultimate dual D81](../Releases/0.5/precog-ultimate/README.md) · [EasyFlash cartridge](../Releases/0.5/precog-easyflash/README.md) · [All editions](../Releases/0.5/README.md) |
 | Configure Ultimate disk loading | [First-run SETUP](ultimate_setup.md) |
 | Pick an app | [App catalog](../README.md#app-catalog) and [hardware requirements](app_requirements.md) |
 | Work in ReadyShell | [Tutorial](../src/apps/readyshell/ReadyShelltutorial.md) and [command guide](../src/apps/readyshell/README.md) |

@@ -1161,7 +1161,7 @@ before the command reports `?RB ERROR code`:
 | `RB_MODULE_SYSTEM` | Built-in system/default module id used by the current slot-0 command payload. |
 | `__LOWPACK_LOAD__` / `__LOWPACK_RUN__` | Linker symbols for the current built-in slot-0 payload seed and runtime image. The historical name remains, but runtime slot 0 is `$A800-$AFFF`. |
 | `__LOWPACK_SIZE__` | Measured size of the current slot-0 payload, measured in `obj/readybasic.map`. |
-| `__SLOTPACK1_LOAD__` / `__SLOTPACK1_RUN__` | Linker symbols for module 2 slot-1 proof/streaming loader payload, currently `$0239` / 569B. |
+| `__SLOTPACK1_LOAD__` / `__SLOTPACK1_RUN__` | Load and runtime addresses for the slot-1 loader and GFXCORE payload. Its byte count is `__SLOTPACK1_SIZE__`. |
 | `__SLOTPACK2_LOAD__`, `__OVL1PACK_LOAD__`, `__OVL2PACK_LOAD__` | Production graphics payload symbols. Disk proof payloads are assembled/generated separately. |
 | `RB_SLOT0_BASE`, `RB_SLOT1_BASE`, `RB_SLOT2_BASE` | Runtime submodule slot bases: `$A800`, `$B000`, and `$B800`. |
 | `RB_SLOT_*` masks | Descriptor slot masks; bit 0 selects `$A800`, bit 1 selects `$B000`, and bit 2 selects `$B800`. |

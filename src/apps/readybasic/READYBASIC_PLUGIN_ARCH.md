@@ -43,12 +43,12 @@ same ReadyOS and REU discipline.
 
 - `BASIC_START = $2AC1`; BASIC owns `$2AC1-$9FFF`, with `30013` formula empty
   free bytes.
-- `RESIDENT` is `$1200-$2ABF` (`$18C0`, 6336B).
+- `RESIDENT` is `$1200-$2A92` (`$1893`, 6291B).
 - `BRIDGE` is `$C000-$C1FF` (512B), still below `$C200`; its final byte is
   the media lifetime flag. `$C4xx` is not persistent command state because it
   doubles as the runtime zero-page snapshot.
 - Under BASIC ROM, `$A000-$A7FF` is the common helper area, currently using
-  `$A000-$A78A`; `$A800-$AFFF`,
+  `$A000-$A7A9`; `$A800-$AFFF`,
   `$B000-$B7FF`, and `$B800-$BFFF` are three 2KB submodule slots.
 - ReadyBASIC uses two launcher-assigned REU resource banks. The core bank is
   registry/runtime storage; the code bank is built-in and disk-loaded module
@@ -89,7 +89,7 @@ same ReadyOS and REU discipline.
 - Assigned core bank is ReadyBASIC common/system storage.
 - Assigned code bank is packed command code storage.
 - ReadyOS REU type constants are mirrored as `REU_RB_CORE = 14` and `REU_RB_CODE = 15`.
-- The launcher marks the assigned physical banks in `$C600-$C6FF`, and
+- The launcher marks the assigned physical banks in ReadyOS-bank offsets `$B640-$B73F`, and
   ReadyBASIC re-marks the resolved banks during startup/resume so REU Viewer
   and allocator state know those banks are owned.
 - Full registry/code prestash runs only on cold ReadyBASIC entry. Warm resume
@@ -104,15 +104,15 @@ same ReadyOS and REU discipline.
 ## Assigned Core Bank Regions
 
 - `$0000`: registry header (`RBPL`, version, descriptor count, descriptor size, frame offsets).
-- `$0400`: current call-frame snapshot.
-- `$0400`: current result-frame snapshot.
+- `$0400-$047F`: the first 128 bytes of the call frame, then of the result frame.
 - `$0600`: reserved REU debug ring region.
 - `$0800-$09FF`: REU-backed handle directory, 128 descriptors at 4 bytes each.
 - `$0A00`: ReadyOS suspend/resume zero-page snapshot.
 - `$0B00`: ReadyOS suspend/resume stack-page snapshot.
 - `$0C00-$0CFF`: 192-page heap bitmap plus reserved bytes.
 - `$1000-$1FFF`: 128 compact command descriptor slots, 32 bytes each. The cold build has 83 real descriptors, 45 zero-filled filler descriptors, and `SCRPUT` deliberately kept in slot 128 as part of those 83 real descriptors. Media uses eight filler slots on demand.
-- `$2000-$3FFF`: reserved common/system expansion space.
+- `$2000-$2FFF` and `$37AA-$3FFF`: reserved.
+- `$3000-$37A9`: hidden-helper shadow for warm resume.
 - `$4000-$FFFF`: typed 48KB heap for buffer, screen, and Phase 1 graphics
   surface handles.
 
@@ -262,7 +262,7 @@ Native flow-control forms:
   `REM`, and `DATA` text are left alone.
 - Raw stored-program `RUN` is supported through the `$0308` execute hook; the
   relocated BASIC sentinel byte at `BASIC_START-1` must stay zero.
-- Command lookup is linear over descriptor pages in bank `$44`: one 256-byte page is fetched into `$C500`, eight descriptors are scanned locally, and the matched descriptor is copied into `$C480`.
+- Command lookup is linear over descriptor pages in the assigned core bank: one 256-byte page is fetched into `$C500`, eight descriptors are scanned locally, and the matched descriptor is copied into `$C480`.
 - String input uses BASIC ROM string expression evaluation and then stages up to
   64 bytes. Numeric inputs support nested ReadyBASIC expression terms in the
   tested command and `FUNC` actual forms, including `ADD16(1,ADDI(2,3))`-style

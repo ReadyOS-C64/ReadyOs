@@ -114,31 +114,21 @@ pre-module plugin-spine snapshot. The current post-BASIC runtime map is:
 | `$0400-$07E7` | Screen RAM | Can be captured by `SCRCAP`. |
 | `$0800-$0FFF` | Low BASIC/system RAM | Outside ReadyBASIC app-owned region. |
 | `$1000-$11FF` | ReadyBASIC entry | Cold/warm discriminator, handoff, hotkey quarantine, and small visible trampolines. |
-| `$1200-$2ABD` | ReadyBASIC resident | Parser, ROM calls, dispatch, commit, native language runtime. |
+| `$1200-$2A92` | ReadyBASIC resident | Parser, ROM calls, dispatch, commit, native language runtime. |
 | `$2AC0` | Sentinel | Must remain zero before stored-program `RUN`. |
 | `$2AC1-$9FFF` | BASIC workspace | Program text, variables, arrays, strings, and reclaimed seed space. |
-| `$A000-$A7FF` | RAM behind BASIC ROM | Common helper, current use `$A000-$A6E9`; `$0116` / 278B remain free. |
+| `$A000-$A7FF` | RAM behind BASIC ROM | Common helper, current use `$A000-$A7A9`; `$0056` / 86B remain free. |
 | `$A800-$AFFF` | RAM behind BASIC ROM | Submodule slot 0, current module 1/system payload. |
-| `$B000-$B7FF` | RAM behind BASIC ROM | Submodule slot 1, current module 2 proof/loader payload. |
+| `$B000-$B7FF` | RAM behind BASIC ROM | Submodule slot 1, current LDMOD/GFXCORE payload. |
 | `$B800-$BFFF` | RAM behind BASIC ROM | Submodule slot 2 and overlay target. |
-| `$C000-$C1FE` | ReadyBASIC bridge | Small state below shared frames. |
+| `$C000-$C1FF` | ReadyBASIC bridge | Small state below shared frames. |
 | `$C200-$C5FF` | ReadyBASIC frames/buffers | Call frame, result frame, descriptor/name/page buffers, disk-module load page. |
 | `$C600-$C7FF` | ReadyOS shim expansion reserve | Resident capacity; not ReadyBASIC scratch. |
 | `$C800-$C9FF` | ReadyOS shim ABI | Stable public half of the 1 KB shim; not ReadyBASIC scratch. |
 | `$D000-$DFFF` | I/O or character ROM | REU registers are in I/O space. |
 | `$E000-$FFFF` | KERNAL ROM normally visible | KERNAL calls remain available after normal banking is restored. |
 
-Current measured values are `BASIC_START=$2AC1`, `RESIDENT=$18BE`,
-`BRIDGE=$01FF`, common helper `$06EA`, slot 0 `$06CE`, slot 1 `$023B`, and
-formula empty BASIC free bytes `30013`.
-
-The older low/hidden command overlay vocabulary is now implemented as a
-module-aware under-ROM command system. Descriptors remain 32 bytes, but their
-fields now identify module id, submodule id, overlay id, slot mask, assigned
-code-bank payload offset/size, runtime destination, entry offset, signature id,
-and name. Assigned core-bank offsets `$2000-$3FFF` are reserved for the richer per-slot residency
-catalog; the current proof keeps only a tiny last-command/copy-count record in
-bridge RAM.
+The empty BASIC workspace has 30,013 free bytes. Slot payloads and their linked sizes are in the [generated memory map](../../../docs/readybasic_memory_diagrams.html). The assigned core bank keeps a copy of the hidden helper at offset `$3000` for warm resume.
 
 ## Technical Philosophy
 
@@ -183,23 +173,28 @@ ReadyBASIC must preserve its custom assembler/linker shape while hosting BASIC.
 ```mermaid
 flowchart TB
   A["$1000-$11FF ENTRY<br/>load entry, cold/warm cookie, hotkey quarantine"]
-  B["$1200-$2ABD RESIDENT<br/>visible parser, vector hooks, REU DMA, commit, PROC/FUNC/RET, flow control, float terms"]
+  B["$1200-$2A92 RESIDENT<br/>visible parser, vector hooks, REU DMA, commit, PROC/FUNC/RET, flow control, float terms"]
   C["$2AC0 SENTINEL<br/>must be zero for BASIC RUN"]
   D["$2AC1-$9FFF BASIC WORKSPACE<br/>30013 formula free bytes / 29.3K"]
   E["$2B00-$3FFF CMDPACK LOAD IMAGE<br/>module/submodule payload seed bytes before cold prestash"]
   F["Assigned core bank $0A00-$0BFF RUNTIME SNAPSHOT<br/>zero page and stack / 0.5K"]
+  Q["$6200-$7FFF CMDPACK2 LOAD IMAGE<br/>replacement overlays before cold prestash"]
   G["$C200-$C5FF SHARED FRAMES<br/>call/result/descriptor/name/page buffers / 1.0K"]
   I["Assigned core bank $3000 HIDDEN SHADOW<br/>refreshed on EXIT"]
-  J["$A000-$A6E9 COMMON HELPER<br/>runs under BASIC ROM RAM"]
-  K["$A800-$AECD SLOT 0 PAYLOAD<br/>module 1 system/default payload"]
-  O["$B000-$B23A SLOT 1 PAYLOAD<br/>module 2 proof and LDMOD loader"]
-  P["$B800-$B814 SLOT 2 / OVERLAYS<br/>proof and overlay slices"]
-  L["$C000-$C1FE BRIDGE STATE<br/>magic, saved vectors, overlay vars, handle scratch, PROC/FUNC stack"]
+  J["$A000-$A7A9 COMMON HELPER<br/>runs under BASIC ROM RAM"]
+  K["$A800-$AE53 SLOT 0 PAYLOAD<br/>module 1 system/default payload"]
+  O["$B000-$B536 SLOT 1 PAYLOAD<br/>GFXCORE and LDMOD loader"]
+  P["$B800-$BF22 SLOT 2 / OVERLAYS<br/>GFXPRIM base or one replacement overlay"]
+  L["$C000-$C1FF BRIDGE STATE<br/>magic, saved vectors, overlay vars, handle scratch, PROC/FUNC stack"]
   M["$C600-$C7FF SHIM EXPANSION RESERVE<br/>resident ReadyOS capacity, not app RAM"]
   N["$C800-$C9FF SHIM ABI<br/>ReadyOS jump table/data, not app RAM"]
 
-  A --> B --> C --> D --> G
-  G --> F --> J --> K --> O --> P --> L --> M --> N
+  A --- B --- C --- D
+  E -. reclaimed .-> D
+  Q -. reclaimed .-> D
+  I -. warm restore .-> J
+  J --- K --- O --- P --- L --- G --- M --- N
+  F -. warm restore .-> A
 ```
 
 ### Load Image Versus Runtime Image
@@ -210,12 +205,13 @@ runtime-visible resident core:
 | Load-time range | Purpose |
 |---:|---|
 | `$1000-$11FF` | Entry image, including entry-local warm cookie. |
-| `$1200-$2ABF` | Resident core image budget. Current linked core ends at `$2AB8`. |
+| `$1200-$2ABF` | Resident core image budget. Current linked core ends at `$2A92`. |
 | `$2AC0-$2AFF` | Sentinel plus cold padding gap before command-pack seed bytes. |
 | `$2B00-$3FFF` | Command pack seed bytes, copied to the assigned code bank only on cold entry. |
 | `$4000+` | Hidden helper seed bytes, copied to `$A000` and stashed to assigned core-bank offset `$3000`. |
 | `$4800+` | Bridge seed bytes, copied to `$C000`. |
 | `$5000-$600F` | Registry seed bytes, copied to the assigned core bank only on cold entry. |
+| `$6200-$7FFF` | Replacement overlay seed window, copied to the assigned code bank on cold entry. |
 
 After cold setup, BASIC owns `$2AC1-$9FFF`. This is why warm resume must **not**
 try to reread the load-only seed tables at `$2B00+`, `$4000+`, `$4800+`, or
@@ -232,50 +228,7 @@ ReadyBASIC has two different memory pictures that must not be merged:
 | Ready prompt | BASIC owns `$2AC1-$9FFF`, including the former load-image addresses. `CMDPACK`, `HIDLOAD`, `BRLOAD`, and `REGSEED` must be treated as gone. | Empty BASIC free bytes are `30013` formula bytes. |
 | Command execution | Packed command code is fetched from the assigned code bank into the `$A800`, `$B000`, and/or `$B800` submodule slots behind BASIC ROM, then control returns to resident commit code. | No per-command BASIC workspace loss. |
 
-`CMDPACK` is therefore both visually inside the BASIC address span and
-steady-state free. The current reservation is `$1500` (5.25K); the implemented
-built-in module/submodule payload content is `$085C` / 2.1K. That reserved
-command-pack area currently has `$0CA4` / 3.2K of unused seed room and can grow
-during cold load without changing `BASIC_START`, `BASIC_LIMIT`, or the `30013`
-empty BASIC free-byte measurement, because it is prestashed to REU before BASIC
-owns the range.
-
-There are two separate limits:
-
-| Layer | Current size | What it means |
-|---|---:|---|
-| C64 `CMDPACK` cold-load window | `$1500` / 5.25K | The linker currently places the initial packed command seed bytes at `$2B00-$3FFF` before cold setup copies them out. This is a seed window, not the architectural command-code ceiling. |
-| Assigned command-code bank | `$10000` / 64.0K | The current descriptor format uses 16-bit offsets/sizes into this bank, so one code bank can address up to 64K of packed command bodies. Production and disk-only demonstration payloads use the distinct ranges documented below. Native `PROC`/`FUNC` definitions and resident flow-control markers are BASIC text and do not use this bank. |
-| Beyond one code bank | More than 64K | Requires a descriptor/loader extension for additional code banks or a bank-selection field. That is future architecture, not the current single-bank ABI. |
-
-So, with the current descriptor and REU command-code architecture, packed command
-code can grow to one 64K REU code bank. The current PRG/load linker only seeds a
-5.25K `CMDPACK` window today; filling more of the assigned code bank would require expanding
-or adding cold-load seed windows and copying them before BASIC owns the memory.
-That kind of seed expansion should still be reclaimed and should not reduce
-steady-state BASIC free bytes.
-
-The generated proportional HTML report uses these exact current subranges inside
-the raw `$2AC0-$9FFF` cold-load span:
-
-| Subrange | Cold-load role | Hex size | Display size | Exact bytes |
-|---|---|---:|---:|---:|
-| `$2AC0-$2AFF` | Sentinel and padding before `CMDPACK`. | `$0040` | 64B | 64 |
-| `$2B00-$3FFF` | `CMDPACK` reserved cold-load image. | `$1500` | 5.25K | 5376 |
-| `$4000-$4364` | `HIDLOAD` seed. | `$0365` | 0.8K | 869 |
-| `$4365-$47FF` | Padding / future BASIC after cold seed. | `$049B` | 1.2K | 1179 |
-| `$4800-$49F6` | `BRLOAD` seed. | `$01F7` | 503B | 503 |
-| `$49F7-$4FFF` | Padding / future BASIC after cold seed. | `$0609` | 1.5K | 1545 |
-| `$5000-$600F` | `REGSEED` header plus 128 descriptors. | `$1010` | 4.0K | 4112 |
-| `$6010-$61FF` | `REGSEED` reserved tail. | `$01F0` | 496B | 496 |
-| `$6200-$9FFF` | Future BASIC bytes after `REGSEED`. | `$3E00` | 15.5K | 15872 |
-
-Inside `CMDPACK`, the current packed built-in content is slot 0 payload
-`$2B00-$31CD` (`$06CE`, 1742B), slot 1 payload `$31CE-$3408`
-(`$023B`, 571B), slot 2 base payload `$3409-$341D` (`$0015`, 21B), span
-payload `$341E-$3432` (`$0015`, 21B), overlay 1 `$3433-$3447`
-(`$0015`, 21B), overlay 2 `$3448-$345C` (`$0015`, 21B), and reserved room
-`$345D-$3FFF` (`$0BA3`, 2.9K, 2979 exact bytes).
+The base payloads load in `CMDPACK` at `$2B00-$3FFF`. Six replacement overlays load in `CMDPACK2` at `$6200-$7FFF`. Both windows return to BASIC after their contents have been copied to REU. The code bank has 64 KiB of addressable space. Its 16-bit descriptor offsets address that one bank. See the [generated memory map](../../../docs/readybasic_memory_diagrams.html) for each seed, its length, the unused space and its runtime destination.
 
 ## REU Layout
 
@@ -309,10 +262,11 @@ flowchart TB
   ZP["$0A00 Zero-page snapshot<br/>ReadyOS suspend/resume"]
   ST["$0B00 Stack-page snapshot<br/>ReadyOS suspend/resume"]
   BM["$0C00 Heap bitmap<br/>192 pages tracked in REU"]
-  RS["$2000-$3FFF Reserved common space<br/>future typed metadata"]
+  RS["$2000-$2FFF Reserved"]
+  SH["$3000-$37A9 Hidden-helper shadow<br/>$37AA-$3FFF reserved"]
   DATA["$4000-$FFFF Typed handle heap<br/>48KB / 192 pages"]
 
-  H --> C --> R --> DBG --> HM --> ZP --> ST --> BM --> D --> RS --> DATA
+  H --> C --> R --> DBG --> HM --> ZP --> ST --> BM --> D --> RS --> SH --> DATA
 ```
 
 Exact assigned core-bank suballocation sizes:
@@ -321,15 +275,17 @@ Exact assigned core-bank suballocation sizes:
 |---|---|---:|---:|---:|
 | `$0000-$000F` | Header. | `$0010` | 16B | 16 |
 | `$0010-$03FF` | Reserved common/system metadata space before frames. | `$03F0` | 1.0K | 1008 |
-| `$0400-$04FF` | Call frame snapshot. | `$0100` | 256B | 256 |
-| `$0400-$05FF` | Result frame snapshot. | `$0100` | 256B | 256 |
+| `$0400-$047F` | First 128 bytes of the call frame, overwritten by the result frame. | `$0080` | 128B | 128 |
+| `$0480-$05FF` | Reserved. | `$0180` | 384B | 384 |
 | `$0600-$07FF` | Reserved REU debug ring. | `$0200` | 0.5K | 512 |
 | `$0800-$09FF` | 128-handle directory, 4 bytes per descriptor. | `$0200` | 0.5K | 512 |
 | `$0A00-$0AFF` | Zero-page snapshot. | `$0100` | 256B | 256 |
 | `$0B00-$0BFF` | Stack-page snapshot. | `$0100` | 256B | 256 |
 | `$0C00-$0FFF` | Heap bitmap page; 192B used, remainder reserved. | `$0400` | 1.0K | 1024 |
 | `$1000-$1FFF` | 128 command descriptors, 32 bytes each. | `$1000` | 4.0K | 4096 |
-| `$2000-$3FFF` | Reserved common/system expansion space. | `$2000` | 8.0K | 8192 |
+| `$2000-$2FFF` | Reserved common space. | `$1000` | 4 KiB | 4096 |
+| `$3000-$37A9` | Hidden-helper shadow. | `$07AA` | 1962B | 1962 |
+| `$37AA-$3FFF` | Reserved. | `$0856` | 2134B | 2134 |
 | `$4000-$FFFF` | Typed handle heap, 192 pages. | `$C000` | 48.0K | 49152 |
 
 The command descriptor table at `$1000-$1FFF` has 83 real entries and 45
@@ -401,26 +357,17 @@ flowchart TD
   P["Clear screen, lowercase VIC mode, banner"]
   R["Enter BASIC_READY"]
 
-  L --> E --> C --> H1 --> H2 --> H3 --> B1 --> RB --> V --> I --> W --> S --> P --> R
+  L --> E --> C --> H1 --> H2 --> B1 --> RB --> V --> W --> I --> S --> H3 --> P --> R
 ```
 
-The cold setup performs these important operations:
+Cold entry copies the hidden helper from `$4000` to `$A000` and the bridge seed from `$4800` to `$C000`. The resident then resets the KERNAL and BASIC vectors and initializes the workspace:
 
-1. It copies hidden helper code before BASIC owns `$2AC1+`.
-2. It stores a REU shadow copy at assigned core-bank offset `$3000` because
-   `$A000` code cannot be trusted after a ReadyOS app switch.
-3. It copies bridge state to `$C000`.
-4. It resets KERNAL and BASIC vectors, then installs the execute vector hook at
-   `$0308/$0309` and the eval hook at `$030A/$030B`.
-5. It relocates BASIC:
-   - `TXTTAB = $2AC1`
-   - `VARTAB = ARYTAB = STREND = $2AC3`
-   - `FRETOP = MEMSIZ = $A000`
-   - KERNAL memory bottom/top = `$2AC0/$A000`
-6. It clears `$2AC0`, `$2AC1`, and `$2AC2`. The `$2AC0` byte is a hard
-   invariant: C64 BASIC `RUN` expects the byte before `TXTTAB` to be zero.
-7. It seeds the assigned ReadyBASIC core and code banks.
-8. It draws the ReadyBASIC banner and enters `BASIC_READY`.
+- `TXTTAB = $2AC1`
+- `VARTAB = ARYTAB = STREND = $2AC3`
+- `FRETOP = MEMSIZ = $A000`
+- KERNAL memory bottom/top = `$2AC0/$A000`
+
+It clears the sentinel at `$2AC0` and the empty-program bytes at `$2AC1-$2AC2`, installs the hooks, clears pending input and seeds the assigned REU banks. Seeding creates the hidden-helper shadow at core-bank offset `$3000`. The console then shows the banner and enters `BASIC_READY`.
 
 ## Warm Resume Lifecycle
 
@@ -575,8 +522,8 @@ sequenceDiagram
   BASIC->>RES: $0308 execute vector
   RES->>RES: Match bare command or native routine keyword
   RES->>RES: Normalize command name
-  RES->>R44: Fetch descriptors one at a time from $0100
-  R44-->>RES: Descriptor -> $C480
+  RES->>R44: Fetch a 256-byte descriptor page from the table at $1000
+  R44-->>RES: Page to $C500, matching descriptor copied to $C480
   RES->>RES: Parse signature with BASIC ROM helpers
   RES->>RES: Clear output variables
   RES->>R44: Stash call frame $C200 -> $0400
@@ -606,9 +553,7 @@ sequenceDiagram
 | Command buffer | `$C4A0` | Normalized command name. |
 | Page buffer | `$C500` | 256-byte descriptor/bitmap page buffer for handle operations and warm-resume stack staging. |
 
-The call and result frames are also mirrored to assigned core-bank offsets `$0400`
-and `$0400`. This gives crash/debug visibility and gives future worker models a
-stable mailbox shape.
+The first 128 bytes of each frame are copied to the same core-bank mailbox at `$0400-$047F`. The result replaces the call after dispatch.
 
 ## Parameter And Result Semantics
 
@@ -707,7 +652,7 @@ extra banks while keeping the same small BASIC-visible handle.
 
 ReadyBASIC uses two kinds of hidden code:
 
-- Hidden helper at `$A000-$A6C7`.
+- Hidden helper at `$A000-$A7A9`.
 - Command/module payload slots at `$A800-$BFFF`.
 
 Before calling hidden code, ReadyBASIC:
@@ -733,13 +678,12 @@ These invariants are the current safety rails:
   standalone app.
 - In the current repeat/label/error-introspection design, `BASIC_START` stays `$2AC1`.
 
-## Current Repeat/Label Delta
+## Historical repeat/label checkpoint
 
 The current design moves the live BASIC workspace to `$2AC1-$9FFF` so
 `REPEAT`/`UNTIL`, `LABEL`/`JUMP`, and `ERRCODE`/`ERRLINE` can fit on top of the
 proper nested expression and float-term work.
-The sections above have been updated to the current repeat/label layout;
-older dated measurements remain in `READYBASIC_PLUGIN_PROGRESS.md`.
+The table below records the repeat/label build. For release measurements, see the [generated memory map](../../../docs/readybasic_memory_diagrams.html).
 
 | Segment | Range | Size |
 |---|---:|---:|

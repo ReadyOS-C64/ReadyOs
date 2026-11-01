@@ -8,6 +8,7 @@ checks only to documents that claim to describe the live tree.
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -95,7 +96,7 @@ REQUIRED: dict[str, tuple[str, ...]] = {
     ),
     "docs/reports/easyflash_boot_flow.html": (
         "full <code>46,592</code> byte app window",
-        "Physical\n<code>Skip</code> is the single source of truth",
+        "Physical <code>Skip</code> is the single source of truth",
     ),
     "privatedocs/top_level_md/MEMORY_MAP.md": (
         "Skip (ReadyOS bank)",
@@ -166,6 +167,25 @@ FORBIDDEN: dict[str, tuple[str, ...]] = {
 def main() -> int:
     failures: list[str] = []
     checked = 0
+    release = ROOT / "Releases/0.5"
+    layout = json.loads((release / "precog-easyflash/layout.json").read_text())
+    apps, overlays = layout["apps"], layout["overlays"]
+    report = (ROOT / "docs/reports/easyflash_boot_flow.md").read_text()
+    for entries, label in ((apps, "application"), (overlays, "ReadyShell overlay")):
+        first = entries[0]["start_bank"]
+        last = max(e["start_bank"] + e["bank_span"] - 1 for e in entries)
+        if f"banks `{first}-{last}`" not in report:
+            failures.append(f"EasyFlash {label} bank range differs from shipped layout")
+    if f"EASYFLASH_APP_COUNT = {len(apps)}" not in report:
+        failures.append("EasyFlash app count differs from shipped layout")
+
+    primary = ("precog-d81", "precog-ultimate", "precog-easyflash")
+    for guide in (ROOT / "README.md", release / "README.md", ROOT / "docs/DOCUMENTATION_INDEX.md"):
+        content = guide.read_text()
+        positions = [content.find(f"{pid}/README.md)") for pid in primary]
+        if min(positions) < 0 or positions != sorted(positions):
+            failures.append(f"{guide.name}: expected regular D81, Ultimate dual D81, EasyFlash")
+
     for rel, snippets in REQUIRED.items():
         path = ROOT / rel
         if not path.exists():

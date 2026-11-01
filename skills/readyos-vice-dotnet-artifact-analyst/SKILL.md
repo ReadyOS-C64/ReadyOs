@@ -22,8 +22,8 @@ Use this skill when the user wants analysis centered on `.NET ViceTasks` automat
 - release/default (`READYSHELL_PARSE_TRACE_DEBUG=0`): `READYSHELL_OVERLAYSIZE=0x3800`, `__OVERLAYSTART__=0x8E00`
 - debug trace (`READYSHELL_PARSE_TRACE_DEBUG=1`): `READYSHELL_OVERLAYSIZE=0x3B00`, `__OVERLAYSTART__=0x8B00`
 - Treat ReadyShell REU ownership as dynamic. Resolve overlay/state/debug banks
-  from logical REU bank `0`, generated ReadyShell metadata, or current
-  `$C600-$C6FF` type-table dumps; do not assume fixed physical
+  from the physical ReadyOS bank identified by shim byte `$C83B`. Its
+  bank-type table starts at offset `$B640`. Use the generated ReadyShell metadata; do not assume fixed physical
   `0x40/0x41/0x43`.
 - When stability-level interpretation is requested, run `$readyos-stability-analyst` against the same run root.
 

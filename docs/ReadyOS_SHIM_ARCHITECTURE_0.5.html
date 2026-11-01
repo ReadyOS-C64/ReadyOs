@@ -265,6 +265,48 @@ Skip (ReadyOS bank)                       Skip+1 ... detected end
 <p>The configured skip is compiled into the build; resident shim byte
 <code>$C83B</code> stores the direct physical ReadyOS bank number
 (<code>Skip</code>).</p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 23%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th>Release configuration</th>
+<th>Native OS reservation</th>
+<th>Bridge snapshot reservation</th>
+<th style="text-align: right;">ReadyOS bank</th>
+<th style="text-align: right;">First dynamic bank</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stock disk or EasyFlash</td>
+<td>None</td>
+<td>None</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>Dedicated C64OS</td>
+<td>0–31</td>
+<td>32–38 (ReadyOS RAM at 32, C64OS RAM at 34)</td>
+<td style="text-align: right;">39</td>
+<td style="text-align: right;">40</td>
+</tr>
+<tr>
+<td>Dedicated GDOS64 or GEOS 2.0</td>
+<td>0–63</td>
+<td>64–70 (ReadyOS RAM at 64, native RAM at 66)</td>
+<td style="text-align: right;">71</td>
+<td style="text-align: right;">72</td>
+</tr>
+</tbody>
+</table>
+<p>Bank numbers above are decimal. Each REU bank is 64 KiB. The reservations describe the maximum range each side may use. For example, the supported GEOS 2.0 setup uses an eight-bank native allocation inside its reservation.</p>
 <h2 id="what-changed">What Changed</h2>
 <p>The older shim calculated every app snapshot's physical bank from a
 fixed layout. A nonzero logical app bank <code>N</code> was tied to a
@@ -698,7 +740,7 @@ resume</td>
 <tr>
 <td style="text-align: right;"><code>$FD40</code></td>
 <td style="text-align: right;"><code>$02C0</code></td>
-<td>reserved for compatible schema growth</td>
+<td>dedicated bridges use <code>$FD40-$FD47</code> for their eight-byte control record. The remaining bytes are reserved</td>
 </tr>
 </tbody>
 </table>

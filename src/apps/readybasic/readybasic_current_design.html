@@ -156,7 +156,7 @@
 <thead>
 <tr>
 <th>Item</th>
-<th style="text-align: right;">Current value</th>
+<th style="text-align: right;">Pre-media value</th>
 </tr>
 </thead>
 <tbody>
@@ -279,7 +279,7 @@
 <p><code>GFXSPR</code>, <code>INPUTEV</code>, <code>GFXPOLY</code>, <code>GFXDL</code>, <code>GFXTILE</code>, and <code>SIDCORE</code> are true slot-2 replacement overlays. They are loaded from the second cold-only command seed window (<code>CMDPACK2</code>) into fixed assigned code-bank offsets <code>$5000</code>, <code>$5800</code>, <code>$6000</code>, <code>$6800</code>, <code>$7000</code>, and <code>$7800</code>, then fetched into <code>$B800</code> only when their commands run. This removes the old slot-2 packing mismatch where <code>GFXPRIM</code>, <code>GFXSPR</code>, <code>INPUTEV</code>, and polygon work would otherwise consume one runtime strip.</p>
 <p>The graphics Bank D layout intentionally avoids ReadyBASIC/ReadyOS state: screen RAM is <code>$CC00-$CFFF</code>, sprite data is <code>$CA00-$CBFF</code>, bitmap/charset RAM is <code>$E000-$FFFF</code>, and color RAM is <code>$D800-$DBE7</code>. ReadyBASIC owns bridge/shared frames through <code>$C5FF</code>; the resident 1 KB shim owns <code>$C600-$C9FF</code>, with its expansion reserve below the stable ABI at <code>$C800</code>.</p>
 <p>The naming nuance matters. A module is the logical command family identified by module id. A module package/container is the disk SEQ file that carries descriptors and payload records. A submodule is the runtime payload family that claims one or more 2K command slots. An overlay is one swappable image of that submodule. That is why the RBM2 sample can mention submodule <code>5</code> twice: both entries are the same submodule family, but they are different overlays.</p>
-<p>The assigned core bank is the authoritative registry/runtime bank: header, call/result scratch, handle directory, zero-page/stack snapshots, command descriptors, and the typed heap. The assigned code bank is the payload bank: built-in module bytes start at <code>$0000</code>, and the current disk samples use <code>$3000</code>, <code>$3200</code>, <code>$3300</code>, and <code>$3400</code>. Future richer per-slot residency metadata is reserved for assigned core-bank offsets <code>$2000-$3FFF</code>; the current proof keeps only a tiny last-command/copy-count record in bridge RAM.</p>
+<p>The assigned core bank is the authoritative registry/runtime bank: header, call/result scratch, handle directory, zero-page/stack snapshots, command descriptors, and the typed heap. The assigned code bank is the payload bank: built-in module bytes start at <code>$0000</code>, media loads at <code>$8000</code>, and disk samples occupy selected offsets from <code>$A000</code> through <code>$CE26</code>. The core bank stores the warm-resume hidden-helper copy at <code>$3000</code>.</p>
 </section>
 <section id="current-syntax-and-statement-behavior" class="level2">
 <h2>Current Syntax And Statement Behavior</h2>
@@ -1014,8 +1014,8 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td><code>RESIDENT</code></td>
-<td style="text-align: right;"><code>$1200-$2ABF</code></td>
-<td style="text-align: right;"><code>$18C0</code> (6.2K, 6336 exact bytes)</td>
+<td style="text-align: right;"><code>$1200-$2A92</code></td>
+<td style="text-align: right;"><code>$1893</code> (6291 bytes)</td>
 <td>Visible parser, vector hooks, BASIC ROM calls, REU DMA wrappers, result commit, bare command dispatch, expression hook, native <code>PROC</code>/<code>FUNC</code>/<code>RET</code>, <code>REPEAT</code>/<code>UNTIL</code>, <code>LABEL</code>/<code>JUMP</code>, error introspection, proper nested term state, float helpers, and prompt hotkey dispatch.</td>
 </tr>
 <tr>
@@ -1193,7 +1193,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td>Future command growth</td>
-<td><code>CMDPACK</code> carries <code>$1455</code> / 5205B of base built-ins and has <code>$00AB</code> / 171B free. <code>CMDPACK2</code> carries <code>$18C3</code> / 6339B of overlay built-ins and has <code>$053D</code> / 1341B free.</td>
+<td><code>CMDPACK</code> carries <code>$12AE</code> / 4782B of base built-ins and has <code>$0252</code> / 594B free. <code>CMDPACK2</code> carries <code>$1968</code> / 6504B of overlay built-ins and has <code>$0498</code> / 1176B free.</td>
 <td>Both cold-load windows are reclaimed before BASIC owns the workspace, so growing within them does not reduce steady-state BASIC free bytes. Runtime growth is still bounded by each 2K execution image.</td>
 </tr>
 </tbody>
@@ -1403,14 +1403,9 @@ PRINT COMMAND(arg,arg)</code></pre>
 <td>256-byte staging page for descriptor scans, REU handle operations, heap bitmap scans, and warm-resume stack buffer.</td>
 </tr>
 <tr>
-<td>REU call snapshot</td>
-<td style="text-align: right;">Assigned core bank <code>$0400</code></td>
-<td>Copy of the current call frame.</td>
-</tr>
-<tr>
-<td>REU result snapshot</td>
-<td style="text-align: right;">Assigned core bank <code>$0400</code></td>
-<td>Copy of the current result frame.</td>
+<td>REU frame mailbox</td>
+<td style="text-align: right;">Assigned core bank <code>$0400-$047F</code></td>
+<td>The first 128 bytes of the call frame, replaced by the first 128 bytes of the result frame after dispatch.</td>
 </tr>
 <tr>
 <td>Runtime zero-page snapshot</td>
@@ -1540,7 +1535,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>The launcher marks the assigned physical banks in the ReadyOS REU allocation table at <code>$C600-$C6FF</code>. ReadyBASIC scans that table at startup and does not use <code>$C600-$C7FF</code> as private scratch.</p>
+<p>The launcher records physical bank types at offset <code>$B640</code> in the ReadyOS REU bank. The shim publishes that bank number at <code>$C83B</code>.</p>
 <section id="assigned-core-bank-coresystem-storage" class="level3">
 <h3>Assigned Core Bank: Core/System Storage</h3>
 <table>
@@ -1560,12 +1555,8 @@ PRINT COMMAND(arg,arg)</code></pre>
 <td>Header: <code>RBPL</code>, version, descriptor count, descriptor size, and frame offsets.</td>
 </tr>
 <tr>
-<td style="text-align: right;"><code>$0400</code></td>
-<td>Current call-frame snapshot.</td>
-</tr>
-<tr>
-<td style="text-align: right;"><code>$0400</code></td>
-<td>Current result-frame snapshot.</td>
+<td style="text-align: right;"><code>$0400-$047F</code></td>
+<td>First 128 bytes of the call frame, then of the result frame in the same mailbox.</td>
 </tr>
 <tr>
 <td style="text-align: right;"><code>$0600</code></td>
@@ -1592,8 +1583,16 @@ PRINT COMMAND(arg,arg)</code></pre>
 <td>128 command descriptor slots, 32 bytes each. Cold build has 83 real descriptors, 45 zero-filled filler descriptors, and <code>SCRPUT</code> deliberately kept in slot 128.</td>
 </tr>
 <tr>
-<td style="text-align: right;"><code>$2000-$3FFF</code></td>
-<td>Reserved common/system space for future ReadyBASIC metadata.</td>
+<td style="text-align: right;"><code>$2000-$2FFF</code></td>
+<td>Reserved common space.</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$3000-$37A9</code></td>
+<td>Hidden-helper shadow for warm resume.</td>
+</tr>
+<tr>
+<td style="text-align: right;"><code>$37AA-$3FFF</code></td>
+<td>Reserved space before the heap.</td>
 </tr>
 <tr>
 <td style="text-align: right;"><code>$4000-$FFFF</code></td>
@@ -1711,14 +1710,10 @@ PRINT COMMAND(arg,arg)</code></pre>
 <ol type="1">
 <li>ReadyOS loads <code>readybasic.prg</code> at <code>$1000</code>.</li>
 <li>Entry code checks its local warm/cold magic.</li>
-<li>On cold path, it maps RAM under BASIC ROM long enough to copy the hidden helper seed to <code>$A000</code>, then stashes the helper shadow to assigned core-bank offset <code>$3000</code>.</li>
-<li>It copies bridge seed bytes from the load image to <code>$C000</code>.</li>
-<li>The resident core resets KERNAL/BASIC vectors, saves originals, and installs ReadyBASIC crunch/execute/eval, KEYLOG, and CHRIN hooks.</li>
-<li>BASIC is relocated to <code>TXTTAB=$2AC1</code> with top at <code>$A000</code>.</li>
-<li><code>$2AC0</code>, <code>$2AC1</code>, and <code>$2AC2</code> are cleared. <code>$2AC0</code> is the sentinel byte required by BASIC <code>RUN</code>.</li>
-<li>The assigned core bank receives the header and descriptors from <code>REGSEED</code>.</li>
-<li>The assigned code bank receives the packed low and hidden command code.</li>
-<li>ReadyBASIC clears/redraws the screen, prints its banner, and enters <code>BASIC_READY</code>.</li>
+<li>Cold entry copies the helper from <code>$4000</code> to RAM under BASIC ROM at <code>$A000</code>, then copies the bridge seed from <code>$4800</code> to <code>$C000</code>.</li>
+<li>The resident resets the KERNAL and BASIC vectors, initializes BASIC with <code>TXTTAB=$2AC1</code> and top <code>$A000</code>, and clears <code>$2AC0-$2AC2</code>. BASIC <code>RUN</code> needs the sentinel at <code>$2AC0</code> to be zero.</li>
+<li>It installs the hooks, clears pending input and seeds the assigned REU banks. The core bank receives the header, descriptors and hidden-helper shadow at offset <code>$3000</code>. The code bank receives the base and replacement payloads.</li>
+<li>ReadyBASIC draws its banner and enters <code>BASIC_READY</code>.</li>
 </ol>
 </section>
 <section id="exit-suspend-and-warm-resume" class="level2">
@@ -1769,7 +1764,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 <tbody>
 <tr>
 <td>Hidden helper</td>
-<td style="text-align: right;"><code>$A000-$A6C7</code></td>
+<td style="text-align: right;"><code>$A000-$A7A9</code></td>
 <td>REU prestash, save/restore helpers, bank-sensitive work.</td>
 </tr>
 <tr>
@@ -1910,7 +1905,7 @@ PRINT COMMAND(arg,arg)</code></pre>
 </tr>
 <tr>
 <td><code>RESIDENT</code></td>
-<td style="text-align: right;"><code>$18C0</code> / 6336B</td>
+<td style="text-align: right;"><code>$1893</code> / 6291B</td>
 </tr>
 <tr>
 <td><code>LOWPACK</code></td>
